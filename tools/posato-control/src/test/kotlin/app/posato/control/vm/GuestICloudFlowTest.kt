@@ -48,4 +48,16 @@ class GuestICloudFlowTest {
         assertFalse(guestTimedOut(envelope(null)))
         assertFalse(guestTimedOut("Error: the guest agent stopped"))
     }
+
+    /**
+     * A clone whose keychain cannot be resumed must still be able to remove its workspace, or `vm destroy` refuses it
+     * with WORKSPACE_LINKED and the workspace stays in the shared test account. E2E cannot pause a clone's keychain on
+     * demand without signing a device in to that account.
+     */
+    @Test
+    fun `given a workspace removal when relaying flow icloud then the keychain gate applies to a link only`() {
+        assertTrue(checksICloudKeychain(listOf("flow", "icloud", "link", "-t", "desktop")))
+        assertFalse(checksICloudKeychain(listOf("flow", "icloud", "remove", "-t", "desktop")))
+        assertFalse(checksICloudKeychain(listOf("flow", "set", "create", "-t", "desktop")))
+    }
 }

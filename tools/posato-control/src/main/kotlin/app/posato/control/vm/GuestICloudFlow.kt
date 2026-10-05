@@ -13,6 +13,8 @@ import kotlinx.serialization.json.JsonPrimitive
 const val ICLOUD_FLOW_TIMEOUT_SECONDS = 300L
 
 private const val TIMEOUT_OPTION = "--timeout-seconds"
+private const val LINK_ACTION = "link"
+private const val REMOVE_ACTION = "remove"
 
 /** What one relayed guest command printed and returned. */
 internal data class GuestOutput(
@@ -21,8 +23,14 @@ internal data class GuestOutput(
     val stderr: String,
 )
 
-/** Whether forwarded arguments run `flow icloud`. */
-internal fun isICloudFlow(arguments: List<String>): Boolean = arguments.take(2) == listOf("flow", "icloud")
+/**
+ * Whether forwarded arguments run `flow icloud link`, the one action that waits for a key from iCloud Keychain. A
+ * removal never does, and gating it would leave a clone whose keychain cannot be resumed unable to remove its workspace.
+ */
+internal fun checksICloudKeychain(arguments: List<String>): Boolean {
+    if (arguments.take(2) != listOf("flow", "icloud")) return false
+    return arguments.drop(2).firstOrNull { it == LINK_ACTION || it == REMOVE_ACTION } == LINK_ACTION
+}
 
 /** The whole wait `flow icloud` was asked for, or null when its value is not a number and the guest should say so. */
 internal fun flowTimeoutSeconds(arguments: List<String>): Long? {
@@ -63,7 +71,7 @@ private fun parseEnvelope(text: String): Envelope? = try {
 internal fun guestTimedOut(envelope: String): Boolean = parseEnvelope(envelope)?.error?.code == ErrorCode.WAIT_TIMEOUT.name
 
 /**
- * `flow icloud` waits inside the guest for an outcome that a paused iCloud Keychain never delivers, and a device that
+ * `flow icloud link` waits inside the guest for a key that a paused iCloud Keychain never delivers, and a device that
  * signs in to the test account can pause a clone's keychain in the middle of a run. Only the host reads System
  * Settings over VNC, so it checks the keychain before the flow and again whenever a slice of the wait runs out,
  * resumes a paused keychain, and stops with `ICLOUD_KEYCHAIN_PAUSED` when that fails.

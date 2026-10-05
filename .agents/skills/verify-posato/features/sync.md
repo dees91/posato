@@ -77,10 +77,12 @@ own golden VM line, and address them with `--vm primary|peer`.
   with iCloud** returns, establish there, and then let the peer join.
 - A `paused` keychain never delivers the workspace key, and a later sign-in
   can pause a clone's keychain after `vm create` reported it `syncing`.
-  `flow icloud` with `--vm` therefore checks the keychain before the flow and
-  whenever two minutes pass without an outcome, runs Resume Data Sync when it
-  is paused, and reports `iCloudKeychain` and `iCloudResumed`; it stops with
-  `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails. Repair
+  `flow icloud link` with `--vm` therefore checks the keychain before the flow
+  and whenever two minutes pass without an outcome, runs Resume Data Sync when
+  it is paused, and reports `iCloudKeychain` and `iCloudResumed`; it stops with
+  `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails.
+  `flow icloud remove` needs no key and skips the check, so a clone whose
+  keychain cannot be resumed can still remove its workspace. Repair
   the golden VM the same way (`docs/development/unattended-verification.md`).
   Resume Data Sync can raise "This Mac can't connect to iCloud" over its
   password sheet; `vm icloud --resume` presses Later and answers the sheet

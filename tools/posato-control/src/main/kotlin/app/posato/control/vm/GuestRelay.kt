@@ -79,7 +79,7 @@ object GuestRelay {
             else -> Files.readString(Path.of(scenario))
         }
         if (startsPackage(forwarded, stdin)) lifecycle.requireCurrentPackage(line)
-        val output = if (isICloudFlow(arguments)) {
+        val output = if (checksICloudKeychain(arguments)) {
             GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
         } else {
             runInGuest(context, line, arguments, stdin, runId)
