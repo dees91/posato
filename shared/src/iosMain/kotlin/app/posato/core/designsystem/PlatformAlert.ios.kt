@@ -45,10 +45,12 @@ internal actual fun PlatformAlert(
             }
         }
         var preferred: UIAlertAction? = null
-        latestActions.forEach { action ->
+        latestActions.forEachIndexed { index, action ->
             val native = UIAlertAction.actionWithTitle(action.title, action.role.nativeStyle()) { _ ->
                 val text = (alert.textFields?.firstOrNull() as? UITextField)?.text.orEmpty()
-                val current = latestActions.firstOrNull { it.title == action.title && it.role == action.role }
+                // The alert is rebuilt whenever its answers change, so the answer in this position is this button's,
+                // even when two answers read alike; a mismatch in between closes the alert without acting.
+                val current = latestActions.getOrNull(index)?.takeIf { it.title == action.title && it.role == action.role }
                 current?.onClick?.invoke(text) ?: latestDismiss()
             }
             alert.addAction(native)
