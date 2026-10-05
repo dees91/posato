@@ -64,6 +64,7 @@ internal fun PosatoBarScreen(
     title: String,
     modifier: Modifier = Modifier,
     largeTitle: Boolean = false,
+    largeTitleContent: (@Composable () -> Unit)? = null,
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
     scrollState: ScrollState = rememberScrollState(),
@@ -102,7 +103,9 @@ internal fun PosatoBarScreen(
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             if (largeTitle) {
-                PosatoLargeTitle(title, Modifier.graphicsLayer { alpha = 1f - collapsed })
+                Box(Modifier.graphicsLayer { alpha = 1f - collapsed }) {
+                    largeTitleContent?.invoke() ?: PosatoLargeTitle(title)
+                }
             }
             content()
         }

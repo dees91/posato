@@ -24,6 +24,7 @@ import app.posato.core.designsystem.PosatoNavigationItem
 import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.ui.PauseSetPickerRow
@@ -42,7 +43,7 @@ internal fun SessionDurationContent(
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
             "How much space\ndo you need?",
-            eyebrow = "YOUR NEXT PAUSE",
+            eyebrow = "YOUR NEXT PAUSE".takeUnless { platformUsesCupertinoChrome },
             layout = layout,
             description = "Choose a quick pause, or make it your own.",
         )
@@ -63,7 +64,7 @@ internal fun SessionDurationContent(
         }
         PosatoActionRow {
             PosatoButton(onReview) { Text("Review session") }
-            PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+            if (!platformUsesCupertinoChrome) PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
         }
     }
 }

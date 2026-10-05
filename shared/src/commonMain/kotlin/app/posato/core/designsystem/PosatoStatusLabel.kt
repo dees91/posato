@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 internal fun PosatoStatusLabel(
     label: String,
     modifier: Modifier = Modifier,
-    tone: PosatoTone = PosatoTone.Positive
+    tone: PosatoTone = PosatoTone.Positive,
+    sentenceCase: Boolean = false,
 ) {
     val palette = MaterialTheme.colorScheme
     val color = when (tone) {
@@ -29,7 +30,7 @@ internal fun PosatoStatusLabel(
     }
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(StatusDotSize).background(color, CircleShape))
-        Text(label, color = color, style = MaterialTheme.typography.labelSmall)
+        Text(label, color = color, style = if (sentenceCase) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall)
     }
 }
 

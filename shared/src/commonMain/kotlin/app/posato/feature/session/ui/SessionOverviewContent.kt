@@ -26,6 +26,7 @@ import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformDevice
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
@@ -270,7 +271,7 @@ internal fun SessionReviewContent(
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
             title = if (state.review.actionRequired?.blocksStart == true) "A small step first." else "Your pause, your choice.",
-            eyebrow = "ONE LAST LOOK",
+            eyebrow = "ONE LAST LOOK".takeUnless { platformUsesCupertinoChrome },
             description = "Review your saved choices and the ending time for this session.",
             layout = layout,
         )
@@ -290,7 +291,9 @@ internal fun SessionReviewContent(
                 } else {
                     PosatoButton(onStart, enabled = state.canStart()) { Text(if (state.isStarting) "Starting…" else "Start this pause") }
                 }
-                PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
+                if (!platformUsesCupertinoChrome) {
+                    PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
+                }
             }
             SessionSelectionSummary(state, deviceLabel, onEditItems)
             PosatoCaption("This starts the session and applies the chosen restrictions on this device.")

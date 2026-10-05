@@ -375,7 +375,7 @@ class PosatoApplication internal constructor(
                 scheduledPauses = scheduledPauses,
                 notPausedYet = sessionComposition.notPausedYet,
                 deviceNoun = device.noun,
-                overviewHeader = onOpenAbout?.let { open -> { ApplicationNavigationHeader(device, onOpenAbout = open, inset = false) } },
+                onOpenAbout = onOpenAbout,
             )
 
             ApplicationDestination.SCHEDULES -> SchedulesDestination(scheduleInputs, device, layout, macSetupState, modifier)
