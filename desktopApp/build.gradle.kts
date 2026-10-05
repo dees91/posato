@@ -26,6 +26,7 @@ import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -38,6 +39,10 @@ import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
 
+/**
+ * Copies a pinned file into the build from a machine-wide cache keyed by its SHA-256, downloading it only when the
+ * cache lacks a verified copy, so a clean build or a new worktree needs no network.
+ */
 abstract class DownloadVerifiedFile : DefaultTask() {
     @get:Input
     abstract val sourceUrl: Property<String>
@@ -45,26 +50,38 @@ abstract class DownloadVerifiedFile : DefaultTask() {
     @get:Input
     abstract val sha256: Property<String>
 
+    @get:Internal
+    abstract val cacheDirectory: DirectoryProperty
+
     @get:OutputFile
     abstract val destination: RegularFileProperty
 
     @TaskAction
     fun download() {
         val target = destination.get().asFile
-        val downloaded = temporaryDir.resolve(target.name)
-        URI(sourceUrl.get()).toURL().openStream().use { input ->
-            downloaded.outputStream().use { output -> input.copyTo(output) }
-        }
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(downloaded.readBytes())
-            .joinToString("") { byte -> "%02x".format(byte) }
-        if (digest != sha256.get()) {
-            downloaded.delete()
-            throw GradleException("The downloaded ${target.name} does not match its pinned SHA-256.")
+        val cached = cacheDirectory.get().asFile.resolve(sha256.get()).resolve(target.name)
+        if (!cached.isFile || digest(cached) != sha256.get()) {
+            val downloaded = temporaryDir.resolve(target.name)
+            URI(sourceUrl.get()).toURL().openStream().use { input ->
+                downloaded.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (digest(downloaded) != sha256.get()) {
+                downloaded.delete()
+                throw GradleException("The downloaded ${target.name} does not match its pinned SHA-256.")
+            }
+            cached.parentFile.mkdirs()
+            // Another worktree may read the cache meanwhile, so the verified file appears there in one rename.
+            val partial = Files.createTempFile(cached.parentFile.toPath(), target.name, ".part")
+            Files.move(downloaded.toPath(), partial, StandardCopyOption.REPLACE_EXISTING)
+            Files.move(partial, cached.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         }
         target.parentFile.mkdirs()
-        Files.move(downloaded.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        Files.copy(cached.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
+
+    private fun digest(file: File): String = MessageDigest.getInstance("SHA-256")
+        .digest(file.readBytes())
+        .joinToString("") { byte -> "%02x".format(byte) }
 }
 
 abstract class StageMacOsApplication : DefaultTask() {
@@ -1398,6 +1415,7 @@ val downloadSparkle = tasks.register<DownloadVerifiedFile>("downloadSparkle") {
     description = "Downloads the pinned Sparkle distribution and verifies its checksum."
     sourceUrl.set("https://github.com/sparkle-project/Sparkle/releases/download/$pinnedSparkleVersion/Sparkle-$pinnedSparkleVersion.tar.xz")
     sha256.set("c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c")
+    cacheDirectory.set(gradle.gradleUserHomeDir.resolve("posato-downloads"))
     destination.set(sparkleArchive)
 }
 val extractSparkle = tasks.register<Exec>("extractSparkle") {
