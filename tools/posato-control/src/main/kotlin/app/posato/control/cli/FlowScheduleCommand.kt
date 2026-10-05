@@ -38,7 +38,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         val startTime = WheelTime.parse(start)
         val endTime = WheelTime.parse(end)
         val chosenDays = ScheduleDays.parse(days)
-        FlowSteps.run(backend, openEditor())
+        FlowSteps.run(backend, openEditor(target))
         set?.let { chosen -> chooseSet(backend, target, chosen) }
         FlowSteps.run(backend, chooseDays(chosenDays))
         if (target == Target.DESKTOP) {
@@ -63,9 +63,11 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         }
     }
 
-    private fun openEditor(): List<Step> {
+    private fun openEditor(target: Target): List<Step> {
+        // A leftover open editor is left the way each host offers: the Mac's in-page link or the iOS bar's back.
+        val back = if (target == Target.DESKTOP) "Back to schedules" else "Back to Schedules"
         return listOf(
-            FlowSteps.button("Back to schedules", optional = true, timeoutSeconds = SHORT_SECONDS),
+            FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
             FlowSteps.button("Schedules"),
             FlowSteps.reveal(Query(text = "Add schedule", role = FlowSteps.ROLE_BUTTON)),
             FlowSteps.button("Add schedule"),
