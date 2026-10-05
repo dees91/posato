@@ -1,6 +1,8 @@
 package app.posato.core.designsystem
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -29,14 +32,9 @@ internal fun PosatoDisclosureRow(
     onClickLabel: String? = null,
 ) {
     Column(modifier = modifier) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).semantics {
-                role = Role.Button
-                onClick(label = onClickLabel, action = null)
-            },
-            onClick = onClick,
-            color = MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.small,
+        Box(
+            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).clip(MaterialTheme.shapes.small)
+                .clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
         ) {
             Row(
                 modifier = Modifier.padding(vertical = PosatoSpace.Medium),

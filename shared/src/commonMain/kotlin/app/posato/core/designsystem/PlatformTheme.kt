@@ -43,7 +43,7 @@ internal fun PosatoTheme(
             typography = PosatoTypography.Tokens,
             shapes = PosatoShapes.Tokens,
         ) {
-            if (platformUsesCupertinoChrome) {
+            if (!platformUsesMaterialRipple) {
                 CompositionLocalProvider(
                     LocalRippleConfiguration provides null,
                     LocalIndication provides PosatoPressHighlight(colors.onSurface.copy(alpha = PRESS_HIGHLIGHT_ALPHA)),
@@ -65,6 +65,9 @@ internal enum class PosatoDevice(
 }
 
 internal expect fun platformDevice(): PosatoDevice
+
+/** Whether taps show Material's ripple; only Android expects it, the Apple hosts dim or highlight instead. */
+internal expect val platformUsesMaterialRipple: Boolean
 
 /** Whether screens take the host's iOS conventions: a sliding navigation stack, navigation bars, and large titles. */
 internal expect val platformUsesCupertinoChrome: Boolean

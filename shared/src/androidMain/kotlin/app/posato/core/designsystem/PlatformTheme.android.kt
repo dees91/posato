@@ -13,3 +13,5 @@ internal actual fun platformDevice(): PosatoDevice {
 }
 
 internal actual val platformUsesCupertinoChrome: Boolean = false
+
+internal actual val platformUsesMaterialRipple: Boolean = true

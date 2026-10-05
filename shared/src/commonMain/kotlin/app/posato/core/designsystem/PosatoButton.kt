@@ -2,8 +2,10 @@ package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.FocusInteraction
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -17,7 +19,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +75,7 @@ private fun PosatoFilledButton(
     val pressed by interaction.collectIsPressedAsState()
     Button(
         modifier = modifier.heightIn(min = PosatoSize.Control)
-            .graphicsLayer { alpha = if (pressed && platformUsesCupertinoChrome) PosatoControlDefaults.PRESSED_ALPHA else 1f },
+            .graphicsLayer { alpha = if (pressed && !platformUsesMaterialRipple) PosatoControlDefaults.PRESSED_ALPHA else 1f },
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
@@ -89,6 +94,35 @@ private fun PosatoFilledButton(
 }
 
 /**
+ * Whether focus arrived from the keyboard rather than from a click or tap, so a focus mark shows only to the
+ * person moving through the screen with Tab.
+ */
+@Composable
+private fun InteractionSource.collectIsKeyboardFocusedAsState(): State<Boolean> {
+    val keyboardFocused = remember { mutableStateOf(false) }
+    LaunchedEffect(this) {
+        var pressedRecently = false
+        interactions.collect { interaction ->
+            when (interaction) {
+                is PressInteraction.Press -> {
+                    pressedRecently = true
+                }
+
+                is FocusInteraction.Focus -> {
+                    keyboardFocused.value = !pressedRecently
+                }
+
+                is FocusInteraction.Unfocus -> {
+                    keyboardFocused.value = false
+                    pressedRecently = false
+                }
+            }
+        }
+    }
+    return keyboardFocused
+}
+
+/**
  * A text-only action. Its label sits on the content edge like the text around it: there is no container and no
  * side padding, the label dims while pressed, and keyboard focus underlines it.
  */
@@ -101,7 +135,7 @@ internal fun PosatoTextButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val focused by interaction.collectIsFocusedAsState()
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     val color = MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier.heightIn(min = PosatoSize.Control)
@@ -114,7 +148,7 @@ internal fun PosatoTextButton(
                 }
             }
             .drawBehind {
-                if (focused) {
+                if (keyboardFocused) {
                     val stroke = PosatoSpace.Hairline.toPx() * 2
                     val y = size.height - PosatoSpace.Small.toPx()
                     drawLine(color, Offset(0f, y), Offset(size.width, y), stroke)

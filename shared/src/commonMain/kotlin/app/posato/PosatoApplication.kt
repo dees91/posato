@@ -384,7 +384,13 @@ class PosatoApplication internal constructor(
                 pauseSetsInputs,
                 navigation.pauseSets,
                 device.noun,
-                if (onOpenAbout != null) modifier else modifier.padding(horizontal = layout.inset, vertical = PosatoSpace.Medium),
+                if (onOpenAbout !=
+                    null
+                ) {
+                    modifier
+                } else {
+                    modifier.padding(start = layout.inset, end = layout.inset, top = layout.inset, bottom = PosatoSpace.Medium)
+                },
                 entryModifier = Modifier,
             )
         }
