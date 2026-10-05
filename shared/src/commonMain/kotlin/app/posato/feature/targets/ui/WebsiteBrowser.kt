@@ -18,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,7 +39,10 @@ import app.posato.core.designsystem.PosatoMenuItem
 import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwipeAction
+import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.targets.domain.ExactDomain
 import org.jetbrains.compose.resources.stringResource
 
@@ -166,23 +171,32 @@ private fun WebsiteRow(
             null
         }
     }
-    PosatoItemRow(
-        headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = caption?.let { covered ->
-            { PosatoCaption(covered) }
-        },
-        leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
-        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onEdit() },
-        trailingContent = {
-            if (enabled) {
-                PosatoItemMenu(
-                    "Actions for $domain",
-                    listOf(
-                        PosatoMenuItem("Edit", onEdit, PosatoMenuSymbol.Edit),
-                        PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true),
-                    ),
-                )
-            }
-        },
-    )
+    val row = @Composable { rowActions: List<CustomAccessibilityAction> ->
+        PosatoItemRow(
+            headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
+            supportingContent = caption?.let { covered ->
+                { PosatoCaption(covered) }
+            },
+            leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
+            modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClickLabel = "Edit") { onEdit() }
+                .semantics { if (rowActions.isNotEmpty()) customActions = rowActions },
+            trailingContent = {
+                if (enabled && !platformUsesCupertinoChrome) {
+                    PosatoItemMenu(
+                        "Actions for $domain",
+                        listOf(
+                            PosatoMenuItem("Edit", onEdit, PosatoMenuSymbol.Edit),
+                            PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true),
+                        ),
+                    )
+                }
+            },
+        )
+    }
+    // On iOS the row edits on a tap and removes under a left swipe, as list rows there do, with no button of its own.
+    if (platformUsesCupertinoChrome && enabled) {
+        PosatoSwipeRow(listOf(PosatoSwipeAction("Remove", onRemove, destructive = true))) { rowActions -> row(rowActions) }
+    } else {
+        row(emptyList())
+    }
 }

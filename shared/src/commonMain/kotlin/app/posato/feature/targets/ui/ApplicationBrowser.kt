@@ -12,6 +12,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -28,7 +31,10 @@ import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwipeAction
+import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import org.jetbrains.compose.resources.stringResource
@@ -96,16 +102,26 @@ private fun ApplicationRow(
     removable: Boolean,
     onRemove: () -> Unit
 ) {
-    PosatoItemRow(
-        headlineContent = { Text(name, style = MaterialTheme.typography.bodyLarge) },
-        leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
-        modifier = Modifier.padding(top = PosatoSpace.Tiny),
-        trailingContent = {
-            if (removable) {
-                PosatoItemMenu("Actions for $name", listOf(PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true)))
-            }
-        },
-    )
+    val row = @Composable { rowActions: List<CustomAccessibilityAction> ->
+        PosatoItemRow(
+            headlineContent = { Text(name, style = MaterialTheme.typography.bodyLarge) },
+            leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
+            modifier = Modifier.padding(top = PosatoSpace.Tiny).semantics(mergeDescendants = true) {
+                if (rowActions.isNotEmpty()) customActions = rowActions
+            },
+            trailingContent = {
+                if (removable && !platformUsesCupertinoChrome) {
+                    PosatoItemMenu("Actions for $name", listOf(PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true)))
+                }
+            },
+        )
+    }
+    // On iOS a removable app slides out Remove under a left swipe instead of carrying a menu button.
+    if (platformUsesCupertinoChrome && removable) {
+        PosatoSwipeRow(listOf(PosatoSwipeAction("Remove", onRemove, destructive = true))) { rowActions -> row(rowActions) }
+    } else {
+        row(emptyList())
+    }
 }
 
 @Composable

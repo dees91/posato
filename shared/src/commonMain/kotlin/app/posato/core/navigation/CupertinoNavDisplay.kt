@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.util.VelocityTracker1D
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
@@ -64,10 +66,13 @@ internal fun <T : Any> CupertinoNavDisplay(
     val surface = MaterialTheme.colorScheme.surface
     Box(modifier.clipToBounds(), contentAlignment = contentAlignment) {
         val layers = stack.layers
-        listOfNotNull(layers.under, layers.over).forEach { entry ->
+        // The screen below the top stays composed while hidden, so an edge swipe starts on a screen that is ready.
+        val parked = stack.parked
+        listOfNotNull(layers.under ?: parked, layers.over).forEach { entry ->
             key(stackKey(entry)) {
+                val layer = if (entry == parked) Modifier.parked() else stack.layerModifier(isUnder = entry == layers.under)
                 Box(
-                    stack.layerModifier(isUnder = entry == layers.under).fillMaxSize().background(surface),
+                    layer.fillMaxSize().background(surface),
                     contentAlignment = contentAlignment,
                 ) {
                     holder.SaveableStateProvider(stackKey(entry)) { content(entry) }
@@ -123,7 +128,13 @@ private class CupertinoStack<T : Any>(
     val gesture = SwipeTracker()
     var layers by mutableStateOf(StackLayers(under = null, over = initial.last()))
         private set
-    private var settled = initial
+    private var settled by mutableStateOf(initial)
+
+    /** The settled screen below the top, kept composed but unplaced while no motion shows it. */
+    val parked: T?
+        get() {
+            return settled.getOrNull(settled.size - 2).takeIf { layers.under == null && it != layers.over }
+        }
 
     val settledTop: T
         get() {
@@ -211,6 +222,17 @@ private class CupertinoStack<T : Any>(
     private suspend fun show(top: T) {
         layers = StackLayers(under = null, over = top)
         position.snapTo(1f)
+    }
+}
+
+/**
+ * Measures a parked screen without placing it: it keeps its composition and state, but is not drawn, cannot be
+ * touched or focused, and stays out of the accessibility tree.
+ */
+private fun Modifier.parked(): Modifier {
+    return clearAndSetSemantics {}.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) {}
     }
 }
 
