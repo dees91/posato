@@ -1,6 +1,8 @@
 package app.posato.core.designsystem
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -27,16 +31,14 @@ internal fun PosatoDisclosureRow(
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: @Composable () -> Unit = { PosatoIcon(PosatoIcons.Chevron, null) },
     onClickLabel: String? = null,
+    customActions: List<CustomAccessibilityAction> = emptyList(),
 ) {
     Column(modifier = modifier) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).semantics {
-                role = Role.Button
-                onClick(label = onClickLabel, action = null)
-            },
-            onClick = onClick,
-            color = MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.small,
+        Box(
+            modifier = Modifier.fillMaxWidth().heightIn(
+                min = PosatoSize.Control,
+            ).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+                .semantics { if (customActions.isNotEmpty()) this.customActions = customActions },
         ) {
             Row(
                 modifier = Modifier.padding(vertical = PosatoSpace.Medium),

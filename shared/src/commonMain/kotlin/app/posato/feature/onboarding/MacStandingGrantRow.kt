@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import app.posato.core.designsystem.PosatoCaption
-import app.posato.core.designsystem.PosatoSelectionRow
+import app.posato.core.designsystem.PosatoSwitchRow
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_standing_grant
 import app.posato.generated.resources.mac_standing_grant_blocked
@@ -24,7 +24,7 @@ internal fun StandingGrantRow(
         return
     }
     val known = state != MacStandingGrantState.UNKNOWN
-    PosatoSelectionRow(
+    PosatoSwitchRow(
         checked = state == MacStandingGrantState.ON,
         onCheckedChange = onChange,
         enabled = known && !running && !sessionBlocks && !presentation.standingGrantChanging,

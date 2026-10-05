@@ -371,7 +371,16 @@
       "name": "pick-office",
       "action": "tap",
       "query": {
-        "textContains": "Office (default),",
+        "textContains": "Office, Default",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-office",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Pause set, Office",
         "role": "button"
       }
     },
@@ -472,14 +481,14 @@
       }
     },
     {
-      "name": "delete-change-their-set",
+      "name": "delete-move-to",
       "action": "screenshot"
     },
     {
       "name": "change-and-delete",
       "action": "tap",
       "query": {
-        "text": "Change their set and delete",
+        "text": "Move to My set and delete",
         "role": "button"
       }
     },

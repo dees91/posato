@@ -330,8 +330,12 @@ Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 terminated), `openURL` (`url`), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
-removed from the xcodebuild log), and `swipeBack`, the system back gesture:
-a drag from the leading screen edge most of the way across. Any step can set `optional: true`: a missing
+removed from the xcodebuild log), `swipeBack`, the system back gesture:
+a drag from the leading screen edge most of the way across, `swipeLeft` (`query`), a quick swipe
+toward the leading edge across the matched element, which reveals a list row's swipe actions, and
+`adjustWheels` (`values`, optional `query`), which turns a system picker's wheels to the given values,
+first wheel first, within the matched element or the first picker on screen; tap a compact time picker
+first to open its wheels, and tap the element with id `PopoverDismissRegion` to close them. Any step can set `optional: true`: a missing
 element or a wait timeout then passes, for surfaces that appear only on some
 paths such as a Face ID retry. On iOS a pending system sheet belongs to the
 running app, and activating the app for a new driver run dismisses it, so a

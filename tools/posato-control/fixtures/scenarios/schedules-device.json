@@ -97,54 +97,37 @@
       "name": "start-reveal",
       "action": "scrollTo",
       "query": {
-        "text": "Starts 09:00",
-        "role": "button"
+        "text": "Starts"
       }
     },
     {
       "name": "start-open",
       "action": "tap",
       "query": {
-        "text": "Starts 09:00",
-        "role": "button"
+        "text": "Time Picker",
+        "index": 0
       }
     },
     {
-      "name": "start-hour-reveal",
-      "action": "scrollTo",
-      "query": {
-        "text": "Increase Start hours"
-      }
+      "name": "start-wheels",
+      "action": "adjustWheels",
+      "values": [
+        "10",
+        "00"
+      ]
     },
     {
-      "name": "start-hour-up",
+      "name": "start-close",
       "action": "tap",
       "query": {
-        "text": "Increase Start hours"
-      }
-    },
-    {
-      "name": "start-done-reveal",
-      "action": "scrollTo",
-      "query": {
-        "text": "Done",
-        "role": "button"
-      }
-    },
-    {
-      "name": "start-done",
-      "action": "tap",
-      "query": {
-        "text": "Done",
-        "role": "button"
+        "id": "PopoverDismissRegion"
       }
     },
     {
       "name": "start-changed",
       "action": "waitFor",
       "query": {
-        "text": "Starts 10:00",
-        "role": "button"
+        "text": "10:00"
       },
       "state": "exists"
     },
@@ -172,7 +155,7 @@
       "name": "row-ready",
       "action": "waitFor",
       "query": {
-        "text": "Edit Morning focus",
+        "textContains": "Morning focus,",
         "role": "button"
       },
       "state": "exists"
@@ -191,9 +174,9 @@
     },
     {
       "name": "skip-reveal",
-      "action": "scrollTo",
+      "action": "swipeLeft",
       "query": {
-        "text": "Skip next",
+        "textContains": "Morning focus,",
         "role": "button"
       }
     },
@@ -221,7 +204,7 @@
       "name": "edit-open",
       "action": "tap",
       "query": {
-        "text": "Edit Morning focus",
+        "textContains": "Morning focus,",
         "role": "button"
       }
     },
@@ -247,16 +230,14 @@
       "name": "off-reveal",
       "action": "scrollTo",
       "query": {
-        "textContains": "Schedule on,",
-        "role": "button"
+        "textContains": "Schedule on,"
       }
     },
     {
       "name": "turn-off",
       "action": "tap",
       "query": {
-        "textContains": "Schedule on,",
-        "role": "button"
+        "textContains": "Schedule on,"
       }
     },
     {
@@ -279,7 +260,7 @@
       "name": "renamed",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "textContains": "Evening focus,",
         "role": "button"
       },
       "state": "exists"
@@ -288,7 +269,7 @@
       "name": "turned-off",
       "action": "waitFor",
       "query": {
-        "text": "Turned off"
+        "textContains": "Turned off"
       },
       "state": "exists"
     },
@@ -296,7 +277,7 @@
       "name": "old-name-gone",
       "action": "assert",
       "query": {
-        "text": "Edit Morning focus",
+        "textContains": "Morning focus,",
         "role": "button"
       },
       "state": "absent"
@@ -322,16 +303,24 @@
       "name": "persisted",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "textContains": "Evening focus,",
         "role": "button"
       },
       "state": "exists"
     },
     {
+      "name": "delete-swipe",
+      "action": "swipeLeft",
+      "query": {
+        "textContains": "Evening focus,",
+        "role": "button"
+      }
+    },
+    {
       "name": "delete-ask",
       "action": "tap",
       "query": {
-        "text": "Delete Evening focus",
+        "text": "Delete",
         "role": "button"
       }
     },
@@ -359,18 +348,35 @@
       "name": "kept",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "textContains": "Evening focus,",
         "role": "button"
       },
       "state": "exists"
     },
     {
+      "name": "delete-swipe-again",
+      "action": "swipeLeft",
+      "query": {
+        "textContains": "Evening focus,",
+        "role": "button"
+      }
+    },
+    {
       "name": "delete-ask-again",
       "action": "tap",
       "query": {
-        "text": "Delete Evening focus",
+        "text": "Delete",
         "role": "button"
       }
+    },
+    {
+      "name": "delete-question-again",
+      "action": "waitFor",
+      "query": {
+        "text": "Keep",
+        "role": "button"
+      },
+      "state": "exists"
     },
     {
       "name": "delete-confirm",
@@ -384,7 +390,7 @@
       "name": "deleted",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "textContains": "Evening focus,",
         "role": "button"
       },
       "state": "absent"

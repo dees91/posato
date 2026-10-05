@@ -161,7 +161,7 @@
       "name": "row-ready",
       "action": "waitFor",
       "query": {
-        "text": "Edit Morning focus",
+        "text": "Actions for Morning focus",
         "role": "button"
       },
       "state": "exists"
@@ -179,10 +179,10 @@
       "action": "screenshot"
     },
     {
-      "name": "skip-reveal",
-      "action": "scrollTo",
+      "name": "skip-menu",
+      "action": "tap",
       "query": {
-        "text": "Skip next",
+        "text": "Actions for Morning focus",
         "role": "button"
       }
     },
@@ -207,10 +207,18 @@
       "action": "screenshot"
     },
     {
+      "name": "edit-menu",
+      "action": "tap",
+      "query": {
+        "text": "Actions for Morning focus",
+        "role": "button"
+      }
+    },
+    {
       "name": "edit-open",
       "action": "tap",
       "query": {
-        "text": "Edit Morning focus",
+        "text": "Edit",
         "role": "button"
       }
     },
@@ -268,7 +276,7 @@
       "name": "renamed",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "text": "Actions for Evening focus",
         "role": "button"
       },
       "state": "exists"
@@ -277,7 +285,7 @@
       "name": "turned-off",
       "action": "waitFor",
       "query": {
-        "text": "Turned off"
+        "textContains": "Turned off"
       },
       "state": "exists"
     },
@@ -285,7 +293,7 @@
       "name": "old-name-gone",
       "action": "assert",
       "query": {
-        "text": "Edit Morning focus",
+        "text": "Actions for Morning focus",
         "role": "button"
       },
       "state": "absent"
@@ -311,18 +319,31 @@
       "name": "persisted",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "text": "Actions for Evening focus",
         "role": "button"
       },
       "state": "exists"
     },
     {
+      "name": "delete-menu",
+      "action": "tap",
+      "query": {
+        "text": "Actions for Evening focus",
+        "role": "button"
+      }
+    },
+    {
       "name": "delete-ask",
       "action": "tap",
       "query": {
-        "text": "Delete Evening focus",
+        "text": "Delete",
         "role": "button"
       }
+    },
+    {
+      "name": "delete-ask-settle",
+      "action": "sleep",
+      "seconds": 1
     },
     {
       "name": "delete-question",
@@ -348,21 +369,21 @@
       "name": "kept",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "text": "Actions for Evening focus",
         "role": "button"
       },
       "state": "exists"
     },
     {
-      "name": "delete-ask-again",
+      "name": "delete-menu-again",
       "action": "tap",
       "query": {
-        "text": "Delete Evening focus",
+        "text": "Actions for Evening focus",
         "role": "button"
       }
     },
     {
-      "name": "delete-confirm",
+      "name": "delete-ask-again",
       "action": "tap",
       "query": {
         "text": "Delete",
@@ -370,10 +391,36 @@
       }
     },
     {
+      "name": "delete-ask-again-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
+      "name": "delete-question-again",
+      "action": "waitFor",
+      "query": {
+        "text": "Keep",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "delete-confirm",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button",
+        "near": {
+          "text": "Keep",
+          "role": "button"
+        }
+      }
+    },
+    {
       "name": "deleted",
       "action": "waitFor",
       "query": {
-        "text": "Edit Evening focus",
+        "text": "Actions for Evening focus",
         "role": "button"
       },
       "state": "absent"

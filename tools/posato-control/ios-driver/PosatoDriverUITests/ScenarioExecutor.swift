@@ -16,6 +16,9 @@ final class ScenarioExecutor {
   private static let revealAttempts = 8
   private static let keyboardSettle: TimeInterval = 0.3
   private static let extraDeletes = 3
+  private static let clearRounds = 3
+  private static let stillRounds = 10
+  private static let stillInterval: TimeInterval = 0.1
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
   private static let edgeInset: CGFloat = 2
@@ -141,7 +144,7 @@ final class ScenarioExecutor {
     case "waitFor":
       try waitFor(step, timeout: timeout)
     case "tap":
-      tap(try existingElement(step.query, timeout: timeout, action: step.action))
+      try tap(try existingElement(step.query, timeout: timeout, action: step.action))
     case "type":
       try type(step, timeout: timeout)
     case "press":
@@ -173,6 +176,11 @@ final class ScenarioExecutor {
       try pressKeys(step, timeout: timeout)
     case "swipeBack":
       swipeBack()
+    case "swipeLeft":
+      try element(for: step.query, action: "swipeLeft").swipeLeft()
+      Thread.sleep(forTimeInterval: Self.scrollSettle)
+    case "adjustWheels":
+      try adjustWheels(step, timeout: timeout)
     case "terminate":
       app.terminate()
     case "relaunch":
@@ -185,6 +193,25 @@ final class ScenarioExecutor {
   }
 
   // MARK: - Actions
+
+  /// Turns the wheels of a system picker to `values`, first wheel first: the wheels inside the element `query`
+  /// matches, or the first picker on screen, such as the popover a compact time picker opens.
+  private func adjustWheels(_ step: Step, timeout: TimeInterval) throws {
+    guard let values = step.values, !values.isEmpty else {
+      throw DriverError(.scenarioInvalid, "adjustWheels requires values")
+    }
+    let scope: XCUIElement =
+      try step.query.map { try existingElement($0, timeout: timeout, action: step.action) } ?? app
+    let wheels = scope.pickerWheels
+    guard wheels.firstMatch.waitForExistence(timeout: timeout), wheels.count >= values.count else {
+      throw DriverError(
+        .elementNotFound, "found \(wheels.count) picker wheels for \(values.count) values")
+    }
+    for (position, value) in values.enumerated() {
+      wheels.element(boundBy: position).adjust(toPickerWheelValue: value)
+    }
+    Thread.sleep(forTimeInterval: Self.scrollSettle)
+  }
 
   /// Brings another application forward without terminating it, for example to observe a Screen Time shield.
   private func launchApp(_ step: Step, timeout: TimeInterval) throws {
@@ -261,11 +288,34 @@ final class ScenarioExecutor {
     throw DriverError(.waitTimeout, "the application did not settle within \(timeout) s")
   }
 
-  private func tap(_ element: XCUIElement) {
+  /// Taps a hittable element directly and any other at its centre. An element whose centre is
+  /// off screen, such as a button on a screen sliding away, fails the step instead of aborting
+  /// the whole run with a synthesized touch at an impossible point.
+  private func tap(_ element: XCUIElement) throws {
+    waitUntilStill(element)
     if element.isHittable {
       element.tap()
-    } else {
-      element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      return
+    }
+    let frame = element.frame
+    let onScreen =
+      !frame.isEmpty && frame.midX.isFinite && frame.midY.isFinite
+      && Self.isVisible(element, in: app.frame)
+    guard onScreen else {
+      throw DriverError(.elementNotFound, "the matched element is not on screen")
+    }
+    element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+  }
+
+  /// Waits briefly until the element stops moving, so a tap does not land while a pushed screen
+  /// is still sliding in under it.
+  private func waitUntilStill(_ element: XCUIElement) {
+    var previous = element.frame
+    for _ in 0..<Self.stillRounds {
+      Thread.sleep(forTimeInterval: Self.stillInterval)
+      let current = element.frame
+      if current == previous { return }
+      previous = current
     }
   }
 
@@ -287,10 +337,26 @@ final class ScenarioExecutor {
       Thread.sleep(forTimeInterval: Self.keyboardSettle)
       let deletes = currentValue.count + Self.extraDeletes
       app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: deletes))
+      clearRemainder(placeholder: field.placeholderValue)
     }
     app.typeText(text)
     if step.submit == true {
       app.typeText("\n")
+    }
+  }
+
+  /// Deletes whatever a burst of deletes left behind: a text view can drop keystrokes while it
+  /// settles, so the focused field is read back and emptied in a few bounded rounds.
+  private func clearRemainder(placeholder: String?) {
+    let focused = app.descendants(matching: .any)
+      .matching(NSPredicate(format: "hasKeyboardFocus == 1")).firstMatch
+    for _ in 0..<Self.clearRounds {
+      Thread.sleep(forTimeInterval: Self.keyboardSettle)
+      guard focused.exists else { return }
+      let left = SnapshotSerializer.valueText(focused.value) ?? ""
+      if left.isEmpty || left == placeholder { return }
+      let deletes = left.count + Self.extraDeletes
+      app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: deletes))
     }
   }
 
@@ -482,8 +548,10 @@ final class ScenarioExecutor {
     Thread.sleep(forTimeInterval: Self.scrollSettle)
   }
 
+  /// The visible text with its position, so a pan that moves long paragraphs without bringing a new one into view
+  /// still counts as progress.
   private static func scrollLabels(_ node: SnapshotNode) -> [String] {
-    let own = node.role == "text" ? [node.label ?? ""] : []
+    let own = node.role == "text" ? ["\(node.label ?? "")@\(Int(node.frame.y))"] : []
     return own + node.children.flatMap(scrollLabels)
   }
 

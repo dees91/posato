@@ -19,14 +19,15 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoSectionHeader
-import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwitchRow
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.feature.notifications.NotificationPermission
 import app.posato.feature.notifications.SessionNotifier
@@ -49,6 +50,8 @@ internal fun AboutScreen(
     modifier: Modifier = Modifier,
     updates: ApplicationUpdates? = null,
     notifications: SessionNotifier? = null,
+    barBackLabel: String? = null,
+    barRoot: Boolean = false,
 ) {
     val version = remember { applicationVersion() }
     val updatesContent: (@Composable () -> Unit)? = updates?.let { source ->
@@ -62,7 +65,7 @@ internal fun AboutScreen(
     val notificationsContent: (@Composable () -> Unit)? = notifications?.let { notifier ->
         { NotificationsSection(notifier) }
     }
-    AboutScreen(version, onOpenLicenses, onBack, modifier, updatesContent, notificationsContent)
+    AboutScreen(version, onOpenLicenses, onBack, modifier, barBackLabel, barRoot, notificationsContent, updatesContent)
 }
 
 @Composable
@@ -75,7 +78,7 @@ private fun NotificationsSection(notifier: SessionNotifier) {
         PosatoSectionHeader(titleContent = {
             Text(stringResource(Res.string.notification_section_title), style = MaterialTheme.typography.titleMedium)
         })
-        PosatoSelectionRow(
+        PosatoSwitchRow(
             checked = settings.enabled && !denied,
             onCheckedChange = { enabled -> scope.launch { notifier.setEnabled(enabled) } },
             enabled = !denied,
@@ -94,9 +97,25 @@ internal fun AboutScreen(
     onOpenLicenses: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    updatesContent: (@Composable () -> Unit)? = null,
+    barBackLabel: String? = null,
+    barRoot: Boolean = false,
     notificationsContent: (@Composable () -> Unit)? = null,
+    updatesContent: (@Composable () -> Unit)? = null,
 ) {
+    // With a bar, About is either pushed over a destination and leads back to it, or, chosen in the iPad's sidebar,
+    // a root screen under its own large title.
+    if (barBackLabel != null || barRoot) {
+        PosatoBarScreen(
+            title = "About Posato",
+            modifier = modifier,
+            largeTitle = barRoot,
+            backLabel = barBackLabel,
+            onBack = onBack.takeUnless { barRoot },
+        ) {
+            AboutBody(version, onOpenLicenses, updatesContent, notificationsContent)
+        }
+        return
+    }
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back") }
         Text("About Posato", modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
@@ -104,19 +123,29 @@ internal fun AboutScreen(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
-            PosatoCaption(version?.let { "Version $it" } ?: "Version unavailable")
-            PosatoBody("A little space. For what matters.")
-            PosatoBody("Posato helps you step away from selected websites and apps for a while. A quiet pause between impulse and action.")
-            PosatoBody("Open source. No Posato account, analytics, or Posato-operated server.")
-            notificationsContent?.invoke()
-            updatesContent?.invoke()
-            PosatoDisclosureRow(
-                onClick = onOpenLicenses,
-                headlineContent = { Text("Licenses", style = MaterialTheme.typography.bodyLarge) },
-                supportingContent = { PosatoCaption("License and third-party notices") },
-            )
+            AboutBody(version, onOpenLicenses, updatesContent, notificationsContent)
         }
     }
+}
+
+@Composable
+private fun AboutBody(
+    version: String?,
+    onOpenLicenses: () -> Unit,
+    updatesContent: (@Composable () -> Unit)?,
+    notificationsContent: (@Composable () -> Unit)?,
+) {
+    PosatoCaption(version?.let { "Version $it" } ?: "Version unavailable")
+    PosatoBody("A little space. For what matters.")
+    PosatoBody("Posato helps you step away from selected websites and apps for a while. A quiet pause between impulse and action.")
+    PosatoBody("Open source. No Posato account, analytics, or Posato-operated server.")
+    notificationsContent?.invoke()
+    updatesContent?.invoke()
+    PosatoDisclosureRow(
+        onClick = onOpenLicenses,
+        headlineContent = { Text("Licenses", style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = { PosatoCaption("License and third-party notices") },
+    )
 }
 
 @Composable
@@ -127,7 +156,7 @@ private fun UpdatesSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
         PosatoSectionHeader(titleContent = { Text(stringResource(Res.string.update_section_title), style = MaterialTheme.typography.titleMedium) })
-        PosatoSelectionRow(
+        PosatoSwitchRow(
             checked = state.automaticChecks,
             onCheckedChange = onAutomaticChecksChange,
             supportingContent = { PosatoCaption(stringResource(Res.string.update_automatic_checks_supporting)) },

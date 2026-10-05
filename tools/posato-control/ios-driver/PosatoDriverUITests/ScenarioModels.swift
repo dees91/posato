@@ -106,6 +106,8 @@ struct Step: Codable {
   var secret: String?
   /// A missing element does not fail the step, for surfaces that only appear on some paths.
   var optional: Bool?
+  /// The values `adjustWheels` turns a picker's wheels to, first wheel first.
+  var values: [String]?
 
   init(action: String, name: String? = nil, query: ElementQuery? = nil) {
     self.action = action

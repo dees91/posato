@@ -17,7 +17,7 @@
     {"name":"request-early-end","action":"tap","query":{"text":"End session early","role":"button"}},
     {"name":"confirm-open","action":"waitFor","state":"exists","query":{"text":"Ready to return?"}},
     {"name":"confirm-end","action":"tap","query":{"text":"End session","role":"button"}},
-    {"name":"inactive-again","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
+    {"name":"inactive-again","action":"waitFor","state":"exists","query":{"text":"Start a session","role":"button"}},
     {"name":"ended-shot","action":"screenshot"},
     {"name":"ended-tree","action":"snapshot"}
   ]

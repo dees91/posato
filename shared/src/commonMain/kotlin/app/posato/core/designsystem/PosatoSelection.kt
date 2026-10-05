@@ -1,23 +1,41 @@
 package app.posato.core.designsystem
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import app.posato.core.navigation.platformReducesMotion
 
 @Composable
 internal fun PosatoToggleButton(
@@ -27,10 +45,14 @@ internal fun PosatoToggleButton(
     enabled: Boolean = true,
     label: @Composable () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     FilterChip(
-        modifier = modifier.heightIn(min = PosatoSize.Control),
+        modifier = modifier.heightIn(min = PosatoSize.Control)
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small),
         selected = selected,
         onClick = onClick,
+        interactionSource = interaction,
         enabled = enabled,
         label = label,
         shape = MaterialTheme.shapes.small,
@@ -68,8 +90,9 @@ internal fun PosatoChoiceTile(
     }
 }
 
+/** An on/off setting: its label and explanation, with a switch on the trailing edge. The whole row toggles. */
 @Composable
-internal fun PosatoSelectionRow(
+internal fun PosatoSwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -77,29 +100,68 @@ internal fun PosatoSelectionRow(
     supportingContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val palette = MaterialTheme.colorScheme
-    Surface(
-        modifier = modifier.semantics { role = Role.Checkbox },
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        enabled = enabled,
-        color = if (checked) palette.secondaryContainer else palette.surface,
-        border = BorderStroke(PosatoSpace.Hairline, if (checked) palette.primary else palette.outlineVariant),
-        shape = MaterialTheme.shapes.medium,
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
+    Row(
+        modifier = modifier.heightIn(min = PosatoSize.Control)
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                interactionSource = interaction,
+                indication = null,
+                onValueChange = onCheckedChange,
+            )
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
+            .padding(vertical = PosatoSpace.Small),
+        horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            Modifier.padding(PosatoSpace.Medium),
-            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                content()
-                supportingContent?.invoke()
-            }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
+            ProvideTextStyle(MaterialTheme.typography.bodyLarge) { content() }
+            supportingContent?.invoke()
         }
+        PosatoSwitch(checked = checked, enabled = enabled)
     }
 }
+
+/** The switch drawn in the app's palette: a pill track and a round thumb that springs across. */
+@Composable
+internal fun PosatoSwitch(
+    checked: Boolean,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    val palette = MaterialTheme.colorScheme
+    val light = posatoIsLight()
+    val travel by animateFloatAsState(
+        targetValue = if (checked) 1f else 0f,
+        animationSpec = if (platformReducesMotion()) snap() else spring(dampingRatio = SWITCH_DAMPING, stiffness = Spring.StiffnessMediumLow),
+        label = "switchTravel",
+    )
+    val offTrack = if (light) lerp(palette.outline, palette.onSurfaceVariant, OFF_TRACK_DARKENING) else palette.outline
+    val track = lerp(offTrack, palette.primary, travel)
+    val thumb = if (light) Color.White else palette.onSurface
+    val switchSize = if (platformUsesCupertinoChrome) TouchSwitchSize else PointerSwitchSize
+    Canvas(
+        modifier.size(switchSize).graphicsLayer { alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA },
+    ) {
+        val radius = size.height / 2
+        drawRoundRect(track, cornerRadius = CornerRadius(radius))
+        val inset = SwitchInset.toPx()
+        val thumbRadius = radius - inset
+        val x = radius + (size.width - 2 * radius) * travel
+        drawCircle(Color.Black.copy(alpha = THUMB_SHADOW), thumbRadius, Offset(x, radius + inset / 2))
+        drawCircle(thumb, thumbRadius, Offset(x, radius))
+    }
+}
+
+private val TouchSwitchSize = DpSize(51.dp, 31.dp)
+private val PointerSwitchSize = DpSize(38.dp, 22.dp)
+private val SwitchInset = 2.dp
+private const val OFF_TRACK_DARKENING = 0.5f
+private const val SWITCH_DAMPING = 0.75f
+private const val THUMB_SHADOW = 0.12f
 
 @Composable
 internal fun PosatoDurationChoice(
@@ -132,11 +194,11 @@ private fun PosatoSelectionPreview() {
             PosatoChoiceTile(selected = true, onClick = {}) { Text("Selected") }
             PosatoChoiceTile(selected = false, onClick = {}, enabled = false) { Text("Disabled") }
         }
-        PosatoSelectionRow(checked = true, onCheckedChange = {}, supportingContent = { PosatoCaption("On this device only") }) {
-            Text("Selected applications")
+        PosatoSwitchRow(checked = true, onCheckedChange = {}, supportingContent = { PosatoCaption("A notice when a pause ends.") }) {
+            Text("Pause notifications")
         }
-        PosatoSelectionRow(checked = false, onCheckedChange = {}) { Text("Available selection") }
-        PosatoSelectionRow(checked = true, onCheckedChange = {}, enabled = false) { Text("Disabled selection") }
+        PosatoSwitchRow(checked = false, onCheckedChange = {}) { Text("Schedule on") }
+        PosatoSwitchRow(checked = true, onCheckedChange = {}, enabled = false) { Text("Unavailable setting") }
     }
 }
 

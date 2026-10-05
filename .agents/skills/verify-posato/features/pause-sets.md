@@ -11,7 +11,7 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   and Set up this Mac): the update notice on the first visit, New set with a
   website, Make default, Rename, a schedule saved off with the default set
   preselected, the set choice in Session setup and `Set: <name>` in Review,
-  Delete with **Change their set**, the limit of ten with **New set** disabled,
+  Delete with **Move to My set and delete**, the limit of ten with **New set** disabled,
   and no notice after a relaunch. A schedule saved on can start while the run
   continues; the recipe saves it off for that reason.
 - `pause-sets-device.json` (test iPhone): "Apps on this iPhone" wording, a new
@@ -23,10 +23,13 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   `textContains` and role `button` (`"Work"`, `"My set"`). The sidebar button
   `Pause sets` also contains "Pause set", so query the setup row as
   `textContains "Pause set,"`.
-- Each row and the set screen have `More actions for <name>` with Rename,
-  Make default (not on the default), and Delete (not on the default).
-- The set choice dialog lists rows as buttons `<name>, <n> websites`, the
-  default as `<name> (default), <n> websites`.
+- On the Mac each row and the set screen have `More actions for <name>` with
+  Rename, Make default (not on the default), and Delete (not on the default).
+  On iOS a row slides out Rename and Delete under `swipeLeft`, and the set
+  screen's bar keeps `More actions for <name>` with all three.
+- The set choice is a `Pause set, <current>` button (on iOS a system pop-up
+  labelled `Pause set` with the set as its value) whose menu rows read
+  `<name>, <n> websites`, the default as `<name>, Default · <n> websites`.
 - Delete is refused while a running session or schedule uses the set; the
   set screen then says removed items stay paused until that pause ends.
 - A run that links iCloud ends with Remove workspace before `vm destroy`.

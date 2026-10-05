@@ -5,12 +5,12 @@
   "onFailure": { "screenshot": true, "snapshot": true },
   "steps": [
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Pause sets", "role": "button" } },
-    { "name": "home-inactive", "action": "waitFor", "state": "exists", "query": { "text": "NO SESSION ACTIVE" } },
+    { "name": "home-inactive", "action": "waitFor", "state": "exists", "query": { "text": "No session active" } },
     { "name": "begin-setup", "action": "tap", "query": { "text": "Start a session", "role": "button" } },
-    { "name": "setup-open", "action": "waitFor", "state": "exists", "query": { "text": "YOUR NEXT PAUSE" } },
+    { "name": "setup-open", "action": "waitFor", "state": "exists", "query": { "text": "Review session", "role": "button" } },
     { "name": "preset", "action": "tap", "query": { "text": "25 min", "role": "button" } },
     { "name": "continue-review", "action": "tap", "query": { "text": "Review session", "role": "button" } },
-    { "name": "review-open", "action": "waitFor", "state": "exists", "query": { "text": "ONE LAST LOOK" } },
+    { "name": "review-open", "action": "waitFor", "state": "exists", "query": { "text": "Start this pause", "role": "button" } },
     { "name": "start", "action": "tap", "query": { "text": "Start this pause", "role": "button" } },
     { "name": "active", "action": "waitFor", "state": "exists", "query": { "text": "End session early", "role": "button" } },
     { "name": "open-app-before", "action": "launchApp", "bundleId": "com.apple.calculator" },
@@ -27,11 +27,13 @@
     { "name": "open-app-after", "action": "launchApp", "bundleId": "com.apple.calculator" },
     { "name": "app-shielded-after", "action": "waitFor", "state": "exists", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
     { "name": "open-site-after", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-blocked-first-load", "action": "waitFor", "state": "exists", "optional": true, "timeoutSeconds": 20, "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
+    { "name": "open-site-again", "action": "openURL", "url": "http://example.com/" },
     { "name": "site-blocked-after", "action": "waitFor", "state": "exists", "timeoutSeconds": 45, "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
     { "name": "return-after", "action": "launchApp", "bundleId": "app.posato.ios" },
     { "name": "request-early-end", "action": "tap", "query": { "text": "End session early", "role": "button" } },
     { "name": "confirm-open", "action": "waitFor", "state": "exists", "query": { "text": "Ready to return?" } },
     { "name": "confirm-end", "action": "tap", "query": { "text": "End session", "role": "button" } },
-    { "name": "inactive-again", "action": "waitFor", "state": "exists", "query": { "text": "NO SESSION ACTIVE" } }
+    { "name": "inactive-again", "action": "waitFor", "state": "exists", "query": { "text": "No session active" } }
   ]
 }

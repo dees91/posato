@@ -2532,3 +2532,14 @@ to scope, feasibility, or delivery.
   backlog row `MACOS-027` owns the reproduction and fix and changes no
   release.
 
+
+## [2026-10-05] design | One shared interface that adapts per platform
+
+- `user-confirmed`: `DESIGN-004` keeps one Compose interface and adapts it:
+  iOS gets a UIKit-like stack with bars, large titles, system menus, alerts,
+  pickers, swipe actions, and an iPad sidebar in landscape; the Mac keeps its
+  drawn controls; Material stays the Android flavour. `DESIGN.md` gains the
+  Platform Adaptation section and idea 30 records the decision.
+- `observed`: the native audit rose from 12/20 to 15/20 with no open P0 or
+  P1. `posato-control` drives the new interface with `adjustWheels` for system
+  pickers, and verify-posato describes how iOS and the Mac drive differently.

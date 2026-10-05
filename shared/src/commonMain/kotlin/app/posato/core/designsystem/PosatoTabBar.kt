@@ -1,6 +1,7 @@
 package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -13,8 +14,11 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -29,7 +33,7 @@ internal fun PosatoTabBar(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
             modifier = Modifier.padding(PosatoSpace.Tiny).selectableGroup(),
@@ -46,18 +50,23 @@ internal fun PosatoTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    role: Role = Role.Tab,
     countContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     val contentAlpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Surface(
-        modifier = modifier.semantics { role = Role.Tab },
+        modifier = modifier.semantics { this.role = role }
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium),
         selected = selected,
         onClick = onClick,
+        interactionSource = interaction,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
-        color = if (selected) MaterialTheme.colorScheme.surface else PosatoControlDefaults.Transparent,
+        color = if (selected) selectedSegmentColor() else PosatoControlDefaults.Transparent,
         border = if (selected) BorderStroke(PosatoSpace.Hairline, MaterialTheme.colorScheme.outlineVariant) else null,
         contentColor = contentColor.copy(alpha = contentAlpha),
     ) {
@@ -75,6 +84,13 @@ internal fun PosatoTab(
             }
         }
     }
+}
+
+/** The selected segment stands lighter than its track in both appearances, as a raised piece does. */
+@Composable
+private fun selectedSegmentColor(): Color {
+    val palette = MaterialTheme.colorScheme
+    return if (posatoIsLight()) palette.surfaceContainerLowest else palette.surfaceContainerHighest
 }
 
 @Preview(name = "Counted tabs", widthDp = 390)

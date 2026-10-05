@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -23,14 +24,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import app.posato.core.designsystem.PosatoActionRow
+import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarContentTop
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -41,11 +48,14 @@ import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoItemRow
 import app.posato.core.designsystem.PosatoItemSymbol
+import app.posato.core.designsystem.PosatoNavigationBar
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSection
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoTypography
+import app.posato.core.designsystem.barColumn
 import app.posato.core.designsystem.platformDevice
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.ui.TargetsCategory
@@ -56,19 +66,21 @@ internal fun SessionSelectionSummary(
     state: SessionUiState,
     deviceLabel: String,
     onEditItems: (TargetsCategory) -> Unit,
+    onShowItems: ((TargetsCategory) -> Unit)? = null,
 ) {
     var details by remember { mutableStateOf<TargetsCategory?>(null) }
+    val show = onShowItems ?: { category: TargetsCategory -> details = category }
     val domains = state.displayDomains()
     val applicationCount = state.displayApplicationCount()
     PosatoSection(titleContent = { Text(summaryTitle(state)) }) {
         PosatoDisclosureRow(
-            onClick = { details = TargetsCategory.WEBSITES },
+            onClick = { show(TargetsCategory.WEBSITES) },
             headlineContent = { Text(if (domains.size == 1) "1 website" else "${domains.size} websites") },
             supportingContent = { PosatoCaption("Selected websites · view all") },
             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         )
         PosatoDisclosureRow(
-            onClick = { details = TargetsCategory.APPLICATIONS },
+            onClick = { show(TargetsCategory.APPLICATIONS) },
             headlineContent = {
                 Text(applicationCount?.let { if (it == 1) "1 application" else "$it applications" } ?: "Applications unavailable")
             },
@@ -109,6 +121,66 @@ internal fun SessionSelectionSummary(
     }
 }
 
+/**
+ * The selected items as a screen pushed over Session on iOS, in place of the sheet: the bar leads back, Edit opens
+ * the shown category for editing, and the websites keep their filter field at the top of the list.
+ */
+@Composable
+internal fun SessionSelectionScreen(
+    state: SessionUiState,
+    initialCategory: TargetsCategory,
+    backLabel: String,
+    inset: Dp,
+    onBack: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    var category by rememberSaveable { mutableStateOf(initialCategory) }
+    val search = rememberTextFieldState()
+    val scroll = rememberLazyListState()
+    LaunchedEffect(category, search.text.toString()) { scroll.scrollToItem(0) }
+    // The tab frame below reserves the keyboard's height for the whole pane.
+    Column(Modifier.fillMaxSize()) {
+        PosatoNavigationBar(
+            title = selectionPanelTitle(state, category),
+            backLabel = backLabel,
+            onBack = onBack,
+            edgeInset = inset,
+            separatorAlpha = { if (scroll.canScrollBackward) 1f else 0f },
+            trailingContent = {
+                PosatoBarButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        onBack()
+                        onEditItems(category)
+                    },
+                    modifier = Modifier.semantics {
+                        contentDescription = if (category == TargetsCategory.WEBSITES) "Add or edit websites" else "Manage apps"
+                    },
+                ) { Text("Edit", style = PosatoTypography.BarAction) }
+            },
+        )
+        Column(
+            Modifier.weight(1f).barColumn().padding(horizontal = inset).padding(top = PosatoBarContentTop),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
+        ) {
+            TargetsCategoryTabs(category, state.displayDomains().size, state.applicationMappings.size) {
+                focusManager.clearFocus()
+                category = it
+            }
+            PersistedStartSetCaption(state, category)
+            SessionSelectionPanelList(
+                state,
+                category,
+                search,
+                scroll,
+                filterVisible = state.displayDomains().isNotEmpty(),
+                Modifier.weight(1f),
+            )
+        }
+    }
+}
+
 @Composable
 private fun SessionSelectionPanel(
     state: SessionUiState,
@@ -133,15 +205,7 @@ private fun SessionSelectionPanel(
             focusManager.clearFocus()
             category = it
         }
-        if (state.showsPersistedStartSet()) {
-            PosatoCaption(
-                if (category == TargetsCategory.WEBSITES) {
-                    "These websites were selected at session start. The action below edits this pause's set."
-                } else {
-                    "These apps are in this pause's set now. The Session summary keeps the count from session start."
-                },
-            )
-        }
+        PersistedStartSetCaption(state, category)
         PosatoActionRow {
             PosatoButton(
                 onClick = {
@@ -156,6 +220,22 @@ private fun SessionSelectionPanel(
             }
         }
         SessionSelectionPanelList(state, category, search, scroll, filterVisible, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun PersistedStartSetCaption(
+    state: SessionUiState,
+    category: TargetsCategory,
+) {
+    if (state.showsPersistedStartSet()) {
+        PosatoCaption(
+            if (category == TargetsCategory.WEBSITES) {
+                "These websites were selected at session start. Editing changes this pause's set."
+            } else {
+                "These apps are in this pause's set now. The Session summary keeps the count from session start."
+            },
+        )
     }
 }
 

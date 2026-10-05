@@ -42,7 +42,8 @@ provenance rather than a parallel public brand.
   releases after 1.0.0 with their rows, waves, backlog, and the idea intake
   rule.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
-  product design system for the Apple MVP.
+  product design system, including how the shared interface adapts to iOS,
+  the Mac, and Android (Platform Adaptation).
 - [Prototype design reference](../../prototypes/mvp-interaction-flow/DESIGN.md)
   — implemented mock tokens, components, native layouts, and interactions;
   evidence for consolidation, not production acceptance.

@@ -32,3 +32,7 @@ internal actual fun platformTheme(): PlatformTheme {
 internal actual fun platformDevice(): PosatoDevice {
     return if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) PosatoDevice.IPad else PosatoDevice.IPhone
 }
+
+internal actual val platformUsesCupertinoChrome: Boolean = true
+
+internal actual val platformUsesMaterialRipple: Boolean = false

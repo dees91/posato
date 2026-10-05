@@ -96,9 +96,7 @@ private fun PosatoItemRowPreview() {
                 headlineContent = { Text("example.com") },
                 leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
                 trailingContent = {
-                    PosatoItemMenu("Actions for example.com") { dismiss ->
-                        PosatoItemMenuAction(onClick = dismiss, destructive = true) { Text("Remove") }
-                    }
+                    DrawnItemMenu("Actions for example.com", listOf(PosatoMenuItem("Remove", {}, destructive = true)))
                 },
             )
             PosatoItemRow(

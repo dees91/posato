@@ -46,6 +46,7 @@ data class Step(
     val url: String? = null,
     val secret: String? = null,
     val optional: Boolean = false,
+    val values: List<String> = emptyList(),
 )
 
 @Serializable
@@ -75,7 +76,9 @@ object Actions {
     const val OPEN_URL = "openURL"
     const val PRESS_KEYS = "pressKeys"
     const val SWIPE_BACK = "swipeBack"
-    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK)
+    const val SWIPE_LEFT = "swipeLeft"
+    const val ADJUST_WHEELS = "adjustWheels"
+    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
     val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }
 

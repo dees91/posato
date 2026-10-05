@@ -36,13 +36,51 @@ feature file as the recipe.
 - Main navigation is at the bottom on iPhone and iPad portrait, and in the
   sidebar on Mac and iPad landscape.
   Nested category-tab labels include counts; use `textContains` with role
-  `button`. Open a row's `Actions for <name>` menu before Edit or Remove.
+  `button`. On the Mac open a row's `Actions for <name>` menu before Edit or
+  Remove; on iOS see the next section.
 - Each website mode has one text field, selected with `--role textField`.
   Return submits the add batch and keeps focus; tap `Done` to dismiss the
   keyboard and restore the iOS bottom navigation.
 - Use scenario `scrollTo` for offscreen rows on both targets. Do not substitute
   Tab counts or database writes for the real list interaction.
 - Prefer `run --scenario <file>` over many single commands on iOS.
+
+## iOS and the Mac drive differently
+
+Since `DESIGN-004` one shared interface adapts per platform. The Mac keeps the
+drawn controls and in-page links; iOS uses the system's navigation and controls.
+On iOS:
+
+- Every pushed screen has a bar whose back button reads `Back to <previous
+  title>`, for example `Back to Session`, `Back to Schedules`, `Back to Pause
+  sets`, or `Back to <set name>`. The Mac's in-page links stay lower case
+  (`Back to schedules`, `Back to pause sets`). Session's setup has no Cancel or
+  Change duration on iOS; go back with the bar.
+- Status labels are sentence case (`No session active`), and screen eyebrows
+  such as `YOUR NEXT PAUSE` and `ONE LAST LOOK` are absent; wait for a control
+  of the screen instead, such as `Review session` or `Start this pause`.
+- Rows have no `Actions for <name>` button. A website row edits on a tap and
+  removes with `swipeLeft` on its text, then `Remove`; an app row and a pause
+  set row work the same way (`Remove`; `Rename` or `Delete`). A schedule row
+  edits on a tap, and `swipeLeft` reveals `Skip next` and `Delete`. The set
+  screen keeps its bar menu, `More actions for <name>`.
+- Questions are system alerts: ending a pause early (`Ready to return?`, `End
+  session`), deleting a schedule (`Delete <name>?`, `Keep` or `Delete`),
+  naming a set (`Save`, `Cancel`), and deleting one (`Delete <name>?`,
+  `Delete` or `Move to <set> and delete`).
+- Times use the system pickers. A schedule's Starts and Ends are compact pickers
+  labelled `Time Picker` (Starts first, value `09:00`): tap one, run
+  `adjustWheels` with `["10","30"]`, then tap the element with id
+  `PopoverDismissRegion`. Session setup's length is a countdown wheel: run
+  `adjustWheels` with `["0","30"]`. The wheels follow a 24-hour clock.
+- The pause set is a system pop-up button labelled `Pause set` with the set as
+  its value; its menu rows read `<name>, <detail>`.
+- Session's selected items open as a pushed screen with `Back to Session` and
+  `Edit`; there is no `Close list` or `Filter list`, and the filter field is
+  always shown for websites. `About Posato` is an info symbol in Session's bar,
+  and in the iPad sidebar in landscape.
+- Prefer `flow set`, `flow schedule`, and `flow session`: they follow both
+  interfaces.
 - Restore data after a mutation. Do not remove proof artifacts during cleanup.
 
 ## Proof and skip reporting
@@ -77,7 +115,7 @@ handles, required state, commands, and observable proof.
 ## Features
 
 - [Pause sets](./pause-sets.md) covers the set list, creating, renaming,
-  choosing the default, deleting with Change their set, and the set choice in
+  choosing the default, deleting with Move to <set> and delete, and the set choice in
   Session and schedules.
 - [Schedules](./schedules.md) covers adding, validating, skipping, editing,
   turning off, deleting and persisting schedules, device readiness and sync.

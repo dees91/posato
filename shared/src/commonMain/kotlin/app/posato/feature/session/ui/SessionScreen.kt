@@ -2,11 +2,11 @@ package app.posato.feature.session.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,12 +18,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoHeading
@@ -32,6 +34,7 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacHelperSetupUiState
@@ -75,6 +78,7 @@ internal fun SessionScreen(
     scheduledPauses: ScheduledPauses? = null,
     notPausedYet: StateFlow<Int>? = null,
     deviceNoun: String = "device",
+    onOpenAbout: (() -> Unit)? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
@@ -116,6 +120,7 @@ internal fun SessionScreen(
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
         pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count, deviceNoun) },
+        onOpenAbout = onOpenAbout,
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
         onSetDuration = viewModel::setDurationMinutes,
@@ -199,7 +204,7 @@ internal class ScheduledEndActions(
     val onCancel: () -> Unit = {},
 )
 
-private val PosatoLayout.screenInset: Dp
+internal val PosatoLayout.screenInset: Dp
     get() {
         return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
     }
@@ -231,24 +236,30 @@ internal fun SessionScreen(
     scheduled: ScheduledPauseView? = null,
     scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
     pauseNotice: String? = null,
+    onOpenAbout: (() -> Unit)? = null,
 ) {
     val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
-    val stack = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming)
+    var shownItems by rememberSaveable { mutableStateOf<TargetsCategory?>(null) }
+    val flow = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming, platformUsesCupertinoChrome)
+    val stack = if (shownItems != null) flow + SessionRoute.Items else flow
+    val showItems = { category: TargetsCategory -> shownItems = category }.takeIf { platformUsesCupertinoChrome }
+    val backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress())
     PosatoNavStack(
         stack,
         onBack = {
-            stack.last().back(scheduledEnd.onCancel, onCancelEarlyEnd, onExitReview, onExitSetup) {
+            stack.last().back(scheduledEnd.onCancel, onCancelEarlyEnd, onExitReview, onExitSetup, { shownItems = null }) {
                 macActions.leave()
                 onExitSetup()
             }
         },
         modifier = modifier.fillMaxSize(),
-        backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress()),
+        backEnabled = backEnabled,
     ) { route ->
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
-            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
-        ) {
+        if (route == SessionRoute.Items) {
+            SessionItemsRoute(state, rememberLastPresent(shownItems), flow.last(), { shownItems = null }, onEditPausedItems)
+            return@PosatoNavStack
+        }
+        val routeBody: @Composable ColumnScope.() -> Unit = {
             SessionOperationNotice(state, onRetry)
             SessionRouteContent(
                 route = route,
@@ -276,8 +287,13 @@ internal fun SessionScreen(
                 scheduled = scheduled,
                 scheduledEnd = scheduledEnd,
                 pauseNotice = pauseNotice,
+                onShowItems = showItems,
             )
         }
+        SessionRouteFrame(route, layout, onOpenAbout, onExitSetup, onExitReview, backEnabled, routeBody)
+    }
+    if (platformUsesCupertinoChrome) {
+        SessionEarlyEndAlerts(state, scheduled, scheduledEnd, onConfirmEarlyEnd, onCancelEarlyEnd)
     }
 }
 
@@ -308,6 +324,7 @@ private fun SessionRouteContent(
     scheduled: ScheduledPauseView?,
     scheduledEnd: ScheduledEndActions,
     pauseNotice: String?,
+    onShowItems: ((TargetsCategory) -> Unit)?,
 ) {
     when (route) {
         SessionRoute.ScheduledEarlyEnd -> {
@@ -325,7 +342,7 @@ private fun SessionRouteContent(
         }
 
         SessionRoute.Review -> {
-            SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry)
+            SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry, onShowItems)
         }
 
         SessionRoute.Duration -> {
@@ -350,20 +367,28 @@ private fun SessionRouteContent(
                     scheduled,
                     scheduledEnd.onRequest,
                     pauseNotice,
+                    onShowItems,
                 )
             }
         }
+
+        // The pushed items screen has its own bar and list, so SessionScreen draws it without a route body.
+        SessionRoute.Items -> {}
     }
 }
 
-/** Session's screens: the overview, a confirmation or setup flow above it, and review above duration. */
-private enum class SessionRoute {
+/**
+ * Session's screens: the overview, a confirmation or setup flow above it, and review above duration. On iOS the
+ * selected items are pushed as [Items] over the screen that lists them.
+ */
+internal enum class SessionRoute {
     Overview,
     Duration,
     Review,
     MacSetup,
     EarlyEnd,
     ScheduledEarlyEnd,
+    Items,
 }
 
 private fun SessionRoute.back(
@@ -371,6 +396,7 @@ private fun SessionRoute.back(
     onCancelEarlyEnd: () -> Unit,
     onExitReview: () -> Unit,
     onExitSetup: () -> Unit,
+    onCloseItems: () -> Unit,
     onLeaveMacSetup: () -> Unit,
 ) {
     when (this) {
@@ -394,6 +420,10 @@ private fun SessionRoute.back(
             onExitSetup()
         }
 
+        SessionRoute.Items -> {
+            onCloseItems()
+        }
+
         SessionRoute.Overview -> {}
     }
 }
@@ -402,11 +432,12 @@ private fun sessionStack(
     state: SessionUiState,
     showsMacSetup: Boolean,
     confirmingScheduledEnd: Boolean,
+    confirmationsAsAlerts: Boolean,
 ): List<SessionRoute> {
     val top = when {
         state.status == null -> null
-        confirmingScheduledEnd -> SessionRoute.ScheduledEarlyEnd
-        state.confirmingEarlyEnd -> SessionRoute.EarlyEnd
+        confirmingScheduledEnd && !confirmationsAsAlerts -> SessionRoute.ScheduledEarlyEnd
+        state.confirmingEarlyEnd && !confirmationsAsAlerts -> SessionRoute.EarlyEnd
         showsMacSetup -> SessionRoute.MacSetup
         state.isReviewing -> SessionRoute.Review
         state.isSettingUp -> SessionRoute.Duration
@@ -449,7 +480,7 @@ private fun SessionOperationNotice(
 ) {
     if (state.status == null && state.operationFailure == null) {
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-            CircularProgressIndicator()
+            PosatoActivityIndicator()
             Text("Loading session")
         }
     } else {

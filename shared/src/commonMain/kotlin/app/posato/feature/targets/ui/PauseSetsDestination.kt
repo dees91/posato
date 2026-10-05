@@ -10,7 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.core.designsystem.PosatoItemMenu
-import app.posato.core.designsystem.PosatoItemMenuAction
+import app.posato.core.designsystem.PosatoMenuItem
+import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.sync.domain.PauseSetId
 
@@ -28,6 +29,7 @@ internal fun PauseSetsDestination(
     navigation: PauseSetsNavigation,
     deviceNoun: String,
     modifier: Modifier = Modifier,
+    entryModifier: Modifier = Modifier,
     viewModel: PauseSetsViewModel = viewModel { PauseSetsViewModel(inputs) },
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -50,6 +52,7 @@ internal fun PauseSetsDestination(
             )
 
             is PauseSetsRoute.Set -> PauseSetScreen(
+                modifier = entryModifier,
                 inputs = inputs,
                 navigation = navigation,
                 setId = route.id,
@@ -74,6 +77,7 @@ private fun PauseSetScreen(
     onRename: (PauseSetId, String) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val row = state.rows.firstOrNull { candidate -> candidate.id == setId }
     var dialog by remember(setId) { mutableStateOf<PauseSetDialog?>(null) }
@@ -89,6 +93,7 @@ private fun PauseSetScreen(
             inUse = row?.inUse == true,
             menuContent = row?.let { current -> { PauseSetMenu(current, { dialog = it }, onMakeDefault) } },
         ),
+        modifier = modifier,
     )
     when (val current = dialog) {
         is PauseSetDialog.Rename -> {
@@ -117,22 +122,16 @@ internal fun PauseSetMenu(
     onDialog: (PauseSetDialog) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
 ) {
-    PosatoItemMenu("More actions for ${row.name}") { dismiss ->
-        PosatoItemMenuAction({
-            dismiss()
-            onDialog(PauseSetDialog.Rename(row))
-        }) { Text("Rename") }
+    val items = buildList {
+        add(PosatoMenuItem("Rename", { onDialog(PauseSetDialog.Rename(row)) }, PosatoMenuSymbol.Rename))
         if (!row.isDefault && !row.refused) {
-            PosatoItemMenuAction({
-                dismiss()
-                onMakeDefault(row.id)
-            }) { Text("Make default") }
+            add(PosatoMenuItem("Make default", { onMakeDefault(row.id) }, PosatoMenuSymbol.MakeDefault))
         }
-        if (!row.isDefault) {
-            PosatoItemMenuAction({
-                dismiss()
-                onDialog(PauseSetDialog.Delete(row))
-            }, destructive = true) { Text("Delete") }
+        if (row.isDefault) {
+            add(PosatoMenuItem("Delete", {}, PosatoMenuSymbol.Remove, detail = "Make another set the default to delete this one.", enabled = false))
+        } else {
+            add(PosatoMenuItem("Delete", { onDialog(PauseSetDialog.Delete(row)) }, PosatoMenuSymbol.Remove, destructive = true))
         }
     }
+    PosatoItemMenu("More actions for ${row.name}", items)
 }
