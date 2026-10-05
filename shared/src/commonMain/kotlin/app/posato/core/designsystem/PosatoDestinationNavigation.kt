@@ -1,5 +1,6 @@
 package app.posato.core.designsystem
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +14,11 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -28,12 +32,14 @@ internal fun PosatoBottomNavigation(
 ) {
     Column(modifier) {
         PosatoDivider()
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Section, vertical = PosatoSpace.Small).selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
-        )
+        CappedFontScale(TAB_FONT_SCALE_LIMIT) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Section, vertical = PosatoSpace.Small).selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
+                verticalAlignment = Alignment.CenterVertically,
+                content = content,
+            )
+        }
     }
 }
 
@@ -90,17 +96,21 @@ private fun DestinationSurface(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val idle = if (platformUsesCupertinoChrome) {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = IDLE_TAB_ALPHA)
+    val idle = if (platformUsesCupertinoChrome && !posatoIsLight()) {
+        lerp(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurfaceVariant, IDLE_TAB_DARK_SHARE)
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     val color = if (selected) MaterialTheme.colorScheme.primary else idle
     Surface(
-        modifier = modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Tab },
+        modifier = modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Tab }
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large),
         selected = selected,
         onClick = onClick,
         enabled = enabled,
+        interactionSource = interaction,
         shape = MaterialTheme.shapes.large,
         color = if (selected && !platformUsesCupertinoChrome) MaterialTheme.colorScheme.primaryContainer else PosatoControlDefaults.Transparent,
         contentColor = color.copy(alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA),
@@ -144,4 +154,5 @@ private fun PosatoSidebarNavigationPreview() {
     }
 }
 
-private const val IDLE_TAB_ALPHA = 0.55f
+private const val IDLE_TAB_DARK_SHARE = 0.7f
+private const val TAB_FONT_SCALE_LIMIT = 1.3f

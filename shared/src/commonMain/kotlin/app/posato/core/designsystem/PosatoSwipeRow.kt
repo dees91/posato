@@ -27,11 +27,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -50,7 +49,7 @@ private enum class SwipeState {
 internal fun PosatoSwipeRow(
     actions: List<PosatoSwipeAction>,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable (rowActions: List<CustomAccessibilityAction>) -> Unit,
 ) {
     val openOffset = -with(LocalDensity.current) { SwipeActionWidth.toPx() } * actions.size
     val state = remember { AnchoredDraggableState(SwipeState.Closed) }
@@ -64,19 +63,20 @@ internal fun PosatoSwipeRow(
     }
     val scope = rememberCoroutineScope()
     val close: () -> Unit = { scope.launch { state.animateTo(SwipeState.Closed) } }
-    Box(
-        modifier.fillMaxWidth().height(IntrinsicSize.Min).clipToBounds().semantics {
-            customActions = actions.map { action ->
-                CustomAccessibilityAction(action.label) {
-                    action.onClick()
-                    true
-                }
-            }
-        },
-    ) {
-        Row(Modifier.matchParentSize(), horizontalArrangement = Arrangement.End) {
+    val rowActions = actions.map { action ->
+        CustomAccessibilityAction(action.label) {
+            action.onClick()
+            true
+        }
+    }
+    val revealed = state.targetValue == SwipeState.Open || state.currentValue == SwipeState.Open
+    Box(modifier.fillMaxWidth().height(IntrinsicSize.Min).clipToBounds()) {
+        Row(
+            Modifier.matchParentSize().then(if (revealed) Modifier else Modifier.clearAndSetSemantics {}),
+            horizontalArrangement = Arrangement.End,
+        ) {
             actions.forEach { action ->
-                SwipeActionButton(action) {
+                SwipeActionButton(action, revealed) {
                     close()
                     action.onClick()
                 }
@@ -87,8 +87,8 @@ internal fun PosatoSwipeRow(
                 .anchoredDraggable(state, Orientation.Horizontal, flingBehavior = AnchoredDraggableDefaults.flingBehavior(state))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
-            content()
-            if (state.targetValue == SwipeState.Open || state.currentValue == SwipeState.Open) {
+            content(rowActions)
+            if (revealed) {
                 Box(
                     Modifier.matchParentSize().clearAndSetSemantics {}
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { close() },
@@ -101,12 +101,14 @@ internal fun PosatoSwipeRow(
 @Composable
 private fun SwipeActionButton(
     action: PosatoSwipeAction,
+    revealed: Boolean,
     onClick: () -> Unit,
 ) {
     val palette = MaterialTheme.colorScheme
     Box(
         Modifier.width(SwipeActionWidth).fillMaxHeight()
             .background(if (action.destructive) palette.error else palette.primary)
+            .focusProperties { canFocus = revealed }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

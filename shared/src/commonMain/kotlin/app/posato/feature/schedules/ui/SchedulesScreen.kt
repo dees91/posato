@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -48,6 +49,7 @@ import app.posato.core.designsystem.PosatoMenuItem
 import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoPanel
+import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoSwitch
 import app.posato.core.designsystem.PosatoTheme
@@ -292,7 +294,7 @@ private fun ScheduleRow(
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
                 Box(
-                    Modifier.toggleable(
+                    Modifier.sizeIn(minWidth = PosatoSize.Control, minHeight = PosatoSize.Control).toggleable(
                         value = row.enabled,
                         enabled = !row.refused,
                         role = Role.Switch,
@@ -300,6 +302,7 @@ private fun ScheduleRow(
                         indication = null,
                     ) { actions.onSetEnabled(row, it) }
                         .semantics { contentDescription = "${row.name} schedule" },
+                    contentAlignment = Alignment.Center,
                 ) {
                     PosatoSwitch(checked = row.enabled, enabled = !row.refused)
                 }

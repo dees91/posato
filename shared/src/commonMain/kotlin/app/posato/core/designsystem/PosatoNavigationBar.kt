@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,7 +35,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -46,6 +49,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -77,13 +83,16 @@ internal fun PosatoBarScreen(
             }
         }
     }
+    val barTitleReadable by remember { derivedStateOf { collapsed >= 1f } }
     val separator by remember { derivedStateOf { if (scrollState.value > 0) 1f else 0f } }
     Column(modifier.fillMaxSize()) {
         PosatoNavigationBar(
             title = title,
             backLabel = backLabel,
             onBack = onBack,
+            edgeInset = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
             titleAlpha = { collapsed },
+            titleReadable = barTitleReadable,
             separatorAlpha = { separator },
             trailingContent = trailingContent,
         )
@@ -103,59 +112,106 @@ internal fun PosatoBarScreen(
 /** The space between a navigation bar and the first content below it, the same on every screen with a bar. */
 internal val PosatoBarContentTop = PosatoSpace.Large
 
+/**
+ * The iOS navigation bar. The back action's mark and the trailing actions line up with the screen's content
+ * edge, [edgeInset]; the title stays centred in the space they leave and truncates rather than overlapping them.
+ * Its text grows with the reading size only up to a cap, as UIKit's bars do.
+ */
 @Composable
 internal fun PosatoNavigationBar(
     title: String,
     modifier: Modifier = Modifier,
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
+    edgeInset: Dp = PosatoSpace.Section,
     titleAlpha: () -> Float = { 1f },
+    titleReadable: Boolean = true,
     separatorAlpha: () -> Float = { 0f },
     trailingContent: @Composable RowScope.() -> Unit = {},
 ) {
     val hairline = MaterialTheme.colorScheme.outlineVariant
-    Box(
-        modifier.fillMaxWidth().height(NavigationBarHeight).drawBehind {
-            val stroke = 1.dp.toPx() / 2
-            drawLine(
-                color = hairline.copy(alpha = hairline.alpha * separatorAlpha()),
-                start = Offset(0f, size.height - stroke),
-                end = Offset(size.width, size.height - stroke),
-                strokeWidth = stroke,
+    CappedFontScale(BAR_FONT_SCALE_LIMIT) {
+        Layout(
+            contents = listOf(
+                { if (onBack != null) NavigationBackButton(backLabel, onBack) },
+                {
+                    Text(
+                        text = title,
+                        modifier = Modifier.graphicsLayer { alpha = titleAlpha() }
+                            .then(if (titleReadable) Modifier.semantics { heading() } else Modifier.clearAndSetSemantics {}),
+                        style = PosatoTypography.BarTitle,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                { Row(verticalAlignment = Alignment.CenterVertically) { trailingContent() } },
+            ),
+            modifier = modifier.fillMaxWidth().heightIn(min = NavigationBarHeight).drawBehind {
+                val stroke = 1.dp.toPx() / 2
+                drawLine(
+                    color = hairline.copy(alpha = hairline.alpha * separatorAlpha()),
+                    start = Offset(0f, size.height - stroke),
+                    end = Offset(size.width, size.height - stroke),
+                    strokeWidth = stroke,
+                )
+            },
+        ) { (back, titleText, trailing), constraints ->
+            val width = constraints.maxWidth
+            val side = Constraints(maxWidth = (width * BAR_SIDE_SHARE).toInt())
+            val backPlaceable = back.firstOrNull()?.measure(side)
+            val trailingPlaceable = trailing.firstOrNull()?.measure(side)
+            val start = (edgeInset - PosatoSpace.Tiny).roundToPx().coerceAtLeast(0)
+            val end = (edgeInset - PosatoSpace.Small).roundToPx().coerceAtLeast(0)
+            val backEnd = backPlaceable?.let { start + it.width } ?: 0
+            val trailingStart = trailingPlaceable?.let { width - end - it.width } ?: width
+            val reserved = maxOf(backEnd, width - trailingStart) + BarTitleGap.roundToPx()
+            val titlePlaceable = titleText.first().measure(Constraints(maxWidth = (width - 2 * reserved).coerceAtLeast(0)))
+            val height = maxOf(
+                NavigationBarHeight.roundToPx(),
+                titlePlaceable.height,
+                backPlaceable?.height ?: 0,
+                trailingPlaceable?.height ?: 0,
             )
-        },
-    ) {
-        Text(
-            text = title,
-            modifier = Modifier.align(Alignment.Center).widthIn(max = NavigationTitleMaxWidth).graphicsLayer { alpha = titleAlpha() }
-                .semantics { heading() },
-            style = NavigationTitleStyle,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (onBack != null) {
-            val label = backLabel ?: "Back"
-            PosatoBarButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = PosatoSpace.Tiny)
-                    .clearAndSetSemantics {
-                        contentDescription = if (backLabel == null) label else "Back to $label"
-                        role = Role.Button
-                        onClick {
-                            onBack()
-                            true
-                        }
-                    },
-            ) {
-                PosatoBackMark()
-                Text(label, style = BarButtonStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            layout(width, height) {
+                backPlaceable?.placeRelative(start, (height - backPlaceable.height) / 2)
+                titlePlaceable.placeRelative((width - titlePlaceable.width) / 2, (height - titlePlaceable.height) / 2)
+                trailingPlaceable?.placeRelative(trailingStart, (height - trailingPlaceable.height) / 2)
             }
         }
-        Row(Modifier.align(Alignment.CenterEnd).padding(end = PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
-            trailingContent()
-        }
     }
+}
+
+@Composable
+private fun NavigationBackButton(
+    backLabel: String?,
+    onBack: () -> Unit,
+) {
+    val label = backLabel ?: "Back"
+    PosatoBarButton(
+        onClick = onBack,
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = if (backLabel == null) label else "Back to $label"
+            role = Role.Button
+            onClick {
+                onBack()
+                true
+            }
+        },
+    ) {
+        PosatoBackMark()
+        Text(label, style = PosatoTypography.BarAction, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Lets text in [content] follow the reading size only up to [limit], for bars whose height the platform fixes. */
+@Composable
+internal fun CappedFontScale(
+    limit: Float,
+    content: @Composable () -> Unit,
+) {
+    val density = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale.coerceAtMost(limit)), content = content)
 }
 
 /** A navigation bar button: tinted text that dims while pressed, without a ripple or a container. */
@@ -163,14 +219,23 @@ internal fun PosatoNavigationBar(
 internal fun PosatoBarButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Row(
         modifier = modifier.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
-            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
-            .alpha(if (pressed) PosatoControlDefaults.PRESSED_ALPHA else 1f)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .alpha(
+                when {
+                    !enabled -> PosatoControlDefaults.DISABLED_ALPHA
+                    pressed -> PosatoControlDefaults.PRESSED_ALPHA
+                    else -> 1f
+                },
+            )
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
             .padding(horizontal = PosatoSpace.Tiny),
         horizontalArrangement = Arrangement.spacedBy(BackChevronGap),
         verticalAlignment = Alignment.CenterVertically,
@@ -187,7 +252,7 @@ internal fun PosatoLargeTitle(
     Text(
         text = text,
         modifier = modifier.semantics { heading() },
-        style = LargeTitleStyle,
+        style = PosatoTypography.LargeTitle,
         color = MaterialTheme.colorScheme.onSurface,
     )
 }
@@ -198,19 +263,16 @@ internal fun PosatoLead(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(text = text, modifier = modifier, style = LeadStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(text = text, modifier = modifier, style = PosatoTypography.BarAction, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 private val NavigationBarHeight = 44.dp
-private val NavigationTitleMaxWidth = 220.dp
+private val BarTitleGap = 8.dp
 private val BackChevronGap = 7.dp
+private const val BAR_SIDE_SHARE = 0.4f
+private const val BAR_FONT_SCALE_LIMIT = 1.3f
 private val LARGE_TITLE_HANDOFF_START = 24.dp
 private val LARGE_TITLE_HANDOFF_SPAN = 14.dp
-
-private val NavigationTitleStyle = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.43).sp)
-private val BarButtonStyle = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, letterSpacing = (-0.43).sp)
-private val LeadStyle = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, letterSpacing = (-0.43).sp)
-private val LargeTitleStyle = TextStyle(fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.37.sp)
 
 @Preview(name = "Navigation bar", widthDp = 390)
 @Composable

@@ -32,7 +32,7 @@ internal fun PosatoSearchField(
         leadingContent = { PosatoIcon(PosatoIcons.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         trailingContent = {
             if (state.text.isNotEmpty()) {
-                PosatoTextButton(onClick = { state.edit { replace(0, length, "") } }, modifier = Modifier.padding(horizontal = PosatoSpace.Medium)) {
+                PosatoTextButton(onClick = { state.edit { replace(0, length, "") } }) {
                     PosatoIcon(PosatoIcons.Close, "Clear search")
                 }
             }

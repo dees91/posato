@@ -46,6 +46,7 @@ internal fun PauseSetsDestination(
                 onOpen = { id -> navigation.open(id) },
                 onCreate = { name -> viewModel.create(name) { id -> navigation.open(id, TargetsCategory.WEBSITES) } },
                 onRename = viewModel::rename,
+                onMakeDefault = viewModel::makeDefault,
                 onDelete = viewModel::delete,
                 onRetry = viewModel::retry,
             )

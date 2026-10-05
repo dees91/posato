@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -29,12 +31,14 @@ internal fun PosatoDisclosureRow(
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: @Composable () -> Unit = { PosatoIcon(PosatoIcons.Chevron, null) },
     onClickLabel: String? = null,
+    customActions: List<CustomAccessibilityAction> = emptyList(),
 ) {
     Column(modifier = modifier) {
         Box(
             modifier = Modifier.fillMaxWidth().heightIn(
                 min = PosatoSize.Control,
-            ).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
+            ).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+                .semantics { if (customActions.isNotEmpty()) this.customActions = customActions },
         ) {
             Row(
                 modifier = Modifier.padding(vertical = PosatoSpace.Medium),

@@ -40,6 +40,7 @@ import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
@@ -82,7 +83,7 @@ internal fun TargetsBar(
         onBack = header.onBack,
         trailingContent = {
             if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
-                PosatoBarButton(onClick = onDone) { Text("Done", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp)) }
+                PosatoBarButton(onClick = onDone) { Text("Done", style = PosatoTypography.BarAction) }
             }
             header.menuContent?.invoke()
         },

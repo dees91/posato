@@ -2,9 +2,11 @@ package app.posato.core.designsystem
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -26,12 +29,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import app.posato.core.navigation.platformReducesMotion
 
 @Composable
 internal fun PosatoToggleButton(
@@ -41,10 +45,14 @@ internal fun PosatoToggleButton(
     enabled: Boolean = true,
     label: @Composable () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     FilterChip(
-        modifier = modifier.heightIn(min = PosatoSize.Control),
+        modifier = modifier.heightIn(min = PosatoSize.Control)
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small),
         selected = selected,
         onClick = onClick,
+        interactionSource = interaction,
         enabled = enabled,
         label = label,
         shape = MaterialTheme.shapes.small,
@@ -122,15 +130,18 @@ internal fun PosatoSwitch(
     enabled: Boolean = true,
 ) {
     val palette = MaterialTheme.colorScheme
+    val light = posatoIsLight()
     val travel by animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
-        animationSpec = spring(dampingRatio = SWITCH_DAMPING, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = if (platformReducesMotion()) snap() else spring(dampingRatio = SWITCH_DAMPING, stiffness = Spring.StiffnessMediumLow),
         label = "switchTravel",
     )
-    val track = lerp(palette.outlineVariant, palette.primary, travel)
-    val thumb = if (palette.surface.luminance() > HALF) Color.White else palette.onSurface
+    val offTrack = if (light) lerp(palette.outline, palette.onSurfaceVariant, OFF_TRACK_DARKENING) else palette.outline
+    val track = lerp(offTrack, palette.primary, travel)
+    val thumb = if (light) Color.White else palette.onSurface
+    val switchSize = if (platformUsesCupertinoChrome) TouchSwitchSize else PointerSwitchSize
     Canvas(
-        modifier.size(SwitchWidth, SwitchHeight).graphicsLayer { alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA },
+        modifier.size(switchSize).graphicsLayer { alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA },
     ) {
         val radius = size.height / 2
         drawRoundRect(track, cornerRadius = CornerRadius(radius))
@@ -142,12 +153,12 @@ internal fun PosatoSwitch(
     }
 }
 
-private val SwitchWidth = 51.dp
-private val SwitchHeight = 31.dp
+private val TouchSwitchSize = DpSize(51.dp, 31.dp)
+private val PointerSwitchSize = DpSize(38.dp, 22.dp)
 private val SwitchInset = 2.dp
+private const val OFF_TRACK_DARKENING = 0.5f
 private const val SWITCH_DAMPING = 0.75f
 private const val THUMB_SHADOW = 0.12f
-private const val HALF = 0.5f
 
 @Composable
 internal fun PosatoDurationChoice(

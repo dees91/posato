@@ -1,6 +1,7 @@
 package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
@@ -96,9 +98,13 @@ internal fun DrawnItemMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
+        val interaction = remember { MutableInteractionSource() }
+        val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
         IconButton(
-            modifier = Modifier.size(PosatoSize.Control),
+            modifier = Modifier.size(PosatoSize.Control)
+                .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, CircleShape),
             onClick = { expanded = true },
+            interactionSource = interaction,
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = if (expanded) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
                 contentColor = MaterialTheme.colorScheme.primary,

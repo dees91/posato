@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +46,7 @@ import app.posato.core.designsystem.PosatoSwipeAction
 import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.sync.domain.PauseSetId
 
@@ -65,8 +67,8 @@ private fun PauseSetsChrome(
             largeTitle = true,
             contentPadding = PaddingValues(horizontal = PosatoSpace.Section),
             trailingContent = {
-                PosatoBarButton(onClick = { if (canCreate) onCreate() }) {
-                    Text("New set", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp))
+                PosatoBarButton(onClick = onCreate, enabled = canCreate) {
+                    Text("New set", style = PosatoTypography.BarAction)
                 }
             },
         ) { content() }
@@ -90,6 +92,7 @@ internal fun PauseSetsScreen(
     onOpen: (PauseSetId) -> Unit,
     onCreate: (String) -> Unit,
     onRename: (PauseSetId, String) -> Unit,
+    onMakeDefault: (PauseSetId) -> Unit,
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -110,6 +113,7 @@ internal fun PauseSetsScreen(
                     deviceNoun = deviceNoun,
                     onOpen = { onOpen(row.id) },
                     onDialog = { dialog = it },
+                    onMakeDefault = onMakeDefault,
                 )
             }
         }
@@ -162,32 +166,51 @@ private fun PauseSetListRow(
     deviceNoun: String,
     onOpen: () -> Unit,
     onDialog: (PauseSetDialog) -> Unit,
+    onMakeDefault: (PauseSetId) -> Unit,
 ) {
-    val swipeActions = buildList {
-        add(PosatoSwipeAction("Rename", { onDialog(PauseSetDialog.Rename(row)) }))
-        if (!row.isDefault) add(PosatoSwipeAction("Delete", { onDialog(PauseSetDialog.Delete(row)) }, destructive = true))
+    if (platformUsesCupertinoChrome) {
+        val swipeActions = buildList {
+            add(PosatoSwipeAction("Rename", { onDialog(PauseSetDialog.Rename(row)) }))
+            if (!row.isDefault) add(PosatoSwipeAction("Delete", { onDialog(PauseSetDialog.Delete(row)) }, destructive = true))
+        }
+        PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, deviceNoun, onOpen, rowActions) }
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PauseSetRowContent(row, deviceNoun, onOpen, emptyList(), Modifier.weight(1f))
+            PauseSetMenu(row, onDialog, onMakeDefault)
+        }
     }
-    PosatoSwipeRow(swipeActions) {
-        PosatoDisclosureRow(
-            onClick = onOpen,
-            onClickLabel = "Open",
-            headlineContent = {
-                Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
-                    Text(row.name, style = MaterialTheme.typography.titleMedium)
-                    if (row.isDefault) {
-                        PosatoBadge("Default", Modifier.semantics { contentDescription = "Default set" })
-                    }
+}
+
+@Composable
+private fun PauseSetRowContent(
+    row: PauseSetRow,
+    deviceNoun: String,
+    onOpen: () -> Unit,
+    rowActions: List<CustomAccessibilityAction>,
+    modifier: Modifier = Modifier,
+) {
+    PosatoDisclosureRow(
+        onClick = onOpen,
+        onClickLabel = "Open",
+        modifier = modifier,
+        customActions = rowActions,
+        headlineContent = {
+            Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
+                Text(row.name, style = MaterialTheme.typography.titleMedium)
+                if (row.isDefault) {
+                    PosatoBadge("Default", Modifier.semantics { contentDescription = "Default set" })
                 }
-            },
-            supportingContent = {
-                Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                    PosatoCaption(row.summary(deviceNoun))
-                    if (row.schedules.isNotEmpty()) PosatoCaption("Used by ${row.schedules.joinToString(", ")}")
-                    if (row.refused) PosatoCaption("This set is over the limit of 10. Delete a set to use it.")
-                }
-            },
-        )
-    }
+            }
+        },
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
+                PosatoCaption(row.summary(deviceNoun))
+                if (row.schedules.isNotEmpty()) PosatoCaption("Used by ${row.schedules.joinToString(", ")}")
+                if (row.refused) PosatoCaption("This set is over the limit of 10. Delete a set to use it.")
+            }
+        },
+    )
 }
 
 private fun PauseSetRow.summary(deviceNoun: String): String {

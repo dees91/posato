@@ -1,6 +1,7 @@
 package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -13,10 +14,11 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -53,10 +55,14 @@ internal fun PosatoTab(
 ) {
     val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     val contentAlpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Surface(
-        modifier = modifier.semantics { role = Role.Tab },
+        modifier = modifier.semantics { role = Role.Tab }
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium),
         selected = selected,
         onClick = onClick,
+        interactionSource = interaction,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
         color = if (selected) selectedSegmentColor() else PosatoControlDefaults.Transparent,
@@ -83,10 +89,8 @@ internal fun PosatoTab(
 @Composable
 private fun selectedSegmentColor(): Color {
     val palette = MaterialTheme.colorScheme
-    return if (palette.surface.luminance() > HALF_LUMINANCE) palette.surfaceContainerLowest else palette.surfaceContainerHighest
+    return if (posatoIsLight()) palette.surfaceContainerLowest else palette.surfaceContainerHighest
 }
-
-private const val HALF_LUMINANCE = 0.5f
 
 @Preview(name = "Counted tabs", widthDp = 390)
 @Preview(name = "Counted tabs · dark", widthDp = 390, uiMode = 0x20)

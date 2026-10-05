@@ -8,9 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalWindowInfo
 
 @Immutable
@@ -46,7 +48,7 @@ internal fun PosatoTheme(
             if (!platformUsesMaterialRipple) {
                 CompositionLocalProvider(
                     LocalRippleConfiguration provides null,
-                    LocalIndication provides PosatoPressDim,
+                    LocalIndication provides PosatoPressDim(colors.primary),
                     content = content,
                 )
             } else {
@@ -91,3 +93,12 @@ internal fun windowNavigationPlacement(device: PosatoDevice): PosatoNavigationPl
     }
     return navigationPlacement(device, landscape)
 }
+
+/** Whether the current palette is the light one, for the few drawings that differ beyond the color roles. */
+@Composable
+@ReadOnlyComposable
+internal fun posatoIsLight(): Boolean {
+    return MaterialTheme.colorScheme.surface.luminance() > HALF_LUMINANCE
+}
+
+private const val HALF_LUMINANCE = 0.5f
