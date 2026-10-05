@@ -98,7 +98,7 @@ Preconditions:
   launch, then the real page loads and Safari keeps running. On the test iPhone run
   `observe-blocking-ios.json` during the session and `observe-unblocked-ios.json` after it:
   SpringBoard shows "You cannot use Calculator because it is restricted." and Safari shows
-  "Website Not Allowed", then Calculator's keypad and the Example Domain page appear. Each
+  "Website Not Allowed", then Calculator's keypad and the example.com page ("This domain is for use in …") appear. Each
   fixture fails in the opposite state, so a pass is not a timing accident.
 - **Pause page in a browser (Mac):** `observe` proves the proxy outcome, not
   what a person sees. During a session with `example.com` paused, open it in
