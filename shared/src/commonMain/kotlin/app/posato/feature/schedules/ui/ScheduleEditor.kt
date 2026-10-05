@@ -24,6 +24,7 @@ import app.posato.core.designsystem.PosatoChoiceGroup
 import app.posato.core.designsystem.PosatoDayRow
 import app.posato.core.designsystem.PosatoDayToggle
 import app.posato.core.designsystem.PosatoDisclosureRow
+import app.posato.core.designsystem.PosatoDivider
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoLead
@@ -32,6 +33,7 @@ import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoSwitchRow
+import app.posato.core.designsystem.PosatoTextButton
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoTimeRow
 import app.posato.core.designsystem.PosatoToggleButton
@@ -83,7 +85,31 @@ internal fun ScheduleEditor(
             }, enabled = !state.saving) { Text("Save schedule") }
             PosatoButton(onClick = actions.onCloseEditor, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
         }
+        if (platformUsesCupertinoChrome) ScheduleEditorRowActions(draft, state, actions)
     }
+}
+
+/**
+ * On iOS a schedule's row hides Skip next and Delete under a swipe, so its editor offers them in sight at its foot,
+ * as the Clock app does for an alarm. Deleting asks with the system alert and closes the editor.
+ */
+@Composable
+private fun ScheduleEditorRowActions(
+    draft: ScheduleDraft,
+    state: SchedulesUiState,
+    actions: ScheduleActions,
+) {
+    val row = draft.id?.let { id -> state.schedules.firstOrNull { it.id == id } } ?: return
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+        PosatoDivider()
+        if (row.enabled && row.canSkip) {
+            PosatoTextButton(onClick = { actions.onSkipNext(row) }) { Text("Skip next") }
+            row.nextRunLabel?.let { PosatoCaption(it) }
+        }
+        row.skippedLabel?.let { PosatoCaption(it) }
+        PosatoTextButton(onClick = { actions.onConfirmDelete(row.id) }, destructive = true) { Text("Delete schedule") }
+    }
+    if (state.confirmingDelete == row.id) ScheduleDeleteAlert(row, actions)
 }
 
 /** The schedule's hours: the system's compact time pickers on iOS, buttons that open the drawn wheels elsewhere. */

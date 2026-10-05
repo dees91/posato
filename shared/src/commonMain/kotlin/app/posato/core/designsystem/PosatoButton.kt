@@ -98,19 +98,21 @@ private fun PosatoFilledButton(
 
 /**
  * A text-only action. Its label sits on the content edge like the text around it: there is no container and no
- * side padding, the label dims while pressed, and keyboard focus underlines it.
+ * side padding, the label dims while pressed, and keyboard focus underlines it. A [destructive] action reads in the
+ * error color, as iOS lists a delete at the foot of an editor.
  */
 @Composable
 internal fun PosatoTextButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    destructive: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
-    val color = MaterialTheme.colorScheme.primary
+    val color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)

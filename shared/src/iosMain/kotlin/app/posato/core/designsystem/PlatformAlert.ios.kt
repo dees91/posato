@@ -2,8 +2,13 @@ package app.posato.core.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import platform.UIKit.UIAlertAction
 import platform.UIKit.UIAlertActionStyleCancel
 import platform.UIKit.UIAlertActionStyleDefault
@@ -22,6 +27,8 @@ import platform.UIKit.UIWindowScene
  * answer closes the alert and runs its action with the text field's content, so a rejected name can come back as
  * a new alert that keeps what the person typed. A change of the question or of its answers replaces the alert, and
  * each button runs the current action with its own title and role, never another answer that moved into its place.
+ * When UIKit cannot present the alert, as while another presentation is under way, the same question is drawn in
+ * the app instead, so the screen never waits for an answer that cannot come.
  */
 @Composable
 internal actual fun PlatformAlert(
@@ -35,8 +42,18 @@ internal actual fun PlatformAlert(
     val latestActions by rememberUpdatedState(actions)
     val latestDismiss by rememberUpdatedState(onDismiss)
     val answers = actions.map { action -> action.title to action.role }
-    DisposableEffect(title, message, field, attempt, answers) {
+    val presentation = remember(title, message, field, attempt, answers) { AlertPresentation() }
+    if (presentation.drawn) {
+        DrawnAlert(title, actions, onDismiss, message, field)
+        return
+    }
+    LaunchedEffect(presentation) {
+        delay(PRESENTATION_CHECK_MILLIS)
+        if (!presentation.answered && presentation.alert?.presentingViewController == null) presentation.drawn = true
+    }
+    DisposableEffect(presentation) {
         val alert = UIAlertController.alertControllerWithTitle(title, message, UIAlertControllerStyleAlert)
+        presentation.alert = alert
         field?.let { request ->
             alert.addTextFieldWithConfigurationHandler { textField ->
                 textField?.text = request.initial
@@ -47,6 +64,7 @@ internal actual fun PlatformAlert(
         var preferred: UIAlertAction? = null
         latestActions.forEachIndexed { index, action ->
             val native = UIAlertAction.actionWithTitle(action.title, action.role.nativeStyle()) { _ ->
+                presentation.answered = true
                 val text = (alert.textFields?.firstOrNull() as? UITextField)?.text.orEmpty()
                 // The alert is rebuilt whenever its answers change, so the answer in this position is this button's,
                 // even when two answers read alike; a mismatch in between closes the alert without acting.
@@ -57,7 +75,12 @@ internal actual fun PlatformAlert(
             if (preferred == null && action.role == PosatoAlertRole.Default) preferred = native
         }
         alert.preferredAction = preferred
-        topViewController()?.presentViewController(alert, animated = true, completion = null)
+        val presenter = topViewController()
+        if (presenter == null) {
+            presentation.drawn = true
+        } else {
+            presenter.presentViewController(alert, animated = true, completion = null)
+        }
         onDispose {
             // Withdrawn without an answer, the alert leaves at once, so a replacement can be presented in its place.
             if (alert.presentingViewController != null && !alert.isBeingDismissed()) {
@@ -66,6 +89,15 @@ internal actual fun PlatformAlert(
         }
     }
 }
+
+/** One presentation of the system alert: whether it was answered, and whether it fell back to the drawn one. */
+private class AlertPresentation {
+    var alert: UIAlertController? = null
+    var answered = false
+    var drawn by mutableStateOf(false)
+}
+
+private const val PRESENTATION_CHECK_MILLIS = 1_000L
 
 private fun PosatoAlertRole.nativeStyle(): Long {
     return when (this) {

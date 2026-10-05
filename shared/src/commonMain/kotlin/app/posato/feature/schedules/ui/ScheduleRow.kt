@@ -102,17 +102,24 @@ internal fun ScheduleRow(
         }
         PosatoDivider()
     }
-    if (confirmingDelete && platformUsesCupertinoChrome) {
-        PosatoAlert(
-            title = "Delete ${row.name}?",
-            message = "It is deleted on your other devices too.",
-            onDismiss = { actions.onConfirmDelete(null) },
-            actions = listOf(
-                PosatoAlertAction("Keep", { actions.onConfirmDelete(null) }, PosatoAlertRole.Cancel),
-                PosatoAlertAction("Delete", { actions.onDelete() }, PosatoAlertRole.Destructive),
-            ),
-        )
-    }
+    if (confirmingDelete && platformUsesCupertinoChrome) ScheduleDeleteAlert(row, actions)
+}
+
+/** The system question before a schedule is deleted, asked from its row or from its editor. */
+@Composable
+internal fun ScheduleDeleteAlert(
+    row: ScheduleRowModel,
+    actions: ScheduleActions,
+) {
+    PosatoAlert(
+        title = "Delete ${row.name}?",
+        message = "It is deleted on your other devices too.",
+        onDismiss = { actions.onConfirmDelete(null) },
+        actions = listOf(
+            PosatoAlertAction("Keep", { actions.onConfirmDelete(null) }, PosatoAlertRole.Cancel),
+            PosatoAlertAction("Delete", { actions.onDelete() }, PosatoAlertRole.Destructive),
+        ),
+    )
 }
 
 @Composable

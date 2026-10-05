@@ -293,7 +293,7 @@ private fun ScheduleList(
     ScheduleAddAction(state, device, readiness, actions)
     if (state.schedules.isNotEmpty()) {
         PosatoItemList {
-            state.schedules.forEach { row -> key(row.id.hex) { ScheduleRow(row, state.confirmingDelete == row.id, actions) } }
+            state.schedules.forEach { row -> key(row.id.hex) { ScheduleRow(row, state.confirmingDelete == row.id && state.editor == null, actions) } }
         }
     }
     if (readiness.offerNotices && state.schedules.isNotEmpty()) {
