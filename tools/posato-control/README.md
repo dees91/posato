@@ -165,14 +165,14 @@ grants a permission.
 | `terminate` | all | Stops only the instance this tool started or adopted, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
-| `snapshot [--format json\|text] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths. |
+| `snapshot [--format json\|text] [--labels] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths; `--labels` lists only the elements a query can name, one line each, without paths or layout, the cheapest way to see what is on screen. |
 | `find <query>` | all | Matching elements; never changes application state (on iOS it starts the app when it is not running). |
 | `tap <query>` | all | Presses a button or taps an element. |
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
 | `press --key <key> [--modifiers cmd,shift]` | all | Keyboard input. Desktop: `return`, `escape`, `tab`, `delete`, `space`, arrows, digits, letters, with `--modifiers`. iOS: `return`, `delete`, `space`, `home`, `volumeUp`, `volumeDown` (device only), and `escape`/`tab` where the keyboard offers them. |
 | `orient --to portrait\|portraitUpsideDown\|landscapeLeft\|landscapeRight` | simulator, device | Rotates the device through XCUITest and waits until the application window has the matching aspect and has settled. A target that shares the current aspect first goes through the other aspect, so every rotation is observable and an orientation the application does not support fails. The orientation outlives the run. The desktop refuses the command. |
 | `wait --for exists\|absent\|enabled\|disabled\|settled [query] [--timeout-seconds 10]` | all | Polls until the condition holds. |
-| `run --scenario file.json` (or `-`) | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. |
+| `run --scenario file.json` (or `-`) `[--summary]` | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. `--summary` reports the step count and duration and writes the steps to `run-result.json`, as a failure always does. |
 | `logs [--tail n] [--stream-seconds s]` | all | Captured application log; the simulator can also stream the unified log for a few seconds. |
 | `db path` / `db query --sql "…" [--database name]` | desktop, simulator | Read-only SQLite access to the local databases. |
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
