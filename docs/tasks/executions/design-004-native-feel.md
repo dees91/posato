@@ -86,16 +86,25 @@
 
 ## Verification
 
-| Check run | Result | Evidence |
+Every row below ran at `522c8b7`, the last revision with executable changes;
+later commits change only this record. Commands use
+`PC=tools/posato-control/build/install/posato-control/bin/posato-control` and
+`S=tools/posato-control/fixtures/scenarios`; each scenario is
+`$PC run -t <target> --scenario $S/<name>.json`, and evidence lives in the
+ignored `build/verification/runs/<run>/`. One-off checks whose scenarios are
+not tracked are described by what they do.
+
+| Check | Result | Runs |
 | --- | --- | --- |
-| `./gradlew quality` | Passed | local run on the reviewed code |
-| Native audit, repeated | 15/20, no new P0/P1 | Simulator runs `20261005-130555-3b30`, `20261005-130625-6548`, `20261005-131538-ab00`, `20261005-132230-9bb4`, `20261005-132312-c786`, `20261005-133925-4c57` |
-| iOS scenarios, iPhone 17 Simulator, `a125a85` | Passed: first-install, add-website, website-edit, website-batch-list and its cleanup, remove-website, licenses-ios, schedules-device, session-start, session-start-saved-items, session-early-end, session-expiry, first-install-skip | runs `20261005-154302-b92a` to `20261005-155822-0a15`; session-start after the driver waits for a still element: `20261005-160012-ec05` |
-| iOS flows, iPhone 17 Simulator, `a125a85` | Passed: `flow set`, `flow schedule` (system time pickers), `flow session` (countdown wheel, 30 minutes) | same series |
-| iPad Pro 13 Simulator | Passed: landscape sidebar, About as a sidebar root, rotation keeping state, whole-pane pushes | runs `20261005-134045-e7da`, `20261005-134101-74c1`, `20261005-152516-0ae1`; R1 edge swipe `20261005-152333-8ae4` |
-| Mac scenarios, Tart VM `--vm primary` | Passed: add-website-desktop, remove-website-desktop, licenses, schedules-desktop, session-start-desktop, session-early-end, pause-sets-desktop without the iCloud-only notice, keyboard focus ring after a click | runs `20261005-154215-ef03`, `20261005-154226-730a`, `20261005-154243-a450`, `20261005-153559-5ce4`, `20261005-154407-5c19`, `20261005-154425-b82f`, `20261005-154032-d679`, `20261005-153010-d849` |
-| Mac flows, Tart VM | Passed: `flow set`, `flow schedule`, `flow session`, then session-early-end | runs `20261005-155526-fff2`, `20261005-155534-1308`, `20261005-155639-f167`, `20261005-155649-768f` |
-| Test iPhone 13 mini (iOS 26.5.2, `-t device`), `19d9995` build, with maintainer consent | Passed: choose-app-ios, session-relaunch-ios (three relaunches, both restrictions after them), observe-blocking-ios, session-early-end, observe-unblocked-ios, pause-sets-device, schedules-device, website-edit, licenses-ios | runs `20261005-160818-f134`, `20261005-190046-dc39`, `20261005-185108-d523`, `20261005-185124-e8a6`, `20261005-185135-1a86`, `20261005-185424-5b19`, `20261005-161359-aebb`, `20261005-161442-8b1c`, `20261005-185249-2cf8` |
+| `./gradlew quality` | Passed | local, 5 min 20 s |
+| iPhone 17 Simulator (`-t sim`), light: first-install, add-website, website-edit, website-batch-list, website-batch-list-cleanup, remove-website, add-website, licenses-ios, schedules-device, session-start, session-early-end, session-start-saved-items, session-early-end, session-expiry, then `--fresh` and first-install-skip | Passed | `20261005-203202-1b34` to `20261005-203953-3731`, `20261005-204802-00ac` |
+| iPhone 17 Simulator flows: `$PC flow set --name "Flow set" --website flow.example`, `flow schedule --name "Editor check" --start 09:30 --end 10:45 --set "Flow set"`, `flow session --set "Flow set" --minutes 30`, then session-early-end | Passed | `20261005-204510-dce5`, `20261005-204531-6f49`, `20261005-204628-f18d`, `20261005-204651-6d09` |
+| iPhone 17 Simulator one-off: the selected-items filter with the keyboard up (the review's P2), and the schedule editor's Skip next and Delete schedule with the system alert | Passed | `20261005-205146-fdcf` |
+| iPhone 17 Simulator one-off: in a set, search, open a result's editor, one edge swipe closes it while the hidden search stays active | Passed (the check steps; an optional cleanup step after them failed for lack of data) | `20261005-205206-b906` |
+| iPad Pro 13 Simulator, landscape, dark: a tour through the sidebar, a new pause, a set, the schedule editor, About as a sidebar screen, and Licenses; then in portrait, About open, turned to landscape and back, and Back to Session | Passed | `20261005-204846-8729`, `20261005-204937-1fef`, `20261005-204955-d878` |
+| Mac, fresh Tart VM (`-t desktop --vm primary`): schedules-desktop, add-website-desktop, remove-website-desktop, add-website-desktop, licenses, session-start-desktop, session-early-end; flows set, schedule (`--off`), session (30 minutes), session-early-end | Passed | `20261005-203529-6c7f` to `20261005-203834-ab47` |
+| Mac, second fresh Tart VM: pause-sets-desktop with its iCloud-only update notice optional; one-off keyboard focus ring after clicks and Tab | Passed | `20261005-204226-9f33`, `20261005-204316-a5fc` |
+| Test iPhone 13 mini (`-t device`, wired, with maintainer consent): driver probe, session-relaunch-ios (three relaunches, Calculator and example.com blocked after them), observe-unblocked-ios, pause-sets-device, schedules-device, website-edit, licenses-ios, `flow schedule --name "Editor check"`, and the one-off schedule editor check | Passed | `20261005-205438-ec48` to `20261005-210141-a2cc` |
 
 ## Blockers and accepted risks
 
