@@ -119,8 +119,19 @@ internal fun WebsiteEditorScreen(
     browser: TargetsBrowserState,
     callbacks: TargetsCallbacks,
 ) {
+    val focus = LocalFocusManager.current
     Column(Modifier.fillMaxSize()) {
-        PosatoNavigationBar(title = "Edit website", backLabel = setTitle, onBack = callbacks.onCancelDomainEdit)
+        // As on the set's screen, Done appears while the keyboard is up, so the tab bar beneath it can come back.
+        PosatoNavigationBar(
+            title = "Edit website",
+            backLabel = setTitle,
+            onBack = callbacks.onCancelDomainEdit,
+            trailingContent = {
+                if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
+                    PosatoBarButton(onClick = { focus.clearFocus() }) { Text("Done", style = PosatoTypography.BarAction) }
+                }
+            },
+        )
         Column(Modifier.barColumn().padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop)) {
             rememberLastPresent(state.editingDomain)?.let { domain ->
                 WebsiteEditor(
