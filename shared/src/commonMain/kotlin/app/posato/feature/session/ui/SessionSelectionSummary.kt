@@ -139,7 +139,8 @@ internal fun SessionSelectionScreen(
     val search = rememberTextFieldState()
     val scroll = rememberLazyListState()
     LaunchedEffect(category, search.text.toString()) { scroll.scrollToItem(0) }
-    Column(Modifier.fillMaxSize().imePadding()) {
+    // The tab frame below reserves the keyboard's height for the whole pane.
+    Column(Modifier.fillMaxSize()) {
         PosatoNavigationBar(
             title = selectionPanelTitle(state, category),
             backLabel = backLabel,
