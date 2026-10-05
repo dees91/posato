@@ -35,10 +35,10 @@ controls; Material stays the Android flavour. The rules live in
 [DESIGN.md, Platform Adaptation](../../../DESIGN.md#platform-adaptation).
 Evidence: a design critique scored the Material-shaped iOS app 26/40; the
 native audit rose from 12/20 to 15/20 after the polish round, with no open P0
-or P1. Open P2 items at acceptance: the brand back mark instead of a chevron
-(kept by maintainer choice), schedule actions only behind a swipe on iOS, a
-discarded schedule draft on back, and a missing fallback when a system alert
-cannot present.
+or P1. Open P2 items at acceptance, both left as they are by maintainer
+choice: the brand back mark instead of a chevron, and a schedule draft
+discarded on back. The swipe-only schedule actions and the missing fallback
+for a system alert that cannot present were fixed in the same pull request.
 
 As of 2026-09-06, the root `DESIGN.md` links to the separate
 [prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md),

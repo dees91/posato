@@ -37,10 +37,10 @@
   keyboard focus shows a ring on the Mac.
 - `AC-03`: the repeated audit (independent subagent) scored 15/20 and found
   one new P1, schedule times cut off at the largest text size; it is fixed and
-  the auditor confirmed no new P0 or P1. Open P2 items are recorded in the
-  wiki: the brand back mark instead of a chevron (kept by maintainer choice),
-  schedule actions only under a swipe on iOS, a schedule draft discarded on
-  back, and no fallback when a system alert cannot present.
+  the auditor confirmed no new P0 or P1. Of the open P2 items the maintainer
+  had two fixed in the PR review round (schedule actions in sight in the
+  editor, a drawn fallback for an alert that cannot present) and left two as
+  they are (the brand back mark, a schedule draft discarded on back).
 - `AC-04`: `DESIGN.md` has a Platform Adaptation section, the passages it
   supersedes point to it, and the wiki routes to it.
 - `AC-05`: the scenarios and flows pass on the new interface (see
@@ -70,6 +70,19 @@
   private UIKit; the row label is read just before it). Optional findings
   fixed: times set on a reference day, the flow's back label per host, and
   alert buttons bound by position as well as title.
+
+## PR review round
+
+- Hosted review of `b50863e`: two P2 findings.
+  - The selected-items screen padded for the keyboard twice; the tab frame
+    alone now reserves it (`ce4b063`).
+  - The verification did not name the final revision; the table below is
+    rerun at one revision.
+  - The review's quality failure was the reviewer's own network
+    (`:desktopApp:downloadSparkle`, connection refused); the branch has no CI
+    checks, and `./gradlew quality` passes locally at the revision below.
+- The maintainer asked in the same round for the two P2 fixes above
+  (`2d99edb`) and for UI recordings in the pull request description.
 
 ## Verification
 
@@ -101,5 +114,5 @@
 
 - **Status:** done; ready for review
 - **Outcome:** `AC-01` to `AC-05` met on the iPhone and iPad Simulators, the
-  Mac in a Tart VM, and the test iPhone; the open audit P2 items stay
-  recorded in the wiki for later rows.
+  Mac in a Tart VM, and the test iPhone; the two remaining audit P2 items
+  stay recorded in the wiki by maintainer choice.

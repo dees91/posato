@@ -198,14 +198,17 @@ stay common.
   destructive answer in red and the safe one bold; schedule times are compact
   system time pickers that follow the device's 12- or 24-hour clock; a pause's
   length is the system countdown wheel (5 minutes to 23 hours 59 minutes, its
-  limit); duration presets are a segmented control. Native views fill their
+  limit); duration presets are a segmented control. When UIKit cannot present a
+  system alert, the same question is drawn in the app after a second, so no
+  screen waits for an answer that cannot come. Native views fill their
   interop hole with the surface color and cap their text at the third
   accessibility size where they cannot grow.
 - **Rows.** Lists are flat rows with dividers, never cards. A tap opens or edits
   the row. Secondary actions slide out under a left swipe, the destructive one in
   the error color, and are also reachable as accessibility custom actions; a row
   carries no button of its own besides a switch. A schedule row keeps its switch
-  at the trailing edge.
+  at the trailing edge, and the schedule's editor offers **Skip next** and a
+  red **Delete schedule** at its foot, so no action lives only under a swipe.
 - **Drawn controls.** The switch is iOS-sized (51 × 31) with a white thumb in
   light; weekday choices are 44 round toggles with the day's initial, read by
   full name; progress without an end is a spoked indicator.
