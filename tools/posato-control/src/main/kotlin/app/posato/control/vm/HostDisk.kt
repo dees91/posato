@@ -19,7 +19,9 @@ internal const val MIN_FREE_DISK_BYTES = 20_000_000_000L
 /** What may be deleted to free space because a later run regenerates it. */
 internal const val DISK_SPACE_HINT = "Free space by deleting what regenerates: old runs under build/verification/runs, the build " +
     "directories of worktrees you no longer use (`./gradlew clean`), Xcode's DerivedData, ~/.gradle/caches, and Tart's image " +
-    "caches (`tart prune`). Never delete a golden VM, or a clone that another worktree created."
+    "caches (`tart prune`). Never delete a golden VM, or a clone that another worktree created. The figure leaves out " +
+    "purgeable space, such as Time Machine local snapshots (`tmutil listlocalsnapshots /`) and caches, which macOS frees " +
+    "only when a write needs it."
 
 /** The free space of the volume holding [path], or of its nearest existing parent. */
 internal data class FreeSpace(
@@ -35,14 +37,23 @@ internal fun lowestFreeSpace(repository: Path): FreeSpace = listOf(repository, t
     FreeSpace(path, Files.getFileStore(existing).usableSpace)
 }.minBy { it.bytes }
 
-/** Refuses to clone a 60 GB guest disk onto a volume that a run could fill. */
-internal fun refuseLowDisk(free: FreeSpace) {
-    if (free.bytes >= MIN_FREE_DISK_BYTES) return
+/**
+ * Refuses to clone a 60 GB guest disk onto a volume that a run could fill. With [allowLowDisk], for a run known to fit
+ * or a volume whose purgeable space the figure leaves out, it returns the shortage as a warning instead; null when
+ * the space suffices.
+ */
+internal fun lowDiskWarning(
+    free: FreeSpace,
+    allowLowDisk: Boolean
+): String? {
+    if (free.bytes >= MIN_FREE_DISK_BYTES) return null
+    val shortage = "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; a run with a clone needs at " +
+        "least ${gigabytes(MIN_FREE_DISK_BYTES)}."
+    if (allowLowDisk) return shortage
     throw ControlException(
         ErrorCode.DISK_SPACE_LOW,
-        "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; a run with a clone needs at least " +
-            "${gigabytes(MIN_FREE_DISK_BYTES)}.",
-        DISK_SPACE_HINT,
+        shortage,
+        "$DISK_SPACE_HINT Pass --allow-low-disk to create the clone anyway.",
     )
 }
 
