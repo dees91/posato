@@ -25,13 +25,19 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import app.posato.core.designsystem.PosatoActionRow
+import app.posato.core.designsystem.PosatoAlert
+import app.posato.core.designsystem.PosatoAlertAction
+import app.posato.core.designsystem.PosatoAlertRole
+import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
@@ -51,9 +57,12 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwipeAction
+import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoSwitch
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
@@ -147,7 +156,7 @@ internal fun SchedulesScreen(
             }
         }
         if (platformUsesCupertinoChrome) {
-            SchedulesBarScreen(route, inset, actions, routeContent)
+            SchedulesBarScreen(route, inset, actions, addEnabled = !state.atCapacity, state.addsFromBar(readiness, device), routeContent)
         } else {
             Column(
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
@@ -162,6 +171,8 @@ private fun SchedulesBarScreen(
     route: SchedulesRoute,
     inset: Dp,
     actions: ScheduleActions,
+    addEnabled: Boolean,
+    addsFromBar: Boolean,
     content: @Composable () -> Unit,
 ) {
     val focus = LocalFocusManager.current
@@ -169,7 +180,16 @@ private fun SchedulesBarScreen(
     val latestContent by rememberUpdatedState(content)
     val body = remember { movableContentOf { latestContent() } }
     when (route) {
-        SchedulesRoute.List -> PosatoBarScreen(title = "Schedules", largeTitle = true, contentPadding = padding) { body() }
+        SchedulesRoute.List -> PosatoBarScreen(
+            title = "Schedules",
+            largeTitle = true,
+            contentPadding = padding,
+            trailingContent = {
+                if (addsFromBar) {
+                    PosatoBarButton(onClick = actions.onAdd, enabled = addEnabled) { Text("Add schedule", style = PosatoTypography.BarAction) }
+                }
+            },
+        ) { body() }
 
         is SchedulesRoute.Editor -> PosatoBarScreen(
             title = if (route.id == null) "New schedule" else "Edit schedule",
@@ -187,6 +207,36 @@ private fun SchedulesBarScreen(
             onBack = { actions.onShowSetup(false) },
             contentPadding = padding,
         ) { body() }
+    }
+}
+
+/** Whether this device can take a new schedule now; a Mac first needs its setup. */
+private fun ScheduleDeviceReadiness.canAddSchedules(device: PosatoDevice): Boolean {
+    return device != PosatoDevice.Mac || mac == MacScheduleReadiness.READY
+}
+
+/** Whether the iOS bar offers Add schedule: once a schedule exists, the list's own button gives way to it. */
+private fun SchedulesUiState.addsFromBar(
+    readiness: ScheduleDeviceReadiness,
+    device: PosatoDevice,
+): Boolean {
+    return schedules.isNotEmpty() && readiness.canAddSchedules(device)
+}
+
+@Composable
+private fun ScheduleAddAction(
+    state: SchedulesUiState,
+    device: PosatoDevice,
+    readiness: ScheduleDeviceReadiness,
+    actions: ScheduleActions,
+) {
+    if (!readiness.canAddSchedules(device)) return
+    // On iOS the bar carries Add schedule; the list keeps the button only as the empty state's first step.
+    if (!platformUsesCupertinoChrome || state.schedules.isEmpty()) {
+        PosatoButton(onClick = actions.onAdd, enabled = !state.atCapacity) { Text("Add schedule") }
+    }
+    if (state.atCapacity) {
+        PosatoCaption("You have 10 schedules, the most Posato keeps. Delete one to add another.")
     }
 }
 
@@ -227,12 +277,7 @@ private fun ScheduleList(
             description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
         )
     }
-    if (device != PosatoDevice.Mac || readiness.mac == MacScheduleReadiness.READY) {
-        PosatoButton(onClick = actions.onAdd, enabled = !state.atCapacity) { Text("Add schedule") }
-        if (state.atCapacity) {
-            PosatoCaption("You have 10 schedules, the most Posato keeps. Delete one to add another.")
-        }
-    }
+    ScheduleAddAction(state, device, readiness, actions)
     if (state.schedules.isNotEmpty()) {
         PosatoItemList {
             state.schedules.forEach { row -> key(row.id.hex) { ScheduleRow(row, state.confirmingDelete == row.id, actions) } }
@@ -271,80 +316,6 @@ private fun ScheduleReadinessCard(
             PosatoCaption("You can save schedules now; they run here once access is allowed.")
             PosatoButton(onClick = actions.onAllowScreenTime) { Text("Allow Screen Time") }
         }
-    }
-}
-
-/** One schedule as a list row: tap to edit, the switch turns it on or off, and the menu holds Skip next and Delete. */
-@Composable
-private fun ScheduleRow(
-    row: ScheduleRowModel,
-    confirmingDelete: Boolean,
-    actions: ScheduleActions,
-) {
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().clickable(enabled = !row.refused, onClickLabel = "Edit ${row.name}") { actions.onEdit(row) }
-                .padding(vertical = PosatoSpace.Medium),
-            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                Text(row.name, style = MaterialTheme.typography.bodyLarge)
-                PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel?.removePrefix("Set: ")).joinToString(" · "))
-                ScheduleRowStatus(row)
-            }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                Box(
-                    Modifier.sizeIn(minWidth = PosatoSize.Control, minHeight = PosatoSize.Control).toggleable(
-                        value = row.enabled,
-                        enabled = !row.refused,
-                        role = Role.Switch,
-                        interactionSource = null,
-                        indication = null,
-                    ) { actions.onSetEnabled(row, it) }
-                        .semantics { contentDescription = "${row.name} schedule" },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    PosatoSwitch(checked = row.enabled, enabled = !row.refused)
-                }
-                PosatoItemMenu("Actions for ${row.name}", scheduleMenu(row, actions))
-            }
-        }
-        if (confirmingDelete) {
-            Column(Modifier.padding(bottom = PosatoSpace.Medium), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                PosatoBody("Delete ${row.name}? It is deleted on your other devices too.")
-                PosatoActionRow {
-                    PosatoButton(onClick = actions.onDelete, style = PosatoButtonStyle.Destructive) { Text("Delete") }
-                    PosatoButton(onClick = { actions.onConfirmDelete(null) }, style = PosatoButtonStyle.Quiet) { Text("Keep") }
-                }
-            }
-        }
-        PosatoDivider()
-    }
-}
-
-@Composable
-private fun ScheduleRowStatus(row: ScheduleRowModel) {
-    row.setProblem?.let { problem -> PosatoNotice(tone = PosatoTone.Caution) { Text(problem) } }
-    when {
-        row.refused -> PosatoNotice(tone = PosatoTone.Caution) {
-            Text("Couldn't sync: 10 schedules is the most. Delete a schedule on any device and this one syncs by itself.")
-        }
-
-        !row.enabled -> PosatoCaption("Turned off")
-
-        else -> row.nextRunLabel?.let { PosatoCaption(it) }
-    }
-    row.skippedLabel?.let { PosatoCaption(it) }
-}
-
-private fun scheduleMenu(
-    row: ScheduleRowModel,
-    actions: ScheduleActions,
-): List<PosatoMenuItem> {
-    return buildList {
-        if (!row.refused) add(PosatoMenuItem("Edit", { actions.onEdit(row) }, PosatoMenuSymbol.Edit))
-        if (row.enabled && row.canSkip) add(PosatoMenuItem("Skip next", { actions.onSkipNext(row) }, PosatoMenuSymbol.Skip))
-        add(PosatoMenuItem("Delete", { actions.onConfirmDelete(row.id) }, PosatoMenuSymbol.Remove, destructive = true))
     }
 }
 

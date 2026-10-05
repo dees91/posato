@@ -14,8 +14,8 @@ internal actual fun PlatformTimePicker(
     modifier: Modifier,
 ) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoNumberWheel(hour, 0..23, "$label hours", { onChange(it, minute) }, Modifier.weight(1f))
-        PosatoNumberWheel(minute, 0..59, "$label minutes", { onChange(hour, it) }, Modifier.weight(1f))
+        PosatoNumberWheel(hour, 0..LAST_HOUR, "$label hours", { onChange(it, minute) }, Modifier.weight(1f))
+        PosatoNumberWheel(minute, 0..LAST_MINUTE, "$label minutes", { onChange(hour, it) }, Modifier.weight(1f))
     }
 }
 

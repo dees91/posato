@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,12 +18,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoHeading
@@ -238,11 +239,14 @@ internal fun SessionScreen(
     onOpenAbout: (() -> Unit)? = null,
 ) {
     val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
-    val stack = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming, platformUsesCupertinoChrome)
+    var shownItems by rememberSaveable { mutableStateOf<TargetsCategory?>(null) }
+    val flow = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming, platformUsesCupertinoChrome)
+    val stack = if (shownItems != null) flow + SessionRoute.Items else flow
+    val showItems = { category: TargetsCategory -> shownItems = category }.takeIf { platformUsesCupertinoChrome }
     PosatoNavStack(
         stack,
         onBack = {
-            stack.last().back(scheduledEnd.onCancel, onCancelEarlyEnd, onExitReview, onExitSetup) {
+            stack.last().back(scheduledEnd.onCancel, onCancelEarlyEnd, onExitReview, onExitSetup, { shownItems = null }) {
                 macActions.leave()
                 onExitSetup()
             }
@@ -250,6 +254,10 @@ internal fun SessionScreen(
         modifier = modifier.fillMaxSize(),
         backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress()),
     ) { route ->
+        if (route == SessionRoute.Items) {
+            SessionItemsRoute(state, rememberLastPresent(shownItems), flow.last(), layout, { shownItems = null }, onEditPausedItems)
+            return@PosatoNavStack
+        }
         val routeBody: @Composable ColumnScope.() -> Unit = {
             SessionOperationNotice(state, onRetry)
             SessionRouteContent(
@@ -278,17 +286,10 @@ internal fun SessionScreen(
                 scheduled = scheduled,
                 scheduledEnd = scheduledEnd,
                 pauseNotice = pauseNotice,
+                onShowItems = showItems,
             )
         }
-        if (platformUsesCupertinoChrome) {
-            SessionBarScreen(route, layout, onOpenAbout, onExitSetup, onExitReview, routeBody)
-        } else {
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
-                verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
-                content = routeBody,
-            )
-        }
+        SessionRouteFrame(route, layout, onOpenAbout, onExitSetup, onExitReview, routeBody)
     }
     if (platformUsesCupertinoChrome) {
         SessionEarlyEndAlerts(state, scheduled, scheduledEnd, onConfirmEarlyEnd, onCancelEarlyEnd)
@@ -322,6 +323,7 @@ private fun SessionRouteContent(
     scheduled: ScheduledPauseView?,
     scheduledEnd: ScheduledEndActions,
     pauseNotice: String?,
+    onShowItems: ((TargetsCategory) -> Unit)?,
 ) {
     when (route) {
         SessionRoute.ScheduledEarlyEnd -> {
@@ -339,7 +341,7 @@ private fun SessionRouteContent(
         }
 
         SessionRoute.Review -> {
-            SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry)
+            SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry, onShowItems)
         }
 
         SessionRoute.Duration -> {
@@ -364,13 +366,20 @@ private fun SessionRouteContent(
                     scheduled,
                     scheduledEnd.onRequest,
                     pauseNotice,
+                    onShowItems,
                 )
             }
         }
+
+        // The pushed items screen has its own bar and list, so SessionScreen draws it without a route body.
+        SessionRoute.Items -> {}
     }
 }
 
-/** Session's screens: the overview, a confirmation or setup flow above it, and review above duration. */
+/**
+ * Session's screens: the overview, a confirmation or setup flow above it, and review above duration. On iOS the
+ * selected items are pushed as [Items] over the screen that lists them.
+ */
 internal enum class SessionRoute {
     Overview,
     Duration,
@@ -378,6 +387,7 @@ internal enum class SessionRoute {
     MacSetup,
     EarlyEnd,
     ScheduledEarlyEnd,
+    Items,
 }
 
 private fun SessionRoute.back(
@@ -385,6 +395,7 @@ private fun SessionRoute.back(
     onCancelEarlyEnd: () -> Unit,
     onExitReview: () -> Unit,
     onExitSetup: () -> Unit,
+    onCloseItems: () -> Unit,
     onLeaveMacSetup: () -> Unit,
 ) {
     when (this) {
@@ -406,6 +417,10 @@ private fun SessionRoute.back(
 
         SessionRoute.Duration -> {
             onExitSetup()
+        }
+
+        SessionRoute.Items -> {
+            onCloseItems()
         }
 
         SessionRoute.Overview -> {}
@@ -464,7 +479,7 @@ private fun SessionOperationNotice(
 ) {
     if (state.status == null && state.operationFailure == null) {
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-            CircularProgressIndicator()
+            PosatoActivityIndicator()
             Text("Loading session")
         }
     } else {

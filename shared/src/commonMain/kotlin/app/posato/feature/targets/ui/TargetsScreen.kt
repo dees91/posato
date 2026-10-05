@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarContentTop
 import app.posato.core.designsystem.PosatoButton
@@ -228,7 +228,7 @@ private fun TargetsNotices(
         PosatoCaption("Added items pause now. Removed items stay paused until the pause using this set ends.")
     }
     if (state.isLoading && !state.hasLoaded) {
-        CircularProgressIndicator()
+        PosatoActivityIndicator()
         return
     }
     state.operationFailure?.let { failure ->

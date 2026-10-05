@@ -56,3 +56,7 @@ internal expect fun PlatformDurationPicker(
     onChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 )
+
+/** The last hour and minute a clock shows, for pickers that count from zero. */
+internal const val LAST_HOUR = 23
+internal const val LAST_MINUTE = 59

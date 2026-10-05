@@ -82,7 +82,11 @@ internal fun SessionDurationContent(
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
             Text("Ends at ${state.formattedPreviewEnd.orEmpty()}")
             PosatoCaption(
-                if (platformUsesCupertinoChrome) "5 minutes to 23 hours 59 minutes · you stay in control" else "5 minutes to 24 hours · you stay in control",
+                if (platformUsesCupertinoChrome) {
+                    "5 minutes to 23 hours 59 minutes · you stay in control"
+                } else {
+                    "5 minutes to 24 hours · you stay in control"
+                },
             )
             state.setupFailure?.let { Text(stringResource(it.setupMessage())) }
         }

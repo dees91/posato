@@ -1,21 +1,82 @@
 package app.posato.feature.session.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
 import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.PosatoWordmark
+import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.navigation.rememberLastPresent
+import app.posato.feature.targets.ui.TargetsCategory
+
+/** The name a route's bar shows, which the screen pushed over it offers as the way back. */
+internal fun SessionRoute.barTitle(): String {
+    return when (this) {
+        SessionRoute.Duration -> "New pause"
+        SessionRoute.Review -> "Review"
+        else -> "Session"
+    }
+}
+
+/** A Session route's frame: [SessionBarScreen] on iOS, a scrolling column inset from the window elsewhere. */
+@Composable
+internal fun SessionRouteFrame(
+    route: SessionRoute,
+    layout: PosatoLayout,
+    onOpenAbout: (() -> Unit)?,
+    onExitSetup: () -> Unit,
+    onExitReview: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (platformUsesCupertinoChrome) {
+        SessionBarScreen(route, layout, onOpenAbout, onExitSetup, onExitReview, content)
+    } else {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
+            content = content,
+        )
+    }
+}
+
+/** The selected items pushed over [beneath], whose bar title leads back; it keeps its category while it slides away. */
+@Composable
+internal fun SessionItemsRoute(
+    state: SessionUiState,
+    category: TargetsCategory?,
+    beneath: SessionRoute,
+    layout: PosatoLayout,
+    onClose: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
+) {
+    SessionSelectionScreen(
+        state = state,
+        initialCategory = category ?: TargetsCategory.WEBSITES,
+        backLabel = rememberLastPresent(beneath.barTitle()).orEmpty(),
+        inset = layout.screenInset,
+        onBack = onClose,
+        onEditItems = onEditItems,
+    )
+}
 
 /**
  * Session's screens on iOS: the overview under a large title carrying the wordmark, with About in the bar, and the
@@ -34,28 +95,49 @@ internal fun SessionBarScreen(
     val body = remember { movableContentOf { scope: ColumnScope -> scope.latestContent() } }
     val padding = PaddingValues(horizontal = layout.screenInset)
     when (route) {
-        SessionRoute.Overview -> PosatoBarScreen(
-            title = "Session",
-            largeTitle = true,
-            largeTitleContent = { PosatoWordmark() },
-            contentPadding = padding,
-            trailingContent = {
-                onOpenAbout?.let { open -> PosatoBarButton(onClick = open) { Text("About Posato", style = PosatoTypography.BarAction) } }
-            },
-        ) { body(this) }
-
-        SessionRoute.Duration -> PosatoBarScreen(title = "New pause", backLabel = "Session", onBack = onExitSetup, contentPadding = padding) {
-            body(this)
+        SessionRoute.Overview -> {
+            PosatoBarScreen(
+                title = route.barTitle(),
+                largeTitle = true,
+                largeTitleContent = { PosatoWordmark() },
+                contentPadding = padding,
+                trailingContent = {
+                    onOpenAbout?.let { open -> PosatoBarButton(onClick = open) { Text("About Posato", style = PosatoTypography.BarAction) } }
+                },
+            ) { body(this) }
         }
 
-        SessionRoute.Review -> PosatoBarScreen(title = "Review", backLabel = "New pause", onBack = onExitReview, contentPadding = padding) {
-            body(this)
+        SessionRoute.Duration -> {
+            PosatoBarScreen(
+                title = route.barTitle(),
+                backLabel = SessionRoute.Overview.barTitle(),
+                onBack = onExitSetup,
+                contentPadding = padding,
+            ) {
+                body(this)
+            }
         }
 
-        SessionRoute.MacSetup, SessionRoute.EarlyEnd, SessionRoute.ScheduledEarlyEnd -> PosatoBarScreen(
-            title = "Session",
-            contentPadding = padding,
-        ) { body(this) }
+        SessionRoute.Review -> {
+            PosatoBarScreen(
+                title = route.barTitle(),
+                backLabel = SessionRoute.Duration.barTitle(),
+                onBack = onExitReview,
+                contentPadding = padding,
+            ) {
+                body(this)
+            }
+        }
+
+        SessionRoute.MacSetup, SessionRoute.EarlyEnd, SessionRoute.ScheduledEarlyEnd -> {
+            PosatoBarScreen(
+                title = route.barTitle(),
+                contentPadding = padding,
+            ) { body(this) }
+        }
+
+        // SessionScreen draws the pushed items screen itself.
+        SessionRoute.Items -> {}
     }
 }
 

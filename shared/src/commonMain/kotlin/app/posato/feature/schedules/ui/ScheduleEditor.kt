@@ -21,6 +21,8 @@ import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoChoiceGroup
+import app.posato.core.designsystem.PosatoDayRow
+import app.posato.core.designsystem.PosatoDayToggle
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
@@ -52,7 +54,6 @@ internal fun ScheduleEditor(
     LaunchedEffect(name) {
         snapshotFlow { name.text.toString() }.collect { text -> if (text != current.name) actions.onUpdateDraft(current.copy(name = text)) }
     }
-    var editingStart by remember { mutableStateOf<Boolean?>(null) }
     val focus = LocalFocusManager.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         if (platformUsesCupertinoChrome) {
@@ -67,30 +68,7 @@ internal fun ScheduleEditor(
         PosatoTextField(state = name, label = "Schedule name", onSubmit = { focus.clearFocus() })
         ScheduleSetRow(draft, state.pauseSets, actions.onUpdateDraft)
         ScheduleDays(draft, actions)
-        if (platformUsesCupertinoChrome) {
-            Column {
-                PosatoTimeRow("Starts", draft.startHour, draft.startMinute, { hour, minute ->
-                    actions.onUpdateDraft(draft.copy(startHour = hour, startMinute = minute))
-                })
-                PosatoTimeRow("Ends", draft.endHour, draft.endMinute, { hour, minute ->
-                    actions.onUpdateDraft(draft.copy(endHour = hour, endMinute = minute))
-                }, supportingText = "Next day".takeIf { draft.endsNextDay })
-            }
-        } else {
-            PosatoActionRow {
-                PosatoButton(onClick = {
-                    focus.clearFocus()
-                    editingStart = true
-                }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
-                PosatoButton(onClick = {
-                    focus.clearFocus()
-                    editingStart = false
-                }, style = PosatoButtonStyle.Secondary) {
-                    Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
-                }
-            }
-            editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
-        }
+        ScheduleTimes(draft, actions)
         PosatoSwitchRow(
             modifier = Modifier.fillMaxWidth(),
             checked = draft.enabled,
@@ -108,22 +86,60 @@ internal fun ScheduleEditor(
     }
 }
 
+/** The schedule's hours: the system's compact time pickers on iOS, buttons that open the drawn wheels elsewhere. */
+@Composable
+private fun ScheduleTimes(
+    draft: ScheduleDraft,
+    actions: ScheduleActions,
+) {
+    val focus = LocalFocusManager.current
+    var editingStart by remember { mutableStateOf<Boolean?>(null) }
+    if (platformUsesCupertinoChrome) {
+        Column {
+            PosatoTimeRow("Starts", draft.startHour, draft.startMinute, { hour, minute ->
+                actions.onUpdateDraft(draft.copy(startHour = hour, startMinute = minute))
+            })
+            PosatoTimeRow("Ends", draft.endHour, draft.endMinute, { hour, minute ->
+                actions.onUpdateDraft(draft.copy(endHour = hour, endMinute = minute))
+            }, supportingText = "Next day".takeIf { draft.endsNextDay })
+        }
+    } else {
+        PosatoActionRow {
+            PosatoButton(onClick = {
+                focus.clearFocus()
+                editingStart = true
+            }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
+            PosatoButton(onClick = {
+                focus.clearFocus()
+                editingStart = false
+            }, style = PosatoButtonStyle.Secondary) {
+                Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
+            }
+        }
+        editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
+    }
+}
+
 @Composable
 private fun ScheduleDays(
     draft: ScheduleDraft,
     actions: ScheduleActions,
 ) {
+    val toggle = { day: ScheduleDay ->
+        val days = if (day in draft.days) draft.days - day else draft.days + day
+        actions.onUpdateDraft(draft.copy(days = days.toPersistentSet()))
+    }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoCaption("Repeat on")
-        PosatoChoiceGroup {
-            ScheduleDay.entries.forEach { day ->
-                PosatoToggleButton(
-                    selected = day in draft.days,
-                    onClick = {
-                        val days = if (day in draft.days) draft.days - day else draft.days + day
-                        actions.onUpdateDraft(draft.copy(days = days.toPersistentSet()))
-                    },
-                ) { Text(day.label) }
+        if (platformUsesCupertinoChrome) {
+            PosatoDayRow {
+                ScheduleDay.entries.forEach { day -> PosatoDayToggle(day.label, selected = day in draft.days, onClick = { toggle(day) }) }
+            }
+        } else {
+            PosatoChoiceGroup {
+                ScheduleDay.entries.forEach { day ->
+                    PosatoToggleButton(selected = day in draft.days, onClick = { toggle(day) }) { Text(day.label) }
+                }
             }
         }
     }

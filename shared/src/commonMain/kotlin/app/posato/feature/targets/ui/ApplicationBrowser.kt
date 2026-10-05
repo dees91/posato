@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -116,7 +116,7 @@ private fun ApplicationBrowserStatus(
     onActivate: () -> Unit
 ) {
     Column(Modifier.padding(top = PosatoSpace.Large), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        if (state.isApplicationMappingLoading) CircularProgressIndicator()
+        if (state.isApplicationMappingLoading) PosatoActivityIndicator()
         state.applicationMappingSupportingText()?.let { PosatoCaption(it) }
         state.applicationMappingFailure?.let { failure ->
             PosatoNotice(tone = PosatoTone.Critical, actionContent = {

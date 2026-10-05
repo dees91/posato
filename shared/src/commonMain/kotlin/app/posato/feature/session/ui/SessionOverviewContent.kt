@@ -3,7 +3,6 @@ package app.posato.feature.session.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoActionRow
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -64,6 +64,7 @@ internal fun SessionOverviewContent(
     scheduled: ScheduledPauseView? = null,
     onEndSchedule: () -> Unit = {},
     pauseNotice: String? = null,
+    onShowItems: ((TargetsCategory) -> Unit)? = null,
 ) {
     val scheduledRestricts = scheduled?.restricts == true
     val active = state.status is LocalSessionStatus.Active || scheduledRestricts
@@ -93,7 +94,7 @@ internal fun SessionOverviewContent(
         // The summary describes this device's default set or a session's set; a running schedule's parts name their own sets.
         if (!scheduledRestricts || state.status is LocalSessionStatus.Active) {
             FrozenSetCaption(state)
-            SessionSelectionSummary(state, deviceLabel, onEditItems)
+            SessionSelectionSummary(state, deviceLabel, onEditItems, onShowItems)
         }
         PosatoCaption("Saved on this device. Restrictions apply only during a pause you start or a schedule you set.")
         SyncSection(syncState)
@@ -267,6 +268,7 @@ internal fun SessionReviewContent(
     onItems: () -> Unit,
     onEditItems: (TargetsCategory) -> Unit,
     onRetry: () -> Unit,
+    onShowItems: ((TargetsCategory) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
@@ -276,7 +278,7 @@ internal fun SessionReviewContent(
             layout = layout,
         )
         if (!state.isReviewReady) {
-            CircularProgressIndicator()
+            PosatoActivityIndicator()
         } else {
             PosatoEndTime(
                 "Until ${state.formattedReviewEnd.orEmpty()}",
@@ -295,7 +297,7 @@ internal fun SessionReviewContent(
                     PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
                 }
             }
-            SessionSelectionSummary(state, deviceLabel, onEditItems)
+            SessionSelectionSummary(state, deviceLabel, onEditItems, onShowItems)
             PosatoCaption("This starts the session and applies the chosen restrictions on this device.")
         }
     }
