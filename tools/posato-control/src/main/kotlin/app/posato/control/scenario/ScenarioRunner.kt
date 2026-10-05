@@ -122,6 +122,7 @@ class ScenarioRunner(
         }
         when (step.action) {
             Actions.WAIT_FOR -> waitFor(step, timeoutMs)
+            Actions.PRECONDITION -> waitFor(step, timeoutMs)
             Actions.TAP -> actions.tap(locate(step))
             Actions.TYPE -> actions.type(locate(step), requireField(step.text, "type needs text"), step.clear, step.submit)
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
@@ -165,10 +166,7 @@ class ScenarioRunner(
             if (satisfied) return
             Thread.sleep(if (state == States.SETTLED) SETTLE_INTERVAL_MS else POLL_INTERVAL_MS)
         }
-        throw poll.failure ?: poll.windowError ?: ControlException(
-            ErrorCode.WAIT_TIMEOUT,
-            "Timed out after $timeoutMs ms waiting for $state ${step.query?.describe().orEmpty()}.",
-        )
+        throw poll.failure ?: poll.windowError ?: missed(step, timeoutMs)
     }
 
     /**
@@ -251,6 +249,23 @@ private fun artifactName(
     step: Step,
     kind: String
 ): String = "$kind-$index-" + (step.name ?: kind)
+
+/**
+ * The error for a wait that ran out. A `precondition` is a `waitFor` whose miss means the app is not in the state the
+ * scenario starts from, such as data an earlier run left behind, rather than a regression; its text names the remedy.
+ */
+private fun missed(
+    step: Step,
+    timeoutMs: Long
+): ControlException = if (step.action == Actions.PRECONDITION) {
+    ControlException(
+        ErrorCode.PRECONDITION_NOT_MET,
+        "The app is not in the state this scenario starts from: expected ${step.state} ${step.query?.describe().orEmpty()}." +
+            step.text?.let { " $it" }.orEmpty(),
+    )
+} else {
+    ControlException(ErrorCode.WAIT_TIMEOUT, "Timed out after $timeoutMs ms waiting for ${step.state} ${step.query?.describe().orEmpty()}.")
+}
 
 private fun invalid(message: String): ControlException = ControlException(ErrorCode.SCENARIO_INVALID, message)
 

@@ -21,6 +21,33 @@
       }
     },
     {
+      "name": "check-schedules",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "schedules-ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Add schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "no-leftover-focus",
+      "action": "precondition",
+      "state": "absent",
+      "query": {
+        "text": "Actions for Focus",
+        "role": "button"
+      },
+      "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
+    },
+    {
       "name": "open-pause-sets",
       "action": "tap",
       "query": {
@@ -38,12 +65,33 @@
       }
     },
     {
+      "name": "no-leftover-office",
+      "action": "precondition",
+      "state": "absent",
+      "query": {
+        "textContains": "Office",
+        "role": "button"
+      },
+      "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
+    },
+    {
+      "name": "no-leftover-set-2",
+      "action": "precondition",
+      "state": "absent",
+      "query": {
+        "textContains": "Set 2",
+        "role": "button"
+      },
+      "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
+    },
+    {
       "name": "update-notice",
-      "action": "waitFor",
+      "action": "precondition",
       "state": "exists",
       "query": {
         "textContains": "Update Posato on your other devices"
-      }
+      },
+      "text": "The notice shows only with a linked iCloud workspace, on the first visit to Pause sets; run `flow icloud link` on a clone that has not opened Pause sets yet."
     },
     {
       "name": "list-first-visit",
@@ -1049,6 +1097,436 @@
     },
     {
       "name": "list-after-relaunch",
+      "action": "screenshot"
+    },
+    {
+      "name": "cleanup-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-2",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 2",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-2",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-2",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-2",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-2",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 2",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-3",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 3",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-3",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-3",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-3",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-3",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 3",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-4",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 4",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-4",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-4",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-4",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-4",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 4",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-5",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 5",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-5",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-5",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-5",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-5",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 5",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-6",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 6",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-6",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-6",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-6",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-6",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 6",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-7",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 7",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-7",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-7",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-7",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-7",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 7",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-8",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 8",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-8",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-8",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-8",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-8",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 8",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-9",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 9",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-9",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-9",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-9",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-9",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 9",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-menu-10",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Set 10",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-delete-10",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-dialog-10",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Its websites and this device's app choices"
+      }
+    },
+    {
+      "name": "cleanup-confirm-10",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-gone-10",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "More actions for Set 10",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-schedules",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-focus-menu",
+      "action": "tap",
+      "query": {
+        "text": "Actions for Focus",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-focus-delete",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-focus-asked",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Delete Focus?"
+      }
+    },
+    {
+      "name": "cleanup-focus-confirm",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleanup-focus-gone",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "text": "Actions for Focus",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cleaned",
       "action": "screenshot"
     }
   ]

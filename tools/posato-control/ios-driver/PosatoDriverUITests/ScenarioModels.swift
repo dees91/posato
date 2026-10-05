@@ -147,6 +147,7 @@ enum DriverErrorCode: String {
   case elementNotFound = "ELEMENT_NOT_FOUND"
   case waitTimeout = "WAIT_TIMEOUT"
   case assertionFailed = "ASSERTION_FAILED"
+  case preconditionNotMet = "PRECONDITION_NOT_MET"
   case unsupportedStep = "UNSUPPORTED_STEP"
   case scenarioMissing = "SCENARIO_MISSING"
   case scenarioInvalid = "SCENARIO_INVALID"

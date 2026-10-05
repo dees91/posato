@@ -143,6 +143,8 @@ final class ScenarioExecutor {
     switch step.action {
     case "waitFor":
       try waitFor(step, timeout: timeout)
+    case "precondition":
+      try precondition(step, timeout: timeout)
     case "tap":
       try tap(try existingElement(step.query, timeout: timeout, action: step.action))
     case "type":
@@ -270,6 +272,20 @@ final class ScenarioExecutor {
       throw DriverError(
         .waitTimeout,
         "element did not become \(state) within \(timeout) s: \(describe(step.query))"
+      )
+    }
+  }
+
+  /// A `waitFor` whose miss means the app is not in the state the scenario starts from, such as data an earlier
+  /// run left behind, rather than a regression; `text` names the remedy.
+  private func precondition(_ step: Step, timeout: TimeInterval) throws {
+    do {
+      try waitFor(step, timeout: timeout)
+    } catch let miss as DriverError where miss.code == DriverErrorCode.waitTimeout.rawValue {
+      let remedy = step.text.map { " \($0)" } ?? ""
+      throw DriverError(
+        .preconditionNotMet,
+        "the app is not in the state this scenario starts from: expected \(step.state ?? "") \(describe(step.query)).\(remedy)"
       )
     }
   }

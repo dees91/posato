@@ -61,6 +61,7 @@ data class Scenario(
 
 object Actions {
     const val WAIT_FOR = "waitFor"
+    const val PRECONDITION = "precondition"
     const val TAP = "tap"
     const val TYPE = "type"
     const val PRESS = "press"
@@ -79,7 +80,8 @@ object Actions {
     const val SWIPE_LEFT = "swipeLeft"
     const val ADJUST_WHEELS = "adjustWheels"
     val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
-    val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
+    val all: Set<String> =
+        setOf(WAIT_FOR, PRECONDITION, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }
 
 object Orientations {

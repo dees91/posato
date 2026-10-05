@@ -29,6 +29,26 @@ feature file as the recipe.
   what you start instead of resetting.
 - Never drive an instance that this run did not launch.
 
+## Scenario state
+
+Scenarios share one app's data. The table names the state each one starts
+from; the session and pause-set scenarios check it in `precondition` steps,
+which fail with `PRECONDITION_NOT_MET` and the remedy instead of a misleading
+timeout. Clean up what a scenario leaves before the next one, or start from a
+fresh clone or `launch --fresh`.
+
+| Scenario | Starts from | Leaves | Clean up with |
+| --- | --- | --- | --- |
+| `session-start*`, `session-start-saved-items*`, `session-relaunch-ios` | no active session | an active session (`session-start*` also `example.com`) | `session-early-end.json`; `remove-website*.json` |
+| `session-expiry*` | no active session, `example.com` saved | nothing; it removes `example.com` | none |
+| `add-website*` | no `example.com` | `example.com` | `remove-website*.json` |
+| `website-batch-list*` | no `design-proof-*.example` rows | 50 `design-proof-*.example` rows | `website-batch-list-cleanup*.json` |
+| `pause-sets-desktop` | a linked workspace (`flow icloud link`) that never opened Pause sets, only My set, no `Focus` schedule | nothing; it deletes its sets and schedule | none |
+| `pause-sets-device` | no `Work` set | nothing; it deletes `Work` | none |
+
+An interrupted run leaves whatever it created so far; remove those rows by
+hand with the same controls before rerunning.
+
 ## Driving conventions
 
 - Every recipe names the exact `posato-control` command; keep labels, flags,
