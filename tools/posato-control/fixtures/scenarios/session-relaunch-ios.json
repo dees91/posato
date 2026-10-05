@@ -27,6 +27,8 @@
     { "name": "open-app-after", "action": "launchApp", "bundleId": "com.apple.calculator" },
     { "name": "app-shielded-after", "action": "waitFor", "state": "exists", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
     { "name": "open-site-after", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-blocked-first-load", "action": "waitFor", "state": "exists", "optional": true, "timeoutSeconds": 20, "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
+    { "name": "open-site-again", "action": "openURL", "url": "http://example.com/" },
     { "name": "site-blocked-after", "action": "waitFor", "state": "exists", "timeoutSeconds": 45, "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
     { "name": "return-after", "action": "launchApp", "bundleId": "app.posato.ios" },
     { "name": "request-early-end", "action": "tap", "query": { "text": "End session early", "role": "button" } },
