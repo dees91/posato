@@ -74,6 +74,13 @@ prototype module. Preserve visual hierarchy, palette, typography, geometry,
 and interaction patterns practically one-to-one while adapting code to the
 existing feature ViewModels and real service outcomes.
 
+`user-confirmed` (2026-10-05, `DESIGN-004`): the interface stays one shared
+Compose Multiplatform layer that adapts to each platform, rather than a layer
+per platform, because Android and Linux applications are planned. iOS takes the
+system's navigation, controls, and gestures; the Mac keeps its drawn controls;
+Material is the Android flavour. [Platform adaptation](#platform-adaptation)
+holds the rules; where an older passage below differs, that section wins.
+
 ### Positioning
 
 Posato helps self-directed adults interrupt automatic use of selected websites
@@ -142,6 +149,87 @@ it deletes the iCloud workspace and undelivered device changes, preserves local
 websites, and requires other devices to remove their old workspace and link
 again. The removing device can then use **Sync with iCloud** to start again.
 
+## Platform Adaptation
+
+Two platform facts in `PlatformTheme` decide the flavour: whether the host uses
+the iOS chrome (iOS and iPadOS) and whether it uses Material's ripple (Android).
+Shared components branch on them; feature screens branch only where a whole
+interaction differs. The palette, typography roles, spacing, copy, and brand
+stay common.
+
+### iOS and iPadOS
+
+- **Stack.** A push slides the whole screen, bar included, over the one below,
+  which drifts a third of the width and dims. The edge swipe follows the finger
+  and its release velocity carries into a critically damped spring; a push, pop
+  and swipe interrupt one another from where the screen is. Under Reduce Motion
+  screens change without a slide. The screen below stays composed but unplaced,
+  so a swipe starts at once and the screen keeps its state; it is not drawn,
+  touched, or exposed to accessibility while parked.
+- **Bars.** Every screen has a 44 pt navigation bar. Back is the mirrored
+  interval mark (`PosatoBackMark`, the brand's back sign by maintainer choice)
+  with the previous screen's title, read as "Back to <title>". The mark and the
+  trailing actions line up with the content edge; the title is centred. Room
+  goes to the actions first, then the title, and the back label shortens last.
+  Bar and tab text follow the reading size up to 1.3 times. A hairline appears
+  once content scrolls under the bar.
+- **Titles.** Each destination's root has a large title (34 / 41, bold) that
+  scrolls into the bar. Session's large title is the wordmark. A quiet lead line
+  under the large title replaces the eyebrow and heading pair; eyebrows do not
+  appear on iOS. **About Posato** is the info symbol in Session's bar.
+- **Insets.** Screens span their pane; content sits in a column capped at 820
+  and centred, 24 from its edges (`PosatoBarInset`), with the first content 16
+  below the bar. A push therefore moves the whole pane.
+- **Tab bar.** The destinations' tab bar belongs to them: a pushed shell screen
+  such as About covers it, and the keyboard rises over it rather than removing
+  it. A bar **Done** appears while the keyboard is up and clears focus. The
+  selected tab is primary with a semibold label and no pill; the others use the
+  muted text color, 70 % of it in dark. On a wide iPad in portrait the tabs
+  gather within 560 in the middle.
+- **iPad in landscape.** A 224 sidebar on the grouped surface with a hairline
+  toward the screens: the wordmark where a large title stands, the destinations
+  as rows in the text color (the chosen one on a quiet fill in the accent), then
+  **On this iPad** and **About Posato**. About chosen there is a root screen with
+  a large title. One view tree serves both orientations, so turning the iPad
+  keeps every screen's state.
+- **System controls.** Row and screen menus are the system menu behind the
+  `ellipsis.circle` symbol, with SF Symbols; choices such as **Pause set** are
+  the system pop-up button; questions are the system alert, with the
+  destructive answer in red and the safe one bold; schedule times are compact
+  system time pickers that follow the device's 12- or 24-hour clock; a pause's
+  length is the system countdown wheel (5 minutes to 23 hours 59 minutes, its
+  limit); duration presets are a segmented control. Native views fill their
+  interop hole with the surface color and cap their text at the third
+  accessibility size where they cannot grow.
+- **Rows.** Lists are flat rows with dividers, never cards. A tap opens or edits
+  the row. Secondary actions slide out under a left swipe, the destructive one in
+  the error color, and are also reachable as accessibility custom actions; a row
+  carries no button of its own besides a switch. A schedule row keeps its switch
+  at the trailing edge.
+- **Drawn controls.** The switch is iOS-sized (51 × 31) with a white thumb in
+  light; weekday choices are 44 round toggles with the day's initial, read by
+  full name; progress without an end is a spoked indicator.
+
+### Mac
+
+The Mac keeps the drawn controls: its menus behind a drawn ellipsis, drawn time
+wheels with Increase and Decrease buttons, dialogs drawn in the palette, in-page
+links such as **Back to schedules**, the sidebar, and eyebrows over headings.
+
+### Both Apple hosts
+
+No ripple. Pressed content dims to half (`PosatoPressDim`), and a 2 dp ring in
+the accent marks keyboard focus only when focus came from the keyboard. Text
+actions have no container and no side padding: the label sits on the content
+edge, keeps a 44 target, dims while pressed, and underlines under keyboard
+focus. One text field frame serves every field: an outlined container with the
+label as its hint, never a floating label.
+
+### Android
+
+Material components, Material's ripple, and its bottom sheet keep their own
+behavior. The Android preview is not a product host.
+
 ## Foundations
 
 ### Semantic palette
@@ -201,7 +289,11 @@ not copied into the app.
 | bodySmall | 12 / 19 | Regular |
 | labelLarge | 13 / 20 | Medium |
 | labelMedium | 12 / 18 | Medium |
-| labelSmall | 10 / 16 | Semibold |
+| labelSmall | 11 / 16 | Semibold |
+
+labelSmall is 11 / 16 so the smallest label stays readable. iOS adds three bar
+roles: BarTitle 17 / 22 semibold and BarAction 17 / 22 regular, both -0.43 sp,
+and LargeTitle 34 / 41 bold, +0.37 sp.
 
 Headline letter spacing is -1.8, -1.5, and -1 sp for displaySmall,
 headlineLarge, and headlineMedium; titleLarge is -1 sp; eyebrow labelSmall
@@ -217,8 +309,9 @@ All geometry below uses Compose dp; native window radius uses Apple points.
 - Shapes: extraSmall 6, small 8, medium 10, large 14, extraLarge 24.
 - Interactive minimum: 44 on both app hosts.
 - Standard button padding: horizontal 18, vertical 11; compact padding 12 / 8.
-- Buttons stay flat during hover, focus, and press; state indication follows
-  the rounded button shape without adding elevation.
+- Buttons stay flat during hover, focus, and press. On the Apple hosts press
+  dims the content and keyboard focus draws a ring; Android uses the ripple.
+  No state adds elevation.
 - Standard icons 18; prominent/navigation icons 24; item-symbol surface 36.
 - Wordmark mark 24 × 32; decorative interval artwork 122 × 144.
 - Primary sidebar 224; content maximum 820; compact breakpoint 600.
@@ -261,8 +354,10 @@ and `MACOS-008`; supplying assets does not prove installed icon appearance.
 
 ### About Posato and licenses
 
-`user-confirmed` (2026-09-14): a quiet **About Posato** button sits beside the
-wordmark on iPhone and below **On this Mac** in the Mac sidebar after setup.
+`user-confirmed` (2026-09-14): **About Posato** sits beside the wordmark on
+iPhone and below **On this Mac** in the Mac sidebar after setup. Since
+`DESIGN-004` it is the info symbol in Session's bar on iOS, and an entry in the
+iPad's landscape sidebar.
 The Mac device label and About text align with the primary navigation labels;
 a 4 dp gap keeps the device label and About action together.
 Session, Paused items and Schedules are the primary destinations. About Posato
@@ -279,7 +374,8 @@ target is not a product host and uses that unavailable case.
 
 Licenses lists **License**, **Notice**, and **Third-party notices** using
 existing disclosure rows. Each opens the complete scrollable document with
-selectable text, a heading, and a persistent **Back to licenses** action.
+selectable text, a heading, and a persistent **Back to licenses** action (on
+iOS the bar's back button).
 Third-party notices render Markdown headings, emphasis, inline code, and lists.
 The component table uses three columns on wide panes and labeled cells in each
 row on narrow panes. Document links appear as labeled Read buttons beneath their
@@ -330,13 +426,14 @@ they do not own policy persistence or construct feature ViewModels.
 | Text | PosatoEyebrow, PosatoTitle, PosatoBody, PosatoCaption, PosatoHeading |
 | Layout | PosatoPanel, PosatoDivider, PosatoActionRow, PosatoSection, PosatoSectionHeader |
 | Shell | PosatoNavigationScaffold, PosatoAppScaffold, PosatoSidebar |
+| iOS chrome | PosatoBarScreen, PosatoNavigationBar, PosatoBarButton, PosatoLargeTitle, PosatoLead, PosatoBackMark, CupertinoNavDisplay (behind PosatoNavStack) |
 | Main navigation | PosatoBottomNavigation, PosatoBottomNavigationItem, PosatoSidebarNavigationItem |
 | Choices/navigation | PosatoTabBar, PosatoTab, PosatoNavigationItem, PosatoChoiceGroup, PosatoSetupStep, PosatoDeviceLabel |
 | Actions/input | PosatoButton, PosatoTextField, PosatoFieldMessage, PosatoSearchField, PosatoNumberWheel |
 | Items | PosatoItemList, PosatoItemRow, PosatoItemSymbol, PosatoBadge, PosatoDisclosureRow |
-| Menus | PosatoItemMenu, PosatoItemMenuAction |
-| Selection | PosatoToggleButton, PosatoChoiceTile, PosatoSelectionRow, PosatoDurationChoice |
-| Status/content | PosatoNotice, PosatoStatusLabel, PosatoHero, PosatoEmptyState |
+| Menus | PosatoItemMenu, PosatoMenuItem, PosatoSwipeRow, PosatoSwipeAction, PosatoAlert |
+| Selection | PosatoToggleButton, PosatoChoiceTile, PosatoSelectionRow, PosatoDurationChoice, PosatoSwitchRow, PosatoDayToggle, PosatoPickerRow, PosatoTimeRow |
+| Status/content | PosatoNotice, PosatoStatusLabel, PosatoHero, PosatoEmptyState, PosatoActivityIndicator |
 | Session/support | PosatoEndTime, PosatoSyncFooter, PosatoPrivacyPoint |
 | Icons | PosatoIcons, PosatoIcon |
 
@@ -351,16 +448,17 @@ Primary buttons use primary/onPrimary; secondary and quiet actions remain
 visually subordinate. Action rows wrap with 12 horizontal / 8 vertical spacing.
 Do not substitute raw default-styled Material controls where a Posato pattern exists.
 
-Text fields use the product outlined treatment, supporting/error copy, and
-UI-owned TextFieldState. Website entry is multiline (up to two visible lines),
+Text fields share one frame: an outlined container with the label as its hint,
+no floating label, supporting/error copy, and UI-owned TextFieldState. Website entry is multiline (up to two visible lines),
 with inline Add and a URI keyboard/Go action. Return submits; Shift-Return adds
 a line break on desktop. Add remains easy to repeat without dismissing focus.
 
 ### Nested tab bar
 
-The Websites / Apps control is a soft primaryContainer tray, large radius,
-4 padding, and 4 between segments. A selected segment uses surface,
-a hairline outlineVariant border, medium radius, and primary text.
+The Websites / Apps control is a segmented tray on surfaceContainer, large
+radius, 4 padding, and 4 between segments. A selected segment uses
+surfaceContainerLowest in light and surfaceContainerHighest in dark, medium
+radius, and primary text.
 Inactive segments retain normal onSurface text, not low-contrast disabled styling.
 Labels/counts are centered vertically and horizontally; counts are muted.
 The tray's outer edge aligns with the surrounding content.
@@ -377,7 +475,8 @@ same stack. In a focused text field the first Escape only leaves the field and
 keeps what was typed; the next Escape goes back (`user-confirmed`,
 2026-09-30). Back never switches destination or leaves the application, and it
 is unavailable while a start, end, save, or system approval or password prompt
-is in progress. On iOS the screen slides with the finger and settles without a
+is in progress. On iOS the screen slides with the finger and settles with its
+velocity, as [Platform adaptation](#ios-and-ipados) describes, and without a
 slide under Reduce Motion. The Mac changes screens without a transition; the
 trackpad swipe changes the screen as the fingers lift, once macOS counts the
 swipe.
@@ -389,10 +488,11 @@ Rows align a 36 symbol surface, readable title/supporting text, and trailing
 action. Separators belong to rows; do not stack another separator immediately
 after a final row. Disclosure rows expose a clear chevron and a button role.
 
-The ellipsis is a 44 circular control with a 24 icon and a quiet background.
-The open menu is at least 200 wide, uses surface, large radius, and a subtle
-outline. Edit and Remove are full menu actions; Remove uses the error color.
-Both expose actionable semantics without changing the accepted visual treatment.
+On the Mac the ellipsis is a 44 circular control with a 24 icon and a quiet
+background. The open menu is at least 200 wide, uses surface, large radius, and
+a subtle outline. Edit and Remove are full menu actions; Remove uses the error
+color. On iOS the ellipsis opens the system menu, and list rows use a tap and
+swipe actions instead of a per-row menu.
 
 Notices use Neutral, Positive, Caution, or Critical tone. State must be named
 in text and offer a precise available action. Loading, denied/restricted access,
@@ -403,27 +503,23 @@ corruption, retryable failure, and saved-but-not-enabled choices stay distinct.
 ### iOS
 
 The app fills the real device viewport, without a fake phone frame.
-Respect safe drawing and keyboard insets. The wordmark sits above content;
-Session / Paused items / Schedules lives in the bottom navigation. A visible software
-keyboard temporarily hides the wordmark and bottom navigation to make room
-for entry; Done clears focus and restores them.
-The root applies `windowInsetsPadding(WindowInsets.safeDrawing)` once; these
-insets already include the keyboard. Do not append a second IME padding modifier.
+Respect safe drawing and keyboard insets. Bars, large titles, the tab bar, and
+the keyboard follow [Platform adaptation](#ios-and-ipados): the wordmark is
+Session's large title, Session / Paused items / Schedules lives in the tab bar,
+and the keyboard rises over the tab bar while a bar Done clears focus.
 
 `user-confirmed` (2026-09-22, `IOS-004`): iPad follows these rules and names
 itself **iPad** wherever the iPhone names itself. In landscape, iPad moves
-the primary destinations into the 224 sidebar used on Mac: the wordmark on top,
-then the destinations, then **On this iPad** and **About Posato**, without the
-Mac traffic-light inset. The sidebar stays visible while the keyboard is up
-and during About, as on Mac. iPad portrait and iPhone in either orientation
-keep the bottom navigation. Rotation keeps the selected destination and
-entered text. Selected-item details stay a bottom sheet on iOS.
+the primary destinations into a 224 sidebar: the wordmark on top, then the
+destinations, then **On this iPad** and **About Posato**. The sidebar stays
+visible while the keyboard is up and during About. iPad portrait and iPhone in
+either orientation keep the tab bar. Rotation keeps the selected destination,
+the open screens, and entered text.
 
-Content uses 24 horizontal padding in compact layout. Session uses the same
-vertical inset inside its scrollable canvas; Paused items uses 12 vertically.
-Lists consume the remaining height
-and scroll independently of entry, category tabs, and toolbar. Selected-item
-details use a modal bottom sheet with keyboard insets and Close list.
+Content uses the 24 bar inset. Lists consume the remaining height and scroll
+independently of entry, category tabs, and the bar. Selected-item details are a
+pushed screen with **Back to Session** and **Edit**, the category tabs, and an
+always visible website filter.
 
 ### macOS
 
@@ -745,11 +841,16 @@ actions and replaces the availability notice with real readiness.
   creating anything. There is no additional Continue-to-schedule
   prerequisite button.
 - The list shows each schedule's name, weekdays, hours, enabled state and
-  next run. Show local readiness or a specific problem separately from the
+  next run. On iOS a row edits on a tap, its switch turns it on or off, and a
+  left swipe reveals **Skip next** and **Delete**; deleting asks with the system
+  alert. **Add schedule** moves to the bar once a schedule exists; the empty
+  state keeps it as its first step. The Mac keeps the row menu. Show local readiness or a specific problem separately from the
   enabled switch. Missing permission offers a direct setup action, such as
   **Set up this Mac**, while keeping the plan available to other devices.
 - The editor has a name, weekday selection, start and end times, and an
-  enabled switch. Use the established form controls and validation style.
+  enabled switch. On iOS the weekdays are round toggles and **Starts** and
+  **Ends** are rows with the system's compact time picker; an end before the
+  start reads "Next day". Use the established form controls and validation style.
   Mac creation requires completed local setup. iPhone may still save a plan
   before local permission. Explain that automatic starts need consent and
   readiness on each device before they can run.
@@ -791,9 +892,12 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
   sets**. Website entry, search, editing, limits, and the app picker keep
   their current rules; the app caption says the choice is for this set on
   this device. The row menu and the set screen's ellipsis offer **Rename**,
-  **Make default**, and **Delete**.
+  **Make default**, and **Delete**. On iOS a row offers **Rename** and
+  **Delete** under a left swipe, and the bar's menu offers all three; the bar
+  carries **New set**.
 - **New set and Rename** use one name field with **Save** and **Cancel**;
-  empty names and more than 80 bytes are refused inline. A new set opens on
+  empty names and more than 80 bytes are refused inline. On iOS this is the
+  system alert with a text field, presented again after a refused name. A new set opens on
   its Websites tab. The first set shows as "My set" until renamed.
 - **Delete.** A destructive confirmation names the set. When schedules use
   it, the dialog lists them and offers **Change their set**, a set choice,
@@ -802,7 +906,8 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
   Delete; its caption says "Make another set the default to delete this
   one."
 - **Choosing a set.** A **Pause set** row opens a list of sets with their
-  counts; the default is preselected and marked.
+  counts; the default is preselected and marked. On iOS it is the system pop-up
+  button and menu.
   - Session setup shows it above the duration presets. Review names "Set:
     Work" with the set's websites and this device's apps.
   - The schedule editor shows it below the name. Schedule rows add "Set:
@@ -833,20 +938,25 @@ badges and counts have accessible labels.
 
 ### Session
 
-- Inactive: NO SESSION ACTIVE, Room for what matters., one primary start action.
+- Inactive: NO SESSION ACTIVE (sentence case on iOS: No session active), Room
+  for what matters., one primary start action.
   Without effective items, Choose paused items routes to the editor.
 - Setup: YOUR NEXT PAUSE, How much space do you need?, presets 25 / 45 / 60,
-  then Hours / Minutes wheels with explicit Increase / Decrease buttons.
+  then Hours / Minutes wheels with explicit Increase / Decrease buttons. On iOS
+  setup is pushed as **New pause** with a segmented control for the presets and
+  the system countdown wheel, without the eyebrow or Cancel.
 - Bounds: five minutes through 24 hours. Zero hours restricts minutes to 5–59;
   24 hours restricts minutes to zero. Changing hours clamps the total safely.
 - Wheels snap, support arrow keys and Home/End on desktop, and expose a range
   and adjustable value to accessibility. Controls grow with wheel text.
 - Review: ONE LAST LOOK, resolved end time, real selection/authorization state,
-  Start this pause and Change duration. A missing effective selection or mapping
+  Start this pause and Change duration. On iOS Review is pushed over New pause,
+  and its bar's back replaces Change duration. A missing effective selection or mapping
   load failure cannot be presented as ready.
 - Active: SESSION ACTIVE, timer end and remaining duration, End session early,
   compact item summary. Copy explicitly describes a local timer.
-- Early end: Ready to return?, End session, Keep this pause.
+- Early end: Ready to return?, End session, Keep this pause. On iOS this is the
+  system alert.
 - Ended/expired: inactive state plus the real early-end or expiration message.
 - Summary: two disclosure rows, not every website/app. Quiet Add or edit websites
   and Manage apps actions route directly to the corresponding category under
@@ -854,7 +964,8 @@ badges and counts have accessible labels.
   summary, and preceding copy explains that the actions edit current Paused items.
   Its detail list distinguishes start-set websites from the current app selection.
   The read-only list has category tabs, a category-specific editing route,
-  Filter list to reveal Filter selected websites, and Close list. Filtering
+  Filter list to reveal Filter selected websites, and Close list (on iOS the
+  pushed screen described under Layout). Filtering
   changes only the visible list. iOS shows opaque application counts; Mac shows
   actual local names.
 - Device setup uses collapsed **iCloud** and **This Mac** rows with short,
@@ -1009,8 +1120,11 @@ as working controls in the current MVP.
 
 Target 44-point actions on both hosts, meaningful labels/roles, logical focus,
 keyboard navigation, VoiceOver/Voice Control/Switch Control, and non-color state
-cues. Preserve system font scale and expose wheel range adjustment. Native
-permissions remain system-owned; Posato never grants its own authorization.
+cues. Preserve system font scale and expose wheel range adjustment. Content
+text follows the full text-size range; only fixed-height chrome is capped, the
+iOS bars and tab bar at 1.3 times and native pickers at the third accessibility
+size. Native permissions remain system-owned; Posato never grants its own
+authorization.
 
 Honor Reduce Motion and keep motion functional: no ticking animation, urgency,
 auto-dismissal of decision-critical information, or distracting decorative loops.

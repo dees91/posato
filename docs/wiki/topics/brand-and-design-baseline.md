@@ -27,6 +27,19 @@ dialog boundary that consumes and excludes IME before its content; native search
 verification confirmed it does not require the same correction. Recheck these
 boundaries when changing the Compose version or application shell.
 
+`user-confirmed` (2026-10-05, `DESIGN-004`): the shared interface adapts per
+platform instead of one Material look everywhere. iOS takes a UIKit-like
+screen stack with bars and large titles, the system's menus, alerts, pickers,
+and swipe actions, and an iPad sidebar in landscape; the Mac keeps its drawn
+controls; Material stays the Android flavour. The rules live in
+[DESIGN.md, Platform Adaptation](../../../DESIGN.md#platform-adaptation).
+Evidence: a design critique scored the Material-shaped iOS app 26/40; the
+native audit rose from 12/20 to 15/20 after the polish round, with no open P0
+or P1. Open P2 items at acceptance: the brand back mark instead of a chevron
+(kept by maintainer choice), schedule actions only behind a swipe on iOS, a
+discarded schedule draft on back, and a missing fallback when a system alert
+cannot present.
+
 As of 2026-09-06, the root `DESIGN.md` links to the separate
 [prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md),
 documenting its tokens, components, screen hierarchy, and behavior at the
