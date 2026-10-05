@@ -9,6 +9,7 @@ import app.posato.control.core.RunContext
 import app.posato.control.model.Envelope
 import app.posato.control.model.ErrorPayload
 import app.posato.control.model.Scenario
+import app.posato.control.model.humanLines
 import kotlinx.serialization.SerializationException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -55,7 +56,11 @@ object GuestRelay {
                 durationMs = 0,
                 error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
             )
-            println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+            if (HUMAN_OPTION in forwarded) {
+                envelope.humanLines().forEach(::println)
+            } else {
+                println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+            }
             exception.code.exitCode
         }
     }

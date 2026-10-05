@@ -5,6 +5,7 @@ import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
 import app.posato.control.model.Envelope
+import app.posato.control.model.humanLines
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -13,6 +14,9 @@ import kotlinx.serialization.json.JsonPrimitive
 const val ICLOUD_FLOW_TIMEOUT_SECONDS = 300L
 
 private const val TIMEOUT_OPTION = "--timeout-seconds"
+
+/** The global option for plain text, which the host renders itself for a relayed command it reads the envelope of. */
+internal const val HUMAN_OPTION = "--human"
 private const val LINK_ACTION = "link"
 private const val REMOVE_ACTION = "remove"
 
@@ -41,14 +45,17 @@ internal fun flowTimeoutSeconds(arguments: List<String>): Long? {
     return value?.toLongOrNull()
 }
 
-/** The arguments with every `--timeout-seconds` replaced by one [seconds] slice. */
+/**
+ * The guest's arguments for one [seconds] slice: every `--timeout-seconds` replaced by the slice, and without
+ * `--human`, since the host tells a timed-out slice from the guest's JSON envelope.
+ */
 internal fun withFlowTimeout(
     arguments: List<String>,
     seconds: Long
 ): List<String> {
     val kept = mutableListOf<String>()
     var skipValue = false
-    arguments.forEach { word ->
+    withoutHuman(arguments).forEach { word ->
         when {
             skipValue -> skipValue = false
             word == TIMEOUT_OPTION -> skipValue = true
@@ -57,6 +64,10 @@ internal fun withFlowTimeout(
         }
     }
     return kept + listOf(TIMEOUT_OPTION, seconds.toString())
+}
+
+private fun withoutHuman(arguments: List<String>): List<String> {
+    return arguments.filterNot { it == HUMAN_OPTION }
 }
 
 private fun parseEnvelope(text: String): Envelope? = try {
@@ -87,13 +98,14 @@ internal class GuestICloudFlow(
         arguments: List<String>,
         invoke: (List<String>) -> GuestOutput
     ): GuestOutput {
+        val human = HUMAN_OPTION in arguments
         var state = requireSyncing()
-        val total = flowTimeoutSeconds(arguments) ?: return withKeychain(invoke(arguments), state)
+        val total = flowTimeoutSeconds(arguments) ?: return present(withKeychain(invoke(withoutHuman(arguments)), state), human)
         val deadline = System.currentTimeMillis() + total * MILLIS_PER_SECOND
         while (true) {
             val remaining = (deadline - System.currentTimeMillis()) / MILLIS_PER_SECOND
             val output = invoke(withFlowTimeout(arguments, remaining.coerceIn(1, SLICE_SECONDS)))
-            if (!guestTimedOut(output.envelope)) return withKeychain(output, state)
+            if (!guestTimedOut(output.envelope)) return present(withKeychain(output, state), human)
             if (System.currentTimeMillis() >= deadline) throw timedOut(total, state)
             context.log("flow icloud is still waiting after a ${SLICE_SECONDS}s slice; checking iCloud Keychain in ${line.cloneName}.")
             state = requireSyncing()
@@ -148,6 +160,16 @@ internal class GuestICloudFlow(
         val result = envelope.result as? JsonObject ?: return output
         val reported = JsonObject(result + ("iCloudKeychain" to JsonPrimitive(state.id)) + ("iCloudResumed" to JsonPrimitive(resumed)))
         return output.copy(envelope = ControlJson.pretty.encodeToString(Envelope.serializer(), envelope.copy(result = reported)) + "\n")
+    }
+
+    /** Prints the final envelope as the guest would have with `--human`, which the slices did not pass on. */
+    private fun present(
+        output: GuestOutput,
+        human: Boolean
+    ): GuestOutput {
+        if (!human) return output
+        val envelope = parseEnvelope(output.envelope) ?: return output
+        return output.copy(envelope = envelope.humanLines().joinToString("\n", postfix = "\n"))
     }
 
     private companion object {

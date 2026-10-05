@@ -60,4 +60,16 @@ class GuestICloudFlowTest {
         assertFalse(checksICloudKeychain(listOf("flow", "icloud", "remove", "-t", "desktop")))
         assertFalse(checksICloudKeychain(listOf("flow", "set", "create", "-t", "desktop")))
     }
+
+    /**
+     * With `--human` the guest printed plain text, which never reads as a timeout, so the host stopped after the first
+     * slice and could not add the keychain fields to the result.
+     */
+    @Test
+    fun `given --human when slicing the wait then the guest still answers in JSON`() {
+        assertEquals(
+            listOf("flow", "icloud", "link", "-t", "desktop", "--timeout-seconds", "120"),
+            withFlowTimeout(listOf("flow", "icloud", "link", "--human", "-t", "desktop"), 120),
+        )
+    }
 }

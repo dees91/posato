@@ -5,13 +5,13 @@ import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Envelope
 import app.posato.control.model.ErrorPayload
+import app.posato.control.model.humanLines
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.groups.provideDelegate
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
 import java.io.IOException
 
 abstract class ControlCommand(
@@ -82,14 +82,7 @@ abstract class ControlCommand(
         human: Boolean
     ) {
         if (human) {
-            envelope.result?.let { result ->
-                val text = (result as? JsonPrimitive)?.takeIf { it.isString }?.content
-                echo(text ?: ControlJson.pretty.encodeToString(JsonElement.serializer(), result))
-            }
-            envelope.artifacts.forEach { echo("artifact: $it") }
-            envelope.error?.hint?.let { echo("hint: $it") }
-            // The outcome comes last, where `| tail` shows it after a long result.
-            echo(if (envelope.ok) "ok (${envelope.durationMs} ms)" else "error ${envelope.error?.code}: ${envelope.error?.message}")
+            envelope.humanLines().forEach { echo(it) }
         } else {
             echo(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
         }
