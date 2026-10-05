@@ -46,7 +46,7 @@ internal fun PosatoTheme(
             if (!platformUsesMaterialRipple) {
                 CompositionLocalProvider(
                     LocalRippleConfiguration provides null,
-                    LocalIndication provides PosatoPressHighlight(colors.onSurface.copy(alpha = PRESS_HIGHLIGHT_ALPHA)),
+                    LocalIndication provides PosatoPressDim,
                     content = content,
                 )
             } else {
@@ -91,5 +91,3 @@ internal fun windowNavigationPlacement(device: PosatoDevice): PosatoNavigationPl
     }
     return navigationPlacement(device, landscape)
 }
-
-private const val PRESS_HIGHLIGHT_ALPHA = 0.06f

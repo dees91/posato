@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -33,8 +32,9 @@ internal fun PosatoDisclosureRow(
 ) {
     Column(modifier = modifier) {
         Box(
-            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).clip(MaterialTheme.shapes.small)
-                .clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
+            modifier = Modifier.fillMaxWidth().heightIn(
+                min = PosatoSize.Control,
+            ).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
         ) {
             Row(
                 modifier = Modifier.padding(vertical = PosatoSpace.Medium),
