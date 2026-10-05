@@ -75,7 +75,9 @@ in a clean clone of R.
 
 1. **arm64:** `generateMacOsUpdateFeed`, release channel, `<build>`
    ([command](apple-provisioning.md#update-feed-and-channels)); pass the
-   identity's SHA-1 when two share a name.
+   identity's SHA-1 when two share a name. Keep the configuration cache on,
+   which `gradle.properties` sets, so a missing feed property fails before the
+   build and notarization instead of after them.
 2. **x86-64** in the same clone with `-PposatoMacOsArchitecture=x86_64`; it
    requires the arm64 feed beside it with the same build.
 3. After each run, copy `release-feed/<arch>/` out and hash it. Merge the two

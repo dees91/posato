@@ -1821,6 +1821,8 @@ tasks.register<GenerateMacOsUpdateFeed>("generateMacOsUpdateFeed") {
     val feedChannel = releaseUpdateChannel
     val downloadPrefix = providers.gradleProperty("posatoMacOsUpdateDownloadPrefix").orNull
     val previousBuild = providers.gradleProperty("posatoMacOsPreviousBuildNumber").orNull
+    // Resolved while the configuration cache is stored, so a bad property fails before the build and notarization;
+    // without the configuration cache it resolves only when this task runs.
     inputs.property(
         "posatoFeedProperties",
         providers.provider { PosatoUpdateFeed.requireFeedProperties(feedChannel, notesFile, downloadPrefix, previousBuild) },

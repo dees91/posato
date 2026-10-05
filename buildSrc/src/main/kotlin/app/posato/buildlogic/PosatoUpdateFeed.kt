@@ -111,6 +111,8 @@ object PosatoUpdateFeed {
     /**
      * Checks every property a feed generation reads, so that a missing or malformed one fails while Gradle plans
      * the build instead of after the build and notarization the feed follows. Returns the channel's property value.
+     * The check runs that early only with the configuration cache on, which `gradle.properties` sets: storing the
+     * cache resolves task inputs. With `--no-configuration-cache` Gradle resolves this input when the feed task runs.
      */
     fun requireFeedProperties(
         channel: String?,
