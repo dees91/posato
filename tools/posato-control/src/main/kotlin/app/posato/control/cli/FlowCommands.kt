@@ -72,9 +72,13 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
         }
     }
 
-    /** A set named "Deep Work" also contains "Work,", so a row must start with the name. */
+    /**
+     * A row reads "<name>, [Default set, Default, ]<n> websites · …". Matching through the website count keeps
+     * "Deep Work" and "Work, personal" from counting as a set named "Work".
+     */
     private fun hasSetNamed(labels: List<String>): Boolean {
-        return labels.any { label -> label.startsWith("$name,") }
+        val row = Regex("^${Regex.escape(name)}, (Default set, )?(Default, )?\\d+ websites?\\b")
+        return labels.any { label -> row.containsMatchIn(label) }
     }
 
     private companion object {
