@@ -39,6 +39,9 @@ internal object FlowSteps {
 
     fun sleep(seconds: Double): Step = Step(action = Actions.SLEEP, seconds = seconds)
 
+    /** Turns the first picker's wheels on screen to [values], such as an iOS time or countdown picker. */
+    fun adjustWheels(values: List<String>): Step = Step(action = Actions.ADJUST_WHEELS, values = values)
+
     fun screenshot(name: String): Step = Step(action = Actions.SCREENSHOT, name = name)
 
     /** Runs [steps] against the running application without relaunching it, failing on the first failed step. */
@@ -53,6 +56,9 @@ internal object FlowSteps {
         )
         failIfStepFailed(backend.runScenario(scenario))
     }
+
+    /** Every element on screen, for reading a control's value, such as an iOS picker's, between steps. */
+    fun nodes(backend: Backend): List<SnapshotNode> = backend.snapshot(null, null).flatten()
 
     /** Every accessibility label on screen, for reading a state such as "Starts 09:00" between rounds. */
     fun labels(backend: Backend): List<String> {

@@ -2,6 +2,7 @@ package app.posato.control.cli
 
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import app.posato.control.model.Query
 import app.posato.control.model.Step
 import com.github.ajalt.clikt.core.CliktCommand
@@ -31,11 +32,13 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
+        // The Mac's in-page Back reads the list in lower case; the iOS bar's back button names the screen by its title.
+        val back = if (session.target() == Target.DESKTOP) "Back to pause sets" else "Back to Pause sets"
         FlowSteps.run(
             backend,
             listOf(
                 FlowSteps.button("Pause sets"),
-                FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = SHORT_SECONDS),
+                FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
                 FlowSteps.waitFor(Query(text = "New set", role = FlowSteps.ROLE_BUTTON)),
             ),
         )
@@ -51,7 +54,7 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
             FlowSteps.button("New set"),
             FlowSteps.typeInto(name, submit = false),
             FlowSteps.button("Save"),
-            FlowSteps.waitFor(Query(text = "Back to pause sets", role = FlowSteps.ROLE_BUTTON)),
+            FlowSteps.waitFor(Query(text = back, role = FlowSteps.ROLE_BUTTON)),
         )
         if (websites.isNotEmpty()) {
             steps += FlowSteps.waitFor(Query(text = "Search", role = FlowSteps.ROLE_BUTTON))
@@ -59,7 +62,7 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
             steps += FlowSteps.button("Done", optional = true, timeoutSeconds = SHORT_SECONDS)
         }
         steps += listOf(
-            FlowSteps.button("Back to pause sets"),
+            FlowSteps.button(back),
             FlowSteps.screenshot("set-created"),
         )
         FlowSteps.run(backend, steps)
@@ -93,34 +96,39 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
 
     override fun execute(session: Session): JsonElement {
         if (minutes !in MIN_MINUTES..MAX_MINUTES) throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or the 60-minute preset.")
-        val steps = mutableListOf(
-            FlowSteps.button("Session"),
-            FlowSteps.button("Start a session"),
-            FlowSteps.waitFor(Query(text = "YOUR NEXT PAUSE")),
-        )
-        set?.let { chosen -> steps += chooseSet(chosen) }
-        steps += if (minutes in PRESETS) listOf(FlowSteps.button("$minutes min")) else minuteSteps(minutes - DEFAULT_MINUTES)
+        val backend = session.backend()
+        val target = session.target()
         val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
         val begin = Query(text = "Start this pause", role = FlowSteps.ROLE_BUTTON)
-        steps += listOf(
-            FlowSteps.reveal(review),
-            FlowSteps.tap(review),
-            // A dropped wheel tap would start a session of another length: Review must show the asked one.
-            FlowSteps.waitFor(Query(textContains = "$minutes minutes ·")),
-            FlowSteps.reveal(begin),
-            FlowSteps.tap(begin),
-            FlowSteps.waitFor(Query(text = "End session early", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
-            FlowSteps.screenshot("session-started"),
+        FlowSteps.run(backend, listOf(FlowSteps.button("Session"), FlowSteps.button("Start a session"), FlowSteps.waitFor(review)))
+        set?.let { chosen -> chooseSet(backend, target, chosen) }
+        val steps = if (minutes in PRESETS) listOf(FlowSteps.button("$minutes min")) else minuteSteps(target, minutes - DEFAULT_MINUTES)
+        FlowSteps.run(
+            backend,
+            steps + listOf(
+                FlowSteps.reveal(review),
+                FlowSteps.tap(review),
+                // A dropped wheel tap would start a session of another length: Review must show the asked one.
+                FlowSteps.waitFor(Query(textContains = "$minutes minutes ·")),
+                FlowSteps.reveal(begin),
+                FlowSteps.tap(begin),
+                FlowSteps.waitFor(Query(text = "End session early", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
+                FlowSteps.screenshot("session-started"),
+            ),
         )
-        FlowSteps.run(session.backend(), steps)
         return buildJsonObject {
             set?.let { put("set", it) }
             put("minutes", minutes)
         }
     }
 
-    private fun minuteSteps(delta: Int): List<Step> {
+    /** The Mac steps its drawn wheel with arrows; iOS turns the system countdown wheel straight to the minutes. */
+    private fun minuteSteps(
+        target: Target,
+        delta: Int,
+    ): List<Step> {
         if (delta == 0) return emptyList()
+        if (target != Target.DESKTOP) return listOf(FlowSteps.adjustWheels(listOf("0", "${DEFAULT_MINUTES + delta}")))
         val arrow = Query(text = if (delta > 0) "Increase Minutes" else "Decrease Minutes")
         return listOf(FlowSteps.reveal(arrow)) +
             List(kotlin.math.abs(delta)) { listOf(FlowSteps.tap(arrow), FlowSteps.sleep(TAP_GAP_SECONDS)) }.flatten()

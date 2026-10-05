@@ -84,7 +84,7 @@
       "action": "waitFor",
       "state": "exists",
       "query": {
-        "text": "Back to pause sets",
+        "text": "Back to Pause sets",
         "role": "button"
       }
     },
@@ -119,7 +119,7 @@
       "name": "back",
       "action": "tap",
       "query": {
-        "text": "Back to pause sets",
+        "text": "Back to Pause sets",
         "role": "button"
       }
     },
@@ -170,14 +170,15 @@
       "action": "waitFor",
       "state": "exists",
       "query": {
-        "text": "YOUR NEXT PAUSE"
+        "text": "Review session",
+        "role": "button"
       }
     },
     {
       "name": "choose",
       "action": "tap",
       "query": {
-        "textContains": "Pause set,",
+        "text": "Pause set",
         "role": "button"
       }
     },
@@ -194,7 +195,7 @@
       "action": "waitFor",
       "state": "exists",
       "query": {
-        "textContains": "Pause set, Work",
+        "text": "Work",
         "role": "button"
       }
     },
@@ -232,34 +233,18 @@
       "action": "screenshot"
     },
     {
-      "name": "change-reveal",
-      "action": "scrollTo",
-      "query": {
-        "text": "Change duration",
-        "role": "button"
-      }
-    },
-    {
-      "name": "change",
+      "name": "back-to-duration",
       "action": "tap",
       "query": {
-        "text": "Change duration",
+        "text": "Back to New pause",
         "role": "button"
       }
     },
     {
-      "name": "cancel-reveal",
-      "action": "scrollTo",
-      "query": {
-        "text": "Cancel",
-        "role": "button"
-      }
-    },
-    {
-      "name": "cancel",
+      "name": "back-to-session",
       "action": "tap",
       "query": {
-        "text": "Cancel",
+        "text": "Back to Session",
         "role": "button"
       }
     },
@@ -272,10 +257,10 @@
       }
     },
     {
-      "name": "work-menu",
-      "action": "tap",
+      "name": "work-swipe",
+      "action": "swipeLeft",
       "query": {
-        "text": "More actions for Work",
+        "textContains": "Work, ",
         "role": "button"
       }
     },

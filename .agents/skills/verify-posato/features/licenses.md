@@ -28,7 +28,11 @@ Preconditions:
 - Start with no active session. The recipe changes no database state and makes
   no application selection.
 
-- **Documents and return:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/licenses.json`.
+- **Documents and return:** `$PC run -t desktop --vm primary --scenario tools/posato-control/fixtures/scenarios/licenses.json`;
+  on iOS `$PC run -t <sim|device> --scenario tools/posato-control/fixtures/scenarios/licenses-ios.json`,
+  which uses the bar's back labels, scrolls the screen rather than the
+  `Document text` group (its text is not inside that group on iOS), and ends
+  at Session, because an iPhone reaches About only from Session.
   The recipe enters About Posato from Session, reads the version, opens and
   scrolls every document, captures
   the content and accessibility tree, returns to Session, then proves the

@@ -16,7 +16,8 @@ devices joined to one workspace (see Sync with iCloud).
 - `website-draft` keeps newer text when an earlier save completes, keeps the
   whole draft on save failure, and retains it across in-app navigation.
 - `website-search` filters without altering the add draft and resets list position.
-- `website-edit` uses the row menu, Edit, Save changes, and Cancel.
+- `website-edit` (iOS) opens the editor with a tap on the row, then Save changes
+  and Cancel, and removes with a swipe.
 - `website-remove` removes only the selected row.
 - `website-persist` reads saved domains after relaunch; drafts are not persisted.
 - `website-long-list` reaches offscreen rows without expanding Session's summary.
@@ -66,10 +67,13 @@ Preconditions:
   The database contains domains, never the submitted URL path/query/fragment.
   After a fresh launch or reset, run `first-install-skip.json` first (see
   [First install](./onboarding.md)).
-- **Remove:** Open `Actions for example.org`, then `Remove`, and wait for
-  that domain to be absent. The remove-website fixtures remove `example.com`.
-- **Restore batch:** Run `website-batch-list-cleanup.json` from Websites.
-  It removes only the 50 fixture domains through their menus. Confirm
+- **Remove:** On the Mac open `Actions for example.org`, then `Remove`; on
+  iOS `swipeLeft` on `example.org`, then `Remove`. Wait for that domain to be
+  absent. The remove-website fixtures remove `example.com`.
+- **Restore batch:** Run `website-batch-list-cleanup.json` from Websites on iOS
+  (it removes with swipes) or `website-batch-list-cleanup-desktop.json` on the
+  Mac (it removes through the row menus).
+  It removes only the 50 fixture domains. Confirm
   their absence using a database query or relaunch read-back on iPhone.
 
 ## Gotchas

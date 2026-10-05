@@ -3,6 +3,7 @@ package app.posato.control.cli
 import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import app.posato.control.model.Query
 import app.posato.control.model.States
 import app.posato.control.model.Step
@@ -15,9 +16,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Adds a schedule through the editor as a person would: name, set, start and end, on or off. The time wheels drop a
- * tap now and then, so each time is set in rounds that read the editor's label and step only the remaining
- * difference, instead of a counted series of taps.
+ * Adds a schedule through the editor as a person would: name, set, start and end, on or off. On the Mac the drawn
+ * time wheels drop a tap now and then, so each time is set in rounds that read the editor's label and step only the
+ * remaining difference, instead of a counted series of taps. On iOS each time is the system's compact time picker,
+ * whose wheels are turned straight to the time and then read back.
  */
 class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule through the editor with a name, an optional set, and its times.") {
     private val name by option("--name", help = "Schedule name.").required()
@@ -32,16 +34,25 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
+        val target = session.target()
         val startTime = WheelTime.parse(start)
         val endTime = WheelTime.parse(end)
         val chosenDays = ScheduleDays.parse(days)
-        FlowSteps.run(backend, openEditor() + chooseDays(chosenDays))
-        setTime(backend, WheelKind.START, startTime)
-        setTime(backend, WheelKind.END, endTime)
-        // The list reloads after the editor closes and may hold the new row below the fold, so the row is revealed
-        // and waited for rather than read from one snapshot.
-        val row = Query(textContains = "$name, ${ScheduleDays.summary(chosenDays)} ", role = FlowSteps.ROLE_BUTTON)
-        FlowSteps.run(backend, save() + listOf(FlowSteps.reveal(row), FlowSteps.waitFor(row)))
+        FlowSteps.run(backend, openEditor())
+        set?.let { chosen -> chooseSet(backend, target, chosen) }
+        FlowSteps.run(backend, chooseDays(chosenDays))
+        if (target == Target.DESKTOP) {
+            setTime(backend, WheelKind.START, startTime)
+            setTime(backend, WheelKind.END, endTime)
+        } else {
+            setSystemTime(backend, WheelKind.START, startTime)
+            setSystemTime(backend, WheelKind.END, endTime)
+        }
+        // The list reloads after the editor closes, so the row is waited for rather than read from one snapshot. The list
+        // is not lazy: a row below the fold is still in the tree.
+        // iOS reports the tappable row as a button and the Mac as text, so the row's own words identify it.
+        val row = Query(textContains = "$name, ${ScheduleDays.summary(chosenDays)} ")
+        FlowSteps.run(backend, save() + listOf(FlowSteps.waitFor(row)))
         return buildJsonObject {
             put("name", name)
             put("days", ScheduleDays.summary(chosenDays))
@@ -53,7 +64,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     }
 
     private fun openEditor(): List<Step> {
-        val steps = mutableListOf(
+        return listOf(
             FlowSteps.button("Back to schedules", optional = true, timeoutSeconds = SHORT_SECONDS),
             FlowSteps.button("Schedules"),
             FlowSteps.reveal(Query(text = "Add schedule", role = FlowSteps.ROLE_BUTTON)),
@@ -61,8 +72,6 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             FlowSteps.waitFor(Query(role = FlowSteps.ROLE_TEXT_FIELD)),
             FlowSteps.typeInto(name, submit = true),
         )
-        set?.let { chosen -> steps += chooseSet(chosen) }
-        return steps
     }
 
     private fun chooseDays(chosen: List<String>): List<Step> = ScheduleDays.toggles(chosen).flatMap { day ->
@@ -73,7 +82,8 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     private fun save(): List<Step> {
         val steps = mutableListOf<Step>()
         if (off) {
-            val toggle = Query(textContains = "Schedule on,", role = FlowSteps.ROLE_BUTTON)
+            // The Mac reads the row as a button and iOS as a switch, so the query names no role.
+            val toggle = Query(textContains = "Schedule on,")
             steps += listOf(FlowSteps.reveal(toggle), FlowSteps.tap(toggle))
         }
         val save = Query(text = "Save schedule", role = FlowSteps.ROLE_BUTTON)
@@ -102,22 +112,76 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         }
     }
 
+    /**
+     * Opens the iOS compact time picker for [kind], turns its hour and minute wheels to [target], closes it, and reads
+     * the picker back. The first picker is Starts and the second Ends; the wheels follow a 24-hour clock.
+     */
+    private fun setSystemTime(
+        backend: Backend,
+        kind: WheelKind,
+        target: WheelTime,
+    ) {
+        val picker = Query(text = SYSTEM_PICKER, index = kind.ordinal)
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.reveal(picker),
+                FlowSteps.tap(picker),
+                FlowSteps.adjustWheels(listOf("%02d".format(target.hour), "%02d".format(target.minute))),
+                FlowSteps.tap(Query(id = POPOVER_DISMISS)),
+                FlowSteps.sleep(PICKER_SETTLE_SECONDS),
+            ),
+        )
+        val shown = FlowSteps.nodes(backend).filter { node -> node.label == SYSTEM_PICKER }.getOrNull(kind.ordinal)?.value
+        if (shown != target.text) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} shows $shown instead of ${target.text}.")
+        }
+    }
+
     private companion object {
+        const val SYSTEM_PICKER = "Time Picker"
+        const val POPOVER_DISMISS = "PopoverDismissRegion"
+        const val PICKER_SETTLE_SECONDS = 1.0
         const val MAX_ROUNDS = 4
         const val SHORT_SECONDS = 3.0
     }
 }
 
-/** Chooses [name] in the set dialog, whose rows read "<name>, <n> websites" or "<name> (default), <n> websites". */
-internal fun chooseSet(name: String): List<Step> {
-    val row = Query(textContains = "Pause set,", role = FlowSteps.ROLE_BUTTON)
-    return listOf(
-        FlowSteps.reveal(row),
-        FlowSteps.tap(row),
-        FlowSteps.tap(Query(textContains = "$name (default),", role = FlowSteps.ROLE_BUTTON), optional = true, timeoutSeconds = 3.0),
-        FlowSteps.tap(Query(textContains = "$name,", role = FlowSteps.ROLE_BUTTON), optional = true, timeoutSeconds = 3.0),
-        FlowSteps.waitFor(Query(text = "Pause set, $name", role = FlowSteps.ROLE_BUTTON)),
+/**
+ * Chooses [name] as the pause set. On the Mac a drawn "Pause set, <current>" button opens a menu, on iOS a system
+ * pop-up button labelled "Pause set" opens the system menu; both menus' rows read "<name>, <detail>".
+ */
+internal fun chooseSet(
+    backend: Backend,
+    target: Target,
+    name: String,
+) {
+    if (target == Target.DESKTOP) {
+        val row = Query(textContains = "Pause set,", role = FlowSteps.ROLE_BUTTON)
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.reveal(row),
+                FlowSteps.tap(row),
+                // The drawn menu's rows read "<name>, <detail>" and the Mac reports them as text, so no role is named.
+                FlowSteps.tap(Query(textContains = "$name, ")),
+                FlowSteps.waitFor(Query(text = "Pause set, $name", role = FlowSteps.ROLE_BUTTON)),
+            ),
+        )
+        return
+    }
+    val picker = Query(text = "Pause set", role = FlowSteps.ROLE_BUTTON)
+    FlowSteps.run(
+        backend,
+        listOf(
+            FlowSteps.reveal(picker),
+            FlowSteps.tap(picker),
+            FlowSteps.tap(Query(textContains = "$name, ", role = FlowSteps.ROLE_BUTTON)),
+            FlowSteps.sleep(1.0),
+        ),
     )
+    val chosen = FlowSteps.nodes(backend).firstOrNull { node -> node.label == "Pause set" }?.value
+    if (chosen != name) throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause set shows $chosen instead of $name.")
 }
 
 internal data class WheelTime(

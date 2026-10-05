@@ -157,7 +157,8 @@ $PC wait -t <target> --for exists --text "Search" --timeout-seconds 30
 ```
 
 `Pause sets` opens the list; the set's row opens its Websites and Apps, and
-the destination keeps that set open until `Back to pause sets`. Every
+the destination keeps that set open until `Back to pause sets` (on iOS the
+bar's `Back to Pause sets`; see [iOS and the Mac drive differently](./features/README.md#ios-and-the-mac-drive-differently)). Every
 `launch` and scenario `relaunch` returns to `Session` with the list closed, so
 repeat both taps after each one. A fresh database shows the first-install flow instead:
 run `first-install-skip.json` after every `--fresh` launch or `reset` before
@@ -228,8 +229,7 @@ $PC snapshot -t sim --format text --human       # learn the current labels first
 $PC type -t sim --role textField --input example.com --clear --submit
 $PC tap -t sim --text Done --role button
 $PC wait -t sim --for exists --text example.com --role text
-$PC tap -t sim --text "Actions for example.com" --role button
-$PC tap -t sim --text Remove --role button
+$PC run  -t sim --scenario tools/posato-control/fixtures/scenarios/remove-website.json
 $PC run  -t sim --scenario tools/posato-control/fixtures/scenarios/add-website.json
 ```
 
@@ -277,8 +277,9 @@ Platform traps that invalidate a run:
   Use `--role textField` after confirming the relevant surface. Labels with
   counts use `--text-contains Websites` or `--text-contains Apps` plus
   `--role button`; do not hardcode a count.
-- Row menus open through `Actions for <domain or app name>`, then `Edit`
-  or `Remove`. These actions are not permanently visible in each row.
+- On the Mac, row menus open through `Actions for <domain or app name>`, then
+  `Edit` or `Remove`. On iOS a row edits on a tap and reveals Remove with a
+  scenario `swipeLeft`; single commands cannot swipe, so use a scenario.
 - Desktop taps use accessibility actions without explicitly activating the
   application. Typing, key presses, and `scrollTo` activate the tracked window
   and refuse if it cannot become frontmost: per-process key delivery alone
@@ -298,9 +299,11 @@ Platform traps that invalidate a run:
   and reports reached only when the element's centre is on screen.
   Static row text need not be tappable to be visibly reached. No fixed
   coordinates, Tab-count workaround, or product test hook is needed.
-- Time setup has presets `25 min`, `45 min`, `60 min` and two wheels.
-  The explicit buttons are `Increase Hours`, `Decrease Hours`,
-  `Increase Minutes`, and `Decrease Minutes`. There is no minutes text field.
+- Time setup has presets `25 min`, `45 min`, `60 min` and a length picker.
+  On the Mac it is two drawn wheels with the buttons `Increase Hours`,
+  `Decrease Hours`, `Increase Minutes`, and `Decrease Minutes`; on iOS it is the
+  system countdown wheel, set with the scenario action `adjustWheels`. There is
+  no minutes text field.
 - Choosing apps no longer requires manually creating a group. A successful
   nonempty native selection creates `Applications` only if the group is absent;
   existing names survive. Partial metadata-save failure retains the selection
