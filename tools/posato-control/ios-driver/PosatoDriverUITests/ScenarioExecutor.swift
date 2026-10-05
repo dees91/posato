@@ -17,6 +17,8 @@ final class ScenarioExecutor {
   private static let keyboardSettle: TimeInterval = 0.3
   private static let extraDeletes = 3
   private static let clearRounds = 3
+  private static let stillRounds = 10
+  private static let stillInterval: TimeInterval = 0.1
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
   private static let edgeInset: CGFloat = 2
@@ -290,6 +292,7 @@ final class ScenarioExecutor {
   /// off screen, such as a button on a screen sliding away, fails the step instead of aborting
   /// the whole run with a synthesized touch at an impossible point.
   private func tap(_ element: XCUIElement) throws {
+    waitUntilStill(element)
     if element.isHittable {
       element.tap()
       return
@@ -302,6 +305,18 @@ final class ScenarioExecutor {
       throw DriverError(.elementNotFound, "the matched element is not on screen")
     }
     element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+  }
+
+  /// Waits briefly until the element stops moving, so a tap does not land while a pushed screen
+  /// is still sliding in under it.
+  private func waitUntilStill(_ element: XCUIElement) {
+    var previous = element.frame
+    for _ in 0..<Self.stillRounds {
+      Thread.sleep(forTimeInterval: Self.stillInterval)
+      let current = element.frame
+      if current == previous { return }
+      previous = current
+    }
   }
 
   private func type(_ step: Step, timeout: TimeInterval) throws {
