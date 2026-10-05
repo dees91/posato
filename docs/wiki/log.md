@@ -2543,3 +2543,18 @@ to scope, feasibility, or delivery.
 - `observed`: the native audit rose from 12/20 to 15/20 with no open P0 or
   P1. `posato-control` drives the new interface with `adjustWheels` for system
   pickers, and verify-posato describes how iOS and the Mac drive differently.
+
+## [2026-10-05] tooling | Verification tooling after the DESIGN-004 retro
+
+- `observed`: a `--vm` command now refuses with `TOOL_OUTDATED` when the
+  guest holds another driver than the worktree's, and a scenario names the
+  state it starts from in `precondition` steps that fail with
+  `PRECONDITION_NOT_MET` and a remedy; the feature map lists what each
+  scenario needs, leaves, and is cleaned up with.
+- `observed`: the pinned Sparkle archive is cached in the Gradle user home,
+  so a clean build or a new worktree needs no network; `run --summary` and
+  `snapshot --labels` shorten output.
+- `observed`: a broader wait before every iOS action was not added. The
+  current wait for a still element before a tap passes a transition-heavy
+  scenario at the default and the largest text size, and no failing case for
+  typing or swiping could be shown.
