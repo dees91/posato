@@ -50,6 +50,7 @@ internal object PosatoControlDefaults {
     val CompactPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
     val Transparent = Color.Transparent
     const val DISABLED_ALPHA = 0.5f
+    const val PRESSED_ALPHA = 0.35f
 }
 
 internal enum class PosatoLayout {

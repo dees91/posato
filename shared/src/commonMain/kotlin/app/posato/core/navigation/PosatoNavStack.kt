@@ -20,6 +20,7 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 
 /**
  * One destination's screen stack on Navigation 3. The stack is derived from the screen's own state, and
@@ -46,7 +47,11 @@ internal fun <T : Any> PosatoNavStack(
     }
     val dispatcher = rememberStackDispatcherOwner(enabled = backEnabled)
     CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides dispatcher) {
-        PosatoNavDisplay(backStack, onBack, contentAlignment, entryProvider, clipped)
+        if (platformUsesCupertinoChrome) {
+            CupertinoNavDisplay(backStack, onBack, platformReducesMotion(), modifier, contentAlignment, content)
+        } else {
+            PosatoNavDisplay(backStack, onBack, contentAlignment, entryProvider, clipped)
+        }
     }
 }
 

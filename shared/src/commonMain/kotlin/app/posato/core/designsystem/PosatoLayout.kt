@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -51,8 +52,9 @@ internal fun PosatoActionRow(
 ) {
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
+        horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
+        itemVerticalAlignment = Alignment.CenterVertically,
         content = content,
     )
 }

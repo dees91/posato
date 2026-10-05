@@ -31,9 +31,10 @@ import app.posato.core.designsystem.PosatoEmptyState
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoItemMenu
-import app.posato.core.designsystem.PosatoItemMenuAction
 import app.posato.core.designsystem.PosatoItemRow
 import app.posato.core.designsystem.PosatoItemSymbol
+import app.posato.core.designsystem.PosatoMenuItem
+import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
@@ -127,11 +128,12 @@ internal fun WebsiteEditor(
     state: TargetsUiState,
     input: TextFieldState,
     onSubmit: (String) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    showsTitle: Boolean = true,
 ) {
     val submit: () -> Unit = { if (state.canMutatePolicy()) onSubmit(input.text.toString()) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        Text("Edit website", style = MaterialTheme.typography.titleMedium)
+        if (showsTitle) Text("Edit website", style = MaterialTheme.typography.titleMedium)
         PosatoTextField(
             state = input,
             label = "Website domain",
@@ -173,22 +175,13 @@ private fun WebsiteRow(
         modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onEdit() },
         trailingContent = {
             if (enabled) {
-                PosatoItemMenu("Actions for $domain") { dismiss ->
-                    PosatoItemMenuAction(onClick = {
-                        dismiss()
-                        onEdit()
-                    }, leadingContent = { PosatoIcon(PosatoIcons.Edit, null) }) {
-                        Text("Edit")
-                    }
-                    PosatoItemMenuAction(
-                        onClick = {
-                            dismiss()
-                            onRemove()
-                        },
-                        destructive = true,
-                        leadingContent = { PosatoIcon(PosatoIcons.Remove, null) },
-                    ) { Text("Remove") }
-                }
+                PosatoItemMenu(
+                    "Actions for $domain",
+                    listOf(
+                        PosatoMenuItem("Edit", onEdit, PosatoMenuSymbol.Edit),
+                        PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true),
+                    ),
+                )
             }
         },
     )

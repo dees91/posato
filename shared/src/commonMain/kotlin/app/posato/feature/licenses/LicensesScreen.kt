@@ -24,10 +24,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import app.posato.core.designsystem.PosatoBarContentTop
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoDisclosureRow
+import app.posato.core.designsystem.PosatoNavigationBar
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.generated.resources.Res
@@ -38,7 +40,8 @@ internal fun LicensesScreen(
     document: LicenseDocument?,
     onSelect: (LicenseDocument) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    barBackLabel: String? = null,
 ) {
     var state by remember(document) { mutableStateOf(LicensesUiState(document = document)) }
     var loadAttempt by remember { mutableIntStateOf(0) }
@@ -59,6 +62,7 @@ internal fun LicensesScreen(
         onSelect = onSelect,
         onBack = onBack,
         onRetry = { loadAttempt++ },
+        barBackLabel = barBackLabel,
     )
 }
 
@@ -69,6 +73,7 @@ internal fun LicensesScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    barBackLabel: String? = null,
 ) {
     val blocks = remember(state.text, state.document) {
         val text = state.text.orEmpty()
@@ -80,49 +85,73 @@ internal fun LicensesScreen(
             text.split("\n\n").map { LicenseMarkdownBlock.Text(AnnotatedString(it)) }
         }
     }
-    Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) {
-            Text(if (state.document == null) "Back to About Posato" else "Back to licenses")
+    val title = state.document?.title ?: "Licenses"
+    Column(modifier.fillMaxSize()) {
+        if (barBackLabel != null) {
+            PosatoNavigationBar(title = title, backLabel = barBackLabel, onBack = onBack)
         }
-        Text(
-            modifier = Modifier.semantics { heading() },
-            text = state.document?.title ?: "Licenses",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        key(state.document) {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth().semantics { contentDescription = "Document text" },
-                verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
-            ) {
-                when {
-                    state.document == null -> item {
-                        PosatoBody("The license and notices included with Posato. Available offline.")
-                        Column {
-                            LicenseDocument.entries.forEach { document ->
-                                PosatoDisclosureRow(
-                                    onClick = { onSelect(document) },
-                                    headlineContent = { Text(document.title, style = MaterialTheme.typography.bodyLarge) },
-                                )
+        val inset = if (barBackLabel !=
+            null
+        ) {
+            Modifier.padding(start = PosatoSpace.Section, end = PosatoSpace.Section, top = PosatoBarContentTop)
+        } else {
+            Modifier
+        }
+        Column(modifier = Modifier.weight(1f).then(inset), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+            if (barBackLabel == null) LicensesInlineHeader(state.document, title, onBack)
+            key(state.document) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().semantics { contentDescription = "Document text" },
+                    verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
+                ) {
+                    when {
+                        state.document == null -> item {
+                            Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+                                PosatoBody("The license and notices included with Posato. Available offline.")
+                                Column {
+                                    LicenseDocument.entries.forEach { document ->
+                                        PosatoDisclosureRow(
+                                            onClick = { onSelect(document) },
+                                            headlineContent = { Text(document.title, style = MaterialTheme.typography.bodyLarge) },
+                                        )
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    state.loadFailed -> item {
-                        PosatoBody("This document could not be opened.")
-                        PosatoButton(onClick = onRetry, style = PosatoButtonStyle.Secondary) { Text("Try again") }
-                    }
+                        state.loadFailed -> item {
+                            PosatoBody("This document could not be opened.")
+                            PosatoButton(onClick = onRetry, style = PosatoButtonStyle.Secondary) { Text("Try again") }
+                        }
 
-                    state.text == null -> item {
-                        PosatoBody("Opening document…")
-                    }
+                        state.text == null -> item {
+                            PosatoBody("Opening document…")
+                        }
 
-                    else -> items(blocks) { block ->
-                        LicenseMarkdownContent(block, onSelect)
+                        else -> items(blocks) { block ->
+                            LicenseMarkdownContent(block, onSelect)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun LicensesInlineHeader(
+    document: LicenseDocument?,
+    title: String,
+    onBack: () -> Unit,
+) {
+    PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) {
+        Text(if (document == null) "Back to About Posato" else "Back to licenses")
+    }
+    Text(
+        modifier = Modifier.semantics { heading() },
+        text = title,
+        style = MaterialTheme.typography.titleLarge,
+    )
 }
 
 @Preview(name = "Licenses · iPhone", widthDp = 390, heightDp = 780)

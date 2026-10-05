@@ -26,7 +26,7 @@ import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.sync.domain.PauseSetId
-import app.posato.feature.targets.ui.PauseSetChoiceDialog
+import app.posato.feature.targets.ui.PauseSetPickerRow
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -39,20 +39,14 @@ internal fun SessionDurationContent(
     onChoosePauseSet: (PauseSetId) -> Unit = {},
 ) {
     val duration = SessionDurationParts(state.durationMinutes)
-    var choosing by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
             "How much space\ndo you need?",
             eyebrow = "YOUR NEXT PAUSE",
             layout = layout,
             description = "Choose a quick pause, or make it your own.",
         )
-        PosatoDisclosureRow(
-            onClick = { choosing = true },
-            headlineContent = { Text("Pause set") },
-            supportingContent = { PosatoCaption(state.setName ?: "No pause set") },
-            onClickLabel = "Choose a pause set",
-        )
+        PauseSetPickerRow(state.pauseSets, state.setId, onChoose = onChoosePauseSet, placeholder = state.setName ?: "No pause set")
         PosatoChoiceGroup {
             DurationPresets.forEach { preset ->
                 PosatoNavigationItem(selected = state.durationMinutes == preset, onClick = { onSetDuration(preset) }) { Text("$preset min") }
@@ -70,12 +64,6 @@ internal fun SessionDurationContent(
         PosatoActionRow {
             PosatoButton(onReview) { Text("Review session") }
             PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
-        }
-    }
-    if (choosing) {
-        PauseSetChoiceDialog(state.pauseSets, state.setId, onDismiss = { choosing = false }) { id ->
-            choosing = false
-            onChoosePauseSet(id)
         }
     }
 }

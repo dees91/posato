@@ -21,9 +21,10 @@ import app.posato.core.designsystem.PosatoEmptyState
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoItemMenu
-import app.posato.core.designsystem.PosatoItemMenuAction
 import app.posato.core.designsystem.PosatoItemRow
 import app.posato.core.designsystem.PosatoItemSymbol
+import app.posato.core.designsystem.PosatoMenuItem
+import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
@@ -101,16 +102,7 @@ private fun ApplicationRow(
         modifier = Modifier.padding(top = PosatoSpace.Tiny),
         trailingContent = {
             if (removable) {
-                PosatoItemMenu("Actions for $name") { dismiss ->
-                    PosatoItemMenuAction(
-                        onClick = {
-                            dismiss()
-                            onRemove()
-                        },
-                        destructive = true,
-                        leadingContent = { PosatoIcon(PosatoIcons.Remove, null) },
-                    ) { Text("Remove") }
-                }
+                PosatoItemMenu("Actions for $name", listOf(PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true)))
             }
         },
     )
@@ -123,22 +115,24 @@ private fun ApplicationBrowserStatus(
     onClear: () -> Unit,
     onActivate: () -> Unit
 ) {
-    if (state.isApplicationMappingLoading) CircularProgressIndicator()
-    state.applicationMappingSupportingText()?.let { PosatoCaption(it) }
-    state.applicationMappingFailure?.let { failure ->
-        PosatoNotice(tone = PosatoTone.Critical, actionContent = {
-            if (state.hasApplicationMappingLoadFailure) PosatoButton(onRetry) { Text("Retry") }
-            if (state.canClearApplicationMappings()) {
-                PosatoButton(onClear, style = PosatoButtonStyle.Quiet) { Text("Clear selection") }
-            }
-        }) { Text(stringResource(failure.applicationMappingMessage())) }
-    }
-    if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
-        PosatoNotice(tone = PosatoTone.Caution, actionContent = {
-            PosatoButton(onActivate, enabled = state.canMutatePolicy()) { Text("Enable selected apps") }
-        }) { Text("Your selection is saved on this device, but is not yet included in the application group.") }
-    }
-    if (state.applicationMappings.isEmpty() && !state.isApplicationMappingLoading && !state.hasApplicationMappingLoadFailure) {
-        PosatoEmptyState("Make room beyond the browser.", description = "Choose the applications you would like a little space from.")
+    Column(Modifier.padding(top = PosatoSpace.Large), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        if (state.isApplicationMappingLoading) CircularProgressIndicator()
+        state.applicationMappingSupportingText()?.let { PosatoCaption(it) }
+        state.applicationMappingFailure?.let { failure ->
+            PosatoNotice(tone = PosatoTone.Critical, actionContent = {
+                if (state.hasApplicationMappingLoadFailure) PosatoButton(onRetry) { Text("Retry") }
+                if (state.canClearApplicationMappings()) {
+                    PosatoButton(onClear, style = PosatoButtonStyle.Quiet) { Text("Clear selection") }
+                }
+            }) { Text(stringResource(failure.applicationMappingMessage())) }
+        }
+        if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
+            PosatoNotice(tone = PosatoTone.Caution, actionContent = {
+                PosatoButton(onActivate, enabled = state.canMutatePolicy()) { Text("Enable selected apps") }
+            }) { Text("Your selection is saved on this device, but is not yet included in the application group.") }
+        }
+        if (state.applicationMappings.isEmpty() && !state.isApplicationMappingLoading && !state.hasApplicationMappingLoadFailure) {
+            PosatoEmptyState("Make room beyond the browser.", description = "Choose the applications you would like a little space from.")
+        }
     }
 }

@@ -2,9 +2,13 @@ package app.posato.feature.targets.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,21 +20,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarContentTop
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoNavigationBar
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.sync.domain.PauseSetId
@@ -103,76 +113,129 @@ internal fun TargetsScreen(
             browser.websitesScroll.scrollToItem(0)
         }
     }
-    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        TargetsHeaderContent(header) { focus.clearFocus() }
-        if (state.setMissing) {
-            PosatoNotice { Text("This set was deleted on another device.") }
-            return@Column
-        }
-        if (header.inUse) {
-            PosatoCaption("Added items pause now. Removed items stay paused until the pause using this set ends.")
-        }
-        if (state.isLoading && !state.hasLoaded) {
-            CircularProgressIndicator()
-            return@Column
-        }
-        state.operationFailure?.let { failure ->
-            PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Reload") } }) {
-                Text(stringResource(failure.operationMessage()))
-            }
-        }
-        if (!state.hasLoaded) return@Column
-        val editing = state.editingDomain != null && browser.category == TargetsCategory.WEBSITES
-        val editorShown = editing && browser.showingWebsiteEditor
+    val callbacks = TargetsCallbacks(
+        onSubmitWebsites = onSubmitWebsites,
+        onSubmitDomain = onSubmitDomain,
+        onEditDomain = onEditDomain,
+        onCancelDomainEdit = onCancelDomainEdit,
+        onRemoveDomain = onRemoveDomain,
+        onRetry = onRetry,
+        onRetryApplicationMappings = onRetryApplicationMappings,
+        onChooseApplications = onChooseApplications,
+        onClearApplicationMappings = onClearApplicationMappings,
+        onRemoveApplicationMapping = onRemoveApplicationMapping,
+        onActivateApplications = onActivateApplications,
+    )
+    val onDone = { focus.clearFocus() }
+    if (platformUsesCupertinoChrome && header.onBack != null) {
+        val editorShown =
+            state.hasLoaded && state.editingDomain != null && browser.category == TargetsCategory.WEBSITES && browser.showingWebsiteEditor
         PosatoNavStack(
             if (editorShown) listOf(TargetsRoute.Browser, TargetsRoute.WebsiteEditor) else listOf(TargetsRoute.Browser),
             onBack = onCancelDomainEdit,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = modifier.fillMaxSize(),
             backEnabled = !state.isSaving,
         ) { route ->
             when (route) {
-                TargetsRoute.WebsiteEditor -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-                    rememberLastPresent(state.editingDomain)?.let { domain ->
-                        WebsiteEditor(state, browser.editorDraft(state.domainEditorSession, domain), onSubmitDomain, onCancelDomainEdit)
-                    }
+                TargetsRoute.Browser -> TargetsFrame(header, onDone) {
+                    TargetsBody(state, browser, deviceLabel, header, callbacks, inlineEditor = false)
                 }
 
-                TargetsRoute.Browser -> TargetsBrowser(
-                    state = state,
-                    browser = browser,
-                    deviceLabel = deviceLabel,
-                    suspendedWebsiteEdit = editing && !browser.showingWebsiteEditor,
-                    onSubmitWebsites = onSubmitWebsites,
-                    onEditDomain = onEditDomain,
-                    onRemoveDomain = onRemoveDomain,
-                    onRetryApplicationMappings = onRetryApplicationMappings,
-                    onChooseApplications = onChooseApplications,
-                    onClearApplicationMappings = onClearApplicationMappings,
-                    onRemoveApplicationMapping = onRemoveApplicationMapping,
-                    onActivateApplications = onActivateApplications,
-                )
+                TargetsRoute.WebsiteEditor -> WebsiteEditorScreen(header.title, state, browser, callbacks)
             }
+        }
+    } else {
+        TargetsFrame(header, onDone, modifier) { TargetsBody(state, browser, deviceLabel, header, callbacks, inlineEditor = true) }
+    }
+}
+
+/** What a set screen does with the person's input, passed down as one value. */
+internal class TargetsCallbacks(
+    val onSubmitWebsites: (String, Long) -> Unit,
+    val onSubmitDomain: (String) -> Unit,
+    val onEditDomain: (String) -> Unit,
+    val onCancelDomainEdit: () -> Unit,
+    val onRemoveDomain: (String) -> Unit,
+    val onRetry: () -> Unit,
+    val onRetryApplicationMappings: () -> Unit,
+    val onChooseApplications: () -> Unit,
+    val onClearApplicationMappings: () -> Unit,
+    val onRemoveApplicationMapping: (LocalApplicationMappingId) -> Unit,
+    val onActivateApplications: () -> Unit,
+)
+
+/** The set's notices and its Websites and Apps browser; the website editor slides in over it unless iOS pushes it. */
+@Composable
+private fun ColumnScope.TargetsBody(
+    state: TargetsUiState,
+    browser: TargetsBrowserState,
+    deviceLabel: String,
+    header: TargetsHeader,
+    callbacks: TargetsCallbacks,
+    inlineEditor: Boolean,
+) {
+    if (state.setMissing) {
+        PosatoNotice { Text("This set was deleted on another device.") }
+        return
+    }
+    TargetsNotices(state, header, callbacks.onRetry)
+    if (!state.hasLoaded) return
+    val editing = state.editingDomain != null && browser.category == TargetsCategory.WEBSITES
+    val editorShown = inlineEditor && editing && browser.showingWebsiteEditor
+    PosatoNavStack(
+        if (editorShown) listOf(TargetsRoute.Browser, TargetsRoute.WebsiteEditor) else listOf(TargetsRoute.Browser),
+        onBack = callbacks.onCancelDomainEdit,
+        modifier = Modifier.weight(1f).fillMaxWidth(),
+        backEnabled = !state.isSaving,
+    ) { route ->
+        when (route) {
+            TargetsRoute.WebsiteEditor -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+                rememberLastPresent(state.editingDomain)?.let { domain ->
+                    WebsiteEditor(
+                        state,
+                        browser.editorDraft(state.domainEditorSession, domain),
+                        callbacks.onSubmitDomain,
+                        callbacks.onCancelDomainEdit,
+                    )
+                }
+            }
+
+            TargetsRoute.Browser -> TargetsBrowser(
+                state = state,
+                browser = browser,
+                deviceLabel = deviceLabel,
+                suspendedWebsiteEdit = editing && !browser.showingWebsiteEditor,
+                onSubmitWebsites = callbacks.onSubmitWebsites,
+                onEditDomain = callbacks.onEditDomain,
+                onRemoveDomain = callbacks.onRemoveDomain,
+                onRetryApplicationMappings = callbacks.onRetryApplicationMappings,
+                onChooseApplications = callbacks.onChooseApplications,
+                onClearApplicationMappings = callbacks.onClearApplicationMappings,
+                onRemoveApplicationMapping = callbacks.onRemoveApplicationMapping,
+                onActivateApplications = callbacks.onActivateApplications,
+            )
         }
     }
 }
 
 @Composable
-private fun TargetsHeaderContent(
+private fun TargetsNotices(
+    state: TargetsUiState,
     header: TargetsHeader,
-    onDone: () -> Unit,
+    onRetry: () -> Unit,
 ) {
-    header.onBack?.let { onBack ->
-        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to pause sets") }
+    if (header.inUse) {
+        PosatoCaption("Added items pause now. Removed items stay paused until the pause using this set ends.")
     }
-    PosatoSectionHeader(
-        titleContent = { Text(header.title, style = MaterialTheme.typography.headlineSmall) },
-        actionContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Quiet) { Text("Done") }
-                header.menuContent?.invoke()
-            }
-        },
-    )
+    if (state.isLoading && !state.hasLoaded) {
+        CircularProgressIndicator()
+        return
+    }
+    state.operationFailure?.let { failure ->
+        PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Reload") } }) {
+            Text(stringResource(failure.operationMessage()))
+        }
+    }
 }
 
 /** What the set screen shows above its tabs: the set's name, a way back to the list, and its actions. */

@@ -1,7 +1,9 @@
 package app.posato.core.designsystem
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -40,8 +42,17 @@ internal fun PosatoTheme(
             colorScheme = colors,
             typography = PosatoTypography.Tokens,
             shapes = PosatoShapes.Tokens,
-            content = content,
-        )
+        ) {
+            if (platformUsesCupertinoChrome) {
+                CompositionLocalProvider(
+                    LocalRippleConfiguration provides null,
+                    LocalIndication provides PosatoPressHighlight(colors.onSurface.copy(alpha = PRESS_HIGHLIGHT_ALPHA)),
+                    content = content,
+                )
+            } else {
+                content()
+            }
+        }
     }
 }
 
@@ -54,6 +65,9 @@ internal enum class PosatoDevice(
 }
 
 internal expect fun platformDevice(): PosatoDevice
+
+/** Whether screens take the host's iOS conventions: a sliding navigation stack, navigation bars, and large titles. */
+internal expect val platformUsesCupertinoChrome: Boolean
 
 internal fun navigationPlacement(
     device: PosatoDevice,
@@ -74,3 +88,5 @@ internal fun windowNavigationPlacement(device: PosatoDevice): PosatoNavigationPl
     }
     return navigationPlacement(device, landscape)
 }
+
+private const val PRESS_HIGHLIGHT_ALPHA = 0.06f

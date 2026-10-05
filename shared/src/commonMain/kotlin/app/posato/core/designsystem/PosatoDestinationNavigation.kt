@@ -94,7 +94,7 @@ private fun DestinationSurface(
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.large,
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else PosatoControlDefaults.Transparent,
+        color = if (selected && !platformUsesCupertinoChrome) MaterialTheme.colorScheme.primaryContainer else PosatoControlDefaults.Transparent,
         contentColor = color.copy(alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA),
         content = content,
     )

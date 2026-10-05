@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
@@ -29,10 +31,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoNavigationPlacement
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformDevice
+import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.designsystem.windowNavigationPlacement
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.about.AboutScreen
 import app.posato.feature.about.ApplicationUpdates
@@ -209,24 +214,90 @@ class PosatoApplication internal constructor(
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
         WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
         val deviceLabel = "On this ${device.noun} only"
-        ApplicationNavigationScaffold(
-            device = device,
-            destination = navigation.destination,
-            showingInformation = navigation.informationPage != null,
-            onSelect = navigation::select,
-            onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
-            modifier = modifier,
-        ) { layout ->
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
-                PosatoNavStack(
-                    navigation.shellStack(),
-                    onBack = navigation::back,
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopCenter,
-                ) { route ->
-                    when (route) {
-                        ShellRoute.Destinations -> {
+        if (platformUsesCupertinoChrome && windowNavigationPlacement(device) == PosatoNavigationPlacement.Bottom) {
+            CupertinoDestinationsHost(
+                navigation,
+                device,
+                deviceLabel,
+                syncState,
+                macSetupState,
+                onMacSetupAnnouncement,
+                pendingRequest,
+                updates,
+                onConsumeWindowRequest = { pendingRequest = null },
+                modifier = modifier,
+            )
+        } else {
+            ApplicationNavigationScaffold(
+                device = device,
+                destination = navigation.destination,
+                showingInformation = navigation.informationPage != null,
+                onSelect = navigation::select,
+                onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
+                modifier = modifier,
+            ) { layout ->
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
+                    PosatoNavStack(
+                        navigation.shellStack(),
+                        onBack = navigation::back,
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter,
+                    ) { route ->
+                        when (route) {
+                            ShellRoute.Destinations -> {
+                                DestinationContent(
+                                    navigation = navigation,
+                                    layout = layout,
+                                    deviceLabel = deviceLabel,
+                                    syncState = syncState,
+                                    macSetupState = macSetupState,
+                                    onMacSetupAnnouncement = onMacSetupAnnouncement,
+                                    windowRequest = pendingRequest,
+                                    onConsumeWindowRequest = { pendingRequest = null },
+                                    device = device,
+                                    modifier = contentModifier,
+                                )
+                            }
+
+                            ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
+                                InformationContent(route, navigation, updates, contentModifier.padding(layout.inset))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun CupertinoDestinationsHost(
+        navigation: ApplicationNavigation,
+        device: PosatoDevice,
+        deviceLabel: String,
+        syncState: SyncBootstrapUiState,
+        macSetupState: MacHelperSetupUiState?,
+        onMacSetupAnnouncement: (String) -> Unit,
+        windowRequest: SessionWindowRequest?,
+        updates: ApplicationUpdates?,
+        onConsumeWindowRequest: () -> Unit,
+        modifier: Modifier = Modifier,
+    ) {
+        BoxWithConstraints(
+            modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
+        ) {
+            val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
+            val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
+            PosatoNavStack(
+                navigation.shellStack(),
+                onBack = navigation::back,
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
+            ) { route ->
+                when (route) {
+                    ShellRoute.Destinations -> {
+                        CupertinoTabFrame(device, navigation.destination, onSelect = navigation::select) {
                             DestinationContent(
                                 navigation = navigation,
                                 layout = layout,
@@ -234,16 +305,28 @@ class PosatoApplication internal constructor(
                                 syncState = syncState,
                                 macSetupState = macSetupState,
                                 onMacSetupAnnouncement = onMacSetupAnnouncement,
-                                windowRequest = pendingRequest,
-                                onConsumeWindowRequest = { pendingRequest = null },
+                                windowRequest = windowRequest,
+                                onConsumeWindowRequest = onConsumeWindowRequest,
                                 device = device,
                                 modifier = contentModifier,
+                                onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
                             )
                         }
+                    }
 
-                        ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
-                            InformationContent(route, navigation, updates, contentModifier.padding(layout.inset))
+                    ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
+                        val backLabel = when (route) {
+                            ShellRoute.About -> navigation.destination.title
+                            ShellRoute.Licenses -> "About"
+                            else -> "Licenses"
                         }
+                        InformationContent(
+                            route,
+                            navigation,
+                            updates,
+                            contentModifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+                            cupertinoBackLabel = backLabel,
+                        )
                     }
                 }
             }
@@ -262,6 +345,7 @@ class PosatoApplication internal constructor(
         onConsumeWindowRequest: () -> Unit,
         device: PosatoDevice,
         modifier: Modifier = Modifier,
+        onOpenAbout: (() -> Unit)? = null,
     ) {
         var destination by navigation::destination
         when (destination) {
@@ -291,6 +375,7 @@ class PosatoApplication internal constructor(
                 scheduledPauses = scheduledPauses,
                 notPausedYet = sessionComposition.notPausedYet,
                 deviceNoun = device.noun,
+                overviewHeader = onOpenAbout?.let { open -> { ApplicationNavigationHeader(device, onOpenAbout = open, inset = false) } },
             )
 
             ApplicationDestination.SCHEDULES -> SchedulesDestination(scheduleInputs, device, layout, macSetupState, modifier)
@@ -299,7 +384,8 @@ class PosatoApplication internal constructor(
                 pauseSetsInputs,
                 navigation.pauseSets,
                 device.noun,
-                modifier.padding(horizontal = layout.inset, vertical = PosatoSpace.Medium),
+                if (onOpenAbout != null) modifier else modifier.padding(horizontal = layout.inset, vertical = PosatoSpace.Medium),
+                entryModifier = Modifier,
             )
         }
     }
@@ -310,6 +396,7 @@ class PosatoApplication internal constructor(
         navigation: ApplicationNavigation,
         updates: ApplicationUpdates?,
         modifier: Modifier = Modifier,
+        cupertinoBackLabel: String? = null,
     ) {
         if (route == ShellRoute.About) {
             AboutScreen(
@@ -318,6 +405,7 @@ class PosatoApplication internal constructor(
                 modifier = modifier,
                 updates = updates,
                 notifications = notifier.takeIf { it.available },
+                barBackLabel = cupertinoBackLabel,
             )
         } else {
             LicensesScreen(
@@ -325,6 +413,7 @@ class PosatoApplication internal constructor(
                 onSelect = { navigation.licenseDocument = it },
                 onBack = navigation::back,
                 modifier = modifier,
+                barBackLabel = cupertinoBackLabel,
             )
         }
     }
@@ -435,10 +524,12 @@ private val PosatoLayout.inset: Dp
         return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
     }
 
-internal enum class ApplicationDestination {
-    SESSION,
-    TARGETS,
-    SCHEDULES,
+internal enum class ApplicationDestination(
+    val title: String,
+) {
+    SESSION("Session"),
+    TARGETS("Pause sets"),
+    SCHEDULES("Schedules"),
 }
 
 internal enum class ApplicationInformationPage {

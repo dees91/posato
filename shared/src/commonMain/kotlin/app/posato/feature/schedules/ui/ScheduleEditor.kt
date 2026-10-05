@@ -20,18 +20,21 @@ import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoChoiceGroup
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoLead
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoPanel
-import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwitchRow
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoToggleButton
 import app.posato.core.designsystem.PosatoTone
-import app.posato.feature.targets.ui.PauseSetChoiceDialog
+import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.feature.targets.ui.PauseSetPickerRow
 import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.toPersistentSet
 
@@ -51,12 +54,16 @@ internal fun ScheduleEditor(
     var editingStart by remember { mutableStateOf<Boolean?>(null) }
     val focus = LocalFocusManager.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = {
-            focus.clearFocus()
-            actions.onCloseEditor()
-        }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-        PosatoHeading(if (draft.id == null) "Make room, regularly." else "Edit schedule", eyebrow = "SCHEDULE", layout = layout)
-        PosatoTextField(state = name, label = "Schedule name", placeholder = "Morning focus", onSubmit = { focus.clearFocus() })
+        if (platformUsesCupertinoChrome) {
+            if (draft.id == null) PosatoLead("Make room, regularly.")
+        } else {
+            PosatoButton(onClick = {
+                focus.clearFocus()
+                actions.onCloseEditor()
+            }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
+            PosatoHeading(if (draft.id == null) "Make room, regularly." else "Edit schedule", eyebrow = "SCHEDULE", layout = layout)
+        }
+        PosatoTextField(state = name, label = "Schedule name", onSubmit = { focus.clearFocus() })
         ScheduleSetRow(draft, state.pauseSets, actions.onUpdateDraft)
         ScheduleDays(draft, actions)
         PosatoActionRow {
@@ -72,7 +79,7 @@ internal fun ScheduleEditor(
             }
         }
         editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
-        PosatoSelectionRow(
+        PosatoSwitchRow(
             modifier = Modifier.fillMaxWidth(),
             checked = draft.enabled,
             onCheckedChange = { actions.onUpdateDraft(draft.copy(enabled = it)) },
@@ -96,7 +103,7 @@ private fun ScheduleDays(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoCaption("Repeat on")
-        PosatoActionRow {
+        PosatoChoiceGroup {
             ScheduleDay.entries.forEach { day ->
                 PosatoToggleButton(
                     selected = day in draft.days,
@@ -157,17 +164,5 @@ private fun ScheduleSetRow(
     sets: List<PauseSetRow>,
     onUpdateDraft: (ScheduleDraft) -> Unit,
 ) {
-    var choosing by remember { mutableStateOf(false) }
-    PosatoDisclosureRow(
-        onClick = { choosing = true },
-        headlineContent = { Text("Pause set") },
-        supportingContent = { PosatoCaption(sets.firstOrNull { set -> set.id == draft.setId }?.name ?: "Choose a set") },
-        onClickLabel = "Choose a pause set",
-    )
-    if (choosing) {
-        PauseSetChoiceDialog(sets, draft.setId, onDismiss = { choosing = false }) { id ->
-            choosing = false
-            onUpdateDraft(draft.copy(setId = id))
-        }
-    }
+    PauseSetPickerRow(sets, draft.setId, onChoose = { id -> onUpdateDraft(draft.copy(setId = id)) }, placeholder = "Choose a set")
 }

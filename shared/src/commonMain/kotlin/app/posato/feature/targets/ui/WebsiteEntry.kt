@@ -55,7 +55,6 @@ internal fun WebsiteEntry(
             }
         },
         inputModifier = Modifier.focusRequester(focus),
-        placeholder = "website.example",
         supportingText = if (receipt != null && receipt.saved) {
             "${receipt.addedCount} added · ${receipt.duplicateCount} already on your list"
         } else {

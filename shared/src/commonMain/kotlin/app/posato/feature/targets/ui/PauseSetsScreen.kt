@@ -2,6 +2,7 @@ package app.posato.feature.targets.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,26 +17,69 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
 import app.posato.core.designsystem.PosatoBadge
+import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoItemList
 import app.posato.core.designsystem.PosatoNotice
+import app.posato.core.designsystem.PosatoPickerOption
+import app.posato.core.designsystem.PosatoPickerRow
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.sync.domain.PauseSetId
+
+/** The list's title and New set: a large title with a bar button on iOS, a section header elsewhere. */
+@Composable
+private fun PauseSetsChrome(
+    canCreate: Boolean,
+    onCreate: () -> Unit,
+    body: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val latestBody by rememberUpdatedState(body)
+    val content = remember { movableContentOf { latestBody() } }
+    if (platformUsesCupertinoChrome) {
+        PosatoBarScreen(
+            title = "Pause sets",
+            modifier = modifier,
+            largeTitle = true,
+            contentPadding = PaddingValues(horizontal = PosatoSpace.Section),
+            trailingContent = {
+                PosatoBarButton(onClick = { if (canCreate) onCreate() }) {
+                    Text("New set", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp))
+                }
+            },
+        ) { content() }
+    } else {
+        Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+            PosatoSectionHeader(
+                titleContent = { Text("Pause sets", style = MaterialTheme.typography.headlineSmall) },
+                actionContent = {
+                    PosatoButton(onClick = onCreate, enabled = canCreate) { Text("New set") }
+                },
+            )
+            content()
+        }
+    }
+}
 
 @Composable
 internal fun PauseSetsScreen(
@@ -50,13 +94,7 @@ internal fun PauseSetsScreen(
     modifier: Modifier = Modifier,
 ) {
     var dialog by remember { mutableStateOf<PauseSetDialog?>(null) }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        PosatoSectionHeader(
-            titleContent = { Text("Pause sets", style = MaterialTheme.typography.headlineSmall) },
-            actionContent = {
-                PosatoButton(onClick = { dialog = PauseSetDialog.Create }, enabled = state.canCreate) { Text("New set") }
-            },
-        )
+    val body: @Composable () -> Unit = {
         if (state.hasLoaded && !state.canCreate && !state.isSaving) {
             PosatoCaption("You can have up to 10 pause sets.")
         }
@@ -76,6 +114,7 @@ internal fun PauseSetsScreen(
             }
         }
     }
+    PauseSetsChrome(canCreate = state.canCreate, onCreate = { dialog = PauseSetDialog.Create }, modifier = modifier, body = body)
     when (val current = dialog) {
         PauseSetDialog.Create -> {
             PauseSetNameDialog("New set", "", onDismiss = { dialog = null }) { name ->
@@ -261,18 +300,22 @@ internal fun PauseSetChoiceList(
     }
 }
 
-/** The set choice Session and the schedule editor open: every live set with its count, the default marked. */
+/** The set choice Session and the schedule editor offer: every live set with its count, the default marked. */
 @Composable
-internal fun PauseSetChoiceDialog(
+internal fun PauseSetPickerRow(
     rows: List<PauseSetRow>,
     selected: PauseSetId?,
-    onDismiss: () -> Unit,
     onChoose: (PauseSetId) -> Unit,
+    placeholder: String,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Pause set") },
-        text = { PauseSetChoiceList(rows, selected, onChoose) },
-        confirmButton = { PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text("Cancel") } },
+    PosatoPickerRow(
+        label = "Pause set",
+        options = rows.map { row ->
+            val count = if (row.websiteCount == 1) "1 website" else "${row.websiteCount} websites"
+            PosatoPickerOption(row.name, if (row.isDefault) "Default · $count" else count)
+        },
+        selected = rows.indexOfFirst { row -> row.id == selected }.takeIf { it >= 0 },
+        onSelect = { index -> onChoose(rows[index].id) },
+        placeholder = placeholder,
     )
 }

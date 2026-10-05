@@ -75,6 +75,7 @@ internal fun SessionScreen(
     scheduledPauses: ScheduledPauses? = null,
     notPausedYet: StateFlow<Int>? = null,
     deviceNoun: String = "device",
+    overviewHeader: (@Composable () -> Unit)? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
@@ -116,6 +117,7 @@ internal fun SessionScreen(
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
         pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count, deviceNoun) },
+        overviewHeader = overviewHeader,
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
         onSetDuration = viewModel::setDurationMinutes,
@@ -231,6 +233,7 @@ internal fun SessionScreen(
     scheduled: ScheduledPauseView? = null,
     scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
     pauseNotice: String? = null,
+    overviewHeader: (@Composable () -> Unit)? = null,
 ) {
     val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
     val stack = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming)
@@ -249,6 +252,7 @@ internal fun SessionScreen(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
+            if (route == SessionRoute.Overview) overviewHeader?.invoke()
             SessionOperationNotice(state, onRetry)
             SessionRouteContent(
                 route = route,

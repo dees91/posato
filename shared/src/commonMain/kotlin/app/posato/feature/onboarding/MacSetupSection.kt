@@ -26,8 +26,8 @@ import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoNotice
-import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwitchRow
 import app.posato.core.designsystem.PosatoTone
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_approval_needed
@@ -120,7 +120,7 @@ internal fun MacSetupSection(
             }
             MacSetupActions(presentation.readiness, running, !presentation.removal.reachedDaemon(), onCheck, onEnable, onOpenSettings)
             loginItemEnabled?.let { enabled ->
-                PosatoSelectionRow(
+                PosatoSwitchRow(
                     checked = enabled,
                     onCheckedChange = onLoginItemChange,
                     enabled = !running,
