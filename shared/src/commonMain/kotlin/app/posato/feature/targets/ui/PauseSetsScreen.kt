@@ -36,6 +36,7 @@ import app.posato.core.designsystem.PosatoAlertField
 import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBadge
 import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -70,7 +71,7 @@ private fun PauseSetsChrome(
             title = "Pause sets",
             modifier = modifier,
             largeTitle = true,
-            contentPadding = PaddingValues(horizontal = PosatoSpace.Section),
+            contentPadding = PaddingValues(horizontal = PosatoBarInset),
             trailingContent = {
                 PosatoBarButton(onClick = onCreate, enabled = canCreate) {
                     Text("New set", style = PosatoTypography.BarAction)

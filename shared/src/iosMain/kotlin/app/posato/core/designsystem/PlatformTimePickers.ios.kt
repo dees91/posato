@@ -46,6 +46,8 @@ internal actual fun PlatformTimePicker(
         }
     }
     val tint = MaterialTheme.colorScheme.primary.toUIColor()
+    // Compose leaves a hole where a native view sits; the picker's own background fills it in the screen's color.
+    val surface = MaterialTheme.colorScheme.surface.toUIColor()
     UIKitView(
         factory = {
             UIDatePicker().apply {
@@ -58,6 +60,7 @@ internal actual fun PlatformTimePicker(
         update = { picker ->
             NSCalendar.currentCalendar.dateBySettingHour(hour.toLong(), minute.toLong(), 0, NSDate(), 0u)?.let { picker.date = it }
             picker.tintColor = tint
+            picker.backgroundColor = surface
             picker.accessibilityLabel = label
         },
         properties = UIKitInteropProperties(isNativeAccessibilityEnabled = true),
@@ -74,6 +77,7 @@ internal actual fun PlatformDurationPicker(
 ) {
     val latest by rememberUpdatedState(onChange)
     val latestRange by rememberUpdatedState(range)
+    val surface = MaterialTheme.colorScheme.surface.toUIColor()
     val target = remember {
         PickerTarget { picker ->
             val chosen = (picker.countDownDuration / SECONDS_PER_MINUTE).toInt()
@@ -93,6 +97,7 @@ internal actual fun PlatformDurationPicker(
         },
         modifier = modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth().height(WheelPickerHeight),
         update = { picker ->
+            picker.backgroundColor = surface
             if ((picker.countDownDuration / SECONDS_PER_MINUTE).toInt() != minutes) picker.countDownDuration = minutes * SECONDS_PER_MINUTE
         },
         properties = UIKitInteropProperties(isNativeAccessibilityEnabled = true),

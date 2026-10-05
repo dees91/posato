@@ -68,7 +68,7 @@ internal fun PosatoBarScreen(
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
     scrollState: ScrollState = rememberScrollState(),
-    contentPadding: PaddingValues = PaddingValues(horizontal = PosatoSpace.Section),
+    contentPadding: PaddingValues = PaddingValues(horizontal = PosatoBarInset),
     trailingContent: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -116,6 +116,12 @@ internal fun PosatoBarScreen(
 internal val PosatoBarContentTop = PosatoSpace.Large
 
 /**
+ * The side inset of every screen with a bar. The content column is capped in width and centred, so a wider window
+ * adds margin around it instead of inside it, and every screen's edge stays on one line.
+ */
+internal val PosatoBarInset = PosatoSpace.Section
+
+/**
  * The iOS navigation bar. The back action's mark and the trailing actions line up with the screen's content
  * edge, [edgeInset]; the title stays centred in the space they leave and truncates rather than overlapping them.
  * Its text grows with the reading size only up to a cap, as UIKit's bars do.
@@ -126,7 +132,7 @@ internal fun PosatoNavigationBar(
     modifier: Modifier = Modifier,
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
-    edgeInset: Dp = PosatoSpace.Section,
+    edgeInset: Dp = PosatoBarInset,
     titleAlpha: () -> Float = { 1f },
     titleReadable: Boolean = true,
     separatorAlpha: () -> Float = { 0f },

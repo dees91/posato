@@ -25,6 +25,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import app.posato.core.designsystem.PosatoBarContentTop
+import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -93,7 +94,7 @@ internal fun LicensesScreen(
         val inset = if (barBackLabel !=
             null
         ) {
-            Modifier.padding(start = PosatoSpace.Section, end = PosatoSpace.Section, top = PosatoBarContentTop)
+            Modifier.padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop)
         } else {
             Modifier
         }

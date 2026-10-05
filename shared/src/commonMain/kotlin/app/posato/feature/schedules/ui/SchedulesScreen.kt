@@ -38,6 +38,7 @@ import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
 import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
@@ -156,7 +157,7 @@ internal fun SchedulesScreen(
             }
         }
         if (platformUsesCupertinoChrome) {
-            SchedulesBarScreen(route, inset, actions, addEnabled = !state.atCapacity, state.addsFromBar(readiness, device), routeContent)
+            SchedulesBarScreen(route, PosatoBarInset, actions, addEnabled = !state.atCapacity, state.addsFromBar(readiness, device), routeContent)
         } else {
             Column(
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),

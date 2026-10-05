@@ -30,6 +30,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarContentTop
+import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -62,7 +63,7 @@ internal fun TargetsFrame(
     val barred = platformUsesCupertinoChrome && header.onBack != null
     Column(modifier.fillMaxSize()) {
         if (barred) TargetsBar(header, onDone)
-        val inset = if (barred) Modifier.padding(start = PosatoSpace.Section, end = PosatoSpace.Section, top = PosatoBarContentTop) else Modifier
+        val inset = if (barred) Modifier.padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop) else Modifier
         Column(Modifier.weight(1f).fillMaxWidth().then(inset), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
             if (!barred) TargetsHeaderContent(header, onDone)
             content()

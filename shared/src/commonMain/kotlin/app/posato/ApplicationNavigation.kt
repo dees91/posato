@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -30,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -174,7 +179,8 @@ internal fun ApplicationNavigationScaffold(
 
 /**
  * A destination with the tab bar beneath it, in the iOS manner: the bar belongs to the screen, so a screen pushed
- * over the destinations covers it and takes it along, and the keyboard rises over it instead of removing it.
+ * over the destinations covers it and takes it along, and the keyboard rises over it instead of removing it. Beside
+ * a sidebar, [showsTabBar] is false and the destination keeps only the home indicator's space.
  */
 @Composable
 internal fun CupertinoTabFrame(
@@ -182,29 +188,90 @@ internal fun CupertinoTabFrame(
     destination: ApplicationDestination,
     onSelect: (ApplicationDestination) -> Unit,
     modifier: Modifier = Modifier,
+    showsTabBar: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
     var barHeight by remember { mutableIntStateOf(0) }
     val keyboard = WindowInsets.ime.getBottom(density)
+    val bottom = if (showsTabBar) barHeight else WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).exclude(WindowInsets.ime).getBottom(density)
     Box(modifier.fillMaxSize()) {
         Box(
-            Modifier.fillMaxSize().padding(bottom = with(density) { maxOf(barHeight, keyboard).toDp() }),
+            Modifier.fillMaxSize().padding(bottom = with(density) { maxOf(bottom, keyboard).toDp() }),
             contentAlignment = Alignment.TopCenter,
         ) { content() }
-        Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { barHeight = it.height }
-                .background(MaterialTheme.colorScheme.surface)
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).exclude(WindowInsets.ime)),
-        ) {
-            ApplicationNavigation(
-                placement = PosatoNavigationPlacement.Bottom,
-                device = device,
-                destination = destination,
-                showingInformation = false,
-                onSelect = onSelect,
-                onOpenAbout = {},
-            )
+        if (showsTabBar) {
+            Box(
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { barHeight = it.height }
+                    .background(MaterialTheme.colorScheme.surface)
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).exclude(WindowInsets.ime)),
+            ) {
+                ApplicationNavigation(
+                    placement = PosatoNavigationPlacement.Bottom,
+                    device = device,
+                    destination = destination,
+                    showingInformation = false,
+                    onSelect = onSelect,
+                    onOpenAbout = {},
+                )
+            }
         }
     }
 }
+
+/**
+ * The iPad's sidebar in landscape: the wordmark where a large title would stand, the destinations as rows, and About
+ * at the foot, on the grouped background with a hairline toward the screens.
+ */
+@Composable
+internal fun CupertinoSidebar(
+    device: PosatoDevice,
+    destination: ApplicationDestination,
+    showingInformation: Boolean,
+    onSelect: (ApplicationDestination) -> Unit,
+    onOpenAbout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hairline = MaterialTheme.colorScheme.outlineVariant
+    Column(
+        modifier.fillMaxHeight().background(MaterialTheme.colorScheme.surfaceContainer)
+            .drawBehind { drawLine(hairline, Offset(size.width, 0f), Offset(size.width, size.height), 1.dp.toPx() / 2) }
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = PosatoSpace.Medium),
+        verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
+    ) {
+        PosatoWordmark(Modifier.padding(start = PosatoSpace.Medium, top = SidebarBarHeight, bottom = PosatoSpace.Large))
+        Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
+            SidebarRow(ApplicationDestination.SESSION, PosatoIcons.Pause, destination, showingInformation, onSelect)
+            SidebarRow(ApplicationDestination.TARGETS, PosatoIcons.Items, destination, showingInformation, onSelect)
+            SidebarRow(ApplicationDestination.SCHEDULES, PosatoIcons.Clock, destination, showingInformation, onSelect)
+        }
+        Spacer(Modifier.weight(1f))
+        PosatoDeviceLabel("On this ${device.noun}", Modifier.padding(start = PosatoSpace.Medium))
+        PosatoSidebarNavigationItem(
+            selected = showingInformation,
+            onClick = onOpenAbout,
+            iconContent = { PosatoIcon(PosatoIcons.Info, null, Modifier.size(PosatoSize.LargeIcon)) },
+            modifier = Modifier.fillMaxWidth().padding(bottom = PosatoSpace.Small),
+        ) { Text("About Posato") }
+    }
+}
+
+@Composable
+private fun SidebarRow(
+    entry: ApplicationDestination,
+    icon: ImageVector,
+    destination: ApplicationDestination,
+    showingInformation: Boolean,
+    onSelect: (ApplicationDestination) -> Unit,
+) {
+    PosatoSidebarNavigationItem(
+        selected = destination == entry && !showingInformation,
+        onClick = { onSelect(entry) },
+        iconContent = { PosatoIcon(icon, null, Modifier.size(PosatoSize.LargeIcon)) },
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(entry.title) }
+}
+
+private val SidebarBarHeight = 44.dp

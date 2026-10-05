@@ -19,6 +19,7 @@ import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
 import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBarButton
+import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoBarScreen
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoSpace
@@ -48,7 +49,7 @@ internal fun SessionRouteFrame(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (platformUsesCupertinoChrome) {
-        SessionBarScreen(route, layout, onOpenAbout, onExitSetup, onExitReview, content)
+        SessionBarScreen(route, onOpenAbout, onExitSetup, onExitReview, content)
     } else {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
@@ -64,7 +65,6 @@ internal fun SessionItemsRoute(
     state: SessionUiState,
     category: TargetsCategory?,
     beneath: SessionRoute,
-    layout: PosatoLayout,
     onClose: () -> Unit,
     onEditItems: (TargetsCategory) -> Unit,
 ) {
@@ -72,20 +72,19 @@ internal fun SessionItemsRoute(
         state = state,
         initialCategory = category ?: TargetsCategory.WEBSITES,
         backLabel = rememberLastPresent(beneath.barTitle()).orEmpty(),
-        inset = layout.screenInset,
+        inset = PosatoBarInset,
         onBack = onClose,
         onEditItems = onEditItems,
     )
 }
 
 /**
- * Session's screens on iOS: the overview under a large title carrying the wordmark, with About in the bar, and the
- * steps of a new pause pushed with a bar back to the step before.
+ * Session's screens on iOS: the overview under a large title carrying the wordmark, with About in the bar, unless
+ * the iPad's sidebar carries both; and the steps of a new pause pushed with a bar back to the step before.
  */
 @Composable
 internal fun SessionBarScreen(
     route: SessionRoute,
-    layout: PosatoLayout,
     onOpenAbout: (() -> Unit)?,
     onExitSetup: () -> Unit,
     onExitReview: () -> Unit,
@@ -93,13 +92,14 @@ internal fun SessionBarScreen(
 ) {
     val latestContent by rememberUpdatedState(content)
     val body = remember { movableContentOf { scope: ColumnScope -> scope.latestContent() } }
-    val padding = PaddingValues(horizontal = layout.screenInset)
+    val padding = PaddingValues(horizontal = PosatoBarInset)
     when (route) {
         SessionRoute.Overview -> {
             PosatoBarScreen(
                 title = route.barTitle(),
                 largeTitle = true,
-                largeTitleContent = { PosatoWordmark() },
+                // The app's identity, the wordmark and About, sits here unless a sidebar beside Session carries it.
+                largeTitleContent = (@Composable { PosatoWordmark() }).takeIf { onOpenAbout != null },
                 contentPadding = padding,
                 trailingContent = {
                     onOpenAbout?.let { open -> PosatoBarButton(onClick = open) { Text("About Posato", style = PosatoTypography.BarAction) } }

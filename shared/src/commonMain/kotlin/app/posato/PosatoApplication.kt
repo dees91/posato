@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
@@ -214,7 +216,7 @@ class PosatoApplication internal constructor(
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
         WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
         val deviceLabel = "On this ${device.noun} only"
-        if (platformUsesCupertinoChrome && windowNavigationPlacement(device) == PosatoNavigationPlacement.Bottom) {
+        if (platformUsesCupertinoChrome) {
             CupertinoDestinationsHost(
                 navigation,
                 device,
@@ -283,10 +285,55 @@ class PosatoApplication internal constructor(
         onConsumeWindowRequest: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
-        BoxWithConstraints(
-            modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
-        ) {
+        // One tree for both orientations, so turning an iPad keeps every screen's state: the sidebar comes and goes
+        // beside the screens, and the tab bar under them.
+        val sidebar = windowNavigationPlacement(device) == PosatoNavigationPlacement.Sidebar
+        val openAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) }
+        Row(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            if (sidebar) {
+                CupertinoSidebar(
+                    device = device,
+                    destination = navigation.destination,
+                    showingInformation = navigation.informationPage != null,
+                    onSelect = navigation::select,
+                    onOpenAbout = openAbout,
+                    modifier = Modifier.width(PosatoSize.NavigationSidebar),
+                )
+            }
+            CupertinoScreens(
+                navigation,
+                device,
+                deviceLabel,
+                syncState,
+                macSetupState,
+                onMacSetupAnnouncement,
+                windowRequest,
+                updates,
+                onConsumeWindowRequest,
+                sidebar,
+                openAbout,
+                Modifier.weight(1f),
+            )
+        }
+    }
+
+    @Composable
+    private fun CupertinoScreens(
+        navigation: ApplicationNavigation,
+        device: PosatoDevice,
+        deviceLabel: String,
+        syncState: SyncBootstrapUiState,
+        macSetupState: MacHelperSetupUiState?,
+        onMacSetupAnnouncement: (String) -> Unit,
+        windowRequest: SessionWindowRequest?,
+        updates: ApplicationUpdates?,
+        onConsumeWindowRequest: () -> Unit,
+        sidebar: Boolean,
+        onOpenAbout: () -> Unit,
+        modifier: Modifier = Modifier,
+    ) {
+        val sides = if (sidebar) WindowInsetsSides.Top + WindowInsetsSides.End else WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        BoxWithConstraints(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(sides))) {
             val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
             val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
             PosatoNavStack(
@@ -297,7 +344,7 @@ class PosatoApplication internal constructor(
             ) { route ->
                 when (route) {
                     ShellRoute.Destinations -> {
-                        CupertinoTabFrame(device, navigation.destination, onSelect = navigation::select) {
+                        CupertinoTabFrame(device, navigation.destination, onSelect = navigation::select, showsTabBar = !sidebar) {
                             DestinationContent(
                                 navigation = navigation,
                                 layout = layout,
@@ -309,7 +356,7 @@ class PosatoApplication internal constructor(
                                 onConsumeWindowRequest = onConsumeWindowRequest,
                                 device = device,
                                 modifier = contentModifier,
-                                onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
+                                onOpenAbout = onOpenAbout.takeUnless { sidebar },
                             )
                         }
                     }
@@ -384,9 +431,7 @@ class PosatoApplication internal constructor(
                 pauseSetsInputs,
                 navigation.pauseSets,
                 device.noun,
-                if (onOpenAbout !=
-                    null
-                ) {
+                if (platformUsesCupertinoChrome) {
                     modifier
                 } else {
                     modifier.padding(start = layout.inset, end = layout.inset, top = layout.inset, bottom = PosatoSpace.Medium)

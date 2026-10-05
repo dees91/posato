@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -52,7 +53,8 @@ internal fun PosatoBottomNavigationItem(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    DestinationSurface(selected, onClick, modifier, enabled) {
+    val fill = if (platformUsesCupertinoChrome) PosatoControlDefaults.Transparent else MaterialTheme.colorScheme.primaryContainer
+    DestinationSurface(selected, fill, onClick, modifier, enabled) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Small, vertical = PosatoSpace.Small),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny),
@@ -76,14 +78,23 @@ internal fun PosatoSidebarNavigationItem(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    DestinationSurface(selected, onClick, modifier, enabled) {
+    // An iPad sidebar marks the chosen row with a quiet fill and the accent, in the text size of a list row.
+    val fill = if (platformUsesCupertinoChrome) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primaryContainer
+    val style = if (platformUsesCupertinoChrome) {
+        PosatoTypography.BarAction
+    } else {
+        MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.Medium,
+        )
+    }
+    DestinationSurface(selected, fill, onClick, modifier, enabled) {
         Row(
             Modifier.fillMaxWidth().padding(PosatoSpace.Medium),
             horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             iconContent()
-            ProvideTextStyle(MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), content)
+            ProvideTextStyle(style, content)
         }
     }
 }
@@ -91,6 +102,7 @@ internal fun PosatoSidebarNavigationItem(
 @Composable
 private fun DestinationSurface(
     selected: Boolean,
+    selectedFill: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -112,7 +124,7 @@ private fun DestinationSurface(
         enabled = enabled,
         interactionSource = interaction,
         shape = MaterialTheme.shapes.large,
-        color = if (selected && !platformUsesCupertinoChrome) MaterialTheme.colorScheme.primaryContainer else PosatoControlDefaults.Transparent,
+        color = if (selected) selectedFill else PosatoControlDefaults.Transparent,
         contentColor = color.copy(alpha = if (enabled) 1f else PosatoControlDefaults.DISABLED_ALPHA),
         content = content,
     )

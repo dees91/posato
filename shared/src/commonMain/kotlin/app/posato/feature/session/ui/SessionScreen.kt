@@ -255,7 +255,7 @@ internal fun SessionScreen(
         backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress()),
     ) { route ->
         if (route == SessionRoute.Items) {
-            SessionItemsRoute(state, rememberLastPresent(shownItems), flow.last(), layout, { shownItems = null }, onEditPausedItems)
+            SessionItemsRoute(state, rememberLastPresent(shownItems), flow.last(), { shownItems = null }, onEditPausedItems)
             return@PosatoNavStack
         }
         val routeBody: @Composable ColumnScope.() -> Unit = {
