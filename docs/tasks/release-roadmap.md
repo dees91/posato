@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 17 (amended 2026-10-05: release 1.3 defects found in packaging; backlog additions `MACOS-026` and `SESSION-007`)
+- **Revision:** 17 (amended 2026-10-05: release 1.3 defects found in packaging; backlog additions `MACOS-026`, `SESSION-007`, and `MACOS-027`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-05
@@ -116,8 +116,8 @@
   The 2026-10-04 backlog addition `MACOS-026` (idea 27, `user-confirmed`,
   from the `RELEASE-005` retro) changes no release; the maintainer wants it
   considered first when release 1.4 is composed.
-  The 2026-10-05 backlog addition `SESSION-007` (idea 28, `user-confirmed`)
-  changes no release.
+  The 2026-10-05 backlog additions `SESSION-007` (idea 28) and `MACOS-027`
+  (idea 29), both `user-confirmed`, change no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -374,6 +374,7 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
 | `MACOS-026` | Let an in-app update replace Posato on the Mac without asking "Quit Posato?": the updater's quit request skips the confirmation that a person's quit gets while a pause runs or a schedule is on, and a person's quit still asks. Verify a candidate-channel update from a build with the change to the next with a schedule on and during a pause; without either, the old build does not ask either. | Sessions and enforcement | Idea 27; `RELEASE-005` retro | Release 1.4 composition; an update between two candidate builds proves it, because the first release with the change still asks when it is replaced |
 | `SESSION-007` | Offer longer quick choices when a pause is started by hand, next to 25 and 45 minutes: 1 h, 2 h, 4 h, 8 h, and **Until end of day** at midnight on the device's clock, within the existing 5-minute minimum and 24-hour maximum, on Mac and iPhone, with the final set and phone layout settled in `DESIGN.md`. | Sessions and enforcement | Idea 28 | Release composition; the final set of choices |
+| `MACOS-027` | Find why a long-lived Mac install reports the background helper as unavailable ("Setup incomplete", "could not be checked or enabled", a schedule that "couldn't start here") while System Settings allows it and blocking works, reproduce it in a Tart VM along the maintainer's update path, and fix the readiness check or its recovery so Session, setup, and schedules agree with what the helper does. | Sessions and enforcement | Idea 29 | A reproduction outside the maintainer's Mac; release composition |
 
 ## Coverage matrix
 

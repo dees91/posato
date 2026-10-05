@@ -1105,6 +1105,20 @@ below. This queue retains idea provenance without expanding the original MVP.
     maximum and the wheels stay. Decide the final set, its labels, and the
     phone layout of seven choices in `DESIGN.md`. Owner: backlog row
     `SESSION-007`.
+29. **A helper that works but reads as unavailable.**
+    `user-confirmed` (2026-10-05, the maintainer's own Mac on 1.3.0 (28),
+    a screen recording kept outside the repository): Session said "Setup
+    incomplete. Posato is not blocking websites or apps on this Mac" and
+    that the schedule Work "couldn't start here"; Finish setup ended in
+    "Blocking could not be turned on yet", and This Mac said "The background
+    helper could not be checked or enabled" (`MacHelperReadiness.UNAVAILABLE`).
+    At the same time System Settings showed PosatoMacOSHelper allowed in the
+    background, and the maintainer reports that blocking works. Clean Tart
+    installs and the `RELEASE-005` update from 1.2.0 reported the helper
+    ready. `open`: why the readiness check fails on a long-lived install
+    (earlier versions, other background items, the update path), and
+    whether a schedule really did not start or only its report is wrong.
+    Owner: backlog row `MACOS-027`.
 
 ## Later platform questions
 

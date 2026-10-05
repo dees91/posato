@@ -2523,3 +2523,12 @@ to scope, feasibility, or delivery.
   the native helper, and the companion, the last static checks that only
   `quality` ran, so a prototype Detekt finding fails it in seconds instead of
   the full gate; it still builds no app and runs no tests.
+
+## [2026-10-05] idea | Helper reads as unavailable while blocking works
+
+- `user-confirmed`: on the maintainer's Mac, 1.3.0 reports setup incomplete
+  and the helper unavailable, and a schedule as unable to start, although
+  System Settings allows the helper and blocking works. Idea 29 records it;
+  backlog row `MACOS-027` owns the reproduction and fix and changes no
+  release.
+
