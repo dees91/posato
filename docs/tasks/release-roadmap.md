@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 17 (amended 2026-10-05: release 1.3 defects found in packaging; backlog additions `MACOS-026`, `SESSION-007`, and `MACOS-027`)
+- **Revision:** 18 (2026-10-05: release 1.4 composed with `DESIGN-004`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-05
@@ -118,6 +118,11 @@
   considered first when release 1.4 is composed.
   The 2026-10-05 backlog additions `SESSION-007` (idea 28) and `MACOS-027`
   (idea 29), both `user-confirmed`, change no release.
+  Revision 18 composes release 1.4 (`user-confirmed`, 2026-10-05) with
+  `DESIGN-004` (idea 30), which continues the accepted design spike in
+  PR #137, and its `RELEASE-006` row. The maintainer chose to start 1.4 with
+  this row alone; adding `MACOS-026`, `SESSION-007`, or other backlog rows
+  later takes a further revision.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -340,6 +345,23 @@ Ordering across the waves:
 | `SESSION-006` | Make Session describe pause sets: replace the remaining **Paused items** copy with **Pause sets**, explain a running session's frozen counts in terms of its set, and stop showing the default set's counts while only a scheduled pause restricts, where each running part names its own set. | Sessions and enforcement | delivery | R1.3/W4 | `SCHEDULE-004` | PR-RELEASE-1-3-FIXES |
 | `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app` with the new product line and homepage from `WEB-002`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W5 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `WEB-002`, `SCHEDULE-006`, `NAV-002`, `SESSION-006` | PR-RELEASE-1-3-MEDIA |
 | `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W6 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `SCHEDULE-006`, `NAV-002`, `SESSION-006`, `WEB-002`, `DOCS-004` | PR-RELEASE-1-3 |
+
+## Release 1.4: a native feel on every Apple device
+
+Theme: Posato looks and behaves like an app made for each Apple device while
+its interface stays one shared Compose codebase for the planned Android and
+Linux apps. The design critique of 2026-10-04 and the spike in PR #137 found
+and replaced the Material 3 port feel on iOS and the shared defects behind
+it; `DESIGN-004` finishes that work and records the direction in
+`DESIGN.md`.
+
+The composition is started with one delivery row by the maintainer's choice;
+it is extended only by a later revision.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `DESIGN-004` | Give the iOS app a native feel and refine the shared design system on every platform, from the spike in PR #137: a UIKit-like screen stack with velocity-aware back swipe, navigation bars and large titles, native menus and pickers, swipe actions, and one calmer set of shared controls without ripple on the Apple hosts. Close the remaining findings of a native audit and one polish round, adapt `posato-control` and `verify-posato` to the new interface, and record the direction in `DESIGN.md`. | Platform coverage | delivery | R1.4/W1 | None | PR-NATIVE-FEEL |
+| `RELEASE-006` | Verify the 1.4.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.4/W2 | `DESIGN-004` | PR-RELEASE-1-4 |
 
 ## Backlog
 

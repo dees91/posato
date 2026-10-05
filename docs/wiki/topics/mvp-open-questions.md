@@ -1119,6 +1119,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     (earlier versions, other background items, the update path), and
     whether a schedule really did not start or only its report is wrong.
     Owner: backlog row `MACOS-027`.
+30. **A native feel on iOS and a refined shared design system.**
+    `user-confirmed` (2026-10-05): a design critique scored the iOS app 26/40
+    because it read as a Material 3 port, and the edge swipe moved only a band
+    between a fixed header and a tab bar that popped in and out. The
+    maintainer kept one shared Compose UI for the planned Android and Linux
+    apps and accepted the result of the spike in PR #137: a UIKit-like screen
+    stack on iOS, navigation bars and large titles, native menus and pickers,
+    and a calmer shared design system on every platform. Owner: release 1.4
+    row `DESIGN-004`.
 
 ## Later platform questions
 
