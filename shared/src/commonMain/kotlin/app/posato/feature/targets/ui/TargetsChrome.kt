@@ -41,6 +41,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.PosatoTypography
+import app.posato.core.designsystem.barColumn
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
@@ -64,7 +65,8 @@ internal fun TargetsFrame(
     Column(modifier.fillMaxSize()) {
         if (barred) TargetsBar(header, onDone)
         val inset = if (barred) Modifier.padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop) else Modifier
-        Column(Modifier.weight(1f).fillMaxWidth().then(inset), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+        val column = if (platformUsesCupertinoChrome) Modifier.barColumn() else Modifier.fillMaxWidth()
+        Column(Modifier.weight(1f).then(column).then(inset), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
             if (!barred) TargetsHeaderContent(header, onDone)
             content()
         }
@@ -119,7 +121,7 @@ internal fun WebsiteEditorScreen(
 ) {
     Column(Modifier.fillMaxSize()) {
         PosatoNavigationBar(title = "Edit website", backLabel = setTitle, onBack = callbacks.onCancelDomainEdit)
-        Column(Modifier.padding(start = PosatoSpace.Section, end = PosatoSpace.Section, top = PosatoBarContentTop)) {
+        Column(Modifier.barColumn().padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop)) {
             rememberLastPresent(state.editingDomain)?.let { domain ->
                 WebsiteEditor(
                     state,

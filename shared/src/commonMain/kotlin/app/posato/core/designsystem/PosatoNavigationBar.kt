@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalContentColor
@@ -97,8 +98,9 @@ internal fun PosatoBarScreen(
             separatorAlpha = { separator },
             trailingContent = trailingContent,
         )
+        // The scroll spans the whole width, so a drag in the margins scrolls too; the content keeps its column.
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState).padding(contentPadding)
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState).barColumn().padding(contentPadding)
                 .padding(top = if (largeTitle) 0.dp else PosatoBarContentTop, bottom = PosatoSpace.Section),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
@@ -122,8 +124,17 @@ internal val PosatoBarContentTop = PosatoSpace.Large
 internal val PosatoBarInset = PosatoSpace.Section
 
 /**
+ * The column a screen with a bar sets its content in: the whole width up to [PosatoSize.Content], centred. The
+ * screen itself spans its pane, so a push moves the whole pane while the text keeps a readable measure.
+ */
+internal fun Modifier.barColumn(): Modifier {
+    return fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = PosatoSize.Content).fillMaxWidth()
+}
+
+/**
  * The iOS navigation bar. The back action's mark and the trailing actions line up with the screen's content
- * edge, [edgeInset]; the title stays centred in the space they leave and truncates rather than overlapping them.
+ * edge: [edgeInset] inside the centred content column; the title stays centred in the space they leave and
+ * truncates rather than overlapping them.
  * Its text grows with the reading size only up to a cap, as UIKit's bars do.
  */
 @Composable
@@ -170,8 +181,9 @@ internal fun PosatoNavigationBar(
             val side = Constraints(maxWidth = (width * BAR_SIDE_SHARE).toInt())
             val backPlaceable = back.firstOrNull()?.measure(side)
             val trailingPlaceable = trailing.firstOrNull()?.measure(side)
-            val start = (edgeInset - PosatoSpace.Tiny).roundToPx().coerceAtLeast(0)
-            val end = (edgeInset - PosatoSpace.Small).roundToPx().coerceAtLeast(0)
+            val margin = ((width - PosatoSize.Content.roundToPx()) / 2).coerceAtLeast(0)
+            val start = margin + (edgeInset - PosatoSpace.Tiny).roundToPx().coerceAtLeast(0)
+            val end = margin + (edgeInset - PosatoSpace.Small).roundToPx().coerceAtLeast(0)
             val backEnd = backPlaceable?.let { start + it.width } ?: 0
             val trailingStart = trailingPlaceable?.let { width - end - it.width } ?: width
             val reserved = maxOf(backEnd, width - trailingStart) + BarTitleGap.roundToPx()

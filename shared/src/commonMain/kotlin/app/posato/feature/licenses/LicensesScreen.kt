@@ -33,6 +33,7 @@ import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoNavigationBar
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.core.designsystem.barColumn
 import app.posato.generated.resources.Res
 import kotlinx.coroutines.CancellationException
 
@@ -94,7 +95,7 @@ internal fun LicensesScreen(
         val inset = if (barBackLabel !=
             null
         ) {
-            Modifier.padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop)
+            Modifier.barColumn().padding(start = PosatoBarInset, end = PosatoBarInset, top = PosatoBarContentTop)
         } else {
             Modifier
         }

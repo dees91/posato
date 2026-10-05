@@ -55,6 +55,7 @@ import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTypography
+import app.posato.core.designsystem.barColumn
 import app.posato.core.designsystem.platformDevice
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.ui.TargetsCategory
@@ -159,7 +160,7 @@ internal fun SessionSelectionScreen(
             },
         )
         Column(
-            Modifier.weight(1f).padding(horizontal = inset).padding(top = PosatoBarContentTop),
+            Modifier.weight(1f).barColumn().padding(horizontal = inset).padding(top = PosatoBarContentTop),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
         ) {
             TargetsCategoryTabs(category, state.displayDomains().size, state.applicationMappings.size) {

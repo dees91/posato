@@ -335,7 +335,8 @@ class PosatoApplication internal constructor(
         val sides = if (sidebar) WindowInsetsSides.Top + WindowInsetsSides.End else WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         BoxWithConstraints(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(sides))) {
             val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
-            val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
+            // Each screen spans the pane and sets its own content column, so a push moves the whole pane.
+            val contentModifier = Modifier.fillMaxWidth()
             PosatoNavStack(
                 navigation.shellStack(),
                 onBack = navigation::back,

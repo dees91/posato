@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -15,13 +16,18 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
 import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarInset
 import app.posato.core.designsystem.PosatoBarScreen
+import app.posato.core.designsystem.PosatoIcon
+import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.PosatoWordmark
@@ -102,7 +108,12 @@ internal fun SessionBarScreen(
                 largeTitleContent = (@Composable { PosatoWordmark() }).takeIf { onOpenAbout != null },
                 contentPadding = padding,
                 trailingContent = {
-                    onOpenAbout?.let { open -> PosatoBarButton(onClick = open) { Text("About Posato", style = PosatoTypography.BarAction) } }
+                    // The system's info symbol keeps the bar light, so the title never truncates beside it at large sizes.
+                    onOpenAbout?.let { open ->
+                        PosatoBarButton(onClick = open, modifier = Modifier.semantics { contentDescription = "About Posato" }) {
+                            PosatoIcon(PosatoIcons.Info, null, Modifier.size(PosatoSize.LargeIcon))
+                        }
+                    }
                 },
             ) { body(this) }
         }
