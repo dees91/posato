@@ -126,6 +126,7 @@ internal fun WebsiteEditorScreen(
             title = "Edit website",
             backLabel = setTitle,
             onBack = callbacks.onCancelDomainEdit,
+            backEnabled = !state.isSaving,
             trailingContent = {
                 if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
                     PosatoBarButton(onClick = { focus.clearFocus() }) { Text("Done", style = PosatoTypography.BarAction) }

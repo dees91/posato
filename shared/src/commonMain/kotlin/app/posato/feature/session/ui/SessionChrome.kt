@@ -52,10 +52,11 @@ internal fun SessionRouteFrame(
     onOpenAbout: (() -> Unit)?,
     onExitSetup: () -> Unit,
     onExitReview: () -> Unit,
+    backEnabled: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (platformUsesCupertinoChrome) {
-        SessionBarScreen(route, onOpenAbout, onExitSetup, onExitReview, content)
+        SessionBarScreen(route, onOpenAbout, onExitSetup, onExitReview, backEnabled, content)
     } else {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
@@ -94,6 +95,7 @@ internal fun SessionBarScreen(
     onOpenAbout: (() -> Unit)?,
     onExitSetup: () -> Unit,
     onExitReview: () -> Unit,
+    backEnabled: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val latestContent by rememberUpdatedState(content)
@@ -123,6 +125,7 @@ internal fun SessionBarScreen(
                 title = route.barTitle(),
                 backLabel = SessionRoute.Overview.barTitle(),
                 onBack = onExitSetup,
+                backEnabled = backEnabled,
                 contentPadding = padding,
             ) {
                 body(this)
@@ -134,6 +137,7 @@ internal fun SessionBarScreen(
                 title = route.barTitle(),
                 backLabel = SessionRoute.Duration.barTitle(),
                 onBack = onExitReview,
+                backEnabled = backEnabled,
                 contentPadding = padding,
             ) {
                 body(this)

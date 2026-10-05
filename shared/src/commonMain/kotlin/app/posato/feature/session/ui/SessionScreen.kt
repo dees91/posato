@@ -243,6 +243,7 @@ internal fun SessionScreen(
     val flow = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming, platformUsesCupertinoChrome)
     val stack = if (shownItems != null) flow + SessionRoute.Items else flow
     val showItems = { category: TargetsCategory -> shownItems = category }.takeIf { platformUsesCupertinoChrome }
+    val backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress())
     PosatoNavStack(
         stack,
         onBack = {
@@ -252,7 +253,7 @@ internal fun SessionScreen(
             }
         },
         modifier = modifier.fillMaxSize(),
-        backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress()),
+        backEnabled = backEnabled,
     ) { route ->
         if (route == SessionRoute.Items) {
             SessionItemsRoute(state, rememberLastPresent(shownItems), flow.last(), { shownItems = null }, onEditPausedItems)
@@ -289,7 +290,7 @@ internal fun SessionScreen(
                 onShowItems = showItems,
             )
         }
-        SessionRouteFrame(route, layout, onOpenAbout, onExitSetup, onExitReview, routeBody)
+        SessionRouteFrame(route, layout, onOpenAbout, onExitSetup, onExitReview, backEnabled, routeBody)
     }
     if (platformUsesCupertinoChrome) {
         SessionEarlyEndAlerts(state, scheduled, scheduledEnd, onConfirmEarlyEnd, onCancelEarlyEnd)

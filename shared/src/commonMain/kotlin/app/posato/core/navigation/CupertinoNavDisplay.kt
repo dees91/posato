@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +39,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.launch
@@ -62,6 +65,8 @@ internal fun <T : Any> CupertinoNavDisplay(
     val motion = if (reduceMotion) ReducedMotion else ScreenSpring
     val top = backStack.last()
     LaunchedEffect(top) { stack.settle(backStack, motion) }
+    // A change below an unchanged top, such as an iPad turning beside its sidebar, moves nothing but must be known.
+    SideEffect { stack.follow(backStack) }
     CupertinoBackGesture(stack, backStack, onBack, motion)
     val surface = MaterialTheme.colorScheme.surface
     Box(modifier.clipToBounds(), contentAlignment = contentAlignment) {
@@ -69,13 +74,17 @@ internal fun <T : Any> CupertinoNavDisplay(
         // The screen below the top stays composed while hidden, so an edge swipe starts on a screen that is ready.
         val parked = stack.parked
         listOfNotNull(layers.under ?: parked, layers.over).forEach { entry ->
-            key(stackKey(entry)) {
+            key(entry) {
                 val layer = if (entry == parked) Modifier.parked() else stack.layerModifier(isUnder = entry == layers.under)
                 Box(
                     layer.fillMaxSize().background(surface),
                     contentAlignment = contentAlignment,
                 ) {
-                    holder.SaveableStateProvider(stackKey(entry)) { content(entry) }
+                    // Only the screen on top hears back; a screen below or parked keeps its handlers but is not asked.
+                    val dispatcher = rememberStackDispatcherOwner(enabled = entry == layers.over)
+                    CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides dispatcher) {
+                        holder.SaveableStateProvider(stack.keyOf(entry)) { content(entry) }
+                    }
                 }
             }
         }
@@ -130,6 +139,26 @@ private class CupertinoStack<T : Any>(
         private set
     private var settled by mutableStateOf(initial)
 
+    private val keys = mutableMapOf<T, String>()
+    private var nextKey = 0
+
+    /**
+     * The key a screen's saved state lives under, unique for each entry in the stack. A route's own text cannot serve:
+     * it may hide its identity, as a pause set's identifier does.
+     */
+    fun keyOf(entry: T): String {
+        return keys.getOrPut(entry) { "screen-${nextKey++}" }
+    }
+
+    private fun forget(entry: T) {
+        keys.remove(entry)?.let(holder::removeState)
+    }
+
+    /** Takes a change below an unchanged top as the settled stack, without motion. */
+    fun follow(backStack: List<T>) {
+        if (backStack.lastOrNull() == settled.lastOrNull()) settled = backStack
+    }
+
     /** The settled screen below the top, kept composed but unplaced while no motion shows it. */
     val parked: T?
         get() {
@@ -157,7 +186,7 @@ private class CupertinoStack<T : Any>(
         } else {
             gesture.takeReleaseVelocity()
             show(top)
-            holder.removeState(stackKey(previous))
+            forget(previous)
         }
     }
 
@@ -216,7 +245,7 @@ private class CupertinoStack<T : Any>(
         layers = StackLayers(under = top, over = previous)
         position.animateTo(0f, motion, initialVelocity = gesture.takeReleaseVelocity())
         show(top)
-        holder.removeState(stackKey(previous))
+        forget(previous)
     }
 
     private suspend fun show(top: T) {
@@ -270,10 +299,6 @@ private class SwipeTracker {
         releaseVelocity = 0f
         return velocity
     }
-}
-
-private fun stackKey(entry: Any): String {
-    return entry.toString()
 }
 
 private fun DrawScope.drawEdgeShadow() {

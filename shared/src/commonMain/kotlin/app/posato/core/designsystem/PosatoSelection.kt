@@ -100,16 +100,19 @@ internal fun PosatoSwitchRow(
     supportingContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Row(
         modifier = modifier.heightIn(min = PosatoSize.Control)
             .toggleable(
                 value = checked,
                 enabled = enabled,
                 role = Role.Switch,
-                interactionSource = null,
+                interactionSource = interaction,
                 indication = null,
                 onValueChange = onCheckedChange,
             )
+            .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
             .padding(vertical = PosatoSpace.Small),
         horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
         verticalAlignment = Alignment.CenterVertically,

@@ -30,6 +30,11 @@ internal fun InteractionSource.collectIsKeyboardFocusedAsState(): State<Boolean>
                     pressedRecently = true
                 }
 
+                // Focus during a press came from the press; focus after it came from the keyboard.
+                is PressInteraction.Release, is PressInteraction.Cancel -> {
+                    pressedRecently = false
+                }
+
                 is FocusInteraction.Focus -> {
                     keyboardFocused.value = !pressedRecently
                 }

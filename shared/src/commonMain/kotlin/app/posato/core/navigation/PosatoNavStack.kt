@@ -85,7 +85,7 @@ private fun <T : Any> PosatoNavDisplay(
  * after an enclosing stack was disposed, which already disposed this dispatcher with it. Disposing it again
  * would throw, so it is disposed only while no enclosing stack has been.
  */
-private class StackDispatcherOwner(
+internal class StackDispatcherOwner(
     override val navigationEventDispatcher: NavigationEventDispatcher,
     private val enclosing: StackDispatcherOwner?,
 ) : NavigationEventDispatcherOwner {
@@ -105,10 +105,10 @@ private class StackDispatcherOwner(
 }
 
 @Composable
-private fun rememberStackDispatcherOwner(enabled: Boolean): StackDispatcherOwner {
+internal fun rememberStackDispatcherOwner(enabled: Boolean): StackDispatcherOwner {
     val parent = checkNotNull(LocalNavigationEventDispatcherOwner.current) { "A screen stack needs an enclosing back dispatcher." }
     val owner = remember(parent) {
-        // Only a stack provides a dispatcher below the root, so a stack's parent is the enclosing stack's dispatcher.
+        // Only stacks and their screens provide a dispatcher below the root, so a parent is always one of those.
         StackDispatcherOwner(NavigationEventDispatcher(parent.navigationEventDispatcher), parent as? StackDispatcherOwner)
     }
     LaunchedEffect(owner, enabled) { owner.navigationEventDispatcher.isEnabled = enabled }

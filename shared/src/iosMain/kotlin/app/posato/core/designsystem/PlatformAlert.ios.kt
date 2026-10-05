@@ -20,7 +20,8 @@ import platform.UIKit.UIWindowScene
 /**
  * Presents the system alert while this composable is in the composition and withdraws it when it leaves. An
  * answer closes the alert and runs its action with the text field's content, so a rejected name can come back as
- * a new alert that keeps what the person typed.
+ * a new alert that keeps what the person typed. A change of the question or of its answers replaces the alert, and
+ * each button runs the current action with its own title and role, never another answer that moved into its place.
  */
 @Composable
 internal actual fun PlatformAlert(
@@ -33,7 +34,8 @@ internal actual fun PlatformAlert(
 ) {
     val latestActions by rememberUpdatedState(actions)
     val latestDismiss by rememberUpdatedState(onDismiss)
-    DisposableEffect(title, message, field, attempt) {
+    val answers = actions.map { action -> action.title to action.role }
+    DisposableEffect(title, message, field, attempt, answers) {
         val alert = UIAlertController.alertControllerWithTitle(title, message, UIAlertControllerStyleAlert)
         field?.let { request ->
             alert.addTextFieldWithConfigurationHandler { textField ->
@@ -43,10 +45,11 @@ internal actual fun PlatformAlert(
             }
         }
         var preferred: UIAlertAction? = null
-        latestActions.forEachIndexed { index, action ->
+        latestActions.forEach { action ->
             val native = UIAlertAction.actionWithTitle(action.title, action.role.nativeStyle()) { _ ->
                 val text = (alert.textFields?.firstOrNull() as? UITextField)?.text.orEmpty()
-                latestActions.getOrNull(index)?.onClick?.invoke(text) ?: latestDismiss()
+                val current = latestActions.firstOrNull { it.title == action.title && it.role == action.role }
+                current?.onClick?.invoke(text) ?: latestDismiss()
             }
             alert.addAction(native)
             if (preferred == null && action.role == PosatoAlertRole.Default) preferred = native
@@ -54,8 +57,9 @@ internal actual fun PlatformAlert(
         alert.preferredAction = preferred
         topViewController()?.presentViewController(alert, animated = true, completion = null)
         onDispose {
+            // Withdrawn without an answer, the alert leaves at once, so a replacement can be presented in its place.
             if (alert.presentingViewController != null && !alert.isBeingDismissed()) {
-                alert.dismissViewControllerAnimated(true, completion = null)
+                alert.dismissViewControllerAnimated(false, completion = null)
             }
         }
     }
@@ -73,7 +77,8 @@ private fun topViewController(): UIViewController? {
     val scene = UIApplication.sharedApplication.connectedScenes.firstOrNull { it is UIWindowScene } as? UIWindowScene
     val windows = scene?.windows.orEmpty().filterIsInstance<UIWindow>()
     var controller = (windows.firstOrNull { it.keyWindow } ?: windows.firstOrNull())?.rootViewController
-    while (controller?.presentedViewController != null) {
+    // A controller on its way out cannot present, so the search stops below one that is being dismissed.
+    while (controller?.presentedViewController?.isBeingDismissed() == false) {
         controller = controller.presentedViewController
     }
     return controller

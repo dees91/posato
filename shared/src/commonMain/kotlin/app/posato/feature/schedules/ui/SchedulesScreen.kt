@@ -143,11 +143,12 @@ internal fun SchedulesScreen(
         state.showingSetup -> SchedulesRoute.Setup
         else -> null
     }
+    val backEnabled = !(top == SchedulesRoute.Setup && setupPromptOpen) && !(top is SchedulesRoute.Editor && state.saving)
     PosatoNavStack(
         listOfNotNull(SchedulesRoute.List, top),
         onBack = { if (top is SchedulesRoute.Editor) actions.onCloseEditor() else actions.onShowSetup(false) },
         modifier = modifier.fillMaxSize(),
-        backEnabled = !(top == SchedulesRoute.Setup && setupPromptOpen) && !(top is SchedulesRoute.Editor && state.saving),
+        backEnabled = backEnabled,
     ) { route ->
         val routeContent: @Composable () -> Unit = {
             when (route) {
@@ -157,7 +158,15 @@ internal fun SchedulesScreen(
             }
         }
         if (platformUsesCupertinoChrome) {
-            SchedulesBarScreen(route, PosatoBarInset, actions, addEnabled = !state.atCapacity, state.addsFromBar(readiness, device), routeContent)
+            SchedulesBarScreen(
+                route,
+                PosatoBarInset,
+                actions,
+                addEnabled = !state.atCapacity,
+                state.addsFromBar(readiness, device),
+                backEnabled,
+                routeContent,
+            )
         } else {
             Column(
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
@@ -174,6 +183,7 @@ private fun SchedulesBarScreen(
     actions: ScheduleActions,
     addEnabled: Boolean,
     addsFromBar: Boolean,
+    backEnabled: Boolean,
     content: @Composable () -> Unit,
 ) {
     val focus = LocalFocusManager.current
@@ -195,6 +205,7 @@ private fun SchedulesBarScreen(
         is SchedulesRoute.Editor -> PosatoBarScreen(
             title = if (route.id == null) "New schedule" else "Edit schedule",
             backLabel = "Schedules",
+            backEnabled = backEnabled,
             onBack = {
                 focus.clearFocus()
                 actions.onCloseEditor()
@@ -205,6 +216,7 @@ private fun SchedulesBarScreen(
         SchedulesRoute.Setup -> PosatoBarScreen(
             title = "Set up",
             backLabel = "Schedules",
+            backEnabled = backEnabled,
             onBack = { actions.onShowSetup(false) },
             contentPadding = padding,
         ) { body() }

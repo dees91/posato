@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -68,6 +69,7 @@ internal fun PosatoBarScreen(
     largeTitleContent: (@Composable () -> Unit)? = null,
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
+    backEnabled: Boolean = true,
     scrollState: ScrollState = rememberScrollState(),
     contentPadding: PaddingValues = PaddingValues(horizontal = PosatoBarInset),
     trailingContent: @Composable RowScope.() -> Unit = {},
@@ -92,6 +94,7 @@ internal fun PosatoBarScreen(
             title = title,
             backLabel = backLabel,
             onBack = onBack,
+            backEnabled = backEnabled,
             edgeInset = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
             titleAlpha = { collapsed },
             titleReadable = barTitleReadable,
@@ -143,6 +146,7 @@ internal fun PosatoNavigationBar(
     modifier: Modifier = Modifier,
     backLabel: String? = null,
     onBack: (() -> Unit)? = null,
+    backEnabled: Boolean = true,
     edgeInset: Dp = PosatoBarInset,
     titleAlpha: () -> Float = { 1f },
     titleReadable: Boolean = true,
@@ -153,7 +157,8 @@ internal fun PosatoNavigationBar(
     CappedFontScale(BAR_FONT_SCALE_LIMIT) {
         Layout(
             contents = listOf(
-                { if (onBack != null) NavigationBackButton(backLabel, onBack) },
+                // Back is unavailable while the stack refuses it, as during a save or a start.
+                { if (onBack != null) NavigationBackButton(backLabel, onBack, backEnabled) },
                 {
                     Text(
                         text = title,
@@ -210,16 +215,22 @@ internal fun PosatoNavigationBar(
 private fun NavigationBackButton(
     backLabel: String?,
     onBack: () -> Unit,
+    enabled: Boolean,
 ) {
     val label = backLabel ?: "Back"
     PosatoBarButton(
         onClick = onBack,
+        enabled = enabled,
         modifier = Modifier.clearAndSetSemantics {
             contentDescription = if (backLabel == null) label else "Back to $label"
             role = Role.Button
-            onClick {
-                onBack()
-                true
+            if (enabled) {
+                onClick {
+                    onBack()
+                    true
+                }
+            } else {
+                disabled()
             }
         },
     ) {

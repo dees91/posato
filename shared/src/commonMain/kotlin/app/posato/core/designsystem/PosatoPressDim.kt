@@ -60,8 +60,11 @@ private class PressDimNode(
                         pressedRecently = true
                     }
 
+                    // A press ends its own claim: focus that arrives later came from the keyboard. On the Mac a
+                    // click never focuses, so a clicked control must still show the ring when Tab reaches it.
                     is PressInteraction.Release, is PressInteraction.Cancel -> {
                         pressed = false
+                        pressedRecently = false
                     }
 
                     is FocusInteraction.Focus -> {

@@ -26,6 +26,7 @@ import platform.Foundation.NSCalendar
 import platform.Foundation.NSCalendarUnitHour
 import platform.Foundation.NSCalendarUnitMinute
 import platform.Foundation.NSDate
+import platform.Foundation.NSDateComponents
 import platform.Foundation.NSSelectorFromString
 import platform.UIKit.UIContentSizeCategoryExtraExtraExtraLarge
 import platform.UIKit.UIControlEventValueChanged
@@ -70,7 +71,7 @@ internal actual fun PlatformTimePicker(
         },
         modifier = modifier.size(fitted),
         update = { picker ->
-            NSCalendar.currentCalendar.dateBySettingHour(hour.toLong(), minute.toLong(), 0, NSDate(), 0u)?.let { picker.date = it }
+            timeOnReferenceDay(hour, minute)?.let { picker.date = it }
             picker.tintColor = tint
             picker.backgroundColor = surface
             picker.accessibilityLabel = label
@@ -134,3 +135,23 @@ private val CompactPickerWidth = 104.dp
 private val CompactPickerHeight = 44.dp
 private val WheelPickerHeight = 216.dp
 private const val SECONDS_PER_MINUTE = 60.0
+
+/**
+ * The time on a fixed day without a clock change, so a time that a daylight-saving change skips today, such as
+ * 02:30, still shows as itself. The picker shows and returns only the hour and minute.
+ */
+private fun timeOnReferenceDay(
+    hour: Int,
+    minute: Int,
+): NSDate? {
+    val components = NSDateComponents().apply {
+        year = REFERENCE_YEAR
+        month = 1
+        day = 1
+        this.hour = hour.toLong()
+        this.minute = minute.toLong()
+    }
+    return NSCalendar.currentCalendar.dateFromComponents(components)
+}
+
+private const val REFERENCE_YEAR = 2001L

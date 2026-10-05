@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,8 @@ import app.posato.core.designsystem.PosatoSwitch
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.PosatoTypography
+import app.posato.core.designsystem.collectIsKeyboardFocusedAsState
+import app.posato.core.designsystem.keyboardFocusRing
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
@@ -131,15 +134,18 @@ private fun ScheduleRowContent(
             PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel).joinToString(" · "))
             ScheduleRowStatus(row)
         }
+        val switchInteraction = remember { MutableInteractionSource() }
+        val switchFocused by switchInteraction.collectIsKeyboardFocusedAsState()
         Box(
             Modifier.sizeIn(minWidth = PosatoSize.Control, minHeight = PosatoSize.Control).toggleable(
                 value = row.enabled,
                 enabled = !row.refused,
                 role = Role.Switch,
-                interactionSource = null,
+                interactionSource = switchInteraction,
                 indication = null,
             ) { actions.onSetEnabled(row, it) }
-                .semantics { contentDescription = "${row.name} schedule" },
+                .semantics { contentDescription = "${row.name} schedule" }
+                .keyboardFocusRing({ switchFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small),
             contentAlignment = Alignment.Center,
         ) {
             PosatoSwitch(checked = row.enabled, enabled = !row.refused)
