@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
@@ -25,17 +26,22 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun PosatoBottomNavigation(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
-    Column(modifier) {
+    // An iOS tab bar is as low as its items allow, and on a wide screen they gather in the middle instead of spreading
+    // across it.
+    val rowPadding = if (platformUsesCupertinoChrome) 0.dp else PosatoSpace.Small
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         PosatoDivider()
         CappedFontScale(TAB_FONT_SCALE_LIMIT) {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Section, vertical = PosatoSpace.Small).selectableGroup(),
+                Modifier.then(if (platformUsesCupertinoChrome) Modifier.widthIn(max = TabBarMaxWidth) else Modifier)
+                    .fillMaxWidth().padding(horizontal = PosatoSpace.Section, vertical = rowPadding).selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content,
@@ -54,9 +60,10 @@ internal fun PosatoBottomNavigationItem(
     content: @Composable () -> Unit,
 ) {
     val fill = if (platformUsesCupertinoChrome) PosatoControlDefaults.Transparent else MaterialTheme.colorScheme.primaryContainer
+    val itemPadding = if (platformUsesCupertinoChrome) PosatoSpace.Tiny else PosatoSpace.Small
     DestinationSurface(selected, fill, onClick, modifier, enabled) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Small, vertical = PosatoSpace.Small),
+            Modifier.fillMaxWidth().padding(horizontal = PosatoSpace.Small, vertical = itemPadding),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -87,7 +94,7 @@ internal fun PosatoSidebarNavigationItem(
             fontWeight = FontWeight.Medium,
         )
     }
-    DestinationSurface(selected, fill, onClick, modifier, enabled) {
+    DestinationSurface(selected, fill, onClick, modifier, enabled, sidebar = true) {
         Row(
             Modifier.fillMaxWidth().padding(PosatoSpace.Medium),
             horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
@@ -106,9 +113,13 @@ private fun DestinationSurface(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    sidebar: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val idle = if (platformUsesCupertinoChrome && !posatoIsLight()) {
+    // An iPad sidebar reads its rows in the text color, as lists do; a tab bar greys the tabs not chosen.
+    val idle = if (platformUsesCupertinoChrome && sidebar) {
+        MaterialTheme.colorScheme.onSurface
+    } else if (platformUsesCupertinoChrome && !posatoIsLight()) {
         lerp(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurfaceVariant, IDLE_TAB_DARK_SHARE)
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
@@ -168,3 +179,5 @@ private fun PosatoSidebarNavigationPreview() {
 
 private const val IDLE_TAB_DARK_SHARE = 0.7f
 private const val TAB_FONT_SCALE_LIMIT = 1.3f
+
+private val TabBarMaxWidth = 560.dp

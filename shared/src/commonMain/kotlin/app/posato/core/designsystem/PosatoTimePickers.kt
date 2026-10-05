@@ -10,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
 
 /** A time of day as a labelled row with the host's own time picker, which follows the device's 12- or 24-hour clock. */
 @Composable
@@ -28,7 +27,8 @@ internal fun PosatoTimeRow(
             horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f).clearAndSetSemantics {}) {
+            // The label stays readable, so VoiceOver names the picker beside it before reading its time.
+            Column(Modifier.weight(1f)) {
                 Text(label, style = MaterialTheme.typography.bodyLarge)
                 supportingText?.let { PosatoCaption(it) }
             }

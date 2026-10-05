@@ -7,26 +7,33 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
+import kotlinx.cinterop.useContents
 import platform.Foundation.NSCalendar
 import platform.Foundation.NSCalendarUnitHour
 import platform.Foundation.NSCalendarUnitMinute
 import platform.Foundation.NSDate
 import platform.Foundation.NSSelectorFromString
+import platform.UIKit.UIContentSizeCategoryExtraExtraExtraLarge
 import platform.UIKit.UIControlEventValueChanged
 import platform.UIKit.UIDatePicker
 import platform.UIKit.UIDatePickerMode
 import platform.UIKit.UIDatePickerStyle
 import platform.UIKit.accessibilityLabel
+import platform.UIKit.maximumContentSizeCategory
 import platform.darwin.NSObject
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
@@ -46,6 +53,10 @@ internal actual fun PlatformTimePicker(
         }
     }
     val tint = MaterialTheme.colorScheme.primary.toUIColor()
+    // The picker sizes itself to its time at the current text size, as UIKit lays it out; the font scale is read here
+    // so a change of text size updates the measured size.
+    val fontScale = LocalDensity.current.fontScale
+    var fitted by remember { mutableStateOf(DpSize(CompactPickerWidth, CompactPickerHeight)) }
     // Compose leaves a hole where a native view sits; the picker's own background fills it in the screen's color.
     val surface = MaterialTheme.colorScheme.surface.toUIColor()
     UIKitView(
@@ -53,15 +64,18 @@ internal actual fun PlatformTimePicker(
             UIDatePicker().apply {
                 datePickerMode = UIDatePickerMode.UIDatePickerModeTime
                 preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleCompact
+                maximumContentSizeCategory = UIContentSizeCategoryExtraExtraExtraLarge
                 addTarget(target, NSSelectorFromString("changed:"), UIControlEventValueChanged)
             }
         },
-        modifier = modifier.size(CompactPickerWidth, CompactPickerHeight),
+        modifier = modifier.size(fitted),
         update = { picker ->
             NSCalendar.currentCalendar.dateBySettingHour(hour.toLong(), minute.toLong(), 0, NSDate(), 0u)?.let { picker.date = it }
             picker.tintColor = tint
             picker.backgroundColor = surface
             picker.accessibilityLabel = label
+            val natural = picker.intrinsicContentSize.useContents { DpSize(width.dp, maxOf(height, CompactPickerHeight.value.toDouble()).dp) }
+            if (fontScale > 0f && natural.width.value > 0f && natural != fitted) fitted = natural
         },
         properties = UIKitInteropProperties(isNativeAccessibilityEnabled = true),
     )
@@ -98,6 +112,7 @@ internal actual fun PlatformDurationPicker(
         modifier = modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth().height(WheelPickerHeight),
         update = { picker ->
             picker.backgroundColor = surface
+            picker.accessibilityLabel = "Duration"
             if ((picker.countDownDuration / SECONDS_PER_MINUTE).toInt() != minutes) picker.countDownDuration = minutes * SECONDS_PER_MINUTE
         },
         properties = UIKitInteropProperties(isNativeAccessibilityEnabled = true),

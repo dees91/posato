@@ -337,8 +337,10 @@ class PosatoApplication internal constructor(
             val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
             // Each screen spans the pane and sets its own content column, so a push moves the whole pane.
             val contentModifier = Modifier.fillMaxWidth()
+            // Beside the sidebar, About is a destination of its own: it replaces the screens instead of covering them.
+            val shell = navigation.shellStack().let { stack -> if (sidebar && stack.size > 1) stack.drop(1) else stack }
             PosatoNavStack(
-                navigation.shellStack(),
+                shell,
                 onBack = navigation::back,
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.TopCenter,
@@ -364,7 +366,7 @@ class PosatoApplication internal constructor(
 
                     ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
                         val backLabel = when (route) {
-                            ShellRoute.About -> navigation.destination.title
+                            ShellRoute.About -> navigation.destination.title.takeUnless { sidebar }
                             ShellRoute.Licenses -> "About"
                             else -> "Licenses"
                         }
@@ -374,6 +376,7 @@ class PosatoApplication internal constructor(
                             updates,
                             contentModifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
                             cupertinoBackLabel = backLabel,
+                            cupertinoRoot = sidebar && route == ShellRoute.About,
                         )
                     }
                 }
@@ -449,6 +452,7 @@ class PosatoApplication internal constructor(
         updates: ApplicationUpdates?,
         modifier: Modifier = Modifier,
         cupertinoBackLabel: String? = null,
+        cupertinoRoot: Boolean = false,
     ) {
         if (route == ShellRoute.About) {
             AboutScreen(
@@ -458,6 +462,7 @@ class PosatoApplication internal constructor(
                 updates = updates,
                 notifications = notifier.takeIf { it.available },
                 barBackLabel = cupertinoBackLabel,
+                barRoot = cupertinoRoot,
             )
         } else {
             LicensesScreen(

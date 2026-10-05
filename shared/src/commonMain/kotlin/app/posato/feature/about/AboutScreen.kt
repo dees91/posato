@@ -51,6 +51,7 @@ internal fun AboutScreen(
     updates: ApplicationUpdates? = null,
     notifications: SessionNotifier? = null,
     barBackLabel: String? = null,
+    barRoot: Boolean = false,
 ) {
     val version = remember { applicationVersion() }
     val updatesContent: (@Composable () -> Unit)? = updates?.let { source ->
@@ -64,7 +65,7 @@ internal fun AboutScreen(
     val notificationsContent: (@Composable () -> Unit)? = notifications?.let { notifier ->
         { NotificationsSection(notifier) }
     }
-    AboutScreen(version, onOpenLicenses, onBack, modifier, barBackLabel, notificationsContent, updatesContent)
+    AboutScreen(version, onOpenLicenses, onBack, modifier, barBackLabel, barRoot, notificationsContent, updatesContent)
 }
 
 @Composable
@@ -97,11 +98,20 @@ internal fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     barBackLabel: String? = null,
+    barRoot: Boolean = false,
     notificationsContent: (@Composable () -> Unit)? = null,
     updatesContent: (@Composable () -> Unit)? = null,
 ) {
-    if (barBackLabel != null) {
-        PosatoBarScreen(title = "About Posato", modifier = modifier, backLabel = barBackLabel, onBack = onBack) {
+    // With a bar, About is either pushed over a destination and leads back to it, or, chosen in the iPad's sidebar,
+    // a root screen under its own large title.
+    if (barBackLabel != null || barRoot) {
+        PosatoBarScreen(
+            title = "About Posato",
+            modifier = modifier,
+            largeTitle = barRoot,
+            backLabel = barBackLabel,
+            onBack = onBack.takeUnless { barRoot },
+        ) {
             AboutBody(version, onOpenLicenses, updatesContent, notificationsContent)
         }
         return

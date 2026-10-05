@@ -177,17 +177,20 @@ internal fun PosatoNavigationBar(
                 )
             },
         ) { (back, titleText, trailing), constraints ->
+            // Room goes first to the actions, then to the title, and the back label shortens last, as UIKit's bar
+            // keeps its title readable at large text sizes.
             val width = constraints.maxWidth
-            val side = Constraints(maxWidth = (width * BAR_SIDE_SHARE).toInt())
-            val backPlaceable = back.firstOrNull()?.measure(side)
-            val trailingPlaceable = trailing.firstOrNull()?.measure(side)
             val margin = ((width - PosatoSize.Content.roundToPx()) / 2).coerceAtLeast(0)
             val start = margin + (edgeInset - PosatoSpace.Tiny).roundToPx().coerceAtLeast(0)
             val end = margin + (edgeInset - PosatoSpace.Small).roundToPx().coerceAtLeast(0)
-            val backEnd = backPlaceable?.let { start + it.width } ?: 0
+            val gap = BarTitleGap.roundToPx()
+            val trailingPlaceable = trailing.firstOrNull()?.measure(Constraints(maxWidth = (width * BAR_SIDE_SHARE).toInt()))
             val trailingStart = trailingPlaceable?.let { width - end - it.width } ?: width
-            val reserved = maxOf(backEnd, width - trailingStart) + BarTitleGap.roundToPx()
-            val titlePlaceable = titleText.first().measure(Constraints(maxWidth = (width - 2 * reserved).coerceAtLeast(0)))
+            val backMinimum = if (back.isEmpty()) 0 else start + PosatoSize.Control.roundToPx()
+            val titleSide = maxOf(width - trailingStart, backMinimum) + gap
+            val titlePlaceable = titleText.first().measure(Constraints(maxWidth = (width - 2 * titleSide).coerceAtLeast(0)))
+            val backRoom = ((width - titlePlaceable.width) / 2 - gap - start).coerceAtLeast(0)
+            val backPlaceable = back.firstOrNull()?.measure(Constraints(maxWidth = backRoom))
             val height = maxOf(
                 NavigationBarHeight.roundToPx(),
                 titlePlaceable.height,
