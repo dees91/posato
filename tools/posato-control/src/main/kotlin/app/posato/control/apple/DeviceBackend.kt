@@ -41,7 +41,7 @@ class DeviceSession(
         if (!chosen.connected) {
             throw ControlException(
                 ErrorCode.NO_CONNECTED_DEVICE,
-                "The device '${chosen.name}' is ${if (chosen.wired) "paired but not connected" else NETWORK_ONLY}.",
+                "The device '${chosen.name}' is ${if (chosen.overNetwork) NETWORK_ONLY else "paired but not connected"}.",
                 CONNECT_HINT,
             )
         }
@@ -75,8 +75,11 @@ class DeviceSession(
 private const val NETWORK_ONLY = "paired over the network only; posato-control needs a cable"
 private const val CONNECT_HINT = "Connect the iPhone to this Mac with a cable, unlock it, and trust this Mac if it asks."
 
-/** Paired devices that devicectl reaches only over the network, which the driver cannot use. */
-private fun networkOnlyDevices(devices: List<PhysicalDevice>): List<PhysicalDevice> = devices.filter { it.paired && !it.wired && !it.connected }
+/**
+ * Paired devices that devicectl reaches only over the network, which the driver cannot use. devicectl omits the
+ * transport of an unplugged or switched-off iPhone, which therefore reads as not connected rather than network-only.
+ */
+internal fun networkOnlyDevices(devices: List<PhysicalDevice>): List<PhysicalDevice> = devices.filter { it.paired && it.overNetwork && !it.connected }
 
 private fun describeNetworkOnly(devices: List<PhysicalDevice>): String = devices.joinToString("; ") { device -> "'${device.name}' is $NETWORK_ONLY" }
 

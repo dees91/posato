@@ -519,8 +519,9 @@ entitlement); `install`, `launch`, and `terminate` use `devicectl`.
 `logs` reads; the application lives only as long as that attachment, so
 `terminate` ends both. Screenshots and all interaction go through the driver;
 `db` is unsupported, and `reset` means uninstall. The iPhone must be on a
-cable: when it is paired only over the network, `doctor` and every device
-command say so instead of reporting that no iPhone is connected.
+cable: when devicectl reports it paired over the local network only, `doctor`
+and every device command say so instead of reporting that no iPhone is
+connected; an unplugged or switched-off iPhone still reads as not connected.
 
 **iOS driver.** `ios-driver/PosatoDriver.xcodeproj` contains a stub host app
 and a UI-testing bundle that drives the installed Posato app by bundle
