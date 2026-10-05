@@ -1096,6 +1096,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     presses **Quit**. 1.3 has the same path, so the update to 1.4 will ask in
     those states too. `user-confirmed` (2026-10-04): a backlog row, first in line for
     release 1.4. Owner: backlog row `MACOS-026`.
+28. **Longer quick choices when starting a pause.**
+    `user-confirmed` (2026-10-05): session setup offers only 25, 45, and 60
+    minutes (`DurationPresets` in `SessionDurationContent.kt`); anything
+    longer needs the hour and minute wheels. Proposed set: 25 min, 45 min,
+    1 h, 2 h, 4 h, 8 h, and **Until end of day** (midnight on this device's
+    clock, hidden when less than the 5-minute minimum remains). The 24-hour
+    maximum and the wheels stay. Decide the final set, its labels, and the
+    phone layout of seven choices in `DESIGN.md`. Owner: backlog row
+    `SESSION-007`.
 
 ## Later platform questions
 
