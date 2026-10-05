@@ -31,6 +31,7 @@ import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoSwitchRow
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.core.designsystem.PosatoTimeRow
 import app.posato.core.designsystem.PosatoToggleButton
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
@@ -66,19 +67,30 @@ internal fun ScheduleEditor(
         PosatoTextField(state = name, label = "Schedule name", onSubmit = { focus.clearFocus() })
         ScheduleSetRow(draft, state.pauseSets, actions.onUpdateDraft)
         ScheduleDays(draft, actions)
-        PosatoActionRow {
-            PosatoButton(onClick = {
-                focus.clearFocus()
-                editingStart = true
-            }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
-            PosatoButton(onClick = {
-                focus.clearFocus()
-                editingStart = false
-            }, style = PosatoButtonStyle.Secondary) {
-                Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
+        if (platformUsesCupertinoChrome) {
+            Column {
+                PosatoTimeRow("Starts", draft.startHour, draft.startMinute, { hour, minute ->
+                    actions.onUpdateDraft(draft.copy(startHour = hour, startMinute = minute))
+                })
+                PosatoTimeRow("Ends", draft.endHour, draft.endMinute, { hour, minute ->
+                    actions.onUpdateDraft(draft.copy(endHour = hour, endMinute = minute))
+                }, supportingText = "Next day".takeIf { draft.endsNextDay })
             }
+        } else {
+            PosatoActionRow {
+                PosatoButton(onClick = {
+                    focus.clearFocus()
+                    editingStart = true
+                }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
+                PosatoButton(onClick = {
+                    focus.clearFocus()
+                    editingStart = false
+                }, style = PosatoButtonStyle.Secondary) {
+                    Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
+                }
+            }
+            editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
         }
-        editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
         PosatoSwitchRow(
             modifier = Modifier.fillMaxWidth(),
             checked = draft.enabled,

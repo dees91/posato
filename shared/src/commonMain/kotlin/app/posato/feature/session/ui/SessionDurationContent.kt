@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import app.posato.core.designsystem.PlatformDurationPicker
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -24,6 +26,8 @@ import app.posato.core.designsystem.PosatoNavigationItem
 import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoTab
+import app.posato.core.designsystem.PosatoTabBar
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.sync.domain.PauseSetId
@@ -48,18 +52,38 @@ internal fun SessionDurationContent(
             description = "Choose a quick pause, or make it your own.",
         )
         PauseSetPickerRow(state.pauseSets, state.setId, onChoose = onChoosePauseSet, placeholder = state.setName ?: "No pause set")
-        PosatoChoiceGroup {
-            DurationPresets.forEach { preset ->
-                PosatoNavigationItem(selected = state.durationMinutes == preset, onClick = { onSetDuration(preset) }) { Text("$preset min") }
+        if (platformUsesCupertinoChrome) {
+            PosatoTabBar(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
+                DurationPresets.forEach { preset ->
+                    PosatoTab(
+                        selected = state.durationMinutes == preset,
+                        onClick = { onSetDuration(preset) },
+                        modifier = Modifier.weight(1f),
+                        role = Role.RadioButton,
+                    ) { Text("$preset min") }
+                }
             }
-        }
-        Row(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-            PosatoNumberWheel(duration.hours, duration.hourRange, "Hours", { onSetDuration(duration.withHours(it)) }, Modifier.weight(1f))
-            PosatoNumberWheel(duration.minutes, duration.minuteRange, "Minutes", { onSetDuration(duration.withMinutes(it)) }, Modifier.weight(1f))
+            PlatformDurationPicker(
+                minutes = state.durationMinutes,
+                range = SessionLimits.MIN_DURATION_MINUTES..minOf(SessionLimits.MAX_DURATION_MINUTES, COUNTDOWN_LIMIT_MINUTES),
+                onChange = onSetDuration,
+            )
+        } else {
+            PosatoChoiceGroup {
+                DurationPresets.forEach { preset ->
+                    PosatoNavigationItem(selected = state.durationMinutes == preset, onClick = { onSetDuration(preset) }) { Text("$preset min") }
+                }
+            }
+            Row(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+                PosatoNumberWheel(duration.hours, duration.hourRange, "Hours", { onSetDuration(duration.withHours(it)) }, Modifier.weight(1f))
+                PosatoNumberWheel(duration.minutes, duration.minuteRange, "Minutes", { onSetDuration(duration.withMinutes(it)) }, Modifier.weight(1f))
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
             Text("Ends at ${state.formattedPreviewEnd.orEmpty()}")
-            PosatoCaption("5 minutes to 24 hours · you stay in control")
+            PosatoCaption(
+                if (platformUsesCupertinoChrome) "5 minutes to 23 hours 59 minutes · you stay in control" else "5 minutes to 24 hours · you stay in control",
+            )
             state.setupFailure?.let { Text(stringResource(it.setupMessage())) }
         }
         PosatoActionRow {
@@ -92,3 +116,6 @@ internal class SessionDurationParts(
 
 private const val MINUTES_PER_HOUR: Int = 60
 private val DurationPresets = listOf(25, 45, 60)
+
+/** The longest time the system countdown picker offers on iOS: 23 hours 59 minutes. */
+private const val COUNTDOWN_LIMIT_MINUTES = 23 * 60 + 59

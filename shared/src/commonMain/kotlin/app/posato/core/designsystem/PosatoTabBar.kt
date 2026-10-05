@@ -50,6 +50,7 @@ internal fun PosatoTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    role: Role = Role.Tab,
     countContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -58,7 +59,7 @@ internal fun PosatoTab(
     val interaction = remember { MutableInteractionSource() }
     val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Surface(
-        modifier = modifier.semantics { role = Role.Tab }
+        modifier = modifier.semantics { this.role = role }
             .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium),
         selected = selected,
         onClick = onClick,
