@@ -85,14 +85,8 @@ class VmLifecycle(
         val copyPackage = !candidateInstalled && layout.stagedDesktopApplication.exists()
         // Hashed before the copy, so a build that runs meanwhile cannot stamp another package than the one copied.
         val fingerprint = if (copyPackage) packageFingerprint(layout.stagedDesktopApplication) else null
-        val driver = listOf(
-            "settings.gradle.kts",
-            "tools/posato-control/build/install",
-            "tools/posato-control/native",
-            "tools/posato-control/fixtures",
-            layout.relativize(layout.accessibilityBridgeBinary),
-            layout.relativize(layout.accessibilityBridgeCommand),
-        )
+        val driver = driverPaths(layout)
+        val tooling = toolingFingerprint(layout.root, driver)
         val paths = if (copyPackage) driver + layout.relativize(layout.stagedDesktopApplication) else driver
         tart.pipe(
             line.cloneName,
@@ -101,7 +95,8 @@ class VmLifecycle(
             if (copyPackage) "Copying the package and driver into ${line.cloneName}" else "Copying the driver into ${line.cloneName}",
         )
         val stamp = "\"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\""
-        val record = if (fingerprint != null) "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $fingerprint > $stamp" else "rm -f $stamp"
+        val record = "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $tooling > \"$GUEST_ROOT/$GUEST_TOOLING_STAMP\" && " +
+            if (fingerprint != null) "printf %s $fingerprint > $stamp" else "rm -f $stamp"
         tart.exec(line.cloneName, record).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Recording the synced package in ${line.cloneName}")
         if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
     }

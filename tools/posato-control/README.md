@@ -110,7 +110,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `TOOL_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -418,7 +418,9 @@ commands such as `observe` that write no other file. `build` stays on the host; 
 with `vm sync`. A command that starts the development package (`launch`, `run` unless its scenario sets `launch.skip`,
 `flow`, `vm onboard`, and `tap`, `type`, `press`, `wait`, and `update-consent`, which launch Posato when it is not
 running; `type` and `wait` with `--process` and no element query are exempt) refuses with `PACKAGE_OUTDATED` when the host staged another package than the one the
-last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. The one-time setup of the golden VMs, device registration,
+last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. Every `--vm`
+command and `vm onboard` also refuse with `TOOL_OUTDATED` when the guest's driver (distribution, fixtures, and bridge) is
+not the one this worktree would sync, so a rebuilt `installDist` or an edited fixture needs `vm sync` before it applies. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
 [the unattended verification guide](../../docs/development/unattended-verification.md).
 

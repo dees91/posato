@@ -76,6 +76,7 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
+        requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
         val stdin = when (scenario) {
