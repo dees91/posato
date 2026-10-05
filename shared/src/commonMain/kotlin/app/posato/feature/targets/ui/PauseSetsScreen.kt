@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -29,6 +30,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
+import app.posato.core.designsystem.PosatoAlert
+import app.posato.core.designsystem.PosatoAlertAction
+import app.posato.core.designsystem.PosatoAlertField
+import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoBadge
 import app.posato.core.designsystem.PosatoBarButton
 import app.posato.core.designsystem.PosatoBarScreen
@@ -230,30 +235,29 @@ internal fun PauseSetNameDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    val field = remember { TextFieldState(initial) }
+    var draft by remember { mutableStateOf(initial) }
     var failure by remember { mutableStateOf<PauseSetNameFailure?>(null) }
-    val submit = {
-        val (name, problem) = parsePauseSetName(field.text.toString())
-        failure = problem
-        name?.let(onSave)
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            PosatoTextField(
-                state = field,
-                label = "Name",
-                errorMessage = when (failure) {
-                    PauseSetNameFailure.EMPTY -> "Enter a name."
-                    PauseSetNameFailure.TOO_LONG -> "Use a shorter name."
-                    null -> null
-                },
-                onSubmit = { submit() },
-            )
+    var attempt by remember { mutableIntStateOf(0) }
+    PosatoAlert(
+        title = title,
+        message = when (failure) {
+            PauseSetNameFailure.EMPTY -> "Enter a name."
+            PauseSetNameFailure.TOO_LONG -> "Use a shorter name."
+            null -> null
         },
-        confirmButton = { PosatoButton(onClick = { submit() }) { Text("Save") } },
-        dismissButton = { PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text("Cancel") } },
+        field = PosatoAlertField(draft, "Name"),
+        attempt = attempt,
+        onDismiss = onDismiss,
+        actions = listOf(
+            PosatoAlertAction("Cancel", { onDismiss() }, PosatoAlertRole.Cancel),
+            PosatoAlertAction("Save", { text ->
+                val (name, problem) = parsePauseSetName(text)
+                draft = text
+                failure = problem
+                attempt++
+                name?.let(onSave)
+            }),
+        ),
     )
 }
 
@@ -265,62 +269,22 @@ internal fun PauseSetDeleteDialog(
     onDelete: (PauseSetId?) -> Unit,
 ) {
     val targets = rows.filter { other -> other.id != row.id && !other.refused }
-    var moveTo by remember { mutableStateOf(targets.firstOrNull { other -> other.isDefault }?.id ?: targets.firstOrNull()?.id) }
-    val blocked = row.inUse
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Delete ${row.name}?") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-                when {
-                    blocked -> {
-                        Text("You can delete this set after the pause ends.")
-                    }
-
-                    row.schedules.isEmpty() -> {
-                        Text("Its websites and this device's app choices for it are deleted.")
-                    }
-
-                    else -> {
-                        Text("These schedules use it: ${row.schedules.joinToString(", ")}. Change their set, then delete.")
-                        PauseSetChoiceList(targets, moveTo) { moveTo = it }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            PosatoButton(
-                onClick = { onDelete(moveTo.takeIf { row.schedules.isNotEmpty() }) },
-                enabled = !blocked && (row.schedules.isEmpty() || moveTo != null),
-                style = PosatoButtonStyle.Destructive,
-            ) { Text(if (row.schedules.isEmpty()) "Delete" else "Change their set and delete") }
-        },
-        dismissButton = { PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text("Cancel") } },
-    )
-}
-
-/** A list of sets to pick one from, with their counts; the chosen one is marked. */
-@Composable
-internal fun PauseSetChoiceList(
-    rows: List<PauseSetRow>,
-    selected: PauseSetId?,
-    onSelect: (PauseSetId) -> Unit,
-) {
-    Column(Modifier.selectableGroup()) {
-        rows.forEach { row ->
-            Row(
-                Modifier.fillMaxWidth().selectable(selected = row.id == selected, role = Role.RadioButton) { onSelect(row.id) },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
-            ) {
-                RadioButton(selected = row.id == selected, onClick = null)
-                Column {
-                    Text(if (row.isDefault) "${row.name} (default)" else row.name)
-                    PosatoCaption(if (row.websiteCount == 1) "1 website" else "${row.websiteCount} websites")
-                }
-            }
-        }
+    val cancel = PosatoAlertAction("Cancel", { onDismiss() }, PosatoAlertRole.Cancel)
+    val message: String
+    val actions: List<PosatoAlertAction>
+    if (row.inUse) {
+        message = "You can delete this set after the pause ends."
+        actions = listOf(PosatoAlertAction("OK", { onDismiss() }, PosatoAlertRole.Cancel))
+    } else if (row.schedules.isEmpty()) {
+        message = "Its websites and this device's app choices for it are deleted."
+        actions = listOf(cancel, PosatoAlertAction("Delete", { onDelete(null) }, PosatoAlertRole.Destructive))
+    } else {
+        message = "These schedules use it: ${row.schedules.joinToString(", ")}. Choose a set for them, and ${row.name} is deleted."
+        actions = targets.map { target ->
+            PosatoAlertAction("Move to ${target.name} and delete", { onDelete(target.id) }, PosatoAlertRole.Destructive)
+        } + cancel
     }
+    PosatoAlert(title = "Delete ${row.name}?", message = message, actions = actions, onDismiss = onDismiss)
 }
 
 /** The set choice Session and the schedule editor offer: every live set with its count, the default marked. */

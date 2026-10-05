@@ -20,6 +20,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import app.posato.core.designsystem.PosatoActionRow
+import app.posato.core.designsystem.PosatoAlert
+import app.posato.core.designsystem.PosatoAlertAction
+import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -101,21 +104,17 @@ internal fun SyncBootstrapSection(
         }
     }
     if (confirmingRemoval) {
-        AlertDialog(
-            onDismissRequest = { confirmingRemoval = false },
-            title = { Text(stringResource(Res.string.sync_remove_workspace)) },
-            text = { Text(stringResource(Res.string.sync_remove_confirmation)) },
-            confirmButton = {
-                PosatoButton(onClick = {
+        PosatoAlert(
+            title = stringResource(Res.string.sync_remove_workspace),
+            message = stringResource(Res.string.sync_remove_confirmation),
+            onDismiss = { confirmingRemoval = false },
+            actions = listOf(
+                PosatoAlertAction(stringResource(Res.string.sync_cancel_removal), { confirmingRemoval = false }, PosatoAlertRole.Cancel),
+                PosatoAlertAction(stringResource(Res.string.sync_remove_workspace), {
                     confirmingRemoval = false
                     state.removeWorkspace()
-                }, style = PosatoButtonStyle.Destructive) { Text(stringResource(Res.string.sync_remove_workspace)) }
-            },
-            dismissButton = {
-                PosatoButton(onClick = { confirmingRemoval = false }, style = PosatoButtonStyle.Quiet) {
-                    Text(stringResource(Res.string.sync_cancel_removal))
-                }
-            },
+                }, PosatoAlertRole.Destructive),
+            ),
         )
     }
 }
