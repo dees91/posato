@@ -20,8 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,7 +79,18 @@ internal fun DrawnPicker(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier) {
-        PosatoTextButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "$label, $value" }) {
+        // The button reads as the setting and its value, "Pause set, My set", rather than the value alone.
+        PosatoTextButton(
+            onClick = { expanded = true },
+            modifier = Modifier.clearAndSetSemantics {
+                contentDescription = "$label, $value"
+                role = Role.Button
+                onClick {
+                    expanded = true
+                    true
+                }
+            },
+        ) {
             Text(value, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = PosatoSize.Menu))
             PosatoIcon(PosatoIcons.ChevronDown, null)
         }
@@ -89,7 +104,11 @@ internal fun DrawnPicker(
         ) {
             options.forEachIndexed { index, option ->
                 DropdownMenuItem(
-                    modifier = Modifier.heightIn(min = PosatoSize.Control),
+                    // A choice reads as a button that is selected or not, as the row menus' actions do.
+                    modifier = Modifier.heightIn(min = PosatoSize.Control).semantics {
+                        role = Role.Button
+                        this.selected = index == selected
+                    },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
                             Text(option.title, style = MaterialTheme.typography.bodyLarge)

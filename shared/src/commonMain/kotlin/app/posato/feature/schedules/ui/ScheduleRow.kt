@@ -128,7 +128,7 @@ private fun ScheduleRowContent(
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
             Text(row.name, style = MaterialTheme.typography.bodyLarge)
-            PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel?.removePrefix("Set: ")).joinToString(" · "))
+            PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel).joinToString(" · "))
             ScheduleRowStatus(row)
         }
         Box(
