@@ -72,8 +72,19 @@ internal fun recordCloneOwner(
 
 /** Whether the creating process still runs: the same pid with the same start time, so a reused pid does not count. */
 internal fun creatorRuns(owner: CloneOwner): Boolean = ProcessHandle.of(owner.pid)
-    .map { process -> process.info().startInstant().map { it.toString() }.orElse(null) == owner.pidStartedAt }
+    .map { process -> sameStart(owner.pidStartedAt, process.info().startInstant().map { it.toString() }.orElse(null)) }
     .orElse(false)
+
+/**
+ * Whether a live process's start time matches the one recorded with its pid. When neither is readable the pid alone
+ * cannot tell the creator from a later process, so the creator counts as exited rather than as still booting.
+ */
+internal fun sameStart(
+    recorded: String?,
+    current: String?
+): Boolean {
+    return recorded != null && recorded == current
+}
 
 /** A worktree still exists while its checkout keeps its `.git` entry, a directory or a worktree's link file. */
 private fun worktreeExists(owner: CloneOwner): Boolean = Path.of(owner.worktree).resolve(".git").exists()
