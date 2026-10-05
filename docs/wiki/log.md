@@ -2492,3 +2492,10 @@ to scope, feasibility, or delivery.
   key frames beside the published ones.
 - `user-confirmed`: the quit question during an in-app update becomes
   backlog row `MACOS-026` (idea 27), first in line for 1.4.
+
+## [2026-10-05] idea | Longer quick choices for a manual pause
+
+- `user-confirmed`: session setup should offer more than 25, 45, and 60
+  minutes. Idea 28 proposes 1 h, 2 h, 4 h, 8 h, and **Until end of day**;
+  backlog row `SESSION-007` owns it and changes no release.
+
