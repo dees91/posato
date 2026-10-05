@@ -42,10 +42,14 @@ class VmCommand : CliktCommand(name = "vm") {
 
 class VmCreateCommand : ControlCommand("create", "Clone the line's golden VM, boot it headless, and copy the staged package and driver into it.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
+    private val allowLowDisk by option(
+        "--allow-low-disk",
+        help = "Create the clone below the free-space minimum and report the shortage as diskSpaceWarning instead of refusing.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        val created = VmLifecycle(session.context).create(line)
+        val created = VmLifecycle(session.context).create(line, allowLowDisk)
         // A paused iCloud Keychain only shows much later as a workspace key that never arrives, so repair it now. A
         // later clone signing in can pause this one again, so verification resumes every clone once all have booted.
         val iCloud = GuestICloud(session.context)
@@ -115,7 +119,7 @@ class VmDestroyCommand : ControlCommand("destroy", "Shut the clone down from ins
 class VmPromptCommand : ControlCommand("prompt", "Answer a system dialog over VNC: admin, background, gatekeeper, or picker-bypass.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val kind by argument(
-        help = "admin | background | toggle | account-password | mac-password | device-passcode | gatekeeper | picker-bypass",
+        help = "admin | background | toggle | account-password | mac-password | device-passcode | gatekeeper | picker-bypass | icloud-later",
     )
     private val row by option("--row", help = "toggle only: the System Settings row whose switch to turn on.")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the dialog.").long().default(DEFAULT_TIMEOUT_SECONDS)

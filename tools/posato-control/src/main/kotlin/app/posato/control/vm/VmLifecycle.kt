@@ -45,24 +45,29 @@ class VmLifecycle(
 ) {
     private val tart = Tart(context)
 
-    fun create(line: VmLine): JsonObject {
+    fun create(
+        line: VmLine,
+        allowLowDisk: Boolean = false
+    ): JsonObject {
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
-        refuseClone(tart.list(), golden, line.cloneName)
+        val diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
+        diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
+        refuseClone(tart.list(), golden, line.cloneName) { name -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
         val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
+        recordCloneOwner(context, line.cloneName)
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         val started = System.currentTimeMillis()
         tart.start(line.cloneName, jdk, log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
         waitForAgent(line)
         sync(line)
-        return JsonObject(
-            mapOf(
-                "vm" to JsonPrimitive(line.cloneName),
-                "golden" to JsonPrimitive(golden),
-                "readyMs" to JsonPrimitive(System.currentTimeMillis() - started),
-            ),
+        val created = mapOf(
+            "vm" to JsonPrimitive(line.cloneName),
+            "golden" to JsonPrimitive(golden),
+            "readyMs" to JsonPrimitive(System.currentTimeMillis() - started),
         )
+        return JsonObject(if (diskWarning == null) created else created + ("diskSpaceWarning" to JsonPrimitive(diskWarning)))
     }
 
     /**
@@ -136,10 +141,10 @@ class VmLifecycle(
     }
 
     /**
-     * Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. Refuses a clone
-     * whose Posato is still linked to an iCloud workspace unless [keepWorkspace]: the workspace and its key would stay
-     * in the shared test account, and a later clone of the same line cannot read that key (`observed` 2026-09-25).
-     * Press **Remove workspace** in the app first.
+     * Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone and, with its Tart
+     * directory, its owner marker. Refuses a clone whose Posato is still linked to an iCloud workspace unless
+     * [keepWorkspace]: the workspace and its key would stay in the shared test account, and a later clone of the same
+     * line cannot read that key (`observed` 2026-09-25). Press **Remove workspace** in the app first.
      */
     fun destroy(
         line: VmLine,

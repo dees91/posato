@@ -114,7 +114,8 @@ configuration, and evidence created only for its own sake.
 
 ## Task brief
 
-For recorded tasks, create `docs/tasks/specifications/<task-id>.md` from the
+For recorded tasks, create `docs/tasks/specifications/<task-id>-<slug>.md`
+(lowercase ID, short slug) from the
 [brief template](templates/task-specification.md) only when the task is about
 to start. Lightweight changes never create one.
 
@@ -136,7 +137,9 @@ to the maintainer.
 
 ## Execution record
 
-For recorded tasks, create `docs/tasks/executions/<task-id>.md` from the
+For recorded tasks, create the execution record under `docs/tasks/executions/`
+with the brief's file name (`schedule-006-table-bound.md` beside
+`specifications/schedule-006-table-bound.md`) from the
 [execution template](templates/execution-record.md). Keep only:
 
 - status: `active`, `blocked`, or `done`;

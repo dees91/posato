@@ -19,6 +19,7 @@ enum class GuestPrompt(
     DEVICE_PASSCODE("device-passcode"),
     GATEKEEPER("gatekeeper"),
     PICKER_BYPASS("picker-bypass"),
+    ICLOUD_LATER("icloud-later"),
     AUTOMATION_ALLOW("automation-allow"),
     AUTOMATION_DENY("automation-deny"),
     KEEP_SAFARI("keep-safari"),
@@ -101,11 +102,12 @@ class VmPrompts(
                 screen.waitGone(question, timeoutMs)
             }
 
+            GuestPrompt.ICLOUD_LATER -> {
+                dismissConnectAlert(screen, timeoutMs)
+            }
+
             GuestPrompt.PICKER_BYPASS -> {
-                screen.waitFor(BYPASS_QUESTION, timeoutMs)
-                val allow = screen.waitFor(BYPASS_ALLOW, timeoutMs, exact = true).first()
-                screen.session { client -> client.click(allow.centerX, allow.centerY) }
-                screen.waitGone(BYPASS_QUESTION, timeoutMs)
+                allowPickerBypass(screen, timeoutMs)
             }
         }
     }
@@ -234,8 +236,6 @@ class VmPrompts(
         const val BACKGROUND_ROW = "PosatoMacOSHelper"
         const val GATEKEEPER_QUESTION = "Are you sure"
         const val GATEKEEPER_OPEN = "Open"
-        const val BYPASS_QUESTION = "bypass the system private"
-        const val BYPASS_ALLOW = "Allow"
 
         /** Fractions of the framebuffer width for the golden VM's System Settings window (Login Items toggle column). */
         const val LOGIN_ITEM_TOGGLE_X = 0.716
@@ -252,6 +252,12 @@ class VmPrompts(
 
 private const val FRAME = "frame.png"
 
+/** macOS 26 asks whether the guest agent may bypass the private window picker after screen captures. */
+internal const val PICKER_BYPASS_QUESTION = "bypass the system private"
+
+/** The alert Resume Data Sync can raise over its account password sheet; macOS renders the apostrophe either way. */
+internal const val ICLOUD_CONNECT_ALERT = "connect to iCloud"
+
 /** The running clone's screen; frames for text recognition go to a scratch file under the line's directory. */
 internal fun guestScreen(
     context: RunContext,
@@ -262,6 +268,43 @@ internal fun guestScreen(
 }
 
 internal fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")
+
+private fun allowPickerBypass(
+    screen: GuestScreen,
+    timeoutMs: Long
+) {
+    screen.waitFor(PICKER_BYPASS_QUESTION, timeoutMs)
+    val allow = screen.waitFor(BYPASS_ALLOW, timeoutMs, exact = true).first()
+    screen.session { client -> client.click(allow.centerX, allow.centerY) }
+    screen.waitGone(PICKER_BYPASS_QUESTION, timeoutMs)
+}
+
+private const val BYPASS_ALLOW = "Allow"
+
+/**
+ * Resume Data Sync can raise "This Mac can't connect to iCloud" over the account password sheet it opens; Later
+ * reveals the sheet (`observed` 2026-10-04). A first click may only activate the alert, so it is pressed until gone.
+ */
+private fun dismissConnectAlert(
+    screen: GuestScreen,
+    timeoutMs: Long
+) {
+    val deadline = System.currentTimeMillis() + timeoutMs
+    screen.waitFor(ICLOUD_CONNECT_ALERT, timeoutMs)
+    while (true) {
+        val lines = screen.read()
+        if (lines.none { it.matches(ICLOUD_CONNECT_ALERT, exact = false) }) return
+        val later = lines.firstOrNull { it.matches(CONNECT_LATER, exact = true) }
+        if (later != null) screen.session { client -> client.click(later.centerX, later.centerY) }
+        if (System.currentTimeMillis() >= deadline) {
+            throw ControlException(ErrorCode.WAIT_TIMEOUT, "The alert '$ICLOUD_CONNECT_ALERT' stayed on the guest screen.")
+        }
+        Thread.sleep(CONNECT_ALERT_POLL_MS)
+    }
+}
+
+private const val CONNECT_LATER = "Later"
+private const val CONNECT_ALERT_POLL_MS = 1_000L
 
 private fun keepSafari(
     screen: GuestScreen,

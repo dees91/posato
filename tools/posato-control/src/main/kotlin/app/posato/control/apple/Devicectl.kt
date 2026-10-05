@@ -27,6 +27,7 @@ data class PhysicalDevice(
     val developerMode: String? = null,
     val paired: Boolean = false,
     val wired: Boolean = false,
+    val overNetwork: Boolean = false,
 )
 
 /** Reads the device list from the `result` object of `devicectl list devices`. */
@@ -37,6 +38,7 @@ internal fun parseDevices(result: JsonObject): List<PhysicalDevice> {
         val properties = device["deviceProperties"]?.jsonObject
         val connection = device["connectionProperties"]?.jsonObject
         val hardware = device["hardwareProperties"]?.jsonObject
+        val transport = connection?.get("transportType")?.jsonPrimitive?.content
         PhysicalDevice(
             udid = device.getValue("identifier").jsonPrimitive.content,
             name = properties?.get("name")?.jsonPrimitive?.content ?: "unknown",
@@ -45,7 +47,8 @@ internal fun parseDevices(result: JsonObject): List<PhysicalDevice> {
             connected = connection?.get("tunnelState")?.jsonPrimitive?.content == "connected",
             developerMode = properties?.get("developerModeStatus")?.jsonPrimitive?.content,
             paired = connection?.get("pairingState")?.jsonPrimitive?.content == "paired",
-            wired = connection?.get("transportType")?.jsonPrimitive?.content == "wired",
+            wired = transport == "wired",
+            overNetwork = transport == "localNetwork",
         )
     }
 }

@@ -100,6 +100,14 @@ Preconditions:
   SpringBoard shows "You cannot use Calculator because it is restricted." and Safari shows
   "Website Not Allowed", then Calculator's keypad and the Example Domain page appear. Each
   fixture fails in the opposite state, so a pass is not a timing accident.
+- **Pause page in a browser (Mac):** `observe` proves the proxy outcome, not
+  what a person sees. During a session with `example.com` paused, open it in
+  each browser with `$PC vm exec --line primary --script "open -a Safari https://example.com/"`
+  (then `open -a 'Google Chrome' …`; Chrome is in the primary golden VM),
+  answer the first Automation consent with `$PC vm prompt automation-allow --line primary`,
+  and wait for `$PC vm wait-text --line primary --text "This site is paused"`.
+  Capture `vm screenshot` as evidence. Denying consent keeps blocking without
+  the page and without a second request.
 - **Duration:** In setup use `$PC tap -t <target> --text "Increase Hours" --role button`
   and the corresponding Decrease Hours / Increase Minutes / Decrease Minutes
   buttons. Read the changed values and Ends at preview. At 24 hours minutes are
@@ -189,6 +197,8 @@ wait up to 30 seconds for a window and continue without one.
 
 ## Gotchas
 
+- Give `observe --website` an `http://` URL: an `https://` request answers
+  `unreachable` through the proxy, whatever the session state.
 - Starting on the Mac raises the administrator prompt for the helper Apply; `vm prompt
   admin` confirms it, otherwise expect the action-required state with Retry. With
   **Start sessions without the password** on in This Mac (`MACOS-014`), start and

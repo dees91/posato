@@ -72,8 +72,8 @@ Preconditions:
   the picker helper is one-shot, started fresh for each selection and terminated
   with its panel. While enforcement is active two helpers therefore run inside
   the bundle, and `--process PosatoMacOSHelper` is refused with exit 3 and a
-  detail naming both pids before any wait runs. Address the picker by pid in
-  that case — the one the `--for exists` wait succeeds on — and keep the
+  detail naming both pids before any wait runs. Address the picker by pid
+  (`--process <pid>`) in that case — the one the `--for exists` wait succeeds on — and keep the
   by-name form while only one helper is alive. A helper started by
   **Enable on this Mac** also stays alive without a session, so after the
   first-install permission step the picker needs the pid as well; it is the

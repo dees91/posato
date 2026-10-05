@@ -33,6 +33,13 @@ Prerequisites that `doctor` reports:
   window without them; `doctor --request-permissions` triggers the prompts.
 - An Apple development team for the physical iPhone, stored only in the
   ignored `local.properties` file.
+- At least 20 GB free on the volumes holding the checkout and Tart's VMs
+  (`host.diskSpace`, a warning). A run's clones, desktop build, and
+  `./gradlew quality` spend it, so `vm create` refuses below it with
+  `DISK_SPACE_LOW`; the hint names what regenerates and may be deleted.
+  The figure leaves out purgeable space, such as Time Machine local snapshots
+  (`tmutil listlocalsnapshots /`) and caches; `vm create --allow-low-disk`
+  creates the clone anyway and reports `diskSpaceWarning`.
 
 ### Local configuration
 
@@ -72,7 +79,9 @@ restages an ad-hoc package and silently removes the application picker. Rerun
 Every command takes `--target/-t desktop|simulator|device` (`sim` is an
 alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
-`posato-control launch -t desktop --vm primary`.
+`posato-control launch -t desktop --vm primary`. `--human` prints plain text
+instead of the envelope and ends with the outcome, `ok (<ms> ms)` or
+`error <CODE>: <message>`, so `| tail -1` shows it.
 
 The desktop target never drives the application on the host Mac, whose
 installed Posato is the maintainer's real copy: outside a virtual machine
@@ -100,8 +109,8 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | --- | --- | --- |
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
-| 2 | usage | `USAGE` (also argument parsing errors, which print the same envelope) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -169,21 +178,21 @@ grants a permission.
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
 | `cleanup [--dry-run] [--purge-derived-data]` | all | Stops tracked processes; never deletes run evidence. |
 | `artifacts` | — | Prints the run directory layout. |
-| `observe [--website URL]... [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Repeat `--website` to observe several in one call; `websites` lists each and every one must meet `--expect`. Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
+| `observe [--website URL]... [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Repeat `--website` to observe several in one call; `websites` lists each and every one must meet `--expect`. Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. Use `http://` URLs; an `https://` request answers `unreachable` through the proxy. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
 | `menu [--open] [--choose TITLE]` | desktop in a VM | Reads the resident application's status-bar menu through its accessibility tree (description, item titles, enabled states); `--open` opens it through the status item's accessibility press, as VoiceOver does, and `--choose` presses the item with that exact title. Works with the window closed. |
 | `close-window` | desktop in a VM | Presses the close button of the window titled Posato, which hides a resident application instead of quitting it. |
 | `swipe-back [--cancel]` | desktop in a VM | Swipes right with two fingers over the Posato window, as the trackpad's swipe between pages does: phased scroll events that AppKit's swipe tracking follows. A long first movement completes the swipe; `--cancel` releases it below the threshold. Synthetic events report the whole movement at the start, so progress does not grow as a real trackpad's does. |
 | `resources [--seconds N]` | desktop in a VM | Samples the application and its helper for N seconds (default 600): physical footprint, CPU seconds used, and idle wakeups per second from `top`. |
 | `update-consent --answer allow\|deny [--timeout-seconds N]` | desktop in a VM | Answer a release build's modal "Check for updates automatically?" alert, which appears once setup completes and on the first open of a replaced install and blocks every click behind it. Waits up to N seconds (default 10) and reports `answered: false` when no alert appears. |
 | `flow schedule --name N --start HH:MM --end HH:MM [--set S] [--days every\|weekdays\|mon,...,sun] [--off]` | desktop in a VM, simulator, device | Add a schedule through the editor. Each time is set in rounds that read the editor's `Starts`/`Ends` label and step only the remaining difference, since the wheels drop a tap now and then; it fails with `ASSERTION_FAILED` when a time does not settle. `--off` saves it turned off, so a due schedule does not start during the run. `--days` defaults to every day, so a run on any day starts; the editor itself proposes weekdays. The saved row must list the chosen days. |
-| `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. |
+| `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. Posato accepts two sets with one name, so the command refuses with `ALREADY_EXISTS` when the list already shows a set of that name; a rerun never adds a duplicate. |
 | `flow session [--set S] [--minutes 5-59\|60]` | desktop in a VM, simulator, device | Start a manual session from Session setup: choose the set, tap the 25, 45, or 60-minute preset or step the minutes from 25, check that Review shows that length, and wait for **End session early**. |
-| `flow icloud link\|remove [--timeout-seconds N]` | desktop in a VM | Link to the iCloud workspace, pressing **Check again** while the key is awaited, or remove the workspace, pressing the confirmation's own button and again after a removal that did not finish. The state is read from the row's buttons, not its sentence. |
-| `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the driver and, when one is staged, the development package onto its disk, so a clone for a notarized candidate needs no build; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
-| `vm icloud [--line] [--resume]` | desktop in a VM | Read iCloud Keychain's state from System Settings (`syncing`, `unknown`; exit 3 `ICLOUD_KEYCHAIN_PAUSED` when paused or signed out); `--resume` runs Resume Data Sync and answers its dialogs. |
+| `flow icloud link\|remove [--timeout-seconds N]` | desktop in a VM | Link to the iCloud workspace, pressing **Check again** while the key is awaited, or remove the workspace, pressing the confirmation's own button and again after a removal that did not finish. The state is read from the row's buttons, not its sentence. With `--vm`, the host first reads iCloud Keychain for a link as `vm icloud` does and again after every two minutes without an outcome, runs Resume Data Sync when it is paused, and adds `iCloudKeychain` and `iCloudResumed` to the result; it stops with `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails or the guest is signed out. A removal needs no key and skips the check, so it works on a clone whose keychain is paused. |
+| `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura] [--allow-low-disk]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the driver and, when one is staged, the development package onto its disk, so a clone for a notarized candidate needs no build; recopy; shut down from inside and delete. `create` refuses below 20 GB free with `DISK_SPACE_LOW` unless `--allow-low-disk`, which reports the shortage as `diskSpaceWarning`; it also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
+| `vm icloud [--line] [--resume]` | desktop in a VM | Read iCloud Keychain's state from System Settings (`syncing`, `unknown`; exit 3 `ICLOUD_KEYCHAIN_PAUSED` when paused or signed out); `--resume` runs Resume Data Sync and answers its dialogs, including a picker-bypass request over the screen and "This Mac can't connect to iCloud" over the password sheet (Later). |
 | `vm dialogs [--line]` | desktop in a VM | List the open system dialogs by the process that owns each window, which recognized text cannot tell apart: `admin` (SecurityAgent), `gatekeeper`, `system-alert`, `accessibility`, and `notification` banners. Check it before answering an administrator prompt; a Background Items notice also says "allow this". |
 | `vm onboard [--line] [--timeout-seconds N]` | desktop in a VM (host command) | Launch the package in a fresh clone and finish first-run onboarding with the helper: runs `mac-unified-onboarding-desktop.json` in the guest and answers the Login Items and administrator prompts over VNC until the window reports **This Mac is ready.**, then finishes a background approval the overview still asks for. About 1.5 minutes. |
-| `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`, `automation-allow`, `automation-deny`, `keep-safari`. |
+| `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`, `icloud-later`, `automation-allow`, `automation-deny`, `keep-safari`. |
 | `vm install --dmg file [--line] [--replace] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on; `--replace` first moves an installed release to the Trash. See [Candidates](#notarized-candidates). |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
 | `vm text [--line] [--contains text]` | desktop in a VM | Print the recognized screen text, top to bottom, with positions; read dialogs this way instead of viewing screenshots. |
@@ -193,7 +202,7 @@ grants a permission.
 | `vm network --state off\|on [--line]` | desktop in a VM | Disable or enable every network service in the guest with the guest administrator password, for offline and reconnection runs; `tart exec` keeps working while the guest is offline. It fails unless every service reaches the requested state; `on` enables all services, not only those it disabled, and the address returns a few seconds later. Never touches the host. |
 | `vm network --service name --action create\|enable\|disable\|remove [--device en0] [--line]` | desktop in a VM | Create a network service on a hardware port, enable or disable it, or remove it, with the guest administrator password, for primary-service change runs such as a session whose service disappears. It fails unless the listing afterwards shows the requested state. Never touches the host. |
 | `vm network --service name --action show-bypass \| --bypass-domains a,b \| --bypass-empty \| --bypass-absent [--line]` | desktop in a VM | Read one service's proxy bypass domains, set them in order, clear them, or remove the `ExceptionsList` key, with the guest administrator password, for proxy-exception runs. It fails unless the list read afterwards is the requested one. `--bypass-empty` stores an empty list; `--bypass-absent` removes the key with `scutil --prefs` and checks that it is gone. Never touches the host. |
-| `vm exec --script script [--line]` | desktop in a VM | Run a `/bin/sh` script as the logged-in guest user and return its exit code and output, for checks the application interface cannot show, such as whether a process accepts a Java attach. |
+| `vm exec --script text [--line]` | desktop in a VM | Run the script text itself (`/bin/sh -c`, such as `--script 'pgrep -l java'`; not a host file path, which exits 127) as the logged-in guest user and return its exit code and output, for checks the application interface cannot show, such as whether a process accepts a Java attach. Copy a file first with `vm push` to run it. |
 | `vm push --from file --to path [--executable] [--line]` | desktop in a VM | Copy one host file of at most 64 MiB to a path relative to the guest user's home, such as a verification probe, and fail unless its SHA-256 in the guest matches. |
 | `vm kill --process helper\|daemon [--line]` | desktop in a VM | Kill the session helper, or the proxy-settings daemon with the guest administrator password, with SIGKILL, for crash and restore runs; launchd restarts the daemon. It fails when no such process runs. |
 | `vm type --text T \| --secret admin\|account\|phone [--strip-prefix P] [--line]` | desktop in a VM | Type text, or a Keychain secret without echoing it, into the focused guest field. |
@@ -367,7 +376,10 @@ hardcoded screen positions. Read-only find/wait/snapshot do not scroll.
 `launch.fresh` resets application state, so the app opens on the first-install
 flow instead of `Session`. `terminateExisting: true` (the
 scenario default) restarts the app; false reuses it. A failed step records
-`failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.
+`failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`. A failed
+`run` names the step in its error message by its 0-based index, name, and
+action, writes every step's result to `run-result.json` in the run directory,
+and names that file and the step's evidence in the hint.
 
 Canonical scenarios in `fixtures/scenarios/`:
 
@@ -408,7 +420,13 @@ test Apple Account, and Keychain items is in
 
 - `vm create` refuses while the line's golden VM runs (a golden VM and its
   clone share a provisioning identity, and running both re-identifies one) or
-  when two guests already run. The VNC address, which carries the session
+  when two guests already run. Clone names are shared by every worktree on the
+  machine, so `vm create` records the creating worktree, run, time, and
+  process in `posato-owner.json` inside the clone's Tart directory, which
+  `vm destroy` (or `tart delete`) removes with the clone. A refusal over an
+  existing or running clone names that owner and whether its worktree and
+  process still exist; pick a free line or ask its session, and destroy only
+  a clone your worktree created. The VNC address, which carries the session
   password, stays in an owner-only file under `build/verification/vm/<line>/`
   and is deleted by `vm destroy`.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
@@ -465,6 +483,11 @@ tracks the new process.
 - `build/verification/runs/<run-id>/` holds screenshots, snapshots, logs,
   driver result bundles, and reset backups. `build/verification/latest`
   points at the newest run that produced artifacts.
+- `run-result.json` in the run directory holds each step's result (`index`,
+  `name`, `action`, `ok`, `error`, `artifacts`) of a failed `run`. On iOS
+  every driver invocation also leaves `driver/DEVICE-<n>/result.json`
+  (`SIMULATOR-<n>` on the Simulator), the driver's own step results, next to
+  that invocation's `.xcodebuild.log`.
 - `build/verification/state.json` tracks the processes this tool started;
   `terminate` and `cleanup` only touch those.
 - `build/verification/transcript.log` records every helper command per run
@@ -498,7 +521,10 @@ entitlement); `install`, `launch`, and `terminate` use `devicectl`.
 `launch --capture-logs` keeps a `devicectl --console` attachment whose output
 `logs` reads; the application lives only as long as that attachment, so
 `terminate` ends both. Screenshots and all interaction go through the driver;
-`db` is unsupported, and `reset` means uninstall.
+`db` is unsupported, and `reset` means uninstall. The iPhone must be on a
+cable: when devicectl reports it paired over the local network only, `doctor`
+and every device command say so instead of reporting that no iPhone is
+connected; an unplugged or switched-off iPhone still reads as not connected.
 
 **iOS driver.** `ios-driver/PosatoDriver.xcodeproj` contains a stub host app
 and a UI-testing bundle that drives the installed Posato app by bundle

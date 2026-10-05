@@ -75,12 +75,32 @@ own golden VM line, and address them with `--vm primary|peer`.
   the key, link the peer (it can read that key), press **Remove workspace**
   on the peer and confirm, press **Check again** on the primary until **Sync
   with iCloud** returns, establish there, and then let the peer join.
-- Check `iCloudKeychain` in the `vm create` result before any iCloud step. A
-  `paused` keychain never delivers the workspace key; run
-  `vm icloud --line <line> --resume` and repair the golden VM the same way
-  (`docs/development/unattended-verification.md`). "This Mac can't connect to
-  iCloud" (Apple Account Settings, second click) is answered with
-  `vm prompt account-password`. The key then arrives without another press.
+- A `paused` keychain never delivers the workspace key, and a later sign-in
+  can pause a clone's keychain after `vm create` reported it `syncing`.
+  `flow icloud link` with `--vm` therefore checks the keychain before the flow
+  and whenever two minutes pass without an outcome, runs Resume Data Sync when
+  it is paused, and reports `iCloudKeychain` and `iCloudResumed`; it stops with
+  `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails.
+  `flow icloud remove` needs no key and skips the check, so a clone whose
+  keychain cannot be resumed can still remove its workspace. Repair
+  the golden VM the same way (`docs/development/unattended-verification.md`).
+  Resume Data Sync can raise "This Mac can't connect to iCloud" over its
+  password sheet; `vm icloud --resume` presses Later and answers the sheet
+  (`vm prompt icloud-later`, then `account-password`, by hand). The key then
+  arrives without another press.
+- Development builds use CloudKit's Development environment, where a change
+  reaches the other device 1 to 10 minutes after its exchange. Poll the
+  receiver (`db query` for the expected row, or the Session summary) for up
+  to 12 minutes before calling it lost, and schedule an offline-start check
+  at least 15 minutes ahead.
+- **Reset the Development zone** when **Remove workspace** keeps ending in
+  "Sync did not finish" (a test that left hundreds of records) or a fresh
+  clone cannot link. This is a maintainer action in the CloudKit Console,
+  so ask for it as a checklist: sign in with the developer team account,
+  open container `iCloud.app.posato.sync`, environment **Development**,
+  **Records**, **Private Database**; at "Act as iCloud Account" sign in with
+  the test Apple Account; select zone `PosatoSyncV1` and **Delete Zone**.
+  Then reinstall the test iPhone, which still names the deleted workspace.
 - A session started on the primary reaches the peer at the peer's next
   exchange (`menu --open` starts one, as does **Sync now**); the peer shows
   Resume restrictions and needs its own `vm prompt admin`.

@@ -69,14 +69,20 @@ import app.posato.control.vm.GuestRelay
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.MultiUsageError
+import com.github.ajalt.clikt.core.PrintHelpMessage
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.output.Localization
 import com.github.ajalt.clikt.output.ParameterFormatter
 import kotlin.system.exitProcess
 
 private const val EXIT_USAGE = 2
+
+/** Clikt's default English messages, for an error that carries no context of its own. */
+private val englishLocalization = object : Localization {}
 
 class PosatoControl : CliktCommand(name = "posato-control") {
     override fun help(context: Context): String =
@@ -151,8 +157,19 @@ fun run(args: Array<String>): Int {
     } catch (result: ProgramResult) {
         result.statusCode
     } catch (error: UsageError) {
-        emitUsageError(error)
+        emitUsageError(usageMessage(error))
         command.echoFormattedHelp(error)
+        EXIT_USAGE
+    } catch (help: PrintHelpMessage) {
+        val group = help.context?.command
+        // A group without its subcommand is a usage error, not a request for help, so standard output keeps an envelope.
+        if (!help.error || group == null) {
+            command.echoFormattedHelp(help)
+            return help.statusCode
+        }
+        val name = help.context?.commandNameWithParents()?.joinToString(" ") ?: group.commandName
+        emitUsageError("missing subcommand: $name takes one of ${group.registeredSubcommandNames().joinToString(", ")}")
+        group.getFormattedHelp()?.let { text -> System.err.println(text) }
         EXIT_USAGE
     } catch (error: CliktError) {
         command.echoFormattedHelp(error)
@@ -160,10 +177,13 @@ fun run(args: Array<String>): Int {
     }
 }
 
-private fun emitUsageError(error: UsageError) {
-    val message = error.context?.let { context -> error.formatMessage(context.localization, ParameterFormatter.Plain) }
-        ?: error.message
-        ?: "Invalid usage."
+/** Clikt's own wording, also for several errors at once, whose combined error carries no context of its own. */
+private fun usageMessage(error: UsageError): String {
+    if (error is MultiUsageError) return error.errors.joinToString("; ", transform = ::usageMessage)
+    return error.formatMessage(error.context?.localization ?: englishLocalization, ParameterFormatter.Plain)
+}
+
+private fun emitUsageError(message: String) {
     val envelope = Envelope(
         ok = false,
         command = "posato-control",

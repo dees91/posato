@@ -56,4 +56,20 @@ class DevicectlDevicesTest {
 
         assertEquals(listOf("cable"), idleWiredDevices(devices).map { it.udid })
     }
+
+    /**
+     * devicectl omits `transportType` for a paired iPhone that is unplugged or switched off, and reports
+     * `localNetwork` for one it reaches over Wi-Fi only; only the second may be named network-only.
+     */
+    @Test
+    fun `given a paired device without a transport when naming network-only devices then only a local network one counts`() {
+        val devices = parseDevices(
+            result(
+                device("unplugged", "paired", null, "disconnected"),
+                device("wireless", "paired", "localNetwork", "disconnected"),
+            ),
+        )
+
+        assertEquals(listOf("wireless"), networkOnlyDevices(devices).map { it.udid })
+    }
 }

@@ -28,22 +28,42 @@ internal fun parseTartList(json: String): List<TartVm> = ControlJson.lenient.par
 /**
  * Refuses a clone that would break the environment. A golden VM and its own clone share a provisioning identifier,
  * and when both run macOS permanently gives one of them a new identifier, which the registered development
- * profile no longer covers. Apple's Virtualization framework also runs at most two macOS guests at once.
+ * profile no longer covers. Apple's Virtualization framework also runs at most two macOS guests at once. Clone
+ * names are shared by every worktree, so a refusal over an existing clone names its owner through [owner].
  */
 internal fun refuseClone(
     vms: List<TartVm>,
     golden: String,
-    clone: String
+    clone: String,
+    owner: (String) -> String = { "" },
 ) {
     val source = vms.firstOrNull { it.name == golden }
-    val reason = when {
-        source == null -> "The golden VM '$golden' does not exist."
-        source.running -> "The golden VM '$golden' is running; a clone beside it would change one provisioning identity."
-        vms.any { it.name == clone } -> "A VM named '$clone' already exists."
-        vms.count { it.running } >= MAX_RUNNING_GUESTS -> "Two macOS guests already run, the most Virtualization allows."
-        else -> null
+    val shared = "Pick a free line with --line, or ask the session that owns the clone; destroy only a clone this worktree " +
+        "created (`posato-control vm destroy --line <line>`)."
+    val (reason, hint) = when {
+        source == null -> {
+            "The golden VM '$golden' does not exist." to "Create it as described in docs/development/unattended-verification.md."
+        }
+
+        source.running -> {
+            "The golden VM '$golden' is running; a clone beside it would change one provisioning identity." to
+                "Wait until whoever prepares it shuts it down (`posato-control vm shutdown`), or ask before stopping it."
+        }
+
+        vms.any { it.name == clone } -> {
+            "A VM named '$clone' already exists. ${owner(clone)}".trim() to shared
+        }
+
+        vms.count { it.running } >= MAX_RUNNING_GUESTS -> {
+            val running = vms.filter { it.running }.joinToString(" ") { vm -> owner(vm.name).ifEmpty { "${vm.name} runs." } }
+            "Two macOS guests already run, the most Virtualization allows. $running".trim() to shared
+        }
+
+        else -> {
+            return
+        }
     }
-    reason?.let { throw ControlException(ErrorCode.VM_UNAVAILABLE, it, "Stop or destroy the listed VM first (`posato-control vm destroy`).") }
+    throw ControlException(ErrorCode.VM_UNAVAILABLE, reason, hint)
 }
 
 /**

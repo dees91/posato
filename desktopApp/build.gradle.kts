@@ -1082,13 +1082,10 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
 
     @TaskAction
     fun generate() {
-        val updateChannel = UpdateChannel.entries.firstOrNull { it.propertyValue == channel.get() }
-            ?: throw GradleException("Generating an update feed needs -PposatoMacOsUpdateChannel=release or candidate.")
+        val updateChannel = PosatoUpdateFeed.feedChannel(channel.get())
         val diskImage = diskImageDirectory.get().asFile.listFiles().orEmpty().singleOrNull { it.extension == "dmg" }
             ?: throw GradleException("Expected exactly one notarized DMG in ${diskImageDirectory.get().asFile.name}.")
-        val notes = releaseNotes.orNull?.asFile
-            ?: throw GradleException("An update feed needs -PposatoMacOsReleaseNotes=<plain-text .txt file>.")
-        check(notes.extension == "txt") { "Release notes must be a plain-text .txt file." }
+        val notes = PosatoUpdateFeed.releaseNotes(releaseNotes.orNull?.asFile)
         val staged = applicationBundle.get().file("Contents/Info.plist").asFile
         val published = publishedApplication(diskImage)
         val (feedUrl, publicKey, buildNumber) = published.updateValues
@@ -1819,7 +1816,17 @@ tasks.register<GenerateMacOsUpdateFeed>("generateMacOsUpdateFeed") {
     dependsOn("notarizeMacOsRelease", extractSparkle)
     diskImageDirectory.set(macOsReleaseDiskImageDirectory)
     applicationBundle.set(macOsReleaseApplication)
-    providers.gradleProperty("posatoMacOsReleaseNotes").orNull?.let { notes -> releaseNotes.set(file(PosatoPaths.expandHome(notes))) }
+    val notesFile = providers.gradleProperty("posatoMacOsReleaseNotes").orNull?.let { notes -> file(PosatoPaths.expandHome(notes)) }
+    if (notesFile != null) releaseNotes.set(notesFile)
+    val feedChannel = releaseUpdateChannel
+    val downloadPrefix = providers.gradleProperty("posatoMacOsUpdateDownloadPrefix").orNull
+    val previousBuild = providers.gradleProperty("posatoMacOsPreviousBuildNumber").orNull
+    // Resolved while the configuration cache is stored, so a bad property fails before the build and notarization;
+    // without the configuration cache it resolves only when this task runs.
+    inputs.property(
+        "posatoFeedProperties",
+        providers.provider { PosatoUpdateFeed.requireFeedProperties(feedChannel, notesFile, downloadPrefix, previousBuild) },
+    )
     sparkleDistribution.set(layout.buildDirectory.dir("sparkle/$pinnedSparkleVersion"))
     channel.set(releaseUpdateChannel.orEmpty())
     architecture.set(macOsArchitecture)

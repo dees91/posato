@@ -37,4 +37,18 @@ class GuestICloudTest {
         assertEquals(GuestPrompt.DEVICE_PASSCODE, pendingICloudPrompt(listOf(line("Enter the passcode you use to unlock"))))
         assertNull(pendingICloudPrompt(listOf(line("Updating your account..."))))
     }
+
+    @Test
+    fun `given the picker-bypass request over a resume dialog when choosing the answer then the request is answered first`() {
+        val lines = listOf(line("\"tart-guest-agent\" is requesting to bypass the system private window picker"), line("Enter Mac Password"))
+
+        assertEquals(GuestPrompt.PICKER_BYPASS, pendingICloudPrompt(lines))
+    }
+
+    @Test
+    fun `given the connect alert over the password sheet when choosing the answer then the alert is dismissed first`() {
+        val lines = listOf(line("This Mac can't connect to iCloud"), line("Enter the Apple Account password for"), line("Later"))
+
+        assertEquals(GuestPrompt.ICLOUD_LATER, pendingICloudPrompt(lines))
+    }
 }

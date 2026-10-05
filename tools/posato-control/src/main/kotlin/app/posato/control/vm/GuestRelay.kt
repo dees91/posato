@@ -9,6 +9,7 @@ import app.posato.control.core.RunContext
 import app.posato.control.model.Envelope
 import app.posato.control.model.ErrorPayload
 import app.posato.control.model.Scenario
+import app.posato.control.model.humanLines
 import kotlinx.serialization.SerializationException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -55,7 +56,11 @@ object GuestRelay {
                 durationMs = 0,
                 error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
             )
-            println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+            if (HUMAN_OPTION in forwarded) {
+                envelope.humanLines().forEach(::println)
+            } else {
+                println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+            }
             exception.code.exitCode
         }
     }
@@ -79,6 +84,23 @@ object GuestRelay {
             else -> Files.readString(Path.of(scenario))
         }
         if (startsPackage(forwarded, stdin)) lifecycle.requireCurrentPackage(line)
+        val output = if (checksICloudKeychain(arguments)) {
+            GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
+        } else {
+            runInGuest(context, line, arguments, stdin, runId)
+        }
+        print(output.envelope)
+        System.err.print(output.stderr)
+        return output.exitCode
+    }
+
+    private fun runInGuest(
+        context: RunContext,
+        line: VmLine,
+        arguments: List<String>,
+        stdin: String?,
+        runId: String
+    ): GuestOutput {
         val tart = Tart(context)
         val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +
             "tools/posato-control/build/install/posato-control/bin/posato-control " + arguments.joinToString(" ") { shellQuote(it) }
@@ -96,9 +118,7 @@ object GuestRelay {
         val envelope = relocateGuestPaths(output.stdout, runId)
         // The envelope is the evidence of commands such as observe, which write nothing else into their run directory.
         if (envelope.isNotBlank()) Files.writeString(hostRun.resolve("envelope.json"), envelope)
-        print(envelope)
-        System.err.print(output.stderr)
-        return output.exitCode
+        return GuestOutput(output.exitCode, envelope, output.stderr)
     }
 
     private const val RELAY_TIMEOUT_MINUTES = 30L

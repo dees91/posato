@@ -17,7 +17,11 @@ login Keychain.
 
 ## What you need
 
-- An Apple silicon Mac on macOS 15 or later with about 80 GB free disk.
+- An Apple silicon Mac on macOS 15 or later with about 80 GB free disk, and
+  at least 20 GB still free once the golden VMs exist: `doctor` reports it as
+  `host.diskSpace`, and `vm create` refuses below it unless
+  `--allow-low-disk`. Purgeable space, such as Time Machine local snapshots,
+  does not count as free.
 - An Apple Developer Program membership, and the App Store Connect team key
   described in [Apple development provisioning](apple-provisioning.md).
 - A dedicated test Apple Account with two-factor authentication. Use an
@@ -203,7 +207,7 @@ $PC run -t desktop --vm primary --scenario tools/posato-control/fixtures/scenari
 $PC vm destroy --line primary
 ```
 
-Desktop commands take `--vm primary|peer|legacy` and run inside the guest; their
+Desktop commands take `--vm primary|peer|legacy|ventura` and run inside the guest; their
 evidence is copied to `build/verification/runs/<run>/guest/`. The
 `verify-posato` skill lists the recipes, the prompts each one raises, and the
 recovery steps for iCloud dialogs.

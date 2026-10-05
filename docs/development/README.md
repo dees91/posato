@@ -41,6 +41,8 @@ Clone the repository, then run:
 git clone https://github.com/dees91/posato.git
 cd posato
 ./gradlew :desktopApp:run      # run the macOS app
+./gradlew qualityLint          # formatting and static analysis only, before a commit
+./gradlew iosSwiftTest         # native iOS Swift tests on a throwaway Simulator
 ./gradlew quality              # formatting, analysis, tests, and packaging checks
 ```
 
@@ -194,7 +196,10 @@ manual-dispatch and required hosted-check policies. The CI workflow is disabled
 on GitHub and removed from source; Git history preserves it for a deliberate
 future restoration. No automatic restoration date is defined.
 
-Before merge:
+`user-confirmed` (2026-10-04): the implementing session owns the full gate;
+the merging session reruns it only when its own rebase changed code.
+
+Before marking a pull request ready:
 
 1. Rebase the branch onto the current `main` (a stack: every branch, bottom
    up), then run `./gradlew quality` on its tip after the last correction,
@@ -202,17 +207,34 @@ Before merge:
    together, as a method that crossed its length limit did after
    `SCHEDULE-004` met `MACOS-015`. Resolve failures rather than treating
    disabled CI as a waiver. Between corrections, `./gradlew qualityLint` runs
-   only formatting and static analysis, so most findings appear before the
-   full gate.
+   only formatting and static analysis, including swift-format and SwiftLint
+   for the native helper and companion, so most findings appear before the
+   full gate. Fix Swift formatting in place from the module directory with
+   the paths its `swiftFormatCheck` lints, for example in `macosHelper/` or
+   `macosSyncCompanion/`:
+
+   ```shell
+   xcrun swift format format --in-place --recursive Package.swift Sources Tests
+   ```
+
+   In `tools/posato-control/` the paths are `native`,
+   `ios-driver/PosatoDriverHost`, and `ios-driver/PosatoDriverUITests`.
+   Never pipe a gate's output in a way that drops its exit code: write it to
+   a file with `./gradlew quality > quality.log 2>&1; echo $?`, or run
+   `set -o pipefail` before piping it.
 2. Complete the task's required review and applicable native/device verification.
-3. Record the tested revision and result in the PR, and confirm that the merged
-   source still matches the reviewed and verified change. Rerun affected checks
+3. Record the tested revision and result in the PR. Rerun affected checks
    after subsequent changes, following the quality contract.
+
+At merge, rebase again when `main` moved. Rerun `./gradlew quality` only when
+that rebase changed code, such as a conflict resolved in source or another
+change merged into the same module; a documentation-only conflict needs no
+rerun.
 
 `main` still requires a PR, including for administrators; force pushes and
 deletion remain disabled. No required status check, strict up-to-date check, or
 mandatory GitHub approval count is configured. GitHub cannot enforce a local
-test result: the maintainer or merging agent owns this checklist. Administrators
+test result: the implementing and merging sessions own this checklist. Administrators
 can still edit branch protection itself.
 
 ## Verification driver

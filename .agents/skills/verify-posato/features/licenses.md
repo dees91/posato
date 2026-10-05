@@ -51,5 +51,8 @@ Preconditions:
   They do not fetch a website or launch another application.
 - Document bodies scroll in the Document text region, independently of the persistent
   Back to licenses action. The iPhone bottom navigation is hidden in this secondary screen.
+- On the test iPhone, `licenses.json` fails now and then at a random scroll
+  step ("Failed to get matching snapshot"). Rerun it once before calling a
+  failure a regression; a failure at the same step twice is real.
 - App icon installation is owned by the platform wiring tasks; the licenses
   recipe does not establish Dock, Finder, or Home Screen icon appearance.

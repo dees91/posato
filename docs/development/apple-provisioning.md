@@ -291,13 +291,12 @@ paths; keep every output outside the checkout or under the ignored `build/`.
    that holds any other item, such as another version, an App Event, or a
    custom product page, so it never submits material it was not asked to.
 
-`hypothesis`: every `store` command is designed to be idempotent, so a rerun
-after a failure completes what the first run left undone, a rerun with the same
-inputs changes nothing, and `store submit` changes nothing once the version is
-waiting for or in review. Unit tests against recorded responses cover this, but
-no `store prepare` or `store submit` has run against App Store Connect yet, and
-`store withdraw` and `--rename-from` have not run live either. The label stays
-until the first live run of each on the next release confirms it.
+`observed` (`RELEASE-004`, `RELEASE-005`): every `store` command is
+idempotent, so a rerun after a failure completes what the first run left
+undone, a rerun with the same inputs reports every item `unchanged`, and
+`store submit` changes nothing once the version is waiting for or in review.
+`store withdraw`, `--rename-from`, `prepare`, and `submit` all ran live against
+App Store Connect in `RELEASE-004`.
 
 The store screenshot capture recipe is in the
 [App Store listing](../store/en-US/listing.md#screenshots).
