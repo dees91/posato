@@ -2499,3 +2499,20 @@ to scope, feasibility, or delivery.
   minutes. Idea 28 proposes 1 h, 2 h, 4 h, 8 h, and **Until end of day**;
   backlog row `SESSION-007` owns it and changes no release.
 
+## [2026-10-05] retro | Navigation retro of ten agent sessions
+
+- `observed` across ten sessions: agents learned `vm onboard`, `flow`, and
+  `vm sync` from private notes; rebuilt the release route, back navigation,
+  the browser pause page, the previous-release upgrade, and the CloudKit zone
+  reset by trial; looked for execution records under the wrong name; resolved
+  `docs/wiki/log.md` conflicts by hand on most rebases; and lost the most time
+  to tool errors that hid their cause (a paused iCloud Keychain, a full disk,
+  a shared VM clone, a failed scenario step).
+- The verify-posato skill and feature map, `releasing.md`, `website/README.md`,
+  and a reviewer reading route now carry that knowledge; the wiki log merges
+  with Git's union driver; `posato-control` names the cause of those errors
+  and resumes a paused keychain before `flow icloud link`; `qualityLint` runs
+  the Swift checks.
+- `user-confirmed` (2026-10-04): the implementing session runs `quality` on
+  the rebased tip before ready, and the merging session reruns it only when
+  its own rebase changed code.
