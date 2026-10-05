@@ -173,6 +173,9 @@ final class ScenarioExecutor {
       try pressKeys(step, timeout: timeout)
     case "swipeBack":
       swipeBack()
+    case "swipeLeft":
+      try element(for: step.query, action: "swipeLeft").swipeLeft()
+      Thread.sleep(forTimeInterval: Self.scrollSettle)
     case "terminate":
       app.terminate()
     case "relaunch":

@@ -46,7 +46,6 @@ internal fun PauseSetsDestination(
                 onOpen = { id -> navigation.open(id) },
                 onCreate = { name -> viewModel.create(name) { id -> navigation.open(id, TargetsCategory.WEBSITES) } },
                 onRename = viewModel::rename,
-                onMakeDefault = viewModel::makeDefault,
                 onDelete = viewModel::delete,
                 onRetry = viewModel::retry,
             )
@@ -127,7 +126,9 @@ internal fun PauseSetMenu(
         if (!row.isDefault && !row.refused) {
             add(PosatoMenuItem("Make default", { onMakeDefault(row.id) }, PosatoMenuSymbol.MakeDefault))
         }
-        if (!row.isDefault) {
+        if (row.isDefault) {
+            add(PosatoMenuItem("Delete", {}, PosatoMenuSymbol.Remove, detail = "Make another set the default to delete this one.", enabled = false))
+        } else {
             add(PosatoMenuItem("Delete", { onDialog(PauseSetDialog.Delete(row)) }, PosatoMenuSymbol.Remove, destructive = true))
         }
     }

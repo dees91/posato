@@ -46,10 +46,10 @@ internal fun ApplicationBrowser(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
-        PosatoSectionHeader(
-            titleContent = { PosatoCaption(deviceLabel) },
-            actionContent = { PosatoButton(onChoose, enabled = state.canChooseApplications()) { Text("Choose apps") } },
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+            PosatoButton(onChoose, enabled = state.canChooseApplications()) { Text("Choose apps") }
+            PosatoCaption(deviceLabel)
+        }
         PosatoDivider()
         LazyColumn(state = scroll, modifier = Modifier.weight(1f).fillMaxWidth()) {
             item {

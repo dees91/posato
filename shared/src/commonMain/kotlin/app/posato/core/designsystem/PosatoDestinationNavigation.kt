@@ -53,7 +53,10 @@ internal fun PosatoBottomNavigationItem(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             iconContent()
-            ProvideTextStyle(MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium), content)
+            ProvideTextStyle(
+                MaterialTheme.typography.labelMedium.copy(fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium),
+                content,
+            )
         }
     }
 }
@@ -87,7 +90,12 @@ private fun DestinationSurface(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val idle = if (platformUsesCupertinoChrome) {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = IDLE_TAB_ALPHA)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val color = if (selected) MaterialTheme.colorScheme.primary else idle
     Surface(
         modifier = modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Tab },
         selected = selected,
@@ -135,3 +143,5 @@ private fun PosatoSidebarNavigationPreview() {
         ) { Text("Unavailable") }
     }
 }
+
+private const val IDLE_TAB_ALPHA = 0.55f

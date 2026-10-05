@@ -41,6 +41,8 @@ import app.posato.core.designsystem.PosatoPickerOption
 import app.posato.core.designsystem.PosatoPickerRow
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoSwipeAction
+import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
@@ -88,7 +90,6 @@ internal fun PauseSetsScreen(
     onOpen: (PauseSetId) -> Unit,
     onCreate: (String) -> Unit,
     onRename: (PauseSetId, String) -> Unit,
-    onMakeDefault: (PauseSetId) -> Unit,
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -109,7 +110,6 @@ internal fun PauseSetsScreen(
                     deviceNoun = deviceNoun,
                     onOpen = { onOpen(row.id) },
                     onDialog = { dialog = it },
-                    onMakeDefault = onMakeDefault,
                 )
             }
         }
@@ -162,13 +162,15 @@ private fun PauseSetListRow(
     deviceNoun: String,
     onOpen: () -> Unit,
     onDialog: (PauseSetDialog) -> Unit,
-    onMakeDefault: (PauseSetId) -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val swipeActions = buildList {
+        add(PosatoSwipeAction("Rename", { onDialog(PauseSetDialog.Rename(row)) }))
+        if (!row.isDefault) add(PosatoSwipeAction("Delete", { onDialog(PauseSetDialog.Delete(row)) }, destructive = true))
+    }
+    PosatoSwipeRow(swipeActions) {
         PosatoDisclosureRow(
             onClick = onOpen,
             onClickLabel = "Open",
-            modifier = Modifier.weight(1f),
             headlineContent = {
                 Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
                     Text(row.name, style = MaterialTheme.typography.titleMedium)
@@ -182,11 +184,9 @@ private fun PauseSetListRow(
                     PosatoCaption(row.summary(deviceNoun))
                     if (row.schedules.isNotEmpty()) PosatoCaption("Used by ${row.schedules.joinToString(", ")}")
                     if (row.refused) PosatoCaption("This set is over the limit of 10. Delete a set to use it.")
-                    if (row.isDefault) PosatoCaption("Make another set the default to delete this one.")
                 }
             },
         )
-        PauseSetMenu(row, onDialog, onMakeDefault)
     }
 }
 

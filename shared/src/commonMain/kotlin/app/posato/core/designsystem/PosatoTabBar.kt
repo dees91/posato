@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -29,7 +31,7 @@ internal fun PosatoTabBar(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
             modifier = Modifier.padding(PosatoSpace.Tiny).selectableGroup(),
@@ -57,7 +59,7 @@ internal fun PosatoTab(
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
-        color = if (selected) MaterialTheme.colorScheme.surface else PosatoControlDefaults.Transparent,
+        color = if (selected) selectedSegmentColor() else PosatoControlDefaults.Transparent,
         border = if (selected) BorderStroke(PosatoSpace.Hairline, MaterialTheme.colorScheme.outlineVariant) else null,
         contentColor = contentColor.copy(alpha = contentAlpha),
     ) {
@@ -76,6 +78,15 @@ internal fun PosatoTab(
         }
     }
 }
+
+/** The selected segment stands lighter than its track in both appearances, as a raised piece does. */
+@Composable
+private fun selectedSegmentColor(): Color {
+    val palette = MaterialTheme.colorScheme
+    return if (palette.surface.luminance() > HALF_LUMINANCE) palette.surfaceContainerLowest else palette.surfaceContainerHighest
+}
+
+private const val HALF_LUMINANCE = 0.5f
 
 @Preview(name = "Counted tabs", widthDp = 390)
 @Preview(name = "Counted tabs · dark", widthDp = 390, uiMode = 0x20)

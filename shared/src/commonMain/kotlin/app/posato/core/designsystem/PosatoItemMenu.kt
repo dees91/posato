@@ -1,7 +1,9 @@
 package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
@@ -33,6 +35,8 @@ internal class PosatoMenuItem(
     val onClick: () -> Unit,
     val symbol: PosatoMenuSymbol? = null,
     val destructive: Boolean = false,
+    val detail: String? = null,
+    val enabled: Boolean = true,
 )
 
 /** One value a picker offers, with an optional line under its title. */
@@ -40,6 +44,14 @@ internal class PosatoMenuItem(
 internal class PosatoPickerOption(
     val title: String,
     val detail: String? = null,
+)
+
+/** An action a swipe reveals at the trailing end of a row. A destructive action is shown in the error color. */
+@Immutable
+internal class PosatoSwipeAction(
+    val label: String,
+    val onClick: () -> Unit,
+    val destructive: Boolean = false,
 )
 
 /** A menu action's symbol: the app's own icon, and the SF Symbol the iOS menu shows instead. */
@@ -106,7 +118,13 @@ internal fun DrawnItemMenu(
                 val color = if (item.destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 DropdownMenuItem(
                     modifier = Modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Button },
-                    text = { Text(item.title) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
+                            Text(item.title)
+                            item.detail?.let { PosatoCaption(it) }
+                        }
+                    },
+                    enabled = item.enabled,
                     onClick = {
                         expanded = false
                         item.onClick()

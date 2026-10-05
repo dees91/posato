@@ -20,6 +20,7 @@ import platform.UIKit.UIImageSymbolConfiguration
 import platform.UIKit.UIImageSymbolWeightMedium
 import platform.UIKit.UIMenu
 import platform.UIKit.UIMenuElementAttributesDestructive
+import platform.UIKit.UIMenuElementAttributesDisabled
 import platform.UIKit.accessibilityLabel
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
@@ -48,7 +49,12 @@ internal actual fun PlatformItemMenu(
 
 private fun PosatoMenuItem.toAction(): UIAction {
     val action = UIAction.actionWithTitle(title, symbol?.let { UIImage.systemImageNamed(it.systemName) }, null) { _ -> onClick() }
-    if (destructive) action.attributes = UIMenuElementAttributesDestructive
+    action.attributes = when {
+        !enabled -> UIMenuElementAttributesDisabled
+        destructive -> UIMenuElementAttributesDestructive
+        else -> 0u
+    }
+    detail?.let { action.subtitle = it }
     return action
 }
 

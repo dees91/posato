@@ -75,7 +75,8 @@ object Actions {
     const val OPEN_URL = "openURL"
     const val PRESS_KEYS = "pressKeys"
     const val SWIPE_BACK = "swipeBack"
-    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK)
+    const val SWIPE_LEFT = "swipeLeft"
+    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT)
     val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }
 
