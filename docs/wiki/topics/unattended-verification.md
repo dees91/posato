@@ -140,6 +140,16 @@ before treating a passing test as evidence.
   same line, while the other line received it at once. A run therefore starts
   from an empty workspace: the peer removes the old one, the primary
   establishes, the peer joins.
+- `observed` (2026-10-06): an old test workspace still waited for its key
+  after Keychain recovery. A disposable native CloudKit probe, signed with
+  the companion profile and an explicit `Development` entitlement, removed
+  only `PosatoSyncV1` from the dedicated test account's private database.
+  The run confirmed the account, VM, environment, and container before
+  deletion. A fetch then returned `userDeletedZone`, which the product maps
+  to a missing zone; fresh consent established a workspace in 23 seconds.
+  Native CloudKit performed this fixture reset without a Console session or
+  `cktool` management token. The probe and evidence stayed under ignored
+  `build/verification/`.
 - `observed`: after many clones of one golden VM, macOS reported that the Mac
   could not connect to iCloud and asked for the account password; iCloud
   Keychain in the other line asked for the Mac password and a trusted
