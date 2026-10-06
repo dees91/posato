@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": true },
+  "defaults": { "timeoutSeconds": 15 },
+  "onFailure": { "screenshot": true, "snapshot": true },
+  "steps": [
+    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Pause sets", "role": "button" } },
+    { "name": "open-pause-sets", "action": "tap", "query": { "text": "Pause sets", "role": "button" } },
+    { "name": "push-set", "action": "tap", "query": { "textContains": "My set", "role": "button" } },
+    { "name": "type-while-pushing", "action": "type", "query": { "role": "textField" }, "text": "settle-probe.example", "submit": true },
+    { "name": "done", "action": "tap", "query": { "text": "Done", "role": "button" } },
+    { "name": "reach-row", "action": "scrollTo", "query": { "text": "settle-probe.example", "role": "text", "within": { "text": "Saved websites", "role": "group" } } },
+    { "name": "swipe-after-scroll", "action": "swipeLeft", "query": { "text": "settle-probe.example", "role": "text" } },
+    { "name": "remove", "action": "tap", "query": { "text": "Remove", "role": "button" } },
+    { "name": "removed", "action": "waitFor", "state": "absent", "query": { "text": "settle-probe.example", "role": "text" } },
+    { "name": "back", "action": "tap", "query": { "text": "Back to Pause sets", "role": "button" } },
+    { "name": "push-again", "action": "tap", "query": { "textContains": "My set", "role": "button" } },
+    { "name": "back-while-pushing", "action": "tap", "query": { "text": "Back to Pause sets", "role": "button" } },
+    { "name": "list-again", "action": "waitFor", "state": "exists", "query": { "text": "New set", "role": "button" } }
+  ]
+}

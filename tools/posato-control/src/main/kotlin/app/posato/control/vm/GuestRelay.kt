@@ -76,6 +76,7 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
+        requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
         val stdin = when (scenario) {
@@ -115,6 +116,9 @@ object GuestRelay {
             "tar -C ${shellQuote(hostRun.toString())} -xf -",
             "Copying the guest run directory",
         )
+        // A summary or a failure keeps the step results only in this report, so its evidence paths move with the copy too.
+        val report = hostRun.resolve(STEP_RESULTS)
+        if (Files.isRegularFile(report)) Files.writeString(report, relocateGuestPaths(Files.readString(report), runId))
         val envelope = relocateGuestPaths(output.stdout, runId)
         // The envelope is the evidence of commands such as observe, which write nothing else into their run directory.
         if (envelope.isNotBlank()) Files.writeString(hostRun.resolve("envelope.json"), envelope)
@@ -122,6 +126,7 @@ object GuestRelay {
     }
 
     private const val RELAY_TIMEOUT_MINUTES = 30L
+    private const val STEP_RESULTS = "run-result.json"
 }
 
 /** Commands that run a single-step scenario, which launches Posato when no tracked instance is running. */

@@ -36,9 +36,14 @@ xcode_arguments=(
 
 xcodebuild "${xcode_arguments[@]}" build-for-testing 2>&1 | tee "$report_directory/build.log"
 
+simulator_app="$repository_directory/build/ios-swift-derived-data/Build/Products/Debug-iphonesimulator/Posato.app"
 ditto \
     shared/build/kotlin-multiplatform-resources/aggregated-resources/iosSimulatorArm64/composeResources \
-    build/ios-swift-derived-data/Build/Products/Debug-iphonesimulator/Posato.app/compose-resources/composeResources
+    "$simulator_app/compose-resources/composeResources"
+
+# Seal the complete Simulator host after copying its resources.
+codesign --force --sign - "$simulator_app"
+codesign --verify --deep --strict "$simulator_app"
 
 xcodebuild "${xcode_arguments[@]}" \
     -resultBundlePath "$report_directory/tests.xcresult" \

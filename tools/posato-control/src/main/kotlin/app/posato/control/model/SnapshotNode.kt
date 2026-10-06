@@ -47,6 +47,26 @@ data class SnapshotNode(
         append('\n')
         children.forEach { child -> append(child.outline("$indent  ")) }
     }
+
+    /**
+     * One line per element with an id, a label, or a placeholder, with a text field's contents,
+     * in tree order and without paths or layout: the short list of what is on screen.
+     */
+    fun labels(): String = flatten()
+        .filter { node -> node.id != null || node.label != null || node.placeholder != null }
+        .map { node ->
+            buildString {
+                append(node.role)
+                node.id?.let { append(" #").append(it) }
+                node.label?.let { append(" \"").append(it).append('"') }
+                if (node.role == Roles.TEXT_FIELD) node.value?.let { append(" =\"").append(it.take(MAX_VALUE_PREVIEW)).append('"') }
+                node.placeholder?.let { append(" ph=\"").append(it).append('"') }
+                if (!node.enabled) append(" [disabled]")
+                if (node.focused) append(" [focused]")
+            }
+        }
+        .fold(mutableListOf<String>()) { lines, line -> lines.apply { if (lastOrNull() != line) add(line) } }
+        .joinToString("\n", postfix = "\n")
 }
 
 private const val MAX_VALUE_PREVIEW = 60

@@ -38,6 +38,7 @@ class GuestOnboarding(
         }
         VmLifecycle(context).run {
             requireRunning(line)
+            requireCurrentTooling(context, line)
             requireCurrentPackage(line)
         }
         guest(line, listOf("launch", "-t", "desktop"))

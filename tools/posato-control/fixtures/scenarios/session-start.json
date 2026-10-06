@@ -19,7 +19,7 @@
     {"name":"finish-adding","action":"tap","query":{"text":"Done","role":"button"}},
     {"name":"row-visible","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
     {"name":"open-session","action":"tap","query":{"text":"Session","role":"button"}},
-    {"name":"home-inactive","action":"waitFor","state":"exists","query":{"text":"No session active"}},
+    {"name":"home-inactive","action":"precondition","state":"exists","query":{"text":"No session active"},"text":"End the active session first, for example with session-early-end.json."},
     {"name":"begin-setup","action":"tap","query":{"text":"Start a session","role":"button"}},
     {"name":"setup-open","action":"waitFor","state":"exists","query":{"text":"Review session","role":"button"}},
     {"name":"preset","action":"tap","query":{"text":"25 min","role":"button"}},

@@ -110,7 +110,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `TOOL_OUTDATED`, `PRECONDITION_NOT_MET`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -165,14 +165,14 @@ grants a permission.
 | `terminate` | all | Stops only the instance this tool started or adopted, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
-| `snapshot [--format json\|text] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths. |
+| `snapshot [--format json\|text] [--labels] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths; `--labels` lists only the elements with an id, a label, or a placeholder, one line each, without paths or layout, the cheapest way to see what is on screen. |
 | `find <query>` | all | Matching elements; never changes application state (on iOS it starts the app when it is not running). |
 | `tap <query>` | all | Presses a button or taps an element. |
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
 | `press --key <key> [--modifiers cmd,shift]` | all | Keyboard input. Desktop: `return`, `escape`, `tab`, `delete`, `space`, arrows, digits, letters, with `--modifiers`. iOS: `return`, `delete`, `space`, `home`, `volumeUp`, `volumeDown` (device only), and `escape`/`tab` where the keyboard offers them. |
 | `orient --to portrait\|portraitUpsideDown\|landscapeLeft\|landscapeRight` | simulator, device | Rotates the device through XCUITest and waits until the application window has the matching aspect and has settled. A target that shares the current aspect first goes through the other aspect, so every rotation is observable and an orientation the application does not support fails. The orientation outlives the run. The desktop refuses the command. |
 | `wait --for exists\|absent\|enabled\|disabled\|settled [query] [--timeout-seconds 10]` | all | Polls until the condition holds. |
-| `run --scenario file.json` (or `-`) | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. |
+| `run --scenario file.json` (or `-`) `[--summary]` | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. `--summary` reports the step count and duration and writes the steps to `run-result.json`, as a failure always does. |
 | `logs [--tail n] [--stream-seconds s]` | all | Captured application log; the simulator can also stream the unified log for a few seconds. |
 | `db path` / `db query --sql "…" [--database name]` | desktop, simulator | Read-only SQLite access to the local databases. |
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
@@ -323,7 +323,8 @@ navigation. Search / Back to adding and category changes also clear focus.
 Rejected text stays editable and does not require a relaunch.
 
 Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
-`tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
+`precondition` (a `waitFor` that fails with `PRECONDITION_NOT_MET` and its `text` as the remedy, for the
+state a scenario starts from, such as no active session or no set an earlier run left behind), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
 (`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
 `relaunch`. iOS only: `launchApp` (`bundleId`, brought forward without being
@@ -418,7 +419,10 @@ commands such as `observe` that write no other file. `build` stays on the host; 
 with `vm sync`. A command that starts the development package (`launch`, `run` unless its scenario sets `launch.skip`,
 `flow`, `vm onboard`, and `tap`, `type`, `press`, `wait`, and `update-consent`, which launch Posato when it is not
 running; `type` and `wait` with `--process` and no element query are exempt) refuses with `PACKAGE_OUTDATED` when the host staged another package than the one the
-last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. The one-time setup of the golden VMs, device registration,
+last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. Every `--vm`
+command and `vm onboard` also refuse with `TOOL_OUTDATED` when the guest's driver (distribution and bridge) is
+not the one this worktree would sync, so a rebuilt `installDist` needs `vm sync` before it applies; a scenario travels over
+standard input, so an edited fixture needs none. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
 [the unattended verification guide](../../docs/development/unattended-verification.md).
 
@@ -565,3 +569,9 @@ of every driver run is kept next to its result bundle in the run directory.
 Unit tests cover the query matcher, the scenario runner, the JSON contracts,
 and local configuration parsing against synthetic fixtures. End-to-end checks
 run the sequences above against the real applications.
+
+After changing how the iOS driver taps, types, or swipes, run
+`fixtures/scenarios/driver-settle-ios.json` on the Simulator a few times, at
+the default and the largest text size. It acts right after each push, scroll,
+and keyboard change without a wait. Without the wait for a still element
+before a tap, about one run in four loses the back tap during a push.

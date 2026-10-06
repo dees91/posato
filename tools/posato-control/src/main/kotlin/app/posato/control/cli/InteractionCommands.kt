@@ -58,10 +58,18 @@ class SnapshotCommand : ControlCommand("snapshot", "Dump the accessibility tree 
     private val process by ProcessOptions()
     private val maxDepth by option("--max-depth", help = "Limit the tree depth.").int()
     private val format by option("--format", help = "json or text").default("json")
+    private val labels by option(
+        "--labels",
+        help = "List only the elements with an id, label, or placeholder, one per line, without paths or layout.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val node = session.backend(process.selector()).snapshot(query.toQuery(), maxDepth)
-        return if (format == "text") JsonPrimitive(node.outline()) else ControlJson.pretty.encodeToJsonElement(SnapshotNode.serializer(), node)
+        return when {
+            labels -> JsonPrimitive(node.labels())
+            format == "text" -> JsonPrimitive(node.outline())
+            else -> ControlJson.pretty.encodeToJsonElement(SnapshotNode.serializer(), node)
+        }
     }
 }
 
@@ -171,16 +179,24 @@ class WaitCommand : ControlCommand("wait", "Wait until an element exists, is abs
 
 class RunCommand : ControlCommand("run", "Run a JSON scenario file (or - for stdin) and report every step with its evidence.") {
     private val scenario by option("--scenario", help = "Scenario file path, or - to read standard input.").required()
+    private val summary by option("--summary", help = "Report the step count instead of every step; the steps go to run-result.json.").flag()
 
     override fun execute(session: Session): JsonElement {
         val text = if (scenario == "-") generateSequence(::readlnOrNull).joinToString("\n") else Files.readString(Path.of(scenario))
         val result = session.backend().runScenario(parseScenario(text))
-        if (!result.ok) {
-            val report = ControlJson.pretty.encodeToString(RunResult.serializer(), result)
-            session.context.log(report)
-            // A failed command carries no result, so the step results go to a file that the hint names.
+        val report = ControlJson.pretty.encodeToString(RunResult.serializer(), result)
+        if (!result.ok || summary) {
+            // A failed command carries no result, and a summary leaves the steps out, so they go to a file the output names.
             val reportFile = session.context.recordArtifact(session.context.artifactPath(RESULT_FILE))
             Files.writeString(reportFile, report)
+            if (result.ok) {
+                return buildJsonObject {
+                    put("steps", result.steps.size)
+                    put("durationMs", result.steps.sumOf { it.durationMs })
+                    put("stepResults", session.context.layout.relativize(reportFile))
+                }
+            }
+            session.context.log(report)
             val failed = result.steps.firstOrNull { !it.ok }
             val error = failed?.error ?: result.error
             val code = ErrorCode.entries.firstOrNull { it.name == error?.code } ?: ErrorCode.COMMAND_FAILED

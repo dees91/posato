@@ -149,6 +149,11 @@ application modules with Detekt and Compose Rules, compiles warning-free JVM,
 iOS, and preview-only Android source, runs shared JVM/iOS, desktop, tooling,
 and native helper tests, and creates and checks the macOS distributable.
 It also runs the Swift XCTest suites through `iosSwiftTest`.
+The distributable embeds the pinned Sparkle release, which `downloadSparkle`
+keeps in `posato-downloads/<sha256>/` under the Gradle user home (`~/.gradle`
+by default) and verifies before every use, so only the first build on a
+machine needs github.com. A machine without that access can seed the
+directory with the archive whose SHA-256 the task pins.
 Detekt writes Checkstyle, HTML,
 Markdown, and SARIF reports under each module's `build/reports/detekt/`;
 ktlint writes plain-text and Checkstyle reports under `build/reports/ktlint/`
