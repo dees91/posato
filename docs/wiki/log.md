@@ -2559,6 +2559,8 @@ to scope, feasibility, or delivery.
   requested architecture, including on a macOS 27 host.
   A scoped native reset of the test account's private Development zone
   restored fresh linking when its old workspace key did not arrive.
+  The Swift quality runner seals the Simulator host after copying resources,
+  so a cached executable does not retain a signature without its resource seal.
 - `observed`: a broader wait before every iOS action was not added. The
   current wait for a still element before a tap passes a transition-heavy
   scenario at the default and the largest text size, and no failing case for
