@@ -112,6 +112,10 @@ before treating a passing test as evidence.
 
 ### Posato in a guest
 
+- `observed` (2026-10-06, macOS 27.0.1 host): `ditto --arch` kept both
+  architectures in the pinned Sparkle framework. `--noclone` made the copy
+  contain only the requested architecture, for both arm64 and x86_64.
+  The package build now uses both options before code signing.
 - `observed`: Accessibility and Screen Recording are granted once to
   `tart-guest-agent` in the golden VM. macOS 26 can additionally ask the
   agent to bypass the private window picker after screen captures; expect to

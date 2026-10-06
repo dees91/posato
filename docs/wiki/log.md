@@ -2554,6 +2554,9 @@ to scope, feasibility, or delivery.
 - `observed`: the pinned Sparkle archive is cached in the Gradle user home,
   so a clean build or a new worktree needs no network; `run --summary` and
   `snapshot --labels` shorten output.
+- `observed`: VM step reports use the copied evidence paths on the host.
+  Sparkle copies disable APFS clones so the package contains only the
+  requested architecture, including on a macOS 27 host.
 - `observed`: a broader wait before every iOS action was not added. The
   current wait for a still element before a tap passes a transition-heavy
   scenario at the default and the largest text size, and no failing case for

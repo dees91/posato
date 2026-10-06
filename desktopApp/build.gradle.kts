@@ -1633,7 +1633,7 @@ val embedSparkleFramework by tasks.registering(Exec::class) {
         frameworks.mkdirs()
     }
     inputs.property("architecture", macOsArchitecture.machOName)
-    commandLine("/usr/bin/ditto", "--arch", macOsArchitecture.machOName, source.absolutePath, embedded.absolutePath)
+    commandLine("/usr/bin/ditto", "--noclone", "--arch", macOsArchitecture.machOName, source.absolutePath, embedded.absolutePath)
     doLast {
         embedded.resolve("XPCServices").delete()
         embedded.resolve("Versions/B/XPCServices").deleteRecursively()
