@@ -19,6 +19,7 @@ final class ScenarioExecutor {
   private static let clearRounds = 3
   private static let stillRounds = 10
   private static let stillInterval: TimeInterval = 0.1
+  private static let foregroundTimeout: TimeInterval = 2
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
   private static let edgeInset: CGFloat = 2
@@ -49,6 +50,16 @@ final class ScenarioExecutor {
 
   func recordIssue(_ issue: XCTIssue) {
     recordedIssues.append(issue.compactDescription)
+  }
+
+  /// XCTest can report that the application's accessibility server did not answer while a tap's
+  /// effect, such as a dialog raising the keyboard, is still coming up, although the tap landed
+  /// (`observed` 2026-10-07: the New set dialog was open in the failure screenshot). Only a tap
+  /// ignores it, and only while the application stays in front; a later step must assert what
+  /// the tap should have done.
+  private static func isTransientAfterTap(_ issue: String, action: String) -> Bool {
+    action == "tap" && issue.contains("Failed to get matching snapshots")
+      && issue.contains("kAXErrorServerNotFound")
   }
 
   func run() -> ScenarioResult {
@@ -110,8 +121,17 @@ final class ScenarioExecutor {
     var failure: DriverError?
     do {
       try perform(step, index: index, artifacts: &artifacts)
-      if let issue = recordedIssues.first {
+      let lasting = recordedIssues.first { !Self.isTransientAfterTap($0, action: step.action) }
+      if let issue = lasting {
         throw DriverError(.stepFailed, issue)
+      }
+      if let issue = recordedIssues.first {
+        // A crash or a jump to another app leaves no accessibility server either, so only an
+        // application still in front counts the tap.
+        guard app.wait(for: .runningForeground, timeout: Self.foregroundTimeout) else {
+          throw DriverError(.stepFailed, issue)
+        }
+        NSLog("posato-driver: step %d tap kept despite a transient issue: %@", index, issue)
       }
     } catch let error as DriverError {
       failure = error
