@@ -2565,3 +2565,10 @@ to scope, feasibility, or delivery.
   current wait for a still element before a tap passes a transition-heavy
   scenario at the default and the largest text size, and no failing case for
   typing or swiping could be shown.
+
+## [2026-10-07] idea | Plain HTTP pages hang in Safari after an iPhone pause ends
+
+- `observed`: on the test iPhone, after a pause that blocked websites ends,
+  every plain `http://` site hangs on a black page in Safari unless Posato is
+  in front, while HTTPS loads. Idea 31 records it; backlog row `IOS-007` owns
+  the reproduction and fix and changes no release.

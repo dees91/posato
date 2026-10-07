@@ -1128,6 +1128,24 @@ below. This queue retains idea provenance without expanding the original MVP.
     stack on iOS, navigation bars and large titles, native menus and pickers,
     and a calmer shared design system on every platform. Owner: release 1.4
     row `DESIGN-004`.
+31. **Plain HTTP pages hang in Safari after an iPhone pause ends.**
+    `observed` (2026-10-07, the test iPhone 13 mini on iOS 26.5.2, a build
+    from `main` after PR #140): a hand-started pause that blocks websites
+    and Calculator is ended early. Afterwards Safari opened from Calculator or
+    Settings shows a black page that never loads for any `http://` site
+    (`example.com`, `neverssl.com`; 180 s), while `https://example.com` loads
+    at once and Calculator is no longer shielded. The page loads when Posato
+    is in front at the time, and when Posato comes back to the front first. It
+    still hangs after Posato is terminated, after a 90 s wait, with a fresh
+    URL, and with a build that sets the web filter and the shielded
+    applications to nil before `clearAllSettings()`. Without a pause before,
+    the same steps load. `observe-unblocked-ios.json` therefore failed on all
+    four phone-only runs. In earlier runs it failed only sometimes, and
+    `.agents/skills/verify-posato/features/sessions.md` notes it as an
+    occasional black page. `open`: whether iOS keeps filtering plain HTTP
+    after a `webContent.blockedByFilter` filter is cleared, whether Posato's
+    own clear or the next foreground reconcile matters, and whether people see
+    it outside the test driver. Owner: backlog row `IOS-007`.
 
 ## Later platform questions
 
