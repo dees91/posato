@@ -8,6 +8,7 @@
     { "name": "app-usable", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.calculator", "id": "Equals" } },
     { "name": "no-shield", "action": "waitFor", "state": "absent", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
     { "name": "app-shot", "action": "screenshot" },
+    { "name": "fresh-safari", "action": "terminateApp", "bundleId": "com.apple.mobilesafari" },
     { "name": "open-site", "action": "openURL", "url": "http://example.com/" },
     { "name": "site-loaded", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.mobilesafari", "text": "Example Domain" } },
     { "name": "not-blocked", "action": "waitFor", "state": "absent", "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },

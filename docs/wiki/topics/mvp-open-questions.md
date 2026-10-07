@@ -1145,7 +1145,14 @@ below. This queue retains idea provenance without expanding the original MVP.
     occasional black page. `open`: whether iOS keeps filtering plain HTTP
     after a `webContent.blockedByFilter` filter is cleared, whether Posato's
     own clear or the next foreground reconcile matters, and whether people see
-    it outside the test driver. Owner: backlog row `IOS-007`.
+    it outside the test driver. Owner: release 1.4 row `IOS-007`.
+    Resolved by `IOS-007` (2026-10-07): the first page an already running
+    Safari opens after the pause hangs, HTTPS included, with or without
+    Posato in front and without the driver; the maintainer accepted it as an
+    iOS limit ([iOS enforcement](ios-enforcement.md)). The fresh-URL run
+    above fits, because it was still the first page opened after the pause;
+    the readings that only plain HTTP hangs and that Posato in front avoids
+    it are `superseded`.
 
 ## Later platform questions
 

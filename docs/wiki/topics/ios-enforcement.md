@@ -319,3 +319,31 @@ writes version 2. A 1.2 schedule kept blocking across an App Store-style
 install of 1.3 that was never opened, including the end of an overlapping
 occurrence. A session shorter than 15 minutes still ends only when Posato is
 open at its end (`limits-and-platforms.md`).
+
+## Safari after a website pause ends (`IOS-007`)
+
+`observed` (2026-10-07, test iPhone 13 mini on iOS 26.5.2, build of
+`9c37ef7`): after a pause whose web filter
+(`webContent.blockedByFilter = .specific(...)`) was in force for 45 s or more
+ends, the first page that an already running Safari opens hangs on a black
+page, for plain HTTP and HTTPS alike. The page request often never reaches
+the server. The second page opened loads in under a second, and a Safari
+started fresh loads at once. Safari was opened by `devicectl` from the host,
+without the UI driver, so the driver is not the cause. The hang follows
+**End early**, natural expiry with Posato in front, and expiry with Posato
+in the background, after a wait of 120 s too, and when Safari opens over
+Posato. It did not follow a pause of about 10 s or a pause that shielded
+only an app. A throwaway build that set the filter and shields to nil, with
+or without `clearAllSettings()` 5 s later, hung the same way.
+
+`inferred`: iOS leaves a running Safari with stale web filter state when a
+Managed Settings web filter is removed, so the way Posato clears its store
+cannot avoid it. The maintainer accepted it as an iOS limit
+(`user-confirmed`, 2026-10-07). `superseded`: idea 31's reading that only
+plain HTTP hangs and that Posato in front avoids it. `open`: whether
+Screen Time's own content restrictions behave the same, and whether the first
+page opened after a filter is applied can hang as well.
+
+`observe-unblocked-ios.json` therefore ends Safari with the driver's
+`terminateApp` before opening `http://example.com`; three runs after a 60 s
+pause passed, and the earlier scenario failed in the same state.

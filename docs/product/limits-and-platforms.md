@@ -72,6 +72,10 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   them for a while past the end time. Restrictions from sessions shorter than
   15 minutes clear only when Posato is open at the end or when you open it
   again.
+- On iPhone, if Safari was already open, the first page it opens after a
+  pause that blocks websites ends may stay blank. This appears to be how iOS
+  behaves when the restriction is lifted, and Posato cannot avoid it. The
+  next page you open loads.
 - Schedule times follow each device's own clock. A schedule is at least 15
   minutes long, and on iPhone it needs Screen Time access.
 - A device on an earlier version of Posato stops syncing once another device runs
