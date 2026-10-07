@@ -16,17 +16,21 @@ internal class VncHold(
     private val context: RunContext,
     private val line: VmLine,
 ) {
-    /** Starts the holder as a process of its own, which ends by itself once the clone no longer runs. */
-    fun start() {
+    /**
+     * Starts the holder as a process of its own, which ends by itself once the clone no longer runs, and reports
+     * `started`, or `skipped` when this checkout has no installed driver to run it with.
+     */
+    fun start(): String {
         val launcher = context.layout.root.resolve(LAUNCHER)
         if (!Files.isExecutable(launcher)) {
             context.log("Not holding a VNC connection to ${line.cloneName}: $launcher is missing.")
-            return
+            return "skipped"
         }
         context.subprocess.startDetached(
             listOf(launcher.toString(), "vm", "vnc-hold", "--line", line.id),
             vmDirectory(context, line).resolve(HOLD_LOG),
         )
+        return "started"
     }
 
     /** Holds one idle connection until the clone stops running or its server closes it, and returns how long it held it. */
@@ -46,6 +50,6 @@ internal class VncHold(
         const val LAUNCHER = "tools/posato-control/build/install/posato-control/bin/posato-control"
         const val HOLD_LOG = "vnc-hold.log"
         const val ENDPOINT_TIMEOUT_MS = 60_000L
-        const val POLL_MS = 30_000
+        const val POLL_MS = 60_000
     }
 }

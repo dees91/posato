@@ -10,6 +10,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
+import java.io.IOException
 
 /** How long `flow icloud` waits for its outcome unless `--timeout-seconds` says otherwise. */
 const val ICLOUD_FLOW_TIMEOUT_SECONDS = 300L
@@ -142,9 +143,19 @@ internal class GuestICloudFlow(
                 return present(withKeychain(counted, state), human)
             }
             earlierPresses += slicePresses(output.envelope)
-            if (System.currentTimeMillis() >= deadline) throw timedOut(total, state)
+            if (System.currentTimeMillis() >= deadline) throw timedOut(total, state, earlierPresses)
             context.log("flow icloud is still waiting after a ${SLICE_SECONDS}s slice; checking iCloud Keychain in ${line.cloneName}.")
-            state = requireSyncing()
+            state = try {
+                requireSyncing()
+            } catch (exception: ControlException) {
+                throw ControlException(
+                    exception.code,
+                    exception.message ?: exception.code.name,
+                    exception.hint,
+                    exception,
+                    linkResult(earlierPresses),
+                )
+            }
         }
     }
 
@@ -154,6 +165,8 @@ internal class GuestICloudFlow(
             if (iCloud.check(line, CHECK_TIMEOUT_MS) == ICloudKeychainState.PAUSED) iCloud.resume(line, RESUME_TIMEOUT_MS)
         } catch (exception: ControlException) {
             context.log("Resuming iCloud Keychain in ${line.cloneName} before the removal failed: ${exception.message}")
+        } catch (exception: IOException) {
+            context.log("Reading the screen of ${line.cloneName} before the removal failed: ${exception.message}")
         }
     }
 
@@ -163,6 +176,9 @@ internal class GuestICloudFlow(
             iCloud.check(line, CHECK_TIMEOUT_MS)
         } catch (exception: ControlException) {
             context.log("Reading iCloud Keychain in ${line.cloneName} failed: ${exception.message}")
+            ICloudKeychainState.UNKNOWN
+        } catch (exception: IOException) {
+            context.log("Reading the screen of ${line.cloneName} failed: ${exception.message}")
             ICloudKeychainState.UNKNOWN
         }
         val state = if (checked == ICloudKeychainState.PAUSED) resume() else checked
@@ -174,13 +190,9 @@ internal class GuestICloudFlow(
         val state = try {
             iCloud.resume(line, RESUME_TIMEOUT_MS)
         } catch (exception: ControlException) {
-            throw ControlException(
-                ErrorCode.ICLOUD_KEYCHAIN_PAUSED,
-                "iCloud Keychain is paused in ${line.cloneName} and Resume Data Sync did not finish: ${exception.message}",
-                "Run `posato-control vm icloud --line ${line.id} --resume` and check the guest with `vm screenshot --line ${line.id}`, " +
-                    "then run the flow again.",
-                exception,
-            )
+            throw resumeFailed(exception)
+        } catch (exception: IOException) {
+            throw resumeFailed(exception)
         }
         resumed = resumed || state != ICloudKeychainState.PAUSED
         return state
@@ -188,13 +200,26 @@ internal class GuestICloudFlow(
 
     private fun timedOut(
         total: Long,
-        state: ICloudKeychainState
+        state: ICloudKeychainState,
+        presses: Int
     ) = ControlException(
         ErrorCode.WAIT_TIMEOUT,
         "flow icloud did not finish within $total s; iCloud Keychain in ${line.cloneName} reads ${state.id}.",
         "A workspace key can take about 20 minutes to reach a new device; rerun with a longer --timeout-seconds. " +
             "The guest's last envelope is guest/envelope.json in the run directory.",
+        result = linkResult(presses),
     )
+
+    private fun resumeFailed(exception: Exception) = ControlException(
+        ErrorCode.ICLOUD_KEYCHAIN_PAUSED,
+        "iCloud Keychain is paused in ${line.cloneName} and Resume Data Sync did not finish: ${exception.message}",
+        "Run `posato-control vm icloud --line ${line.id} --resume` and check the guest with `vm screenshot --line ${line.id}`, " +
+            "then run the flow again.",
+        exception,
+    )
+
+    /** What a link that did not finish had pressed, which its error envelope reports as a finished one would. */
+    private fun linkResult(presses: Int) = JsonObject(mapOf("action" to JsonPrimitive(LINK_ACTION), PRESSES to JsonPrimitive(presses)))
 
     /** Adds the keychain state to a successful flow's result, as `vm create` reports it. */
     private fun withKeychain(

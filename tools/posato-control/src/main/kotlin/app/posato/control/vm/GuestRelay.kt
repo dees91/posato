@@ -54,6 +54,7 @@ object GuestRelay {
                 command = forwarded.firstOrNull() ?: "posato-control",
                 runId = runId,
                 durationMs = 0,
+                result = exception.result,
                 error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
             )
             if (HUMAN_OPTION in forwarded) {
