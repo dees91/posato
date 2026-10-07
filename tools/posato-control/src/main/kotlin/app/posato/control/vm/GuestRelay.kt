@@ -88,6 +88,7 @@ object GuestRelay {
         val output = if (checksICloudKeychain(arguments)) {
             GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
         } else {
+            if (resumesICloudKeychain(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
             runInGuest(context, line, arguments, stdin, runId)
         }
         print(output.envelope)

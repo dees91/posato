@@ -37,6 +37,16 @@ internal fun checksICloudKeychain(arguments: List<String>): Boolean {
     return arguments.drop(2).firstOrNull { it == LINK_ACTION || it == REMOVE_ACTION } == LINK_ACTION
 }
 
+/**
+ * Whether forwarded arguments run `flow icloud remove`. A clone's keychain pauses a few minutes after it boots, and a
+ * removal against a paused keychain waits out its whole timeout, so the host resumes the keychain first without
+ * refusing when that fails.
+ */
+internal fun resumesICloudKeychain(arguments: List<String>): Boolean {
+    if (arguments.take(2) != listOf("flow", "icloud")) return false
+    return arguments.drop(2).firstOrNull { it == LINK_ACTION || it == REMOVE_ACTION } == REMOVE_ACTION
+}
+
 /** The whole wait `flow icloud` was asked for, or null when its value is not a number and the guest should say so. */
 internal fun flowTimeoutSeconds(arguments: List<String>): Long? {
     val index = arguments.indexOfFirst { it == TIMEOUT_OPTION || it.startsWith("$TIMEOUT_OPTION=") }
@@ -135,6 +145,15 @@ internal class GuestICloudFlow(
             if (System.currentTimeMillis() >= deadline) throw timedOut(total, state)
             context.log("flow icloud is still waiting after a ${SLICE_SECONDS}s slice; checking iCloud Keychain in ${line.cloneName}.")
             state = requireSyncing()
+        }
+    }
+
+    /** Resumes a paused keychain before a removal; a removal still runs when the keychain cannot be read or resumed. */
+    fun resumeIfPaused() {
+        try {
+            if (iCloud.check(line, CHECK_TIMEOUT_MS) == ICloudKeychainState.PAUSED) iCloud.resume(line, RESUME_TIMEOUT_MS)
+        } catch (exception: ControlException) {
+            context.log("Resuming iCloud Keychain in ${line.cloneName} before the removal failed: ${exception.message}")
         }
     }
 
