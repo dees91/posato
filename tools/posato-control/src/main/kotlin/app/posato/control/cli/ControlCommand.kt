@@ -61,7 +61,7 @@ abstract class ControlCommand(
             target = globals.target?.id,
             runId = session?.context?.runId ?: globals.runId ?: "none",
             durationMs = durationMs,
-            result = result,
+            result = result ?: failure?.result,
             artifacts = session?.context?.artifacts ?: emptyList(),
             error = failure?.let { ErrorPayload(it.code.name, it.message ?: it.code.name, it.hint) },
         )

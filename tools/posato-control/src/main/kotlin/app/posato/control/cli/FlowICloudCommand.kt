@@ -29,10 +29,12 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         val backend = session.backend()
         val deadline = System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND
         val presses = if (action == LINK) link(backend, deadline) else remove(backend, deadline)
-        return buildJsonObject {
-            put("action", action)
-            put("presses", presses)
-        }
+        return outcome(presses)
+    }
+
+    private fun outcome(presses: Int) = buildJsonObject {
+        put("action", action)
+        put("presses", presses)
     }
 
     private fun link(
@@ -52,7 +54,7 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
             }
             Thread.sleep(POLL_MILLIS)
         }
-        throw timedOut("link")
+        throw timedOut("link", presses)
     }
 
     private fun remove(
@@ -70,7 +72,7 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
             }
             Thread.sleep(POLL_MILLIS)
         }
-        throw timedOut("removal")
+        throw timedOut("removal", presses)
     }
 
     /** Opens the confirmation and presses its Remove workspace, which is the match that is not the row's own button. */
@@ -108,10 +110,15 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
 
     private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
 
-    private fun timedOut(what: String) = ControlException(
+    /** The presses go with the timeout, since the host waits in slices and the next slice may find the outcome. */
+    private fun timedOut(
+        what: String,
+        presses: Int
+    ) = ControlException(
         ErrorCode.WAIT_TIMEOUT,
         "The iCloud $what did not finish within $timeoutSeconds s.",
         "On a Tart guest, check `vm icloud --line <line>`; a paused iCloud Keychain never delivers the workspace key.",
+        result = outcome(presses),
     )
 
     private companion object {

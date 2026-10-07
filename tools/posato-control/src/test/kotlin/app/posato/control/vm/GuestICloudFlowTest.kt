@@ -1,5 +1,10 @@
 package app.posato.control.vm
 
+import app.posato.control.core.ControlJson
+import app.posato.control.model.Envelope
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -47,6 +52,23 @@ class GuestICloudFlowTest {
         assertFalse(guestTimedOut(envelope("ELEMENT_NOT_FOUND")))
         assertFalse(guestTimedOut(envelope(null)))
         assertFalse(guestTimedOut("Error: the guest agent stopped"))
+    }
+
+    /**
+     * A link can press Sync with iCloud in one slice and see the link finish only in the next, which presses nothing.
+     * The result must still count the earlier press, or it reads as a link nobody made. E2E cannot place a press before
+     * a slice boundary on demand, since that depends on how fast iCloud delivers the workspace key.
+     */
+    @Test
+    fun `given a press in a timed-out slice when a later slice finishes then the result counts it`() {
+        val timedOut = """{"ok":false,"command":"icloud","runId":"r1","durationMs":1,""" +
+            """"result":{"action":"link","presses":1},"error":{"code":"WAIT_TIMEOUT","message":"m"}}"""
+        val finished = """{"ok":true,"command":"icloud","runId":"r1","durationMs":1,"result":{"action":"link","presses":0}}"""
+
+        val combined = ControlJson.lenient.decodeFromString(Envelope.serializer(), withEarlierPresses(finished, slicePresses(timedOut)))
+
+        assertEquals(1, (combined.result as JsonObject)["presses"]?.jsonPrimitive?.int)
+        assertEquals(0, slicePresses("Error: the guest agent stopped"))
     }
 
     /**

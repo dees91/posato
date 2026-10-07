@@ -9,6 +9,7 @@ import app.posato.control.model.humanLines
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
 /** How long `flow icloud` waits for its outcome unless `--timeout-seconds` says otherwise. */
 const val ICLOUD_FLOW_TIMEOUT_SECONDS = 300L
@@ -81,6 +82,26 @@ private fun parseEnvelope(text: String): Envelope? = try {
 /** Whether the guest's flow ran out of time, the one outcome after which the keychain is checked again. */
 internal fun guestTimedOut(envelope: String): Boolean = parseEnvelope(envelope)?.error?.code == ErrorCode.WAIT_TIMEOUT.name
 
+private const val PRESSES = "presses"
+
+/** The presses a slice reported, also one that timed out; zero when its output is not an envelope with them. */
+internal fun slicePresses(envelope: String): Int {
+    val result = parseEnvelope(envelope)?.result as? JsonObject
+    return (result?.get(PRESSES) as? JsonPrimitive)?.intOrNull ?: 0
+}
+
+/** The final slice's envelope with the presses of the slices before it added, so the result counts every press. */
+internal fun withEarlierPresses(
+    envelope: String,
+    earlier: Int
+): String {
+    if (earlier == 0) return envelope
+    val parsed = parseEnvelope(envelope) ?: return envelope
+    val result = parsed.result as? JsonObject ?: return envelope
+    val counted = JsonObject(result + (PRESSES to JsonPrimitive(slicePresses(envelope) + earlier)))
+    return ControlJson.pretty.encodeToString(Envelope.serializer(), parsed.copy(result = counted)) + "\n"
+}
+
 /**
  * `flow icloud link` waits inside the guest for a key that a paused iCloud Keychain never delivers, and a device that
  * signs in to the test account can pause a clone's keychain in the middle of a run. Only the host reads System
@@ -102,10 +123,15 @@ internal class GuestICloudFlow(
         var state = requireSyncing()
         val total = flowTimeoutSeconds(arguments) ?: return present(withKeychain(invoke(withoutHuman(arguments)), state), human)
         val deadline = System.currentTimeMillis() + total * MILLIS_PER_SECOND
+        var earlierPresses = 0
         while (true) {
             val remaining = (deadline - System.currentTimeMillis()) / MILLIS_PER_SECOND
             val output = invoke(withFlowTimeout(arguments, remaining.coerceIn(1, SLICE_SECONDS)))
-            if (!guestTimedOut(output.envelope)) return present(withKeychain(output, state), human)
+            if (!guestTimedOut(output.envelope)) {
+                val counted = output.copy(envelope = withEarlierPresses(output.envelope, earlierPresses))
+                return present(withKeychain(counted, state), human)
+            }
+            earlierPresses += slicePresses(output.envelope)
             if (System.currentTimeMillis() >= deadline) throw timedOut(total, state)
             context.log("flow icloud is still waiting after a ${SLICE_SECONDS}s slice; checking iCloud Keychain in ${line.cloneName}.")
             state = requireSyncing()
