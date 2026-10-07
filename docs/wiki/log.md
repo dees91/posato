@@ -2582,3 +2582,13 @@ to scope, feasibility, or delivery.
   (`user-confirmed`); the limits page states it, and
   `observe-unblocked-ios.json` ends Safari with the new `terminateApp` step
   before opening the page.
+
+## [2026-10-07] tooling | Stabler unattended verification runs
+
+The verification driver holds one idle VNC connection per Tart clone, since
+the first connection after a few idle minutes can crash Tart; the Swift test
+Simulator boots before its test host; `flow icloud` keeps every press and
+resumes a paused keychain before a removal; an iOS tap rides out a transient
+accessibility error. The slow workspace removal after a link was traced to a
+first removal attempt that does not finish, not to a paused keychain.
+[Unattended verification](topics/unattended-verification.md) records both.
