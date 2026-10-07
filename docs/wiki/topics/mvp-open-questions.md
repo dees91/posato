@@ -1145,7 +1145,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     occasional black page. `open`: whether iOS keeps filtering plain HTTP
     after a `webContent.blockedByFilter` filter is cleared, whether Posato's
     own clear or the next foreground reconcile matters, and whether people see
-    it outside the test driver. Owner: backlog row `IOS-007`.
+    it outside the test driver. Owner: release 1.4 row `IOS-007`.
 
 ## Later platform questions
 
