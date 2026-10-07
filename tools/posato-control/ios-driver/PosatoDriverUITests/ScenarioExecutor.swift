@@ -185,6 +185,8 @@ final class ScenarioExecutor {
       try adjustWheels(step, timeout: timeout)
     case "terminate":
       app.terminate()
+    case "terminateApp":
+      try terminateApp(step, timeout: timeout)
     case "relaunch":
       if let error = launch() {
         throw error
@@ -225,6 +227,20 @@ final class ScenarioExecutor {
     guard other.wait(for: .runningForeground, timeout: timeout) else {
       throw DriverError(
         .waitTimeout, "\(bundleId) did not come to the foreground within \(timeout) s")
+    }
+  }
+
+  /// Ends another application, for example Safari, so that the next `openURL` starts a fresh process: after a
+  /// pause that blocked websites ends, the first page an already running Safari opens can hang (`IOS-007`).
+  private func terminateApp(_ step: Step, timeout: TimeInterval) throws {
+    guard let bundleId = step.bundleId else {
+      throw DriverError(.scenarioInvalid, "terminateApp requires bundleId")
+    }
+    let other = XCUIApplication(bundleIdentifier: bundleId)
+    guard other.state != .notRunning else { return }
+    other.terminate()
+    guard other.wait(for: .notRunning, timeout: timeout) else {
+      throw DriverError(.waitTimeout, "\(bundleId) was still running after \(timeout) s")
     }
   }
 

@@ -328,7 +328,9 @@ state a scenario starts from, such as no active session or no set an earlier run
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
 (`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
 `relaunch`. iOS only: `launchApp` (`bundleId`, brought forward without being
-terminated), `openURL` (`url`), and `pressKeys` (`secret`: the name
+terminated), `terminateApp` (`bundleId`, ended if it runs, for example Safari
+before `openURL`, because the first page an already running Safari opens after
+a website pause ends can hang), `openURL` (`url`), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
 removed from the xcodebuild log), `swipeBack`, the system back gesture:

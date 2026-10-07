@@ -74,12 +74,13 @@ object Actions {
     const val RELAUNCH = "relaunch"
     const val ORIENT = "orient"
     const val LAUNCH_APP = "launchApp"
+    const val TERMINATE_APP = "terminateApp"
     const val OPEN_URL = "openURL"
     const val PRESS_KEYS = "pressKeys"
     const val SWIPE_BACK = "swipeBack"
     const val SWIPE_LEFT = "swipeLeft"
     const val ADJUST_WHEELS = "adjustWheels"
-    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
+    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, TERMINATE_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
     val all: Set<String> =
         setOf(WAIT_FOR, PRECONDITION, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }

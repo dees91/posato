@@ -2572,3 +2572,13 @@ to scope, feasibility, or delivery.
   every plain `http://` site hangs on a black page in Safari unless Posato is
   in front, while HTTPS loads. Idea 31 records it; backlog row `IOS-007` owns
   the reproduction and fix and changes no release.
+
+## [2026-10-07] task | IOS-007: the first Safari page after an iPhone pause can hang
+
+- `observed`: after a website pause ends, the first page an already running
+  Safari opens hangs, HTTPS included, on every end path and without the test
+  driver; the second page and a fresh Safari load. No change to Posato's
+  clear avoided it. The maintainer accepted it as an iOS limit
+  (`user-confirmed`); the limits page states it, and
+  `observe-unblocked-ios.json` ends Safari with the new `terminateApp` step
+  before opening the page.
