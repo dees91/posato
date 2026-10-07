@@ -68,7 +68,8 @@
 
 ## Verification
 
-Target: the test iPhone (`-t device`), app and driver built from this branch.
+Target: the test iPhone (`-t device`), app and driver built from this branch;
+the last row names the tested revision, which holds all code in this change.
 Evidence: ignored `build/verification/ios-007/` (probe scripts, the host
 request log, screenshots) and `build/verification/runs/`.
 
@@ -80,6 +81,7 @@ request log, screenshots) and `build/verification/runs/`.
 | Old `observe-unblocked-ios.json` after a 60 s pause | fail, `WAIT_TIMEOUT` on `site-loaded` | run `20261007-143901-3cce` |
 | New `observe-unblocked-ios.json` after a 60 s pause, three runs in a row | pass | runs `20261007-144051-4d56`, `-144223-dc14`, `-144358-7759` |
 | `observe-blocking-ios.json` during the third pause | pass | run `20261007-144342-edff` |
+| Rerun on `08a3e10c7b1c27adaada62ba761999b6bb748cde`, three rounds: `session-start-saved-items.json`, `observe-blocking-ios.json`, hold, `session-early-end.json` after a pause of more than 60 s, then `observe-unblocked-ios.json` | pass in each round | blocking `20261007-152452-aa50`, `-152625-9254`, `-152804-425b`; unblocked `20261007-152558-1c11`, `-152740-f40f`, `-152919-bc99` |
 | `./gradlew qualityLint` | pass | |
 | `./gradlew quality` | pass on the second run (195 Swift tests, 7 skipped) | the first run failed only because the Simulator test runner hung before connecting, the flake the hillclimb recorded; no Swift test source changed |
 
