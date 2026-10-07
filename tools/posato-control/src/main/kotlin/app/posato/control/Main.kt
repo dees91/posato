@@ -59,6 +59,7 @@ import app.posato.control.cli.VmShutdownCommand
 import app.posato.control.cli.VmSyncCommand
 import app.posato.control.cli.VmTextCommand
 import app.posato.control.cli.VmTypeCommand
+import app.posato.control.cli.VmVncHoldCommand
 import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
 import app.posato.control.core.ControlJson
@@ -136,6 +137,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
         VmAllowNotificationsCommand(),
         VmPressCommand(),
         VmScreenshotCommand(),
+        VmVncHoldCommand(),
         VmICloudCommand(),
         VmNetworkCommand(),
         VmTextCommand(),

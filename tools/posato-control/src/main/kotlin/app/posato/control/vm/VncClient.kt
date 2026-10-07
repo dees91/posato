@@ -5,8 +5,10 @@ import app.posato.control.core.ErrorCode
 import java.awt.image.BufferedImage
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.net.SocketTimeoutException
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
@@ -110,17 +112,6 @@ class VncClient private constructor(
         output.flush()
     }
 
-    /** Moves to (x, y) in framebuffer pixels and clicks the primary button. */
-    fun click(
-        x: Int,
-        y: Int
-    ) {
-        pointer(x, y, 0)
-        pause(POINTER_SETTLE_MS)
-        pointer(x, y, 1)
-        pointer(x, y, 0)
-    }
-
     fun type(text: String) = send(keyEventsForText(text))
 
     /** Presses a named key or chord such as `return`, `tab`, or `cmd-q`. */
@@ -167,6 +158,24 @@ class VncClient private constructor(
             else -> {
                 throw ControlException(ErrorCode.COMMAND_FAILED, "The VNC server sent unexpected message $type.")
             }
+        }
+    }
+
+    /**
+     * Discards whatever the server sends for up to [timeoutMs] and tells whether it closed the connection meanwhile;
+     * only for a connection that is held and never used for a capture or input.
+     */
+    internal fun closesWithin(timeoutMs: Int): Boolean {
+        socket.soTimeout = timeoutMs
+        val buffer = ByteArray(DRAIN_BUFFER_BYTES)
+        return try {
+            var read = 0
+            while (read >= 0) read = input.read(buffer)
+            true
+        } catch (_: SocketTimeoutException) {
+            false
+        } catch (_: IOException) {
+            true
         }
     }
 
@@ -247,6 +256,17 @@ class VncClient private constructor(
 
         private fun pause(milliseconds: Long) = Thread.sleep(milliseconds)
     }
+}
+
+/** Moves to (x, y) in framebuffer pixels and clicks the primary button. */
+internal fun VncClient.click(
+    x: Int,
+    y: Int
+) {
+    pointer(x, y, 0)
+    Thread.sleep(POINTER_SETTLE_MS)
+    pointer(x, y, 1)
+    pointer(x, y, 0)
 }
 
 /**
@@ -335,6 +355,7 @@ internal fun keyEventsForChord(chord: String): List<Pair<Int, Boolean>> {
 }
 
 private const val PROTOCOL_VERSION = "RFB 003.008\n"
+private const val DRAIN_BUFFER_BYTES = 4_096
 private const val SECURITY_VNC_AUTH = 2
 private const val CHALLENGE_LENGTH = 16
 private const val DES_KEY_LENGTH = 8

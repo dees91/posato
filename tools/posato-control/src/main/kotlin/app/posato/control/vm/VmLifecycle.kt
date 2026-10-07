@@ -60,6 +60,7 @@ class VmLifecycle(
         val started = System.currentTimeMillis()
         tart.start(line.cloneName, jdk, log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
         val created = mapOf(
@@ -127,6 +128,7 @@ class VmLifecycle(
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         tart.start(line.cloneName, hostJdk(context), log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        VncHold(context, line).start()
         return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName)))
     }
 
