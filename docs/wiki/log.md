@@ -2646,3 +2646,11 @@ first removal attempt that does not finish, not to a paused keychain.
   golden image's test Apple Account needed attention, hid setup's
   administrator dialog and onboarding timed out in four of four runs.
   `vm onboard` now answers it with Later, and seven of seven runs finished.
+
+## [2026-10-08] tooling | Phone and VM verify in parallel
+
+- `observed`: running the iPhone and the VM as two parallel tracks after the
+  host builds cut the routine verification workload from a median of 438 s
+  to 288 s over five runs each, every run passing. The `verify-posato` skill
+  now describes the order. Signing the test Apple Account in again in the
+  primary golden image removed the iCloud connect alert.
