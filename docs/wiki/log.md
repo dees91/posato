@@ -2654,3 +2654,10 @@ first removal attempt that does not finish, not to a paused keychain.
   to 288 s over five runs each, every run passing. The `verify-posato` skill
   now describes the order. Signing the test Apple Account in again in the
   primary golden image removed the iCloud connect alert.
+
+## [2026-10-08] tooling | The clone boots while the host builds
+
+- `observed`: creating the verification clone while `quality` and the
+  desktop build run, then syncing the signed package into it, cut the
+  routine verification workload from a median of 288 s to 268 s over five
+  runs, every run passing. The `verify-posato` skill now orders it that way.

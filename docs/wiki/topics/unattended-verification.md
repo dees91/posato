@@ -51,8 +51,14 @@ off, the same routine workload took a median of 438 s over five runs (401 to
 builds brought it to a median of 288 s over five runs (275 to 291 s), every
 run passing. The VM track is now the longer one (`inferred` from the step
 medians): under the shared load the clone took about 89 s instead of 51 s
-and onboarding about 104 s instead of 94 s. The `verify-posato` skill
-("Phone and VM in parallel") owns the procedure.
+and onboarding about 104 s instead of 94 s. `observed` 2026-10-08: creating
+the clone while the host ran `quality` and the desktop build, then giving it
+the signed package with `vm sync` (about 3.5 s), brought the median to 268 s
+over five runs (262 to 270 s), every run passing; `quality` itself slowed
+from about 24 s to about 33 s under the shared load. In every run the builds
+finished before `vm create` copied the package, so `vm sync` only copied it
+again; a copy that overlaps a build is untested (`open`). The
+`verify-posato` skill ("Phone and VM in parallel") owns the procedure.
 
 ## Target environment
 
