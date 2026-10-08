@@ -2616,3 +2616,10 @@ first removal attempt that does not finish, not to a paused keychain.
   145 s, most of it a 75 to 174 s wait for the test host app to launch; the
   guarded files changed in 4 to 10 percent of commits, and no record shows the
   suites catching a regression after their change landed.
+
+## [2026-10-08] tooling | Onboarding no longer switches the helper off
+
+- `observed`: `vm onboard` clicked the Login Items switch on every pass, which
+  turned the approved helper off again; every run retried setup and needed a
+  second round. Switches that are already on are now left alone, and onboarding
+  fell from about 159 s to 90 to 111 s over five runs.

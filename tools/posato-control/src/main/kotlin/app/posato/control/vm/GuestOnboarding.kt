@@ -68,8 +68,13 @@ class GuestOnboarding(
     ) {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
-            if (text.read(line, HELPER_ROW).isNotEmpty()) attempt { prompts.answer(line, GuestPrompt.BACKGROUND, PROMPT_TIMEOUT_MS) }
-            if (dialogs.list(line).any { it.owner == SECURITY_AGENT }) {
+            // Setup's own administrator request covers System Settings, so the Login Items switch waits for a pass
+            // without that dialog rather than being read and clicked behind it.
+            val agentDialog = dialogs.list(line).any { it.owner == SECURITY_AGENT }
+            if (!agentDialog && text.read(line, HELPER_ROW).isNotEmpty()) {
+                attempt { prompts.answer(line, GuestPrompt.BACKGROUND, PROMPT_TIMEOUT_MS) }
+            }
+            if (agentDialog) {
                 attempt { prompts.click(line, PASSWORD, exact = false, index = 0, timeoutMs = PROMPT_TIMEOUT_MS) }
                 attempt { prompts.answer(line, GuestPrompt.ADMIN, PROMPT_TIMEOUT_MS) }
             }
