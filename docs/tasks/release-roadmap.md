@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 19 (2026-10-07: `IOS-007` joins release 1.4)
+- **Revision:** 19 (2026-10-07: `IOS-007` joins release 1.4; amended 2026-10-08: backlog additions `SYNC-021` and `TARGETS-009`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-07
+- **Last amended:** 2026-10-08
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -128,6 +128,9 @@
   Revision 19 adds `IOS-007` to release 1.4 (`user-confirmed`, 2026-10-07)
   as a Standard delivery row in wave 1. It fixes a defect found while
   measuring the verification workload; `RELEASE-006` waits for it.
+  The 2026-10-08 backlog additions `SYNC-021` (idea 32) and `TARGETS-009`
+  (idea 33), both `user-confirmed` and found while measuring the
+  verification workload, change no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -404,6 +407,8 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-026` | Let an in-app update replace Posato on the Mac without asking "Quit Posato?": the updater's quit request skips the confirmation that a person's quit gets while a pause runs or a schedule is on, and a person's quit still asks. Verify a candidate-channel update from a build with the change to the next with a schedule on and during a pause; without either, the old build does not ask either. | Sessions and enforcement | Idea 27; `RELEASE-005` retro | Release 1.4 composition; an update between two candidate builds proves it, because the first release with the change still asks when it is replaced |
 | `SESSION-007` | Offer longer quick choices when a pause is started by hand, next to 25 and 45 minutes: 1 h, 2 h, 4 h, 8 h, and **Until end of day** at midnight on the device's clock, within the existing 5-minute minimum and 24-hour maximum, on Mac and iPhone, with the final set and phone layout settled in `DESIGN.md`. | Sessions and enforcement | Idea 28 | Release composition; the final set of choices |
 | `MACOS-027` | Find why a long-lived Mac install reports the background helper as unavailable ("Setup incomplete", "could not be checked or enabled", a schedule that "couldn't start here") while System Settings allows it and blocking works, reproduce it in a Tart VM along the maintainer's update path, and fix the readiness check or its recovery so Session, setup, and schedules agree with what the helper does. | Sessions and enforcement | Idea 29 | A reproduction outside the maintainer's Mac; release composition |
+| `SYNC-021` | Find why the first **Remove workspace** on a Mac right after a link ends after about 60 s with "Sync didn't finish" while a second press removes the workspace, reproduce it in a Tart VM, and fix it so one press removes the workspace, either after the first sync after the link finishes or by waiting for it. | Sessions and enforcement | Idea 32 | A reproduction in a Tart VM; release composition |
+| `TARGETS-009` | Find why deleting a pause set that a schedule uses, with **Move to ... and delete**, sometimes fails to save on the Mac right after a link: make the failure diagnosable without logging pause content, reproduce it in a Tart VM, and fix it so the move and the deletion either both happen or neither does and a retry succeeds. | Target management | Idea 33 | A reproduction or a diagnosed failure; release composition |
 
 ## Coverage matrix
 

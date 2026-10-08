@@ -1153,6 +1153,28 @@ below. This queue retains idea provenance without expanding the original MVP.
     above fits, because it was still the first page opened after the pause;
     the readings that only plain HTTP hangs and that Posato in front avoids
     it are `superseded`.
+32. **The first workspace removal after linking fails.**
+    `observed` (2026-10-07 and 2026-10-08, Posato from `main` after PR #142
+    in fresh macOS Tart clones, while measuring the verification workload):
+    right after a workspace is linked, the first sync runs for about two
+    minutes with the row's buttons disabled. The first **Remove workspace**
+    then ends after about 60 s with "Sync didn't finish", and a second press
+    removes it. It happened in every measured run, with 2 or 3 presses, and
+    the removal took 170 to 250 s in the full runs. A paused iCloud
+    Keychain does not explain it. `open`: why the first attempt does not
+    finish, and whether people see it after a link outside a fresh clone.
+    Owner: backlog row `SYNC-021`.
+33. **Deleting a pause set in use by a schedule can fail to save on the
+    Mac.** `observed` (2026-10-08, the same build and clones): in one of six
+    runs of the desktop verification scenario, about a minute after the
+    iCloud link, **Move to My set and delete** left the set and its schedule
+    unchanged and showed "The change could not be saved. Nothing was
+    changed." The same steps passed in the other five runs.
+    `PauseSetsViewModel.delete` turns any exception, and every failed read
+    or write of the schedule or set stores, into the same failure without a
+    log, so the failing step is unknown. `inferred`: a write raced the first
+    sync after the link. `open`: which read or write fails, and whether it
+    only follows a link. Owner: backlog row `TARGETS-009`.
 
 ## Later platform questions
 
