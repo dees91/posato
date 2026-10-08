@@ -68,8 +68,10 @@ R sets `MARKETING_VERSION = <version>` in `Version.xcconfig` and adds
 `docs/releases/<version>-appcast-notes.txt`, one file for both feeds, worded
 to stay true whatever step 4 shows. Public text comes from the packaging row.
 
-**Done when:** R's full hash is in the record and `./gradlew quality` passes
-in a clean clone of R.
+**Done when:** R's full hash is in the record and
+`./gradlew quality iosSwiftTest` passes in a clean clone of R. Naming
+`iosSwiftTest` runs the native Swift suites, which `quality` alone skips when
+nothing they guard changed.
 
 ## 3. Candidates from a clean clone of R
 

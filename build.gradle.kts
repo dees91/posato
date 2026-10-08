@@ -1,3 +1,4 @@
+import app.posato.buildlogic.IosSwiftTestTrigger
 import app.posato.buildlogic.VerifyApprovedQualityExceptions
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
@@ -140,6 +141,27 @@ val iosSwiftTest by tasks.registering(Exec::class) {
     commandLine("bash", "tools/quality/ios-swift-test.sh")
 }
 
+// The suites cost about 145 s per run, nearly all of it Simulator setup and the test host's launch, and they guard
+// code that few changes touch, so quality runs them only for those changes; `./gradlew quality iosSwiftTest` always
+// does, as the release procedure requires (`user-confirmed` 2026-10-08).
+val iosSwiftTestTrigger = providers.of(IosSwiftTestTrigger::class) {
+    parameters.repositoryDirectory.set(layout.projectDirectory)
+    parameters.baseRef.set("origin/main")
+    parameters.guardedPaths.set(
+        listOf(
+            "iosApp/",
+            "shared/src/iosMain/",
+            "shared/build.gradle.kts",
+            "shared/src/commonMain/kotlin/app/posato/feature/enforcement/ExpiryDisplacement.kt",
+            "shared/src/commonMain/kotlin/app/posato/feature/enforcement/PauseComposition.kt",
+            "gradle.properties",
+            "gradle/libs.versions.toml",
+            "tools/quality/ios-swift-test.sh",
+            "buildSrc/src/main/kotlin/app/posato/buildlogic/IosSwiftTestTrigger.kt",
+        ),
+    )
+}
+
 val iosHostBuildCheck by tasks.registering(Exec::class) {
     group = "verification"
     description = "Compiles unsigned Debug iOS device and Release Simulator hosts."
@@ -184,9 +206,20 @@ tasks.register("qualityLint") {
 tasks.register("quality") {
     group = "verification"
     description = "Runs Posato's formatting, analysis, test, compilation, packaging, and report checks."
+    val iosSwiftTestReason = gradle.startParameter.taskNames
+        .firstOrNull { it.removePrefix(":") == iosSwiftTest.name }
+        ?.let { "requested by name" }
+        ?: iosSwiftTestTrigger.orNull
+    if (iosSwiftTestReason != null) dependsOn(iosSwiftTest)
+    doLast {
+        println(
+            iosSwiftTestReason?.let { "Swift XCTest ran: $it." }
+                ?: "Swift XCTest not run: no file the suites guard differs from origin/main; " +
+                "./gradlew quality iosSwiftTest runs them.",
+        )
+    }
     dependsOn(
         "ktlintCheck",
-        iosSwiftTest,
         iosHostBuildCheck,
         ":desktopApp:createDistributable",
         ":desktopApp:verifyMacOsDevelopmentPackaging",
