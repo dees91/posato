@@ -1,12 +1,12 @@
 # Execution: `RELEASE-005`
 
 - **Brief:** [Verify the 1.3.0 candidates and publish Posato 1.3](../specifications/release-005-release-1-3.md)
-- **Status:** `active`
+- **Status:** `done`: macOS 1.3.0 published; iOS 1.3.0 approved and released
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Reviewer:** independent plan review; pending
+- **Reviewer:** independent plan review, Standard review of the tooling, and the completed-change review of step 6
 - **Branch:** `docs/release-005-release-1-3`
-- **Updated:** 2026-10-04
+- **Updated:** 2026-10-08
 
 ## Plan
 
@@ -242,3 +242,34 @@ directories hold no files of their own.
   the app group, CloudKit Production, `get-task-allow` false, both privacy
   manifests.
 - The release key stayed in the maintainer's Keychain.
+
+### Publication (2026-10-04, maintainer go)
+
+- **Merges:** `#132` (`NAV-002`, `SESSION-006`) squash `38b4e1c`, `#131`
+  (`DOCS-004`) squash `accf0d1`, then this row's `#133` squash `5840a4c`.
+- **Tag:** annotated `v1.3.0` on `5840a4c`.
+- **GitHub Release** `v1.3.0`, published 14:19 UTC as latest, with exactly
+  the five assets: both DMGs, `appcast.xml`, `appcast-intel.xml`, and the
+  merged `SHA256SUMS`, byte-identical to the verified candidates. On
+  2026-10-08 the published `SHA256SUMS` and both feeds still match the
+  hashes above, and `releases/latest/download/appcast-intel.xml` answers
+  200.
+- **In-app update from 1.2.0** on the prepared `peer` clone: Check for
+  Updates offered 1.3.0; during Install and Relaunch, 1.2.0's own "Quit
+  Posato?" confirmation appeared and was answered **Quit**; 1.3.0 relaunched
+  with the first set holding the websites and the application, and the
+  migrated schedule started on its own. No failure criterion was met, so no
+  rollback. The quit question became backlog row `MACOS-026`.
+- **iOS:** `store submit --version 1.3.0` submitted build 6; the version was
+  `WAITING_FOR_REVIEW` with release after approval.
+- **Projects and milestone:** `DOCS-004` and `RELEASE-005` Done; milestone
+  `1.3.0` closed.
+- **Maintainer, outside the repository:** upload
+  `.github/assets/social-preview.png` under the repository's social preview
+  setting.
+
+## Final
+
+- **Status:** `done`. macOS 1.3.0 published for arm64 and x86-64. App
+  Review approved iOS 1.3.0 (build 6); `store status` on 2026-10-08 shows
+  `READY_FOR_DISTRIBUTION`, released after approval.
