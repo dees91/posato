@@ -144,6 +144,14 @@ procedure own the rule.
   answer it over VNC.
 - `observed`: helper registration shows the background approval request;
   after the Login Items toggle, **Check again** reports the helper enabled.
+- `observed` 2026-10-08: a click on a Login Items switch flips it, and
+  System Settings draws an enabled switch gray while a dialog covers it.
+  `vm onboard` used to click the helper's switch on every pass while its row
+  showed, so it switched the helper off again: setup asked to try again and
+  ended with **Background approval needed** in every run, about 159 s. Reading
+  the knob before a click and leaving the switch while setup's administrator
+  dialog is open brought five runs to 90 to 111 s (median 91 s) with neither
+  retry.
 - `observed`: a session start raises the helper's administrator prompt; once
   it is confirmed over VNC the session is active without Retry. An HTTP
   request to a paused domain returns the pause page, HTTPS `CONNECT` to it is

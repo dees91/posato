@@ -5,6 +5,8 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
 import app.posato.control.core.readKeychainSecret
+import java.awt.Color
+import java.awt.image.BufferedImage
 import java.nio.file.Path
 
 /** System dialogs answered over VNC; each is located by its text, not by fixed coordinates alone. */
@@ -166,7 +168,12 @@ class VmPrompts(
         return context.recordArtifact(guestScreen(context, line).screenshot(context.artifactPath("screenshots", "$name.png")))
     }
 
-    /** Switches on the toggle of a System Settings list row (Login Items, Privacy panes) and authenticates. */
+    /**
+     * Switches on the toggle of a System Settings list row (Login Items, Privacy panes) and authenticates, leaving a
+     * switch that is already on alone. A click flips the switch, so onboarding, which answers this on every pass while
+     * the row shows, switched the helper off again after approving it: setup then asked to try again and finished
+     * with "Background approval needed" in every run (`observed` 2026-10-08).
+     */
     private fun toggleRow(
         screen: GuestScreen,
         rowText: String,
@@ -175,7 +182,14 @@ class VmPrompts(
         // Text recognition can merge a row's icon into its label ("exee tart-guest-agent"), so match a fragment.
         val row = screen.waitFor(rowText, timeoutMs).firstOrNull { it.centerX < screen.width * SETTINGS_CONTENT_RIGHT }
             ?: throw notOnScreen(rowText)
-        screen.session { client -> client.click((client.width * LOGIN_ITEM_TOGGLE_X).toInt(), row.centerY) }
+        val alreadyOn = screen.session { client ->
+            val x = (client.width * LOGIN_ITEM_TOGGLE_X).toInt()
+            switchIsOn(client.capture(), x, row.centerY).also { on -> if (!on) client.click(x, row.centerY) }
+        }
+        if (alreadyOn) {
+            context.log("The switch for $rowText is already on; leaving it.")
+            return
+        }
         answerAdmin(screen, timeoutMs)
     }
 
@@ -251,6 +265,36 @@ class VmPrompts(
 }
 
 private const val FRAME = "frame.png"
+
+/** Half the width of the strip read across a switch, as a fraction of the framebuffer width. */
+private const val SWITCH_REACH = 0.01
+
+/** How much brighter the knob's side reads than the track's, out of 255. */
+private const val KNOB_CONTRAST = 16
+
+/**
+ * Whether the switch around ([x], [y]) is on, read from where its white knob sits: right when on, left when off. The
+ * knob holds its place whatever the track's color, which is gray for an enabled switch in an inactive window and
+ * follows the accent color otherwise. A read that shows neither side brighter counts as off, so the switch is clicked
+ * as before.
+ */
+private fun switchIsOn(
+    frame: BufferedImage,
+    x: Int,
+    y: Int
+): Boolean {
+    val reach = (frame.width * SWITCH_REACH).toInt()
+    if (y !in 0 until frame.height || x - reach < 0 || x + reach >= frame.width) return false
+
+    fun brightness(columns: IntRange): Int {
+        val values = columns.map { column -> Color(frame.getRGB(column, y)).let { (it.red + it.green + it.blue) / 3 } }
+        // The median ignores the pointer, which can cross the strip after a click.
+        return values.sorted()[values.size / 2]
+    }
+    val left = brightness(x - reach until x - reach / 3)
+    val right = brightness(x + reach / 3..x + reach)
+    return right - left > KNOB_CONTRAST
+}
 
 /** macOS 26 asks whether the guest agent may bypass the private window picker after screen captures. */
 internal const val PICKER_BYPASS_QUESTION = "bypass the system private"
