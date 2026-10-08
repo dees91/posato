@@ -84,15 +84,6 @@
       "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
     },
     {
-      "name": "update-notice",
-      "action": "precondition",
-      "state": "exists",
-      "query": {
-        "textContains": "Update Posato on your other devices"
-      },
-      "text": "The notice shows only with a linked iCloud workspace, on the first visit to Pause sets; run `flow icloud link` on a clone that has not opened Pause sets yet."
-    },
-    {
       "name": "list-first-visit",
       "action": "screenshot"
     },
@@ -1084,14 +1075,6 @@
       "query": {
         "text": "New set",
         "role": "button"
-      }
-    },
-    {
-      "name": "notice-once",
-      "action": "waitFor",
-      "state": "absent",
-      "query": {
-        "textContains": "Update Posato on your other devices"
       }
     },
     {

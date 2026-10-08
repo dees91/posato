@@ -86,6 +86,20 @@ never from the Apple Developer portal. With the one-time setup in
   `fixtures/scenarios/screen-time-consent.json` in one run; the application
   picker is in the app's own accessibility tree.
 
+## When to link iCloud
+
+A routine verification leaves iCloud alone (`user-confirmed` 2026-10-08).
+Linking a clone and removing its workspace before `vm destroy` take minutes
+([unattended verification](../../../docs/wiki/topics/unattended-verification.md)),
+and only synchronization and the one-time Pause sets update notice need them.
+Run `flow icloud link` only when the change
+touches synchronization, iCloud consent or keys, workspace removal, or a
+screen that differs in a linked workspace, such as the Pause sets update
+notice (`pause-sets-notice-desktop.json`), and once on the development build
+of each release commit
+([releasing](../../../docs/development/releasing.md), step 4). Every other
+recipe runs on an unlinked clone.
+
 ## Launch
 
 Run everything from the repository root. Provision and build the CLI once per

@@ -1174,7 +1174,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     or write of the schedule or set stores, into the same failure without a
     log, so the failing step is unknown. `inferred`: a write raced the first
     sync after the link. `open`: which read or write fails, and whether it
-    only follows a link. Owner: backlog row `TARGETS-009`.
+    only follows a link. Routine verification no longer links iCloud, so only
+    the release check of `pause-sets-desktop.json` on a linked clone still
+    exercises it. Owner: backlog row `TARGETS-009`.
 
 ## Later platform questions
 

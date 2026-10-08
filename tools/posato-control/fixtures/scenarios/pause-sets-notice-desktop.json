@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "update-notice",
+      "action": "precondition",
+      "state": "exists",
+      "query": {
+        "textContains": "Update Posato on your other devices"
+      },
+      "text": "The notice shows only with a linked iCloud workspace, on the first visit to Pause sets; run this right after `flow icloud link`, before any scenario or `flow set` opens Pause sets."
+    },
+    {
+      "name": "notice-first-visit",
+      "action": "screenshot"
+    },
+    {
+      "name": "relaunch",
+      "action": "relaunch"
+    },
+    {
+      "name": "reopen-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-again",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "rows-again",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "More actions for My set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "notice-once",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "textContains": "Update Posato on your other devices"
+      }
+    },
+    {
+      "name": "no-notice-after-relaunch",
+      "action": "screenshot"
+    }
+  ]
+}
