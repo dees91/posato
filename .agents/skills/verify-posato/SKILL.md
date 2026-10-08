@@ -103,15 +103,24 @@ recipe runs on an unlinked clone.
 ## Phone and VM in parallel
 
 A verification that covers both the iPhone and the desktop runs them as two
-tracks at the same time once the host builds are done (`observed`
-2026-10-08: the routine workload took a median of 288 s instead of 438 s
-over five runs each, every run passing). `./gradlew quality` restages an
-ad-hoc package, so run it first and `$PC build -t desktop` after it. Then
-start both tracks, each in its own shell or background job:
+tracks at the same time, and the clone boots while the host builds
+(`observed` 2026-10-08: the routine workload took a median of 268 s, against
+288 s with the clone created after the builds and 438 s with everything in
+turn, over five runs each, every run passing). Build the driver
+(`installDist`) first, then start `$PC vm create --line primary` in the
+background. Meanwhile run `./gradlew quality` and then `$PC build -t desktop`:
+`quality` restages an ad-hoc package in the path that `vm create` copies, so
+the signed build comes after it. Once both the builds and `vm create` are
+done, `$PC vm sync --line primary` gives the clone the signed package (a few
+seconds). If `vm create` fails while copying because a build restaged the
+package meanwhile, the clone still runs: `vm sync` repairs it, and a run that
+links iCloud also runs `vm icloud --resume --line primary`, because the
+failed create skipped that check. Then run the two tracks, each in its own
+shell or background job:
 
 - phone (`-t device` on each command): `build -t device --driver`,
   `install`, `launch`, the iPhone recipes, `terminate`, and `cleanup`;
-- VM (`--line primary`): `vm create`, `vm onboard`, the desktop recipes, and
+- VM (`--line primary`): `vm onboard`, the desktop recipes, and
   `vm destroy`.
 
 `build -t device` also runs Gradle, which is safe in the phone track because
@@ -121,10 +130,11 @@ on: a `--vm` command keeps its state in the guest, and only the phone writes
 whichever track finished last, so cite each track's run directory from its
 envelope's `runId`. Keep the Simulator out of a running phone track, because
 both write `state.json`, and run no `./gradlew quality`, `build -t desktop`,
-or driver `installDist` while the VM track runs: the clone then fails with
-`PACKAGE_OUTDATED` or `TOOL_OUTDATED` until `vm sync`. A step that needs
-both, such as a change synced from one device to the other, waits for the
-other track to reach its side first.
+or driver `installDist` between `vm sync` and `vm destroy`: the clone then
+fails with
+`PACKAGE_OUTDATED` or `TOOL_OUTDATED` until the next `vm sync`. A step that
+needs both, such as a change synced from one device to the other, waits for
+the other track to reach its side first.
 
 ## Launch
 
