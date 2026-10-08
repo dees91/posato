@@ -2623,3 +2623,19 @@ first removal attempt that does not finish, not to a paused keychain.
   turned the approved helper off again; every run retried setup and needed a
   second round. Switches that are already on are now left alone, and onboarding
   fell from about 159 s to 90 to 111 s over five runs.
+
+## [2026-10-08] planning | Release 1.4 composition
+
+- `user-confirmed`: release 1.4 adds `MACOS-026` (an in-app update without
+  the quit question), `SESSION-007` (longer quick choices for a manual
+  pause), `MACOS-027` (a working helper that reads as unavailable, with one
+  work session to reproduce it in a Tart VM), and `DOCS-005` (the 1.4
+  packaging, because `DESIGN-004` changes almost every captured screen).
+  The release has no target date; it is published when its rows are done.
+- `SYNC-021` and `TARGETS-009` wait for a recheck on `main` after PR #147:
+  both were seen in VMs whose onboarding switched the helper off and on
+  again (`inferred` as a possible cause), and no product source has changed
+  since.
+- `observed` (2026-10-08, `store status`): App Review approved iOS 1.3.0
+  (build 6); the version is `READY_FOR_DISTRIBUTION`, so `RELEASE-005` is
+  done.
