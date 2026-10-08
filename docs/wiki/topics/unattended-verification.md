@@ -152,6 +152,12 @@ procedure own the rule.
   the knob before a click and leaving the switch while setup's administrator
   dialog is open brought five runs to 90 to 111 s (median 91 s) with neither
   retry.
+- `observed` 2026-10-08: once the golden image's test Apple Account needed
+  attention, every clone showed **This Mac can't connect to iCloud because of
+  a problem with** that account over setup's administrator dialog, and four
+  of four onboardings timed out. Answering it with **Later**, as `vm onboard`
+  now does, let seven of seven onboardings finish; the account itself still
+  needs its session renewed in the golden image before iCloud verification.
 - `observed`: a session start raises the helper's administrator prompt; once
   it is confirmed over VNC the session is active without Retry. An HTTP
   request to a paused domain returns the pause page, HTTPS `CONNECT` to it is
