@@ -2592,3 +2592,10 @@ resumes a paused keychain before a removal; an iOS tap rides out a transient
 accessibility error. The slow workspace removal after a link was traced to a
 first removal attempt that does not finish, not to a paused keychain.
 [Unattended verification](topics/unattended-verification.md) records both.
+## [2026-10-08] idea | Two Mac defects found while measuring verification
+
+- `observed`: right after a link, the first **Remove workspace** fails with
+  "Sync didn't finish" and a second press removes it (idea 32, backlog row
+  `SYNC-021`); once in six runs, **Move to My set and delete** failed to save
+  without a log (idea 33, backlog row `TARGETS-009`). Neither changes a
+  release.
