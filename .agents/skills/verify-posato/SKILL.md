@@ -100,6 +100,32 @@ of each release commit
 ([releasing](../../../docs/development/releasing.md), step 4). Every other
 recipe runs on an unlinked clone.
 
+## Phone and VM in parallel
+
+A verification that covers both the iPhone and the desktop runs them as two
+tracks at the same time once the host builds are done (`observed`
+2026-10-08: the routine workload took a median of 288 s instead of 438 s
+over five runs each, every run passing). `./gradlew quality` restages an
+ad-hoc package, so run it first and `$PC build -t desktop` after it. Then
+start both tracks, each in its own shell or background job:
+
+- phone (`-t device` on each command): `build -t device --driver`,
+  `install`, `launch`, the iPhone recipes, `terminate`, and `cleanup`;
+- VM (`--line primary`): `vm create`, `vm onboard`, the desktop recipes, and
+  `vm destroy`.
+
+`build -t device` also runs Gradle, which is safe in the phone track because
+the VM track runs none. The tracks share no host state that a run depends
+on: a `--vm` command keeps its state in the guest, and only the phone writes
+`build/verification/state.json`. `build/verification/latest` points at
+whichever track finished last, so cite each track's run directory from its
+envelope's `runId`. Keep the Simulator out of a running phone track, because
+both write `state.json`, and run no `./gradlew quality`, `build -t desktop`,
+or driver `installDist` while the VM track runs: the clone then fails with
+`PACKAGE_OUTDATED` or `TOOL_OUTDATED` until `vm sync`. A step that needs
+both, such as a change synced from one device to the other, waits for the
+other track to reach its side first.
+
 ## Launch
 
 Run everything from the repository root. Provision and build the CLI once per

@@ -44,6 +44,16 @@ linked-only screen, and once on the development build of each release
 commit. The `verify-posato` skill ("When to link iCloud") and the release
 procedure own the rule.
 
+`observed` 2026-10-08: once `quality` stopped running the Swift XCTest
+suites on unrelated changes and `vm onboard` stopped switching the helper
+off, the same routine workload took a median of 438 s over five runs (401 to
+463 s). Running the iPhone and the VM as two parallel tracks after the host
+builds brought it to a median of 288 s over five runs (275 to 291 s), every
+run passing. The VM track is now the longer one (`inferred` from the step
+medians): under the shared load the clone took about 89 s instead of 51 s
+and onboarding about 104 s instead of 94 s. The `verify-posato` skill
+("Phone and VM in parallel") owns the procedure.
+
 ## Target environment
 
 - macOS: Posato runs inside Tart virtual machines on an Apple silicon Mac
@@ -156,8 +166,10 @@ procedure own the rule.
   attention, every clone showed **This Mac can't connect to iCloud because of
   a problem with** that account over setup's administrator dialog, and four
   of four onboardings timed out. Answering it with **Later**, as `vm onboard`
-  now does, let seven of seven onboardings finish; the account itself still
-  needs its session renewed in the golden image before iCloud verification.
+  now does, let seven of seven onboardings finish. Signing the account in
+  again in the primary golden image (password and a two-factor code sent to
+  its trusted phone number) removed the alert; the peer golden image was not
+  checked.
 - `observed`: a session start raises the helper's administrator prompt; once
   it is confirmed over VNC the session is active without Retry. An HTTP
   request to a paused domain returns the pause page, HTTPS `CONNECT` to it is
