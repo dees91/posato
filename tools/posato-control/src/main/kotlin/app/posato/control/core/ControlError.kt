@@ -1,5 +1,7 @@
 package app.posato.control.core
 
+import kotlinx.serialization.json.JsonElement
+
 private const val EXIT_FAILED = 1
 private const val EXIT_USAGE = 2
 private const val EXIT_PRECONDITION = 3
@@ -46,9 +48,11 @@ enum class ErrorCode(
     UNSUPPORTED_ON_TARGET(EXIT_UNSUPPORTED),
 }
 
+/** A failed command; [result] is what it had done before it failed, which its envelope reports beside the error. */
 class ControlException(
     val code: ErrorCode,
     message: String,
     val hint: String? = null,
     cause: Throwable? = null,
+    val result: JsonElement? = null,
 ) : RuntimeException(message, cause)

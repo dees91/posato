@@ -18,6 +18,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 simulator_id="$(xcrun simctl create Posato-Swift-Tests com.apple.CoreSimulator.SimDeviceType.iPhone-17)"
+xcrun simctl boot "$simulator_id"
 echo "Swift test reports: $report_directory"
 
 xcode_arguments=(
@@ -44,6 +45,8 @@ ditto \
 # Seal the complete Simulator host after copying its resources.
 codesign --force --sign - "$simulator_app"
 codesign --verify --deep --strict "$simulator_app"
+
+xcrun simctl bootstatus "$simulator_id" -b
 
 xcodebuild "${xcode_arguments[@]}" \
     -resultBundlePath "$report_directory/tests.xcresult" \

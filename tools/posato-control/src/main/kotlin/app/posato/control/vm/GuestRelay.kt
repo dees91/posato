@@ -54,6 +54,7 @@ object GuestRelay {
                 command = forwarded.firstOrNull() ?: "posato-control",
                 runId = runId,
                 durationMs = 0,
+                result = exception.result,
                 error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
             )
             if (HUMAN_OPTION in forwarded) {
@@ -88,6 +89,7 @@ object GuestRelay {
         val output = if (checksICloudKeychain(arguments)) {
             GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
         } else {
+            if (resumesICloudKeychain(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
             runInGuest(context, line, arguments, stdin, runId)
         }
         print(output.envelope)

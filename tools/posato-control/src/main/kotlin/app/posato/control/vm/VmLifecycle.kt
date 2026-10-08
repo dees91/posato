@@ -60,12 +60,14 @@ class VmLifecycle(
         val started = System.currentTimeMillis()
         tart.start(line.cloneName, jdk, log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        val vncHold = VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
         val created = mapOf(
             "vm" to JsonPrimitive(line.cloneName),
             "golden" to JsonPrimitive(golden),
             "readyMs" to JsonPrimitive(System.currentTimeMillis() - started),
+            "vncHold" to JsonPrimitive(vncHold),
         )
         return JsonObject(if (diskWarning == null) created else created + ("diskSpaceWarning" to JsonPrimitive(diskWarning)))
     }
@@ -127,7 +129,8 @@ class VmLifecycle(
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         tart.start(line.cloneName, hostJdk(context), log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
-        return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName)))
+        val vncHold = VncHold(context, line).start()
+        return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName), "vncHold" to JsonPrimitive(vncHold)))
     }
 
     /** Shuts the guest down from inside, so its last writes reach the disk, and keeps the VM; true when it was forced. */

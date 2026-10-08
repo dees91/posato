@@ -105,6 +105,17 @@ before treating a passing test as evidence.
   (-223). Without it Virtualization's VNC server hits an internal assertion
   and stops the whole VM. Several captures on one connection can also stall;
   a fresh connection per capture is reliable.
+- `observed` (2026-10-07, macOS 27.0.1, Tart 2.37.0): the first VNC
+  connection after a few minutes without any client can take Tart down with
+  `EXC_BREAKPOINT` in `-[_VZVirtualMachineAccessor addAccessorObserver:]`,
+  called from `-[_VZVNCServer _setupVirtualMachineAccessor]`. A capture after
+  each 150 s idle stretch crashed Tart in 2 of 3 attempts on one clone; with
+  one idle connection held open the whole time, 8 of 8 passed. Rapid
+  captures did not crash it. `posato-control` therefore holds one idle
+  connection for each clone's life (`vm vnc-hold`). `inferred`: the six
+  earlier crash reports with this signature, which a connect-per-capture
+  stress probe could not reproduce, were the same idle reconnect, typically
+  the iCloud Keychain check after a two-minute wait for a link.
 - Stop a guest from inside (`sync`, then `shutdown -h`) and wait for
   `tart run` to exit. `tart stop` can cut off the guest's last writes.
 - Enable automatic login in the golden VM so a clone reaches the desktop
@@ -150,6 +161,14 @@ before treating a passing test as evidence.
   Native CloudKit performed this fixture reset without a Console session or
   `cktool` management token. The probe and evidence stayed under ignored
   `build/verification/`.
+- `observed` (2026-10-07): removing the workspace right after a link in a
+  fresh clone takes about three minutes. The first sync after the link runs
+  for about two minutes with the row's buttons disabled; the first
+  **Remove workspace** then ends after about 60 s with "Sync didn't finish",
+  and a second press removes it in about 36 s. This happened in each of three
+  runs whose iCloud Keychain read as syncing, so a paused keychain does not
+  explain it. `superseded`: the earlier reading that slow removals waited for
+  a paused keychain. `open`: why the first removal attempt does not finish.
 - `observed`: after many clones of one golden VM, macOS reported that the Mac
   could not connect to iCloud and asked for the account password; iCloud
   Keychain in the other line asked for the Mac password and a trusted

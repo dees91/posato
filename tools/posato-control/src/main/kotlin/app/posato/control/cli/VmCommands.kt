@@ -15,6 +15,7 @@ import app.posato.control.vm.ICloudKeychainState
 import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
 import app.posato.control.vm.VmPrompts
+import app.posato.control.vm.VncHold
 import app.posato.control.vm.vmAdminPassword
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -194,6 +195,23 @@ class VmBootCommand :
     private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
 
     override fun execute(session: Session): JsonElement = VmLifecycle(session.context).boot(VmLine.parse(lineOption))
+}
+
+class VmVncHoldCommand :
+    ControlCommand(
+        "vnc-hold",
+        "Hold one idle VNC connection to the line's VM until it stops; create and boot start this by themselves.",
+    ) {
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
+
+    override fun execute(session: Session): JsonElement {
+        val line = VmLine.parse(lineOption)
+        val heldMs = VncHold(session.context, line).hold()
+        return buildJsonObject {
+            put("vm", line.cloneName)
+            put("heldMs", heldMs)
+        }
+    }
 }
 
 class VmShutdownCommand : ControlCommand("shutdown", "Shut the line's VM down from inside the guest and keep it.") {
