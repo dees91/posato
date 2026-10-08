@@ -7,13 +7,19 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
 
 ## Recipes
 
-- `pause-sets-desktop.json` (Mac, after a linked onboarding with the helper
-  and Set up this Mac): the update notice on the first visit, New set with a
-  website, Make default, Rename, a schedule saved off with the default set
-  preselected, the set choice in Session setup and `Set: <name>` in Review,
-  Delete with **Move to My set and delete**, the limit of ten with **New set** disabled,
-  and no notice after a relaunch. A schedule saved on can start while the run
+- `pause-sets-desktop.json` (Mac, after onboarding with the helper and Set
+  up this Mac; iCloud is not needed): New set with a website, Make default,
+  Rename, a schedule saved off with the default set preselected, the set
+  choice in Session setup and `Set: <name>` in Review, Delete with **Move to
+  My set and delete**, the limit of ten with **New set** disabled, and the
+  list after a relaunch. A schedule saved on can start while the run
   continues; the recipe saves it off for that reason.
+- `pause-sets-notice-desktop.json` (Mac, right after `flow icloud link`,
+  before any scenario or `flow set` opens Pause sets): the one-time "Update
+  Posato on your other devices" notice on the first visit and no notice after
+  a relaunch. The first linked visit uses up the notice whatever opened the
+  screen. Run it only when iCloud is in scope (`SKILL.md`, "When to link
+  iCloud").
 - `pause-sets-device.json` (test iPhone): "Apps on this iPhone" wording, a new
   set with a website, its choice in Session setup and Review, and its deletion.
 

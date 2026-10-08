@@ -122,6 +122,14 @@ usual matrix, adjusted by the brief:
   candidate passes setup, a blocking pause, and a scheduled start.
 - Test iPhone: the previous tag's development build with state, R installed
   over it and checked before and after the first open; the core flow on R.
+- iCloud on `primary` with the development build of R, in this order:
+  `flow icloud link`; `pause-sets-notice-desktop.json` before anything else
+  opens Pause sets, because the first linked visit uses up the notice;
+  `pause-sets-desktop.json`; the sync checks the brief names from
+  [Sync with iCloud](../../.agents/skills/verify-posato/features/sync.md);
+  and `flow icloud remove` before `vm destroy`. Routine task verification
+  leaves iCloud out, so this is the regular check of synchronization and of
+  editing right after a link.
 - Keep a `peer` clone running with the previous release set up (helper,
   websites, an application, a schedule, update consent answered) for step 7.
 

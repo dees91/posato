@@ -2599,3 +2599,11 @@ first removal attempt that does not finish, not to a paused keychain.
   `SYNC-021`); once in six runs, **Move to My set and delete** failed to save
   without a log (idea 33, backlog row `TARGETS-009`). Neither changes a
   release.
+
+## [2026-10-08] decision | Routine verification without iCloud
+
+- `user-confirmed`: routine verification no longer links iCloud. Synchronization
+  and linked-only screens are verified when a change touches them and once on
+  the development build of each release commit. The Pause sets update notice
+  moved to `pause-sets-notice-desktop.json`, and `pause-sets-desktop.json` no
+  longer needs a link.

@@ -33,6 +33,17 @@ covered by stronger neighboring tests. Those patterns do not establish the
 production behavior their names suggest. Judge assertions and supplied inputs
 before treating a passing test as evidence.
 
+`user-confirmed` 2026-10-08: a routine verification does not link iCloud.
+Linking a clone and removing its workspace took about 430 s of a 1030 s run
+of the full verification workload, in medians of four runs (`observed`),
+while only the one-time Pause sets update notice outside synchronization
+needed a linked workspace. Without them the same workload took a median of
+648 s over five runs (593 to 675 s, `observed`). iCloud is linked when a change touches
+synchronization, iCloud consent or keys, workspace removal, or a
+linked-only screen, and once on the development build of each release
+commit. The `verify-posato` skill ("When to link iCloud") and the release
+procedure own the rule.
+
 ## Target environment
 
 - macOS: Posato runs inside Tart virtual machines on an Apple silicon Mac
