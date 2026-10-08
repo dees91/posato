@@ -148,7 +148,22 @@ It checks root and module Kotlin formatting with ktlint, analyzes both
 application modules with Detekt and Compose Rules, compiles warning-free JVM,
 iOS, and preview-only Android source, runs shared JVM/iOS, desktop, tooling,
 and native helper tests, and creates and checks the macOS distributable.
-It also runs the Swift XCTest suites through `iosSwiftTest`.
+It also runs the Swift XCTest suites through `iosSwiftTest` when the branch
+changes a file they guard (`user-confirmed` 2026-10-08): anything under
+`iosApp/` or `shared/src/iosMain/`, `shared/build.gradle.kts`, the two common
+enforcement rules the Swift side mirrors (`ExpiryDisplacement.kt` and
+`PauseComposition.kt`), `gradle.properties`, `gradle/libs.versions.toml`,
+`tools/quality/ios-swift-test.sh`, or the `IosSwiftTestTrigger` build logic
+that makes this choice. The comparison is with the merge base with
+`origin/main`, counts uncommitted and untracked files, and lists both paths of
+a moved file; when it cannot be made, the suites run. A successful `quality`
+prints a "Swift XCTest" line just before the build summary that says whether
+they ran and why. A run costs about 145 s, nearly all of it Simulator setup
+and the test host's launch, while the suites guard code that few changes
+touch. `./gradlew quality iosSwiftTest` always runs them, as every release
+commit does. The suites were the only part of `quality` that launched the iOS
+app; a change that could break its launch is caught by the application
+verification that every app change already requires.
 The distributable embeds the pinned Sparkle release, which `downloadSparkle`
 keeps in `posato-downloads/<sha256>/` under the Gradle user home (`~/.gradle`
 by default) and verifies before every use, so only the first build on a
@@ -208,7 +223,8 @@ Before marking a pull request ready:
 
 1. Rebase the branch onto the current `main` (a stack: every branch, bottom
    up), then run `./gradlew quality` on its tip after the last correction,
-   including native iOS Swift tests. Two changes that each pass can fail
+   including native iOS Swift tests when the branch touches what they guard.
+   Two changes that each pass can fail
    together, as a method that crossed its length limit did after
    `SCHEDULE-004` met `MACOS-015`. Resolve failures rather than treating
    disabled CI as a waiver. Between corrections, `./gradlew qualityLint` runs

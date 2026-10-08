@@ -2607,3 +2607,12 @@ first removal attempt that does not finish, not to a paused keychain.
   the development build of each release commit. The Pause sets update notice
   moved to `pause-sets-notice-desktop.json`, and `pause-sets-desktop.json` no
   longer needs a link.
+
+## [2026-10-08] decision | Native Swift tests only when a change touches them
+
+- `user-confirmed`: `quality` runs `iosSwiftTest` only when the branch changes
+  a file the suites guard, and every release commit runs it by name. `observed`
+  in five measured runs: the 195 tests take about 1.3 s, but the task about
+  145 s, most of it a 75 to 174 s wait for the test host app to launch; the
+  guarded files changed in 4 to 10 percent of commits, and no record shows the
+  suites catching a regression after their change landed.

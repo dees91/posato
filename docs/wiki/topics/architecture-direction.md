@@ -491,6 +491,9 @@ cases retain explicit skips and do not become Simulator coverage claims.
 The local gate also compiles unsigned Debug device and Release Simulator hosts,
 preserving device-only Swift branch coverage after hosted CI removal. Matching
 Kotlin frameworks are built first; these are compilation checks, not device runs.
+`user-confirmed` (2026-10-08): the Swift XCTest part now runs only when a
+change touches the files those suites guard, and on every release commit by
+name; the [development guide](../../development/README.md) lists the files.
 
 `observed` (2026-09-07): a macOS 15/Xcode 26.3 CI reproduction isolated native
 test thread-pool starvation. Three parallel synchronous proxy tests blocked in

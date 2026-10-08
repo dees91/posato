@@ -237,9 +237,11 @@ browsing-history and allowed-navigation diagnostics remains in force.
 ## Continuous integration
 
 The local aggregate quality gate covers repository-owned JVM, iOS, and macOS
-surfaces. It includes `iosSwiftTest`,
-which builds the Debug iOS host and executes the existing native Swift XCTest
-suites on an isolated temporary Simulator. Physical-device-only cases remain
+surfaces. It includes `iosSwiftTest` when a change touches the files those
+suites guard, and the release procedure runs it by name on every release
+commit (`user-confirmed` 2026-10-08; the development guide lists the files).
+That task builds the Debug iOS host and executes the existing native Swift
+XCTest suites on an isolated temporary Simulator. Physical-device-only cases remain
 explicitly skipped there; Simulator success does not prove iCloud Keychain,
 Screen Time authorization, or suspended-device expiry behavior.
 
