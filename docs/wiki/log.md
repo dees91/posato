@@ -2639,3 +2639,10 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed` (2026-10-08, `store status`): App Review approved iOS 1.3.0
   (build 6); the version is `READY_FOR_DISTRIBUTION`, so `RELEASE-005` is
   done.
+
+## [2026-10-08] tooling | Onboarding puts off the iCloud connect alert
+
+- `observed`: the guest's "can't connect to iCloud" alert, raised once the
+  golden image's test Apple Account needed attention, hid setup's
+  administrator dialog and onboarding timed out in four of four runs.
+  `vm onboard` now answers it with Later, and seven of seven runs finished.

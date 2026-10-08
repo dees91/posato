@@ -71,7 +71,16 @@ class GuestOnboarding(
             // Setup's own administrator request covers System Settings, so the Login Items switch waits for a pass
             // without that dialog rather than being read and clicked behind it.
             val agentDialog = dialogs.list(line).any { it.owner == SECURITY_AGENT }
-            if (!agentDialog && text.read(line, HELPER_ROW).isNotEmpty()) {
+            val shown = text.read(line, null)
+            // A guest whose test Apple Account needs attention raises this alert over setup's administrator dialog and
+            // hides it (`observed` 2026-10-08). Onboarding needs no iCloud, so Later puts it off, as
+            // `vm icloud --resume` does, and the pass starts again; an alert that stays falls through to readiness.
+            if (shown.any { it.matches(ICLOUD_CONNECT_ALERT, exact = false) } &&
+                attempt { prompts.answer(line, GuestPrompt.ICLOUD_LATER, PROMPT_TIMEOUT_MS) }
+            ) {
+                continue
+            }
+            if (!agentDialog && shown.any { it.matches(HELPER_ROW, exact = false) }) {
                 attempt { prompts.answer(line, GuestPrompt.BACKGROUND, PROMPT_TIMEOUT_MS) }
             }
             if (agentDialog) {
