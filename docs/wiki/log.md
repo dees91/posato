@@ -2714,6 +2714,18 @@ first removal attempt that does not finish, not to a paused keychain.
   repeatable long-history reproduction before the test account's zone is
   cleaned; `TARGETS-009` is dropped.
 
+## [2026-10-09] fix | MACOS-027: a working Mac helper read as unavailable under load
+
+- `observed`: in Tart under heavy load, 1.3.0 and `main` showed "Setup
+  incomplete" with the helper enabled. The on-demand daemon exited before a
+  new connection was counted, and under saturated disk I/O launchd started
+  it up to two minutes late, so helper reads ended with an unknown outcome;
+  a strict `codesign` check also took 6.9 s against a 5 s limit.
+- The daemon now counts a connection when it is accepted and waits 10 s
+  only before its first one; unfinished quiet reads keep ready for up to
+  five minutes with a retry every 30 s; the signature check allows 30 s per
+  command and 45 s in all. A removed or tampered helper still reads as
+  unavailable at once.
 ## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
 
 - `observed` in a macOS 26 Tart clone with notarized candidates: a build

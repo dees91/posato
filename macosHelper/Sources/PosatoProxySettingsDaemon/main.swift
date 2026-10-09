@@ -67,10 +67,13 @@ private final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
     _ listener: NSXPCListener,
     shouldAcceptNewConnection connection: NSXPCConnection
   ) -> Bool {
+    // Counted before anything else so an idle exit that is already due cannot end the daemon under
+    // this connection; a connection that fails the code-signing requirement is invalidated, and the
+    // invalidation handler takes it off the count again.
+    coordinator.connectionOpened()
     connection.exportedInterface = NSXPCInterface(with: ProxySettingsService.self)
     let service = ProxySettingsServiceObject(coordinator: coordinator)
     connection.exportedObject = service
-    coordinator.connectionOpened()
     connection.invalidationHandler = { [coordinator, service] in
       coordinator.connectionInvalidated(state: service.connectionState)
     }
