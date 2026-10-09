@@ -7,20 +7,17 @@
 - **Review tier:** `high-risk`: the accepted development-only seams (`D1`,
   `D4`) delete CloudKit records or the zone; see the brief
 - **Implementer:** Claude
-- **Reviewer:** plan reviews of `7abfa5c2` and `64ab9efc`, both
-  `changes-required` and folded below (decisions in them are the
-  coordinator's under the maintainer's delegation of 2026-10-09);
-  re-review pending
+- **Reviewer:** plan reviews of `7abfa5c2`, `64ab9efc`, and `a07de846`,
+  each `changes-required` and folded (their decisions are the coordinator's
+  under the maintainer's delegation of 2026-10-09)
 - **Branch:** `task/sync-021-removal-long-history`
-- **Updated:** 2026-10-09 (decisions recorded)
+- **Updated:** 2026-10-09
 
 ## Evidence before the row
 
-`observed` (2026-10-09, recheck on `main` `572e341`, fresh `primary`
-clones, development package, test Apple Account): linking took 195 to
-228 s; the first press failed 6 of 6 times after about 59 s or 4 minutes;
-removal took 3 or 4 presses and up to about 7 minutes, with about 110
-change fetches a minute in companion processes of 16 fetches.
+`observed` (2026-10-09, `main` `572e341`, fresh `primary` clones, test
+Apple Account): the first press failed 6 of 6 times; removal took 3 or 4
+presses, up to about 7 minutes, at about 110 change fetches a minute.
 
 ## Hypotheses
 
@@ -44,11 +41,9 @@ change fetches a minute in companion processes of 16 fetches.
    E2E cannot produce: a cursor that never advances and repeated `Unknown`
    exchanges (not drivable), an advancing cursor that never ends (more than
    20 minutes of history), cancellation keeping the continuation in memory,
-   and the `removing` re-entry guard. The cancellation test is a regression
-   guard written before the loop change. The
-   cap tests at `MacOsMailboxAdapterTest:159-205` are rewritten for the
-   removal budget; the bootstrap sweep keeps a cap-of-10 assertion;
-   `:252-280` stay.
+   and the `removing` re-entry guard; the cancellation test is a regression
+   guard written first. The cap tests at `MacOsMailboxAdapterTest:159-205`
+   become removal-budget tests, the link sweep keeps its cap-of-10 test.
 4. **Fix.** `RemovalBudget` in shared `feature/sync/mailbox`, a parameter of
    `sweepBundlesIfAnchorMissing` and `deleteWorkspaceRecords` that only
    `AppleWorkspaceRemoval` passes; the default keeps 10 passes. Overrides
@@ -72,31 +67,14 @@ change fetches a minute in companion processes of 16 fetches.
    disabled; without it iOS shows `removing` as today's running state.
    `DESIGN.md` gains the macOS row state; `posato-control`'s `ICloudRow`
    learns `removing`; the verify-posato sync page is updated.
-6. **Verification-only seams**, under the controls of the ADR 0007
-   amendment of 2026-10-09; implementation specifics:
-   - `posatoMacOsVerificationSeams` adds `-Xswiftc -DPOSATO_VERIFICATION`
-     as an input of `:macosSyncCompanion:buildSwiftRelease` and fails
-     configuration on a non-blank `posatoMacOsReleaseSigningIdentity`, a
-     release channel, or a named release task in `taskGraph.whenReady`.
-     `posato-control build --verification-seams` sets it; `swiftTest`
-     builds with the condition and tests the companion refusals.
-   - One scan for the `PosatoVerificationSeams` key and the live marker
-     `posato-verification-seams-v1`, used by `VerifyMacOsDevelopmentPackaging`
-     (`verificationSeams` input, `found == verificationSeams.get()`) and by
-     `GenerateMacOsUpdateFeed.publishedApplication` before the staged
-     `Info.plist` comparison, on every channel. Control: the development
-     check run with `-x :desktopApp:stageMacOsDevelopmentPackage` on a
-     flag-built package without the property, and the feed task on a plain
-     `hdiutil create` image of it, each failing with the seam message; the
-     routine development package run shows the pass.
-   - Companion `seedHistory` (writes, then deletes; canonical UUID names,
-     non-empty payloads of at most 64 KiB passing
-     `RecordCodec.validateBundle`, no new record type) and
-     `deleteZoneForVerification`. Kotlin: a separate verification client,
-     enum, and decoder in `feature/sync/macos/verification/`; a
-     launch-argument handler holding `AppleBootstrap.flight`, requiring
-     `LOCAL_ONLY` and `FileInstanceLock.tryUpgradeForAdmission()`; the
-     tool quits Posato first, and `vm sync-fixture` checks `AC-04` itself.
+6. **Verification-only seams** under the ADR 0007 amendment: the
+   `posatoMacOsVerificationSeams` property (Swift condition, `Info.plist`
+   key, configuration and task-graph refusals), one scan of the key and the
+   marker `posato-verification-seams-v1` in the packaging check and first in
+   the DMG reader, the companion `deleteZoneForVerification` (seeding only
+   if step 2 needs it), a separate verification client and launch-argument
+   entry (`AppleBootstrap.flight`, `LOCAL_ONLY`, the admission lock), and
+   `posato-control build --verification-seams` and `vm sync-fixture`.
 7. **Verify** the brief's matrix with `flow icloud remove --timeout-seconds
    1500`, then the `AC-04` order; completed-change review, `qualityLint`,
    `quality`, closeout. The iOS cap is idea 34, backlog row `IOS-008` and
@@ -105,9 +83,16 @@ change fetches a minute in companion processes of 16 fetches.
 
 ## Verification
 
+Order note: the `primary` slot was busy, so steps 3 to 6 ran before the
+step-2 measurement; none of them depends on its result.
+
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Recheck before the row (6 linked clones) | fail 6/6 on the first press | listed above |
+| Failing first: 7 new adapter and `AppleSync` tests on an inert budget stub | 7 red; the cancellation guard green before the change | host `jvmTest`, 2026-10-09 |
+| After the fix (`ae4bb138`) | all `feature.sync` JVM tests green | host `jvmTest` |
+| Companion seam refusals (`swiftTest` with the condition) | pass | host `swiftTest` |
+| Seam control: plain package / seam package with the property / seam package without it / plain DMG of it | pass / pass / fail with the seam message / fail with the seam message | `build/verification/sync-021/control-*` |
 
 ## Final
 
