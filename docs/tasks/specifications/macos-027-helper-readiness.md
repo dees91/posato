@@ -81,10 +81,12 @@ cheap 1b check (bundle detritus) runs only if 1a and 2 do not reproduce.
 
 ## Acceptance
 
-- `AC-01` — A Tart reproduction on `main` that shows the false
-  `UNAVAILABLE` while `observe` reports blocking, with its steps, revision,
-  and evidence directory in the execution record. Or, if there is no
-  reproduction, the attempts list described in the timebox.
+- `AC-01` — A Tart reproduction on `main` that shows a false incomplete
+  setup (`UNCERTAIN`: "Setup incomplete", "Last Mac setup request did not
+  finish") while the helper is enabled, with its steps, revision, and
+  evidence directory in the execution record. Amended on 2026-10-09 by the
+  coordinator under the maintainer's delegation from the original false
+  `UNAVAILABLE`, which the interface did not show.
 - `AC-02` — The cause is recorded with provenance labels on the
   [macOS enforcement](../../wiki/topics/macos-enforcement.md) wiki page, along with whether the schedule did not start or only
   its report was wrong.

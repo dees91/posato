@@ -999,9 +999,15 @@ because only the read failed. Whether that day's schedule did not start or
 only reported so stays `open`; a schedule start that meets an unknown read
 is treated as transient.
 
-The fix (PR #158): the daemon exits only after 10 s with no connection,
-request, or disconnect; quiet reads with an unknown outcome keep a shown
-ready state while they last under five minutes, while a check the person
-starts and any `UNAVAILABLE` answer still show at once; and each signing
-command may take 30 s. A helper moved out of the bundle or with a broken
-signature still reads as unavailable.
+The fix (PR #158): the daemon counts a connection the moment its listener
+accepts it and takes it off again when the connection is invalidated,
+including by a failed code-signing requirement; before its first
+connection after start it waits 10 s before an idle exit, and after a
+disconnect still about one second, so an old daemon replaced by an update
+does not linger. Quiet reads with an unknown outcome keep a shown ready
+state while they last under five minutes and are retried every 30 s; a
+check the person starts and any `UNAVAILABLE` answer still show at once.
+Each signing command may take 30 s, the whole check 45 s. The 6.9 s
+measurement, not an interface reproduction, is the reason for the longer
+signing limit. A helper moved out of the bundle or with a broken signature
+still reads as unavailable.

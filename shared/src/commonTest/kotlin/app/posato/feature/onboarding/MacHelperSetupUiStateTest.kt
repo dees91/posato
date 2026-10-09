@@ -1,6 +1,7 @@
 package app.posato.feature.onboarding
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -331,14 +332,13 @@ class MacHelperQuietReadRaceTest {
 
     @Test
     fun `given a ready helper when a later quiet read cannot finish then the confirmed state is kept`() = runTest {
-        var now = 0L
         val helper = RecordingMacHelper(MacHelperReadiness.READY)
-        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { now })
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { testScheduler.currentTime })
         holder.readQuietly()
         runCurrent()
 
         helper.answer = MacHelperReadiness.UNCERTAIN
-        now += 400_000L
+        advanceTimeBy(400_000L)
         holder.readQuietly(refresh = true)
         runCurrent()
 
@@ -348,21 +348,60 @@ class MacHelperQuietReadRaceTest {
 
     @Test
     fun `given a ready helper when quiet reads stay unfinished for five minutes then the uncertainty is shown`() = runTest {
-        var now = 0L
         val helper = RecordingMacHelper(MacHelperReadiness.READY)
-        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { now })
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { testScheduler.currentTime })
         holder.readQuietly()
         runCurrent()
 
         helper.answer = MacHelperReadiness.UNCERTAIN
-        now += 60_000L
+        advanceTimeBy(60_000L)
         holder.readQuietly(refresh = true)
         runCurrent()
-        now += 301_000L
+        advanceTimeBy(301_000L)
         holder.readQuietly(refresh = true)
         runCurrent()
 
         assertEquals(MacHelperReadiness.UNCERTAIN, holder.presentation().readiness)
+    }
+
+    @Test
+    fun `given a kept unfinished read when the retry answers then that answer is stored without an activation`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { testScheduler.currentTime })
+        holder.readQuietly()
+        runCurrent()
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        advanceTimeBy(60_000L)
+        holder.readQuietly(refresh = true)
+        runCurrent()
+
+        helper.answer = MacHelperReadiness.NOT_ENABLED
+        advanceTimeBy(31_000L)
+
+        assertEquals(MacHelperReadiness.NOT_ENABLED, holder.presentation().readiness)
+        assertEquals(listOf("status", "status", "status"), helper.calls)
+    }
+
+    @Test
+    fun `given a stored answer between unfinished reads then the five minutes start again`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { testScheduler.currentTime })
+        holder.readQuietly()
+        runCurrent()
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        advanceTimeBy(60_000L)
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        helper.answer = MacHelperReadiness.READY
+        advanceTimeBy(31_000L)
+
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        advanceTimeBy(259_000L)
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        advanceTimeBy(31_000L)
+
+        assertEquals(MacHelperReadiness.READY, holder.presentation().readiness)
     }
 
     @Test

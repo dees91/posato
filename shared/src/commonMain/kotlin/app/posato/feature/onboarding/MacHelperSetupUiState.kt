@@ -278,7 +278,12 @@ internal class MacHelperSetupUiState(
                     macHelper.loginItem?.refresh()
                     val grant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
                     // A setup run may have started while the grant was read; its answer wins.
-                    if (unfinishedReads.stores(current(), answer, readiness)) {
+                    // A kept unfinished read is read again after the refresh interval, so the run always ends.
+                    val stored = unfinishedReads.stores(current(), answer, readiness) {
+                        val now = elapsedMillis()
+                        trailingRead.request(true, now, now) { readQuietly(refresh = true, trailing = true) }
+                    }
+                    if (stored) {
                         readiness = answer
                         standingGrant = grant
                         consent.settle(answer)
@@ -372,8 +377,9 @@ internal fun rememberMacHelperSetupUiState(
 /**
  * A quiet read whose outcome is unknown proves nothing about a helper last read as ready: on a busy
  * Mac launchd can take minutes to start the daemon, and the read then times out while blocking keeps
- * working. Ready stays while such reads last less than the grace period, and the next activation's
- * read decides; a check or setup the person starts still shows its own answer.
+ * working. Ready stays while such reads last less than the grace period, and a retry after the
+ * refresh interval keeps reading until an answer is stored; a check or setup the person starts, and
+ * every other answer, still show at once. The clock is monotonic and does not count sleep.
  */
 private class UnfinishedQuietReads(
     private val elapsedMillis: () -> Long,
@@ -389,6 +395,7 @@ private class UnfinishedQuietReads(
         current: Boolean,
         answer: MacHelperReadiness,
         shown: MacHelperReadiness?,
+        retry: () -> Unit,
     ): Boolean {
         if (!current) {
             return false
@@ -397,7 +404,11 @@ private class UnfinishedQuietReads(
             return true
         }
         val started = since ?: elapsedMillis().also { since = it }
-        return elapsedMillis() - started >= UNCERTAIN_READ_GRACE_MILLIS
+        val expired = elapsedMillis() - started >= UNCERTAIN_READ_GRACE_MILLIS
+        if (!expired) {
+            retry()
+        }
+        return expired
     }
 }
 
