@@ -56,6 +56,7 @@ class VmLifecycle(
         val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
         recordCloneOwner(context, line.cloneName)
+        Files.deleteIfExists(accountAttentionMarker(context, line))
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         val started = System.currentTimeMillis()
         tart.start(line.cloneName, jdk, log)
@@ -126,6 +127,7 @@ class VmLifecycle(
      */
     fun boot(line: VmLine): JsonObject {
         refuseBoot(tart.list(), context.configuration.value(line.goldenKey), line.cloneName)
+        Files.deleteIfExists(accountAttentionMarker(context, line))
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         tart.start(line.cloneName, hostJdk(context), log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)
