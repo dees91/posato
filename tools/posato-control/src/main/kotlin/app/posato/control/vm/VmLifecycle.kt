@@ -8,12 +8,12 @@ import app.posato.control.core.readKeychainSecret
 import app.posato.control.desktop.AxBridgeBinary
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import java.nio.file.DirectoryNotEmptyException
-import java.nio.file.FileAlreadyExistsException
+import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
+import java.security.MessageDigest
 import java.time.Duration
 import kotlin.io.path.exists
 import kotlin.io.path.readText
@@ -227,32 +227,52 @@ internal const val GUEST_ROOT = "\$HOME/posato-run"
 
 /**
  * An APFS clone of the host JDK at a path without `@`, which Tart's directory-share parser rejects. A running guest
- * reads it through a directory share, so it sits beside the per-clone state rather than in a checkout, named after
- * the JDK bundle so that a host JDK update gets a fresh copy. It is copied under a temporary name and moved into
- * place, so two checkouts creating it at once each see a whole copy.
+ * reads it through a directory share, so it sits beside the per-clone state rather than in a checkout. Its name holds
+ * the JDK's runtime version and a digest of its resolved bundle path and `release` file, so a host JDK update, which
+ * can keep the bundle's name (Homebrew's `openjdk.jdk`), gets a fresh copy while running guests keep the old one. It
+ * is copied under a temporary name and moved into place, so two checkouts creating it at once each see a whole copy.
  */
 internal fun hostJdk(context: RunContext): Path {
     val home = context.subprocess.run(
         listOf("/usr/libexec/java_home"),
     ).requireSuccess(ErrorCode.COMMAND_FAILED, "Finding the host JDK").stdout.trim()
-    val bundle = Path.of(home).parent.parent
-    val target = stateRoot().resolve("jdk-${bundle.fileName}")
-    if (target.exists()) return target
+    val bundle = Path.of(home).toRealPath().parent.parent
+    val target = stateRoot().resolve(jdkCopyName(bundle))
+    if (completeJdk(target)) return target
     Files.createDirectories(stateRoot(), OWNER_ONLY_DIRECTORY)
-    val copy = Files.createTempDirectory(stateRoot(), "jdk-copy").resolve("jdk")
-    context.subprocess.run(
-        listOf("/bin/cp", "-cR", bundle.toString(), copy.toString()),
-    ).requireSuccess(ErrorCode.COMMAND_FAILED, "Cloning the host JDK")
+    val temporary = Files.createTempDirectory(stateRoot(), "jdk-copy")
     try {
-        Files.move(copy, target, StandardCopyOption.ATOMIC_MOVE)
-    } catch (_: FileAlreadyExistsException) {
-        context.log("Another checkout placed $target first; keeping its copy.")
-    } catch (_: DirectoryNotEmptyException) {
-        context.log("Another checkout placed $target first; keeping its copy.")
+        val copy = temporary.resolve("jdk")
+        context.subprocess.run(
+            listOf("/bin/cp", "-cR", bundle.toString(), copy.toString()),
+        ).requireSuccess(ErrorCode.COMMAND_FAILED, "Cloning the host JDK")
+        try {
+            Files.move(copy, target, StandardCopyOption.ATOMIC_MOVE)
+        } catch (exception: FileSystemException) {
+            // macOS reports a rename onto a populated directory as a plain "Directory not empty".
+            if (!completeJdk(target)) throw exception
+            context.log("Another checkout placed $target first; keeping its copy.")
+        }
+    } finally {
+        temporary.toFile().deleteRecursively()
     }
-    copy.parent.toFile().deleteRecursively()
     return target
 }
+
+private fun jdkCopyName(bundle: Path): String {
+    val release = bundle.resolve("Contents/Home/release").readText()
+    val version = Regex("""^JAVA_RUNTIME_VERSION="([^"]+)"""", RegexOption.MULTILINE).find(release)?.groupValues?.get(1)
+        ?: Regex("""^JAVA_VERSION="([^"]+)"""", RegexOption.MULTILINE).find(release)?.groupValues?.get(1)
+        ?: "unknown"
+    val digest = MessageDigest.getInstance("SHA-256")
+        .digest("$bundle\n$release".toByteArray())
+        .joinToString("") { "%02x".format(it) }
+    return "jdk-${version.replace(Regex("[^A-Za-z0-9._-]"), "_")}-${digest.take(JDK_DIGEST_LENGTH)}"
+}
+
+private fun completeJdk(copy: Path): Boolean = Files.isExecutable(copy.resolve("Contents/Home/bin/java"))
+
+private const val JDK_DIGEST_LENGTH = 12
 
 internal fun ownerOnlyFile(file: Path): Path {
     Files.createDirectories(file.parent, OWNER_ONLY_DIRECTORY)

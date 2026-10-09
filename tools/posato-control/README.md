@@ -443,7 +443,9 @@ test Apple Account, and Keychain items is in
   is deleted by `vm destroy`. Like the clone names it is machine-wide, and so
   is the copy of the host JDK that guests run the driver with, so a running VM
   stays reachable from any checkout after the worktree that created or booted
-  it is removed. A VM started by a driver from before this layout keeps its
+  it is removed. Each host JDK version gets its own copy, which stays after
+  an update for guests still running it; delete old `jdk-*` copies there when
+  no VM is running. A VM started by a driver from before this layout keeps its
   address in that checkout's `build/verification/vm/<line>/`: shut it down and
   boot it again, or destroy and create a clone, and delete those old files.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
