@@ -35,6 +35,11 @@ internal class PassGovernor(
         return allowed
     }
 
+    /** The cursor a call resumes from counts as seen, so a stalled resumed call ends after the usual passes. */
+    fun resumeFrom(cursor: ByteArray?) {
+        if (cursor != null) seen.add(digest(cursor))
+    }
+
     fun recordCheckpoint(cursor: ByteArray) {
         if (seen.add(digest(cursor))) passesWithoutProgress = 0 else passesWithoutProgress += 1
     }

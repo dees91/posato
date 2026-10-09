@@ -35,6 +35,10 @@
         "com.apple.developer.icloud-container-environment" as CFString,
         &error
       )
+      if error != nil {
+        // An unreadable entitlement is never taken for Development.
+        return "unknown"
+      }
       guard let value else {
         return nil
       }
@@ -215,7 +219,8 @@
       case .missing:
         return nil
       case .zoneMissing:
-        return .deletedAndAbsent
+        // Already absent: nothing was deleted, so no wait follows.
+        return .missing
       case .found:
         return .anchorPresent
       case .failed(let fault):

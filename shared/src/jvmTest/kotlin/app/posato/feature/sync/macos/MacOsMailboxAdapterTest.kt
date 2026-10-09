@@ -252,6 +252,27 @@ class MacOsMailboxAdapterTest {
     }
 
     @Test
+    fun `given a resumed cursor that does not advance when removing again then three passes end it`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            CompanionExchange.Unknown,
+            CompanionExchange.Unknown,
+            CompanionExchange.Unknown,
+            message(SyncCompanionOutcome.Incomplete, token),
+            message(SyncCompanionOutcome.Incomplete, token),
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data, removalBudget()))
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data, removalBudget()))
+        assertEquals(7, transport.exchangeCount)
+    }
+
+    @Test
     fun `given advancing cursors past the ceiling when removing then the call ends and the next resumes`() = runTest {
         val time = TestTimeSource()
         val tokens = (0..29).map { byteArrayOf(it.toByte()) }

@@ -89,11 +89,12 @@ own golden VM line, and address them with `--vm primary|peer`.
   `SYNC-021` one Mac press keeps removing while it makes progress: the row
   reads "Removing workspace…" (`row: removing`) with both actions disabled,
   also after the window is closed and reopened, and `presses` should be 1.
-  The result's `row` and `presses` show where a slow run stood. To clean the
-  test account's zone history, build with `--verification-seams`, remove the
-  workspace on every device, and run `vm sync-fixture delete-zone`; wait
-  until its `nextLinkNotBefore` before the next link, and check that link
-  for ten minutes as `SYNC-014` does. Repair
+  The result's `row` and `presses` show where a slow run stood. Not yet
+  run; gated on `SYNC-022`; do not delete the zone before then: to clean
+  the test account's zone history, build with `--verification-seams`,
+  remove the workspace on every device, and run `vm sync-fixture
+  delete-zone`; wait until its `nextLinkNotBefore` before the next link, and
+  check that link for ten minutes as `SYNC-014` does. Repair
   the golden VM the same way (`docs/development/unattended-verification.md`).
   Resume Data Sync can raise "This Mac can't connect to iCloud" over its
   password sheet; `vm icloud --resume` presses Later and answers the sheet

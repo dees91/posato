@@ -111,6 +111,20 @@
     #expect(response.payload == VerificationSeams.marker)
   }
 
+  @Test func givenZoneAlreadyAbsentWhenDeletingZoneThenNothingIsDeleted() {
+    let backend = FakeCloudBackend()
+    backend.zoneAbsentRecords = true
+    let zones = FakeZones()
+
+    let response = VerificationHandler.deleteZone(
+      deleteZoneRequest(),
+      dependencies: verificationDependencies(backend: backend, zones: zones)
+    )
+
+    #expect(response.outcome == .missing)
+    #expect(zones.deleteCalls == 0)
+  }
+
   @Test func givenVerificationFrameWhenDecodingThenOnlyItsCodeIsAccepted() throws {
     var request = deleteZoneRequest()
     request.requestIdentifier = testIdentifier(4)

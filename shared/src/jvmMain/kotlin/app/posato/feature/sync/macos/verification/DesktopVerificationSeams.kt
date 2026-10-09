@@ -65,6 +65,7 @@ internal class MacOsDesktopVerificationSeams(
     private fun VerificationSeamOutcome.label(): String {
         return when (this) {
             VerificationSeamOutcome.DeletedAndAbsent -> "zone-deleted"
+            VerificationSeamOutcome.AlreadyAbsent -> "zone-already-absent"
             VerificationSeamOutcome.AnchorPresent -> "anchor-present"
             VerificationSeamOutcome.Refused -> "refused"
             VerificationSeamOutcome.Retryable -> "retryable"

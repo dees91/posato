@@ -1194,6 +1194,14 @@ below. This queue retains idea provenance without expanding the original MVP.
     iPhone too. `open`: whether it reproduces on the test iPhone. Filed as
     an agent proposal under the maintainer's delegation of 2026-10-09.
     Owner: backlog row `IOS-008`.
+35. **The first sync after a link does not finish on a long-history
+    zone.** `observed` (2026-10-09, `SYNC-021`, a fresh Tart clone on the
+    test Apple Account): the first sync after a link read about 400 pages of
+    deletion-only history, one page per companion process, for about 4.3
+    minutes, and once ended "Sync didn't finish" before the row settled.
+    `open`: whether the first sync should page the history in larger passes
+    as removal now does. Filed as an agent proposal under the maintainer's
+    delegation of 2026-10-09. Owner: backlog row `SYNC-022`.
 
 ## Later platform questions
 

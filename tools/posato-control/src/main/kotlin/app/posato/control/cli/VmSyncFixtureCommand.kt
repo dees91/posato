@@ -53,6 +53,12 @@ class VmSyncFixtureCommand :
             )
         }
         val deletion = seam(tart, line, DELETE_ZONE)
+        if (deletion.field("outcome") == "zone-already-absent") {
+            return buildJsonObject {
+                put("vm", line.cloneName)
+                put("outcome", "zone-already-absent")
+            }
+        }
         if (deletion.field("outcome") != "zone-deleted") {
             throw ControlException(ErrorCode.COMMAND_FAILED, "The zone deletion did not finish: $deletion.")
         }

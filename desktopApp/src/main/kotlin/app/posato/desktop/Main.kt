@@ -17,7 +17,6 @@ import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.mappings.keptApplications
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
-import app.posato.desktop.update.FileInstanceLock
 import app.posato.desktop.update.createUpdaterController
 import app.posato.desktop.update.openInstanceLock
 import app.posato.di.DesktopApplicationComponents
@@ -42,6 +41,11 @@ fun main(args: Array<String>) {
     if (!instanceLock.acquireShared()) {
         exitProcess(0)
     }
+    // A verification seam needs the only running instance before anything else starts.
+    if (args.firstOrNull() == VERIFICATION_ARGUMENT && !instanceLock.tryUpgradeForAdmission()) {
+        println("{\"outcome\":\"another-instance\"}")
+        exitProcess(VERIFICATION_REFUSED)
+    }
     MacOsHelperClient().use { enforcementClient ->
         DesktopLocalApplicationMappings().use { applicationMappings ->
             Runtime.getRuntime().addShutdownHook(Thread(applicationMappings::close, "application-mappings-shutdown"))
@@ -64,7 +68,7 @@ fun main(args: Array<String>) {
             )
             keptRequirements = applicationGraph.keptApplicationRequirements
             if (args.firstOrNull() == VERIFICATION_ARGUMENT) {
-                runVerificationSeam(applicationGraph, instanceLock, args.getOrNull(1).orEmpty())
+                runVerificationSeam(applicationGraph, args.getOrNull(1).orEmpty())
             }
             preparePauseSets(applicationGraph, applicationMappings)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -133,13 +137,8 @@ private const val VERIFICATION_ARGUMENT = "--posato-verification"
  */
 private fun runVerificationSeam(
     applicationGraph: DesktopApplicationComponents,
-    instanceLock: FileInstanceLock,
     command: String,
 ): Nothing {
-    if (!instanceLock.tryUpgradeForAdmission()) {
-        println("{\"outcome\":\"another-instance\"}")
-        exitProcess(VERIFICATION_REFUSED)
-    }
     println(runBlocking { applicationGraph.verificationSeams.run(command) })
     exitProcess(0)
 }

@@ -19,6 +19,7 @@ object PosatoVerificationSeams {
     data class Found(
         val infoPlistKey: Boolean,
         val companionMarker: Boolean,
+        val companionPresent: Boolean,
     ) {
         val any: Boolean get() = infoPlistKey || companionMarker
     }
@@ -29,6 +30,7 @@ object PosatoVerificationSeams {
         return Found(
             infoPlistKey = info.isFile && contains(info.readBytes(), INFO_PLIST_KEY.toByteArray()),
             companionMarker = companion.isFile && contains(companion.readBytes(), MARKER.toByteArray()),
+            companionPresent = companion.isFile,
         )
     }
 
@@ -37,9 +39,11 @@ object PosatoVerificationSeams {
         found: Found,
         expected: Boolean,
     ): String? {
+        // Absence of the marker proves nothing when there is no companion to read.
         return when {
             expected && !(found.infoPlistKey && found.companionMarker) -> "The verification package lacks its verification seams."
             !expected && found.any -> "The package carries the verification-only seams and cannot be released."
+            !expected && !found.companionPresent -> "The package has no synchronization companion to check for verification seams."
             else -> null
         }
     }

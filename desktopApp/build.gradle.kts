@@ -204,6 +204,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         // First, so a control run on a seam package fails with this message.
         PosatoVerificationSeams.mismatch(PosatoVerificationSeams.scan(applicationBundle.get().asFile), verificationSeams.get())
             ?.let { problem -> throw GradleException(problem) }
+        if (verificationSeams.get()) verifySeamCompanionSigning(applicationBundle.get().asFile)
         val identity = signingIdentity.get()
         check(!release.get() || identity.startsWith("Developer ID Application:") || identity.matches(Regex("[0-9A-F]{40}"))) {
             "A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity name or SHA-1 hash."
@@ -306,6 +307,15 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         if (release.get()) {
             verifyReleaseRuntime(runtime)
             verifyDeveloperIdProfile(companion, applicationSignature.teamId.orEmpty())
+        }
+    }
+
+    /** ADR 0007 amendment of 2026-10-09: a seam companion is never signed with Developer ID. */
+    private fun verifySeamCompanionSigning(application: File) {
+        val companion = signature(application.resolve("Contents/Helpers/PosatoMacOSSync.app"))
+        val leaf = companion.authorities.firstOrNull()
+        check(companion.isAdHoc || leaf?.startsWith("Apple Development:") == true) {
+            "A package with the verification seams must sign its companion with Apple Development or ad hoc, not ${leaf ?: "this identity"}."
         }
     }
 
@@ -1560,7 +1570,14 @@ if (macOsAllowsRosetta && updateFeed.channel == UpdateChannel.RELEASE) {
 }
 // ADR 0007 amendment of 2026-10-09: the verification seams never meet Developer ID signing, on any channel.
 val macOsVerificationSeams = PosatoVerificationSeams.enabled(providers.gradleProperty(PosatoVerificationSeams.PROPERTY).orNull)
-if (macOsVerificationSeams && (updateFeed.channel != null || !providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orNull.isNullOrBlank())) {
+if (
+    macOsVerificationSeams &&
+    (
+        updateFeed.channel != null ||
+            !providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orNull.isNullOrBlank() ||
+            providers.gradleProperty("posatoMacOsSigningIdentity").orNull.orEmpty().startsWith("Developer ID")
+    )
+) {
     throw GradleException("-P${PosatoVerificationSeams.PROPERTY} is for development packages and refuses every Developer ID build.")
 }
 val updatePublicKey = updateFeed.publicKey

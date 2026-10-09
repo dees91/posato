@@ -19,6 +19,7 @@ internal enum class VerificationSeamOperation(
 
 internal enum class VerificationSeamOutcome {
     DeletedAndAbsent,
+    AlreadyAbsent,
     AnchorPresent,
     Refused,
     Retryable,
@@ -111,6 +112,7 @@ internal class VerificationCompanionClient(
         if (!payload.contentEquals(MARKER)) return VerificationSeamOutcome.Unknown
         return when (outcome) {
             MacOsSyncCompanionProtocol.OUTCOME_DELETED -> VerificationSeamOutcome.DeletedAndAbsent
+            MacOsSyncCompanionProtocol.OUTCOME_MISSING -> VerificationSeamOutcome.AlreadyAbsent
             MacOsSyncCompanionProtocol.OUTCOME_ANCHOR_PRESENT -> VerificationSeamOutcome.AnchorPresent
             MacOsSyncCompanionProtocol.OUTCOME_RESTRICTED -> VerificationSeamOutcome.Refused
             MacOsSyncCompanionProtocol.OUTCOME_RETRYABLE -> VerificationSeamOutcome.Retryable

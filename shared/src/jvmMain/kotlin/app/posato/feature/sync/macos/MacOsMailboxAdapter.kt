@@ -84,7 +84,7 @@ internal class MacOsMailboxAdapter(
         val resumed = resumeFrom(deleteContinuation, binding)
         deleteContinuation = resumed.first
         var cursor: ByteArray? = resumed.second
-        val passes = PassGovernor(budget)
+        val passes = PassGovernor(budget).also { it.resumeFrom(cursor) }
         return try {
             while (passes.mayRun()) {
                 val payload = if (cursor == null) {
@@ -133,7 +133,7 @@ internal class MacOsMailboxAdapter(
         val resumed = resumeFrom(sweepContinuation, binding)
         sweepContinuation = resumed.first
         var cursor: ByteArray? = resumed.second
-        val passes = PassGovernor(budget)
+        val passes = PassGovernor(budget).also { it.resumeFrom(cursor) }
         return try {
             while (passes.mayRun()) {
                 val payload = if (cursor == null) {
