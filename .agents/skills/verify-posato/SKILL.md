@@ -360,7 +360,9 @@ Platform traps that invalidate a run:
   and reports reached only when the element's centre is on screen.
   Static row text need not be tappable to be visibly reached. No fixed
   coordinates, Tab-count workaround, or product test hook is needed.
-- Time setup has presets `25 min`, `45 min`, `60 min` and a length picker.
+- Time setup has quick lengths labelled `25 minutes`, `45 minutes`, `1 hour`,
+  `2 hours`, `4 hours`, `8 hours`, an **Until end of day** row, and a length
+  picker.
   On the Mac it is two drawn wheels with the buttons `Increase Hours`,
   `Decrease Hours`, `Increase Minutes`, and `Decrease Minutes`; on iOS it is the
   system countdown wheel, set with the scenario action `adjustWheels`. There is

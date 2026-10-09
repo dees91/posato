@@ -8,6 +8,7 @@ import app.posato.control.model.Step
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -89,27 +90,41 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
     }
 }
 
-/** Starts a manual session from Session setup: an optional set, then the minutes from the 25-minute default. */
+/**
+ * Starts a manual session from Session setup: an optional set, then a quick choice, the minutes from the 25-minute
+ * default, or the choice that ends the pause at midnight.
+ */
 class FlowSessionCommand : ControlCommand("session", "Start a manual session with an optional set and length in minutes.") {
     private val set by option("--set", help = "Pause set to choose; the default set when omitted.")
-    private val minutes by option("--minutes", help = "Length, 5 to 60 minutes.").int().default(DEFAULT_MINUTES)
+    private val minutes by option("--minutes", help = "Length: 5 to 59 minutes, or a quick choice of 60, 120, 240, or 480.")
+        .int().default(DEFAULT_MINUTES)
+    private val untilEndOfDay by option("--until-end-of-day", help = "End the pause at the next midnight instead of after --minutes.").flag()
 
     override fun execute(session: Session): JsonElement {
-        if (minutes !in MIN_MINUTES..MAX_MINUTES) throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or the 60-minute preset.")
+        if (!untilEndOfDay && minutes !in MIN_MINUTES..MAX_WHEEL_MINUTES && minutes !in PRESETS) {
+            throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or a quick choice of 60, 120, 240, or 480.")
+        }
         val backend = session.backend()
         val target = session.target()
         val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
         val begin = Query(text = "Start this pause", role = FlowSteps.ROLE_BUTTON)
-        FlowSteps.run(backend, listOf(FlowSteps.button("Session"), FlowSteps.button("Start a session"), FlowSteps.waitFor(review)))
+        val firstChoice = Query(text = lengthText(DEFAULT_MINUTES), role = FlowSteps.ROLE_BUTTON)
+        FlowSteps.run(backend, listOf(FlowSteps.button("Session"), FlowSteps.button("Start a session"), FlowSteps.waitFor(firstChoice)))
         set?.let { chosen -> chooseSet(backend, target, chosen) }
-        val steps = if (minutes in PRESETS) listOf(FlowSteps.button("$minutes min")) else minuteSteps(target, minutes - DEFAULT_MINUTES)
+        val endOfDay = Query(textContains = END_OF_DAY, role = FlowSteps.ROLE_BUTTON)
+        val steps = when {
+            untilEndOfDay -> listOf(FlowSteps.tap(endOfDay))
+            minutes in PRESETS -> listOf(FlowSteps.button(lengthText(minutes)))
+            else -> minuteSteps(target, minutes - DEFAULT_MINUTES)
+        }
+        val chosen = if (untilEndOfDay) END_OF_DAY else lengthText(minutes)
         FlowSteps.run(
             backend,
-            steps + listOf(
-                FlowSteps.reveal(review),
+            // Revealing Review swipes the screen and can turn the length wheel under it, so it comes before the choice.
+            listOf(FlowSteps.reveal(review)) + steps + listOf(
                 FlowSteps.tap(review),
                 // A dropped wheel tap would start a session of another length: Review must show the asked one.
-                FlowSteps.waitFor(Query(textContains = "$minutes minutes ·")),
+                FlowSteps.waitFor(Query(textContains = "$chosen ·")),
                 FlowSteps.reveal(begin),
                 FlowSteps.tap(begin),
                 FlowSteps.waitFor(Query(text = "End session early", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
@@ -118,7 +133,19 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         )
         return buildJsonObject {
             set?.let { put("set", it) }
-            put("minutes", minutes)
+            if (untilEndOfDay) put("untilEndOfDay", true) else put("minutes", minutes)
+        }
+    }
+
+    /** The length as Session names it in its quick choices and on Review, such as "25 minutes" or "2 hours". */
+    private fun lengthText(minutes: Int): String {
+        val hours = minutes / MINUTES_PER_HOUR
+        val rest = minutes % MINUTES_PER_HOUR
+        val hourText = if (hours == 1) "1 hour" else "$hours hours"
+        return when {
+            hours == 0 -> "$rest minutes"
+            rest == 0 -> hourText
+            else -> "$hourText $rest minutes"
         }
     }
 
@@ -137,8 +164,10 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
     private companion object {
         const val DEFAULT_MINUTES = 25
         const val MIN_MINUTES = 5
-        const val MAX_MINUTES = 60
-        val PRESETS = setOf(25, 45, 60)
+        const val MAX_WHEEL_MINUTES = 59
+        const val MINUTES_PER_HOUR = 60
+        const val END_OF_DAY = "Until end of day"
+        val PRESETS = setOf(25, 45, 60, 120, 240, 480)
         const val START_SECONDS = 90.0
         const val TAP_GAP_SECONDS = 0.3
     }

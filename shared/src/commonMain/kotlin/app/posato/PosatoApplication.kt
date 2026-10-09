@@ -407,6 +407,7 @@ class PosatoApplication internal constructor(
                 clock,
                 timeFormat,
                 sessionOwner,
+                schedules.zone,
                 onOpenPausedItems = { setId ->
                     destination = ApplicationDestination.TARGETS
                     setId?.let(navigation.pauseSets::open)

@@ -1,5 +1,6 @@
 package app.posato.feature.session.ui
 
+import app.posato.feature.schedules.domain.CentralEuropeanZone
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.domain.FakeSessionClock
@@ -67,6 +68,7 @@ class SessionViewModelTest {
             clock,
             FakeSessionTimeFormat(),
             sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher),
+            CentralEuropeanZone,
         )
         scheduler.runCurrent()
 
@@ -91,6 +93,7 @@ class SessionViewModelTest {
             FakeSessionClock(NOW),
             FakeSessionTimeFormat(),
             sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), FakeSessionClock(NOW), policyStore, mappings, dispatcher = dispatcher),
+            CentralEuropeanZone,
         )
 
         viewModel.setSetupVisible(true)
@@ -374,6 +377,7 @@ class SessionViewModelTest {
             clock,
             FakeSessionTimeFormat(),
             sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), clock, policy, mappings, dispatcher = dispatcher),
+            CentralEuropeanZone,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
         viewModel.onScreenEntered()
@@ -410,6 +414,7 @@ class SessionViewModelTest {
             clock,
             FakeSessionTimeFormat(),
             owner,
+            CentralEuropeanZone,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
         viewModel.onScreenEntered()

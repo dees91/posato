@@ -945,10 +945,20 @@ badges and counts have accessible labels.
 - Inactive: NO SESSION ACTIVE (sentence case on iOS: No session active), Room
   for what matters., one primary start action.
   Without effective items, Choose paused items routes to the editor.
-- Setup: YOUR NEXT PAUSE, How much space do you need?, presets 25 / 45 / 60,
-  then Hours / Minutes wheels with explicit Increase / Decrease buttons. On iOS
-  setup is pushed as **New pause** with a segmented control for the presets and
-  the system countdown wheel, without the eyebrow or Cancel.
+- Setup: YOUR NEXT PAUSE, How much space do you need?, one row of six quick
+  lengths (25 min, 45 min, 1 h, 2 h, 4 h, 8 h), then a separate **Until end of
+  day** row that shows its end (`ends 00:00`), then Hours / Minutes wheels with
+  explicit Increase / Decrease buttons. On iOS setup is pushed as **New pause**
+  with a segmented control for the lengths (labels `25m` … `8h`, read in full
+  as "25 minutes" … "8 hours"), a one-segment control for **Until end of day**,
+  and the system countdown wheel, without the eyebrow or Cancel
+  (`user-confirmed` 2026-10-09, `SESSION-007`).
+- **Until end of day** is an end time, not a length: the pause ends at the next
+  local midnight. It is shown only while that midnight is 5 minutes to 24 hours
+  away, and Start keeps the midnight that Review showed, refusing as too short
+  if it is nearly reached. The wheels show the time left until midnight; turning
+  them or choosing a length clears the choice. Review names a length in hours
+  and minutes ("8 hours · you stay in control") or **Until end of day**.
 - Bounds: five minutes through 24 hours. Zero hours restricts minutes to 5–59;
   24 hours restricts minutes to zero. Changing hours clamps the total safely.
 - Wheels snap, support arrow keys and Home/End on desktop, and expose a range

@@ -1,5 +1,6 @@
 package app.posato.feature.session.domain
 
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.sync.domain.SyncFormatLimits
 
 internal object SessionLimits {
@@ -39,6 +40,22 @@ internal object SessionSetup {
                 SessionSetupResult.Valid(nowEpochMillis + minutes * MILLIS_PER_MINUTE)
             }
         }
+    }
+
+    fun endOfDay(
+        nowEpochMillis: Long,
+        zone: ScheduleZone,
+    ): Long? {
+        val midnight = zone.instantOf(zone.localAt(nowEpochMillis).date.plusDays(1), 0)
+        return midnight.takeIf { validateEndTime(it, nowEpochMillis) is SessionSetupResult.Valid }
+    }
+
+    fun validateChoice(
+        endOfDay: Long?,
+        durationMinutes: Int,
+        nowEpochMillis: Long,
+    ): SessionSetupResult {
+        return endOfDay?.let { validateEndTime(it, nowEpochMillis) } ?: validateDuration(durationMinutes, nowEpochMillis)
     }
 
     fun validateEndTime(

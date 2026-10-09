@@ -2,6 +2,7 @@ package app.posato.feature.session.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.domain.LocalSessionStatus.Active
@@ -44,6 +45,7 @@ internal class SessionViewModel(
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
     private val owner: SessionTransitionOwner,
+    private val zone: ScheduleZone,
 ) : ViewModel() {
     private val targetsRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val sessionLoad = MutableStateFlow(SessionLoadState())
@@ -88,6 +90,7 @@ internal class SessionViewModel(
             right.third,
             timeFormat,
             enforcementView,
+            zone,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SessionUiState())
 
@@ -118,11 +121,21 @@ internal class SessionViewModel(
         targetsRefreshRequests.tryEmit(Unit)
     }
 
-    fun setDurationMinutes(minutes: Int) {
-        if (minutes !in SessionLimits.MIN_DURATION_MINUTES..SessionLimits.MAX_DURATION_MINUTES) {
-            return
+    fun chooseDuration(choice: SessionDurationChoice) {
+        when (choice) {
+            is SessionDurationChoice.Length -> {
+                if (choice.minutes !in SessionLimits.MIN_DURATION_MINUTES..SessionLimits.MAX_DURATION_MINUTES) {
+                    return
+                }
+                setupDraft.update { draft -> draft.copy(durationMinutes = choice.minutes, untilEndOfDay = false, failure = null) }
+            }
+
+            SessionDurationChoice.EndOfDay -> {
+                val now = clock.currentEpochMillis()
+                val end = SessionSetup.endOfDay(now, zone) ?: return
+                setupDraft.update { draft -> draft.copy(durationMinutes = minutesUntil(end, now), untilEndOfDay = true, failure = null) }
+            }
         }
-        setupDraft.update { draft -> draft.copy(durationMinutes = minutes, failure = null) }
     }
 
     fun onScreenEntered() {
@@ -165,13 +178,22 @@ internal class SessionViewModel(
             if (!draft.isSettingUp || draft.isReviewing) {
                 return
             }
-            when (val validation = SessionSetup.validateDuration(draft.durationMinutes, clock.currentEpochMillis())) {
+            val now = clock.currentEpochMillis()
+            val endOfDay = SessionSetup.endOfDay(now, zone)?.takeIf { draft.untilEndOfDay }
+            when (val validation = SessionSetup.validateChoice(endOfDay, draft.durationMinutes, now)) {
                 is SessionSetupResult.Invalid -> {
                     setupDraft.update { state -> state.copy(failure = validation.reason) }
                 }
 
                 is SessionSetupResult.Valid -> {
-                    setupDraft.update { state -> state.copy(isReviewing = true, failure = null, resolvedReviewEnd = validation.endEpochMillis) }
+                    setupDraft.update { state ->
+                        state.copy(
+                            isReviewing = true,
+                            untilEndOfDay = endOfDay != null,
+                            failure = null,
+                            resolvedReviewEnd = validation.endEpochMillis,
+                        )
+                    }
                     targetsRefreshRequests.tryEmit(Unit)
                 }
             }
@@ -186,7 +208,8 @@ internal class SessionViewModel(
             return
         }
         val now = clock.currentEpochMillis()
-        val end = when (val validation = SessionSetup.validateDuration(draft.durationMinutes, now)) {
+        val reviewedEndOfDay = draft.resolvedReviewEnd?.takeIf { draft.untilEndOfDay }
+        val end = when (val validation = SessionSetup.validateChoice(reviewedEndOfDay, draft.durationMinutes, now)) {
             is SessionSetupResult.Invalid -> {
                 setupDraft.update { state -> state.copy(isReviewing = false, resolvedReviewEnd = null, failure = validation.reason) }
                 return

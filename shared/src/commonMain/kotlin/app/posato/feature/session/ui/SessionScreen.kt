@@ -41,6 +41,7 @@ import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.promptInProgress
 import app.posato.feature.presence.SessionWindowRequest
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
@@ -65,6 +66,7 @@ internal fun SessionScreen(
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
     owner: SessionTransitionOwner,
+    zone: ScheduleZone,
     onOpenPausedItems: (PauseSetId?) -> Unit,
     onEditPausedItems: (PauseSetId?, TargetsCategory) -> Unit,
     modifier: Modifier = Modifier,
@@ -80,7 +82,7 @@ internal fun SessionScreen(
     deviceNoun: String = "device",
     onOpenAbout: (() -> Unit)? = null,
     viewModel: SessionViewModel = viewModel {
-        SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
+        SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner, zone)
     },
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -123,7 +125,7 @@ internal fun SessionScreen(
         onOpenAbout = onOpenAbout,
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
-        onSetDuration = viewModel::setDurationMinutes,
+        onChooseDuration = viewModel::chooseDuration,
         onChoosePauseSet = viewModel::choosePauseSet,
         onEnterReview = { viewModel.setReviewVisible(true) },
         onExitReview = { viewModel.setReviewVisible(false) },
@@ -217,7 +219,7 @@ internal fun SessionScreen(
     deviceLabel: String = "On this device",
     onEnterSetup: () -> Unit = {},
     onExitSetup: () -> Unit = {},
-    onSetDuration: (Int) -> Unit = {},
+    onChooseDuration: (SessionDurationChoice) -> Unit = {},
     onChoosePauseSet: (PauseSetId) -> Unit = {},
     onEnterReview: () -> Unit = {},
     onExitReview: () -> Unit = {},
@@ -268,7 +270,7 @@ internal fun SessionScreen(
                 deviceLabel = deviceLabel,
                 onEnterSetup = onEnterSetup,
                 onExitSetup = onExitSetup,
-                onSetDuration = onSetDuration,
+                onChooseDuration = onChooseDuration,
                 onChoosePauseSet = onChoosePauseSet,
                 onEnterReview = onEnterReview,
                 onExitReview = onExitReview,
@@ -305,7 +307,7 @@ private fun SessionRouteContent(
     deviceLabel: String,
     onEnterSetup: () -> Unit,
     onExitSetup: () -> Unit,
-    onSetDuration: (Int) -> Unit,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
     onChoosePauseSet: (PauseSetId) -> Unit,
     onEnterReview: () -> Unit,
     onExitReview: () -> Unit,
@@ -346,7 +348,7 @@ private fun SessionRouteContent(
         }
 
         SessionRoute.Duration -> {
-            SessionDurationContent(state, layout, onSetDuration, onEnterReview, onExitSetup, onChoosePauseSet)
+            SessionDurationContent(state, layout, onChooseDuration, onEnterReview, onExitSetup, onChoosePauseSet)
         }
 
         SessionRoute.Overview -> {
