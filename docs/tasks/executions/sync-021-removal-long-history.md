@@ -92,11 +92,21 @@ tests alone cover the review fold made after that run, because
 `PassGovernor.resumeFrom` affects only a press that resumes a kept cursor
 and the `Main.kt` change runs only with the verification argument.
 
+Review rerun on `c9795022` (2026-10-10, `--vm primary`, test account
+history): three link and removal cycles each ended not linked. An
+uninterrupted `flow icloud remove` took one press. Twice the row read
+"Removing workspace…" 15 s after one press; the window was closed and
+reopened from the menu, and the row still read "Removing workspace…" with
+both actions disabled. In the second of those runs, a plain `wait` saw
+**Sync with iCloud** return after 133 s without another press. In the
+first, the driver's resumed `flow icloud remove` counted one more press
+before the row read not linked; the run does not show why.
+
 | Acceptance | State | Owner |
 | --- | --- | --- |
 | `AC-01` | partly met: one press on the real long history; 3 clones and the pre-fix run on a rebuilt fixture deferred | `SYNC-022` |
 | `AC-02` | partly met: one press right after a link whose first sync did not finish | `SYNC-022` |
-| `AC-03` | partly met: removing state seen and actions disabled; window close and reopen deferred; re-entry guard tested in isolation | `SYNC-022` |
+| `AC-03` | met on the Mac: removing state and disabled actions kept across window close and reopen; re-entry guard tested in isolation | — |
 | `AC-04` | deferred: seeding not built, no zone cleanup, the test account keeps its history | `SYNC-022` |
 | `AC-05` | deferred: no iPhone run | `SYNC-022` |
 
