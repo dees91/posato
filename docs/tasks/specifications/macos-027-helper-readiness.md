@@ -73,21 +73,11 @@ Hypotheses ranked from the code, all `hypothesis` until a run proves them:
    connection then fails (`NSXPCConnectionInvalid` → `PipeFailure.unavailable`).
    This is less likely, because blocking works.
 
-Runs, cheapest first, on `main` builds and published DMGs:
-
-- **Baseline:** time `codesign --verify --deep --strict` on the installed
-  `/Applications/Posato.app` in a guest, both cold and warm.
-- **H1a:** saturate the guest's CPU and disk and purge the disk cache, then
-  open This Mac and use **Check again**.
-- **H1b:** add Finder information, an extended attribute, and a stray file to
-  the bundle, then open This Mac.
-- **The maintainer's update path:** `v1.0.0` set up with the helper, a
-  website, and a schedule. Then `vm install --replace` to `v1.1.0`. Then the
-  in-app update or `vm install --replace` through `v1.2.0` to `v1.3.0`. After
-  each step, read Session and This Mac, run `observe` during a pause, and
-  watch a scheduled start.
-- **H2:** register a second, differently signed or differently located copy,
-  remove it, then read the readiness of the remaining copy.
+The run sequence on `main` builds and published DMGs is kept in the
+execution record. It was chosen from the reconstructed host install history
+and the maintainer's report that the symptom cleared on its own: hypothesis
+1a under load first, then the closest update path for hypothesis 2. The
+cheap 1b check (bundle detritus) runs only if 1a and 2 do not reproduce.
 
 ## Acceptance
 
