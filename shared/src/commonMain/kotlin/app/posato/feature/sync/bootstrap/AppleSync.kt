@@ -23,6 +23,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -54,6 +55,8 @@ internal data class AppleSyncState(
     val reason: SyncAttentionReason? = null,
     /** The sets the workspace removed, as of the last exchange, so a schedule naming one can say so. */
     val removedPauseSets: Set<PauseSetId> = emptySet(),
+    /** A **Remove workspace** press is running; a second press is ignored. */
+    val removing: Boolean = false,
 )
 
 internal class AppleSync(
@@ -216,15 +219,22 @@ internal class AppleSync(
 
     suspend fun removeWorkspace() {
         scope.async {
-            guarded {
-                publish(SyncStatus.SYNCING)
-                val result = removal.remove(coordinator.checkEstablished(), writers::close) {
-                    sessionObserver?.onReplicaSnapshot(null)
-                    onWorkspaceRemoved()
+            // One press at a time: a second press while a long removal runs
+            // would otherwise queue behind the lock and start another one.
+            if (mutableState.getAndUpdate { it.copy(removing = true) }.removing) return@async
+            try {
+                guarded {
+                    publish(SyncStatus.SYNCING)
+                    val result = removal.remove(coordinator.checkEstablished(), writers::close) {
+                        sessionObserver?.onReplicaSnapshot(null)
+                        onWorkspaceRemoved()
+                    }
+                    mutableState.refreshLinked(coordinator)
+                    mutableState.update { it.copy(reason = null) }
+                    publish(result)
                 }
-                mutableState.refreshLinked(coordinator)
-                mutableState.update { it.copy(reason = null) }
-                publish(result)
+            } finally {
+                mutableState.update { it.copy(removing = false) }
             }
         }.await()
     }

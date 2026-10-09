@@ -148,6 +148,10 @@ A linked device also offers **Remove workspace** with destructive confirmation:
 it deletes the iCloud workspace and undelivered device changes, preserves local
 websites, and requires other devices to remove their old workspace and link
 again. The removing device can then use **Sync with iCloud** to start again.
+On the Mac, while a removal runs the row reads "Removing workspace…" with an
+activity indicator and the note "An older workspace can take a few minutes.",
+both actions stay disabled, and the state survives closing and reopening the
+window. The iPhone shows its usual running state.
 
 ## Platform Adaptation
 

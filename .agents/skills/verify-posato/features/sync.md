@@ -85,9 +85,11 @@ own golden VM line, and address them with `--vm primary|peer`.
   keychain cannot be resumed can still remove its workspace.
 - `flow icloud link` returns only after the first sync after the link has
   settled, and both actions wait 900 s by default. On the test Apple Account,
-  whose zone carries a long history, that sync runs for minutes and a
-  removal takes several presses (`SYNC-021`); the result's `row` and
-  `presses` show where a slow run stood. Repair
+  whose zone carries a long history, that sync runs for minutes. Since
+  `SYNC-021` one Mac press keeps removing while it makes progress: the row
+  reads "Removing workspace…" (`row: removing`) with both actions disabled,
+  also after the window is closed and reopened, and `presses` should be 1.
+  The result's `row` and `presses` show where a slow run stood. Repair
   the golden VM the same way (`docs/development/unattended-verification.md`).
   Resume Data Sync can raise "This Mac can't connect to iCloud" over its
   password sheet; `vm icloud --resume` presses Later and answers the sheet

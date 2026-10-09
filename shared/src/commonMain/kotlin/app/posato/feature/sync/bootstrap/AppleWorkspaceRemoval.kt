@@ -3,6 +3,7 @@ package app.posato.feature.sync.bootstrap
 import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 
 internal class AppleWorkspaceRemoval(
     private val mailbox: MailboxPort,
@@ -43,7 +44,7 @@ internal class AppleWorkspaceRemoval(
         workspace: EstablishedWorkspace
     ): SyncStatus? {
         return when (status) {
-            EstablishedStatus.READY -> when (mailbox.deleteWorkspaceRecords(workspace.binding)) {
+            EstablishedStatus.READY -> when (mailbox.deleteWorkspaceRecords(workspace.binding, RemovalBudget.WhileProgressing())) {
                 RecordDeleteResult.DeletedAndAbsent -> null
                 RecordDeleteResult.AccountChanged -> SyncStatus.ACTION_REQUIRED
                 RecordDeleteResult.Retryable, RecordDeleteResult.UnknownOutcome -> SyncStatus.RETRYABLE
@@ -54,7 +55,7 @@ internal class AppleWorkspaceRemoval(
             // here where the full delete is not: every set is re-checked
             // against the anchor before deletion, so a concurrently
             // established workspace aborts the pass instead of being swept.
-            EstablishedStatus.ANCHOR_MISSING -> when (mailbox.sweepBundlesIfAnchorMissing(workspace.binding)) {
+            EstablishedStatus.ANCHOR_MISSING -> when (mailbox.sweepBundlesIfAnchorMissing(workspace.binding, RemovalBudget.WhileProgressing())) {
                 BundleSweepResult.Swept -> null
 
                 BundleSweepResult.AccountChanged -> SyncStatus.ACTION_REQUIRED

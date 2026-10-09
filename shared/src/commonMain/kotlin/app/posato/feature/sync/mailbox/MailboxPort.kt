@@ -14,9 +14,15 @@ internal interface MailboxPort {
         cursor: MailboxCursor
     ): ChangeFetchResult
 
-    suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult
+    suspend fun deleteWorkspaceRecords(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget = RemovalBudget.Capped,
+    ): RecordDeleteResult
 
-    suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult
+    suspend fun sweepBundlesIfAnchorMissing(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget = RemovalBudget.Capped,
+    ): BundleSweepResult
 
     /**
      * Drops any retained removal resume state for [expectedBinding] after the

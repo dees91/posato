@@ -9,14 +9,19 @@ import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.TestTimeSource
 
 class MacOsMailboxAdapterTest {
     @Test
@@ -158,36 +163,135 @@ class MacOsMailboxAdapterTest {
     }
 
     @Test
-    fun `given incomplete across the attempt cap when deleting then the next call resumes`() = runTest {
-        // 200 deletion-only pages at 10 attempts per call: the first call
-        // ends retryable, and the second call resumes from the tenth page's
-        // token instead of replaying the same start cursors.
+    fun `given advancing cursors past ten passes when removing then one call finishes`() = runTest {
+        // A long zone history needs more than ten bounded passes. Under the
+        // removal budget one call keeps resuming while every cursor is new.
         val tokens = (0..200).map { byteArrayOf(it.toByte()) }
         val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
             outcome(SyncCompanionOutcome.DeletedAndAbsent)
         val transport = FakeTransport(*script.toTypedArray())
         val adapter = MacOsMailboxAdapter(transport)
-        val data = binding()
 
-        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
-        assertEquals(10, transport.exchangeCount)
-        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
-        assertEquals(20, transport.exchangeCount)
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(binding(), removalBudget()))
+        assertEquals(201, transport.exchangeCount)
         val resumedPayload = MacOsSyncCompanionProtocol.deleteResumePayload(
             ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
             tokens[9],
         )
         assertTrue(checkNotNull(transport.sentPayloads[10]).contentEquals(resumedPayload))
-        repeat(18) {
-            assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
-        }
-        assertEquals(200, transport.exchangeCount)
-        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
-        assertEquals(201, transport.exchangeCount)
     }
 
     @Test
-    fun `given incomplete across the attempt cap when sweeping then the next call resumes`() = runTest {
+    fun `given advancing cursors past ten passes when removal sweeps then one call finishes`() = runTest {
+        val tokens = (0..25).map { byteArrayOf(it.toByte()) }
+        val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
+            outcome(SyncCompanionOutcome.Swept)
+        val transport = FakeTransport(*script.toTypedArray())
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(BundleSweepResult.Swept, adapter.sweepBundlesIfAnchorMissing(binding(), removalBudget()))
+        assertEquals(26, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given a cursor that stops advancing when removing then three passes without progress end it`() = runTest {
+        val stalled = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, byteArrayOf(1)),
+            message(SyncCompanionOutcome.Incomplete, stalled),
+            message(SyncCompanionOutcome.Incomplete, stalled),
+            message(SyncCompanionOutcome.Incomplete, stalled),
+            message(SyncCompanionOutcome.Incomplete, stalled),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(binding(), removalBudget()))
+        assertEquals(5, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given a cursor seen earlier in the press when removing then it counts as no progress`() = runTest {
+        val first = byteArrayOf(1)
+        val second = byteArrayOf(2)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, first),
+            message(SyncCompanionOutcome.Incomplete, second),
+            message(SyncCompanionOutcome.Incomplete, first),
+            message(SyncCompanionOutcome.Incomplete, second),
+            message(SyncCompanionOutcome.Incomplete, first),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(binding(), removalBudget()))
+        assertEquals(5, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given repeated unknown exchanges when removing then three in a row end it and keep the cursor`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            CompanionExchange.Unknown,
+            CompanionExchange.Unknown,
+            CompanionExchange.Unknown,
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data, removalBudget()))
+        assertEquals(4, transport.exchangeCount)
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data, removalBudget()))
+        val resumedPayload = MacOsSyncCompanionProtocol.deleteResumePayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            token,
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[4]).contentEquals(resumedPayload))
+    }
+
+    @Test
+    fun `given advancing cursors past the ceiling when removing then the call ends and the next resumes`() = runTest {
+        val time = TestTimeSource()
+        val tokens = (0..29).map { byteArrayOf(it.toByte()) }
+        val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
+            outcome(SyncCompanionOutcome.DeletedAndAbsent)
+        val transport = FakeTransport(*script.toTypedArray(), onTransact = { time += 1.minutes })
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+        val budget = RemovalBudget.WhileProgressing(ceiling = 20.minutes, timeSource = time)
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data, budget))
+        assertEquals(20, transport.exchangeCount)
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data, budget))
+        assertEquals(30, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given cancellation during a removal when removing again then it resumes from the banked cursor`() = runTest {
+        // Regression guard written before the loop change: a quit or a
+        // cancelled caller keeps the last banked cursor in memory.
+        val token = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+            onTransact = { if (it == 2) throw CancellationException("quit") },
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertFailsWith<CancellationException> { adapter.deleteWorkspaceRecords(data) }
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
+        val resumedPayload = MacOsSyncCompanionProtocol.deleteResumePayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            token,
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[2]).contentEquals(resumedPayload))
+    }
+
+    @Test
+    fun `given incomplete across the attempt cap when the link sweeps then the next call resumes`() = runTest {
         val tokens = (0..25).map { byteArrayOf(it.toByte()) }
         val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
             outcome(SyncCompanionOutcome.Swept)
@@ -424,6 +528,7 @@ class MacOsMailboxAdapterTest {
 
     private class FakeTransport(
         private vararg val exchanges: CompanionExchange,
+        private val onTransact: (Int) -> Unit = {},
     ) : SyncCompanionTransport {
         var lastPayload: ByteArray? = null
         var lastSentPayload: ByteArray? = null
@@ -441,6 +546,7 @@ class MacOsMailboxAdapterTest {
             lastCapabilities = message.capabilities
             val index = minOf(exchangeCount, exchanges.size - 1)
             exchangeCount += 1
+            onTransact(exchangeCount)
             return exchanges[index]
         }
 
@@ -448,4 +554,6 @@ class MacOsMailboxAdapterTest {
             return ByteArray(MacOsSyncCompanionProtocol.IDENTIFIER_BYTES) { 9 }
         }
     }
+
+    private fun removalBudget(): RemovalBudget = RemovalBudget.WhileProgressing()
 }
