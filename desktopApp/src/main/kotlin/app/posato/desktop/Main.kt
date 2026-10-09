@@ -32,7 +32,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
 
-fun main() {
+fun main(args: Array<String>) {
     if (!TranslationGuard.permitsLaunch()) {
         exitProcess(0)
     }
@@ -40,6 +40,11 @@ fun main() {
     val instanceLock = openInstanceLock()
     if (!instanceLock.acquireShared()) {
         exitProcess(0)
+    }
+    // A verification seam needs the only running instance before anything else starts.
+    if (args.firstOrNull() == VERIFICATION_ARGUMENT && !instanceLock.tryUpgradeForAdmission()) {
+        println("{\"outcome\":\"another-instance\"}")
+        exitProcess(VERIFICATION_REFUSED)
     }
     MacOsHelperClient().use { enforcementClient ->
         DesktopLocalApplicationMappings().use { applicationMappings ->
@@ -62,6 +67,9 @@ fun main() {
                 notifications = MacSessionNotifications,
             )
             keptRequirements = applicationGraph.keptApplicationRequirements
+            if (args.firstOrNull() == VERIFICATION_ARGUMENT) {
+                runVerificationSeam(applicationGraph, args.getOrNull(1).orEmpty())
+            }
             preparePauseSets(applicationGraph, applicationMappings)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val updater = createUpdaterController(enforcementClient, applicationGraph.updateMaintenance, instanceLock, updaterScope)
@@ -120,3 +128,19 @@ private fun preparePauseSets(
         // A failed step stays pending and runs again at the next launch.
     }
 }
+
+private const val VERIFICATION_ARGUMENT = "--posato-verification"
+
+/**
+ * Runs one verification seam (ADR 0007 amendment of 2026-10-09) instead of the application and exits. It needs
+ * the only running instance; the seams themselves stay inert unless this package carries their key.
+ */
+private fun runVerificationSeam(
+    applicationGraph: DesktopApplicationComponents,
+    command: String,
+): Nothing {
+    println(runBlocking { applicationGraph.verificationSeams.run(command) })
+    exitProcess(0)
+}
+
+private const val VERIFICATION_REFUSED = 3

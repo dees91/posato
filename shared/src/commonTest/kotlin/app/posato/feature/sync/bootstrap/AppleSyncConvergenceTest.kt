@@ -29,6 +29,7 @@ import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testPublicKey
@@ -392,11 +393,17 @@ internal class SharedFakeMailboxPort : MailboxPort {
         }
     }
 
-    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
+    override suspend fun deleteWorkspaceRecords(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): RecordDeleteResult {
         return RecordDeleteResult.DeletedAndAbsent
     }
 
-    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+    override suspend fun sweepBundlesIfAnchorMissing(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): BundleSweepResult {
         return BundleSweepResult.Swept
     }
 

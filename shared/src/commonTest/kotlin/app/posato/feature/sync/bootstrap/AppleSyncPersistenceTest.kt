@@ -7,6 +7,8 @@ import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
+import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
@@ -188,6 +190,31 @@ class AppleSyncPersistenceTest {
             assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
             assertEquals(saved, local.read())
             assertEquals(0, harness.mailbox.saved.size)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a removal in progress when removal is requested again then no second removal runs`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        val gate = CompletableDeferred<Unit>()
+        try {
+            harness.establish()
+            harness.mailbox.deleteResults.add(RecordDeleteResult.Retryable)
+            harness.mailbox.beforeDelete = { gate.await() }
+            val first = async { harness.sync.removeWorkspace() }
+            runCurrent()
+            assertTrue(harness.sync.state.value.removing)
+            val second = async { harness.sync.removeWorkspace() }
+            runCurrent()
+            assertTrue(second.isCompleted)
+            gate.complete(Unit)
+            first.await()
+            advanceUntilIdle()
+            assertEquals(1, harness.mailbox.deleteCalls)
+            assertIs<RemovalBudget.WhileProgressing>(harness.mailbox.deleteBudgets.single())
+            assertEquals(false, harness.sync.state.value.removing)
         } finally {
             harness.close()
         }

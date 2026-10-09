@@ -4,6 +4,7 @@ import app.posato.buildlogic.PosatoPaths
 import app.posato.buildlogic.PosatoPublishedFeed
 import app.posato.buildlogic.PosatoTemurin
 import app.posato.buildlogic.PosatoUpdateFeed
+import app.posato.buildlogic.PosatoVerificationSeams
 import app.posato.buildlogic.PosatoVersion
 import app.posato.buildlogic.ReleaseFloor
 import app.posato.buildlogic.UpdateChannel
@@ -91,8 +92,16 @@ abstract class StageMacOsApplication : DefaultTask() {
     @get:Internal
     abstract val stagedApplication: DirectoryProperty
 
+    /** With the verification seams, the staged companion must be signed ad hoc or with Apple Development. */
+    @get:Input
+    abstract val verificationSeams: Property<Boolean>
+
     @get:Inject
     abstract val execOperations: ExecOperations
+
+    init {
+        verificationSeams.convention(false)
+    }
 
     @TaskAction
     fun stage() {
@@ -101,6 +110,19 @@ abstract class StageMacOsApplication : DefaultTask() {
         staged.parentFile.mkdirs()
         execOperations.exec {
             commandLine("/usr/bin/ditto", sourceApplication.get().asFile.absolutePath, staged.absolutePath)
+        }
+        if (verificationSeams.get()) {
+            val details = ByteArrayOutputStream()
+            execOperations.exec {
+                commandLine("/usr/bin/codesign", "-dvv", staged.resolve("Contents/Helpers/PosatoMacOSSync.app").absolutePath)
+                errorOutput = details
+            }
+            val lines = details.toString(Charsets.UTF_8).lines()
+            val leaf = lines.firstOrNull { line -> line.startsWith("Authority=") }?.substringAfter('=')
+            val adHoc = lines.any { line -> line == "Signature=adhoc" }
+            check(PosatoVerificationSeams.allowsCompanionSigning(adHoc, leaf)) {
+                "A package with the verification seams must sign its companion with Apple Development or ad hoc, not ${leaf ?: "this identity"}."
+            }
         }
     }
 }
@@ -190,6 +212,9 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     abstract val allowsRosetta: Property<Boolean>
 
     @get:Input
+    abstract val verificationSeams: Property<Boolean>
+
+    @get:Input
     abstract val minimumSystemVersion: Property<String>
 
     @get:Inject
@@ -197,6 +222,10 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
 
     @TaskAction
     fun verify() {
+        // First, so a control run on a seam package fails with this message.
+        PosatoVerificationSeams.mismatch(PosatoVerificationSeams.scan(applicationBundle.get().asFile), verificationSeams.get())
+            ?.let { problem -> throw GradleException(problem) }
+        if (verificationSeams.get()) verifySeamCompanionSigning(applicationBundle.get().asFile)
         val identity = signingIdentity.get()
         check(!release.get() || identity.startsWith("Developer ID Application:") || identity.matches(Regex("[0-9A-F]{40}"))) {
             "A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity name or SHA-1 hash."
@@ -299,6 +328,15 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         if (release.get()) {
             verifyReleaseRuntime(runtime)
             verifyDeveloperIdProfile(companion, applicationSignature.teamId.orEmpty())
+        }
+    }
+
+    /** ADR 0007 amendment of 2026-10-09: a seam companion is never signed with Developer ID. */
+    private fun verifySeamCompanionSigning(application: File) {
+        val companion = signature(application.resolve("Contents/Helpers/PosatoMacOSSync.app"))
+        val leaf = companion.authorities.firstOrNull()
+        check(PosatoVerificationSeams.allowsCompanionSigning(companion.isAdHoc, leaf)) {
+            "A package with the verification seams must sign its companion with Apple Development or ad hoc, not ${leaf ?: "this identity"}."
         }
     }
 
@@ -1237,6 +1275,9 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         }
         if (attach.exitValue != 0) throw GradleException("Could not mount ${diskImage.name} to read its application.")
         try {
+            // First, on every channel: a DMG with the verification seams is never published, not even as a candidate.
+            PosatoVerificationSeams.mismatch(PosatoVerificationSeams.scan(mountPoint.resolve("Posato.app")), expected = false)
+                ?.let { problem -> throw GradleException(problem) }
             val information = mountPoint.resolve("Posato.app/Contents/Info.plist")
             val executable = mountPoint.resolve("Posato.app/Contents/MacOS/Posato")
             val architectures = ByteArrayOutputStream()
@@ -1548,6 +1589,20 @@ if (macOsAllowsRosetta && macOsArchitecture != PosatoMacOsArchitecture.X86_64) {
 if (macOsAllowsRosetta && updateFeed.channel == UpdateChannel.RELEASE) {
     throw GradleException("-PposatoMacOsAllowRosetta is for verification builds and refuses the release channel.")
 }
+// ADR 0007 amendment of 2026-10-09: the verification seams never meet Developer ID signing, on any channel.
+val macOsVerificationSeams = PosatoVerificationSeams.enabled(providers.gradleProperty(PosatoVerificationSeams.PROPERTY).orNull)
+if (macOsVerificationSeams) {
+    val developmentIdentity = providers.gradleProperty("posatoMacOsSigningIdentity").orNull ?: "-"
+    val releaseIdentity = providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orNull
+    // An allowlist: an ad-hoc or Apple Development identity only, never a hash or a partial name that could
+    // resolve to Developer ID.
+    if (updateFeed.channel != null || !releaseIdentity.isNullOrBlank() || !PosatoVerificationSeams.allowsIdentity(developmentIdentity)) {
+        throw GradleException(
+            "-P${PosatoVerificationSeams.PROPERTY} is for development packages and refuses every Developer ID build; " +
+                "posatoMacOsSigningIdentity must be - or start with Apple Development:.",
+        )
+    }
+}
 val updatePublicKey = updateFeed.publicKey
 val updaterInfoPlistKeys = buildString {
     append("<key>SURequireSignedFeed</key><true/>")
@@ -1558,6 +1613,7 @@ val updaterInfoPlistKeys = buildString {
     append("<key>SUEnableSystemProfiling</key><false/>")
     append("<key>SUEnableAutomaticChecks</key><false/>")
     if (macOsAllowsRosetta) append("<key>PosatoAllowsRosetta</key><true/>")
+    if (macOsVerificationSeams) append("<key>${PosatoVerificationSeams.INFO_PLIST_KEY}</key><true/>")
     if (updateFeedUrl != null && updatePublicKey != null) {
         append("<key>SUFeedURL</key><string>$updateFeedUrl</string>")
         append("<key>SUPublicEDKey</key><string>$updatePublicKey</string>")
@@ -1695,6 +1751,7 @@ val stageMacOsDevelopmentPackage by tasks.registering(StageMacOsApplication::cla
     dependsOn(verifyMacOsHelperStructure)
     sourceApplication.set(macOsDistributable)
     stagedApplication.set(macOsDevelopmentApplication)
+    verificationSeams.set(macOsVerificationSeams)
 }
 
 val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentPackaging::class) {
@@ -1706,6 +1763,7 @@ val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentP
     release.set(false)
     architecture.set(macOsArchitecture)
     allowsRosetta.set(macOsAllowsRosetta)
+    verificationSeams.set(macOsVerificationSeams)
     marketingVersion.set(posatoMarketingVersion)
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
@@ -1793,6 +1851,7 @@ val verifyMacOsReleasePackaging by tasks.registering(VerifyMacOsDevelopmentPacka
     release.set(true)
     architecture.set(macOsArchitecture)
     allowsRosetta.set(macOsAllowsRosetta)
+    verificationSeams.set(false)
     marketingVersion.set(posatoMarketingVersion)
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
@@ -1878,4 +1937,22 @@ tasks.matching { it.name == "packageDistributionForCurrentOS" }.configureEach {
 
 tasks.matching { it.name == "runDistributable" }.configureEach {
     dependsOn(verifyMacOsDevelopmentPackaging)
+}
+
+// ADR 0007 amendment of 2026-10-09: a build with the verification seams never runs a Developer ID task.
+gradle.taskGraph.whenReady {
+    if (macOsVerificationSeams) {
+        val refused = listOf(
+            "stageMacOsReleasePackage",
+            "signMacOsReleasePackage",
+            "verifyMacOsReleasePackaging",
+            "notarizeMacOsReleaseApplication",
+            "packageMacOsReleaseDmg",
+            "notarizeMacOsRelease",
+            "generateMacOsUpdateFeed",
+        ).filter { name -> hasTask(":desktopApp:$name") }
+        if (refused.isNotEmpty()) {
+            throw GradleException("-P${PosatoVerificationSeams.PROPERTY} refuses the release tasks ${refused.joinToString()}.")
+        }
+    }
 }

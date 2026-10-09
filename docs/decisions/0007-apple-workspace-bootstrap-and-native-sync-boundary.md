@@ -330,6 +330,52 @@ no anchor reports anchor-missing action-required; removal on that peer skips
 record deletion and clears only its own key item and local state, ending
 local-only.
 
+### Amendment: verification-only zone deletion and history seeding (2026-10-09)
+
+`user-confirmed` (2026-10-09, `SYNC-021` decision D4, and D1 if seeding is
+used): verification builds of Posato may delete the exact `PosatoSyncV1` zone
+of the test Apple Account. When the long-history fixture needs it, they may
+also write and then delete bundle records in that zone. Product behavior does
+not change: no release or candidate build can delete the zone or seed records,
+and **Remove workspace** still never deletes the zone. Controls:
+
+- **Build.** Both operations exist only in a companion built with the
+  `POSATO_VERIFICATION` Swift condition. One Gradle property sets it, and it
+  is a declared input of the companion build. Configuration fails whenever
+  that property is combined with Developer ID signing or the Production
+  container environment, on any update channel.
+- **Release proof.** The release packaging check and the DMG check refuse the
+  verification `Info.plist` key and the seams' marker string in the companion
+  binary. The check is shown to fail on a verification-flag package and to
+  pass on a release-configuration package.
+- **Runtime environment.** The companion refuses both operations unless it
+  carries no `icloud-container-environment` entitlement (Development) and its
+  signing leaf is Apple Development rather than Developer ID.
+- **Runtime state.** The Posato app's verification handler holds the
+  synchronization lock for the whole operation and runs only while no local
+  workspace is established. The companion refuses zone deletion while the
+  zone's anchor record is present, and refuses seeding unless the anchor reads
+  as missing.
+- **Seeded records** are ordinary bundle records: canonical UUID names, and a
+  non-empty payload of at most 64 KiB that passes the companion's bundle
+  validation. No new record type is added, so no Development schema change can
+  reach a Production deploy.
+- **Entry.** A verification-only launch argument of the Posato app, honored
+  only when the development package's verification `Info.plist` key is
+  present. It runs inside the single running instance, or refuses while
+  another instance runs. The operations live in a separate verification client
+  with its own operation set and decoder, outside the product operation set.
+  That client and the launch-argument handler ship in every build and stay
+  inert without the key; the companion operations themselves exist only in
+  verification builds.
+- **Use.** The agent runs them only in a Tart clone whose signed-in Apple
+  Account equals the configured test account. Before running them, the
+  workspace must be removed, no Tart VM in any state may exist other than that
+  clone and the configured golden images, and the test iPhone must read as not
+  linked. After a zone deletion, the agent waits at least 15 minutes with
+  recorded timestamps before the next link, and that link must pass the
+  `SYNC-014` ten-minute survival check.
+
 ### Failure, account, and cleanup semantics
 
 Provider edges distinguish at least `found`, `missing`, `created`, `identical`,

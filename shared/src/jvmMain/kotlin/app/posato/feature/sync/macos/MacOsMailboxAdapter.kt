@@ -9,6 +9,7 @@ import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 import kotlinx.coroutines.CancellationException
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
@@ -75,13 +76,17 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
+    override suspend fun deleteWorkspaceRecords(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): RecordDeleteResult {
         val binding = expectedBinding.copyBytes()
         val resumed = resumeFrom(deleteContinuation, binding)
         deleteContinuation = resumed.first
         var cursor: ByteArray? = resumed.second
+        val passes = PassGovernor(budget).also { it.resumeFrom(cursor) }
         return try {
-            repeat(MAX_DELETE_ATTEMPTS) {
+            while (passes.mayRun()) {
                 val payload = if (cursor == null) {
                     MacOsSyncCompanionProtocol.cloudPayload(binding)
                 } else {
@@ -91,34 +96,27 @@ internal class MacOsMailboxAdapter(
                     operation = SyncCompanionOperation.DeleteWorkspaceRecords,
                     payload = payload,
                 )
-                when (response) {
-                    CompanionExchange.Unknown -> {
-                        // The companion died mid-request; resume from the last cursor.
-                    }
-
-                    is CompanionExchange.Message -> {
-                        if (response.message.outcome == SyncCompanionOutcome.Incomplete) {
-                            val next = parseResumeCursor(
-                                response.message.payload,
-                                MacOsSyncCompanionProtocol.DELETE_RESUME_TOKEN_BYTES,
-                            )
-                            if (next == null) {
-                                // Keep the last good cursor: a malformed
-                                // checkpoint carries no progress past it.
-                                return RecordDeleteResult.UnknownOutcome
-                            }
-                            cursor?.fill(0)
-                            cursor = next
-                            deleteContinuation = storeContinuation(deleteContinuation, binding, next)
-                        } else {
-                            if (isDeleteTerminal(response.message.outcome)) {
-                                clearContinuation(deleteContinuation)
-                                deleteContinuation = null
-                            }
-                            return mapRecordDelete(response.message)
-                        }
-                    }
+                val message = (response as? CompanionExchange.Message)?.message
+                if (message == null) {
+                    // The companion died mid-request; resume from the last cursor.
+                    passes.recordNoProgress()
+                    continue
                 }
+                if (message.outcome != SyncCompanionOutcome.Incomplete) {
+                    if (isDeleteTerminal(message.outcome)) {
+                        clearContinuation(deleteContinuation)
+                        deleteContinuation = null
+                    }
+                    return mapRecordDelete(message)
+                }
+                // Keep the last good cursor: a malformed checkpoint carries
+                // no progress past it.
+                val next = parseResumeCursor(message.payload, MacOsSyncCompanionProtocol.DELETE_RESUME_TOKEN_BYTES)
+                    ?: return RecordDeleteResult.UnknownOutcome
+                passes.recordCheckpoint(next)
+                cursor?.fill(0)
+                cursor = next
+                deleteContinuation = storeContinuation(deleteContinuation, binding, next)
             }
             RecordDeleteResult.Retryable
         } finally {
@@ -127,13 +125,17 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+    override suspend fun sweepBundlesIfAnchorMissing(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): BundleSweepResult {
         val binding = expectedBinding.copyBytes()
         val resumed = resumeFrom(sweepContinuation, binding)
         sweepContinuation = resumed.first
         var cursor: ByteArray? = resumed.second
+        val passes = PassGovernor(budget).also { it.resumeFrom(cursor) }
         return try {
-            repeat(MAX_DELETE_ATTEMPTS) {
+            while (passes.mayRun()) {
                 val payload = if (cursor == null) {
                     MacOsSyncCompanionProtocol.cloudPayload(binding)
                 } else {
@@ -143,40 +145,27 @@ internal class MacOsMailboxAdapter(
                     operation = SyncCompanionOperation.SweepBundlesIfAnchorMissing,
                     payload = payload,
                 )
-                when (response) {
-                    CompanionExchange.Unknown -> {
-                        // The companion died mid-request; resume from the last cursor.
-                    }
-
-                    is CompanionExchange.Message -> {
-                        if (response.message.outcome == SyncCompanionOutcome.Incomplete) {
-                            val next = parseResumeCursor(
-                                response.message.payload,
-                                MacOsSyncCompanionProtocol.CURSOR_BYTES,
-                            )
-                            if (next == null) {
-                                // Keep the last good cursor: a malformed
-                                // checkpoint carries no progress past it.
-                                return BundleSweepResult.UnknownOutcome
-                            }
-                            cursor?.fill(0)
-                            cursor = next
-                            sweepContinuation = storeContinuation(sweepContinuation, binding, next)
-                        } else {
-                            if (isSweepTerminal(response.message.outcome)) {
-                                clearContinuation(sweepContinuation)
-                                sweepContinuation = null
-                            }
-                            return when (response.message.outcome) {
-                                SyncCompanionOutcome.Swept -> BundleSweepResult.Swept
-                                SyncCompanionOutcome.AnchorPresent -> BundleSweepResult.AnchorPresent
-                                SyncCompanionOutcome.Retryable -> BundleSweepResult.Retryable
-                                SyncCompanionOutcome.AccountChanged -> BundleSweepResult.AccountChanged
-                                else -> BundleSweepResult.UnknownOutcome
-                            }
-                        }
-                    }
+                val message = (response as? CompanionExchange.Message)?.message
+                if (message == null) {
+                    // The companion died mid-request; resume from the last cursor.
+                    passes.recordNoProgress()
+                    continue
                 }
+                if (message.outcome != SyncCompanionOutcome.Incomplete) {
+                    if (isSweepTerminal(message.outcome)) {
+                        clearContinuation(sweepContinuation)
+                        sweepContinuation = null
+                    }
+                    return mapSweep(message.outcome)
+                }
+                // Keep the last good cursor: a malformed checkpoint carries
+                // no progress past it.
+                val next = parseResumeCursor(message.payload, MacOsSyncCompanionProtocol.CURSOR_BYTES)
+                    ?: return BundleSweepResult.UnknownOutcome
+                passes.recordCheckpoint(next)
+                cursor?.fill(0)
+                cursor = next
+                sweepContinuation = storeContinuation(sweepContinuation, binding, next)
             }
             BundleSweepResult.Retryable
         } finally {
@@ -325,6 +314,16 @@ internal class MacOsMailboxAdapter(
         }
     }
 
+    private fun mapSweep(outcome: SyncCompanionOutcome?): BundleSweepResult {
+        return when (outcome) {
+            SyncCompanionOutcome.Swept -> BundleSweepResult.Swept
+            SyncCompanionOutcome.AnchorPresent -> BundleSweepResult.AnchorPresent
+            SyncCompanionOutcome.Retryable -> BundleSweepResult.Retryable
+            SyncCompanionOutcome.AccountChanged -> BundleSweepResult.AccountChanged
+            else -> BundleSweepResult.UnknownOutcome
+        }
+    }
+
     private fun mapRecordDelete(message: SyncCompanionMessage): RecordDeleteResult {
         return when (message.outcome) {
             SyncCompanionOutcome.DeletedAndAbsent -> {
@@ -365,7 +364,6 @@ internal class MacOsMailboxAdapter(
 
     private companion object {
         const val DEFAULT_DEADLINE_MILLISECONDS: Int = 30_000
-        const val MAX_DELETE_ATTEMPTS: Int = 10
     }
 }
 

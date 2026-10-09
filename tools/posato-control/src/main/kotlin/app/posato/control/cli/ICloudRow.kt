@@ -39,6 +39,7 @@ internal object ICloudRow {
     fun state(labels: Labels): String? {
         val texts = labels.texts
         return when {
+            removing(labels) -> "removing"
             running(labels) -> "syncing"
             checking(labels) -> "checking key"
             SYNC_WITH_ICLOUD in texts -> "not linked"
@@ -49,7 +50,12 @@ internal object ICloudRow {
         }
     }
 
-    private fun running(labels: Labels): Boolean = labels.texts.any { it.contains(SYNCING) || it.contains(RUNNING) }
+    private fun running(labels: Labels): Boolean {
+        return removing(labels) || labels.texts.any { it.contains(SYNCING) || it.contains(RUNNING) }
+    }
+
+    /** The Mac row while one Remove workspace press keeps resuming a long removal. */
+    private fun removing(labels: Labels): Boolean = labels.texts.any { it.startsWith(REMOVING) }
 
     private fun checking(labels: Labels): Boolean = labels.texts.any { it.startsWith(CHECKING) }
 
@@ -58,6 +64,7 @@ internal object ICloudRow {
     const val REMOVE_WORKSPACE = "Remove workspace"
     private const val COMPLETED = "completed its latest sync attempt"
     private const val SYNCING = "Syncing"
+    private const val REMOVING = "Removing workspace"
     private const val RUNNING = "Sync with iCloud is running"
     private const val CHECKING = "Checking for the workspace key"
     private const val DID_NOT_FINISH = "Sync didn"

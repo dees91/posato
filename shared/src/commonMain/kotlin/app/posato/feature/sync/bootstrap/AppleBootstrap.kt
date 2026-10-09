@@ -33,6 +33,18 @@ internal class AppleBootstrap(
         }
     }
 
+    /**
+     * Runs [action] under the synchronization lock only while this device has no established workspace, and
+     * returns null otherwise. Used only by the verification seams of the ADR 0007 amendment of 2026-10-09.
+     */
+    suspend fun <T> whileLocalOnly(action: suspend () -> T): T? {
+        return flight.withLock {
+            withContext(backgroundDispatcher) {
+                if (coordinator.checkEstablished().status == EstablishedStatus.LOCAL_ONLY) action() else null
+            }
+        }
+    }
+
     companion object {
         internal val flight = Mutex()
     }

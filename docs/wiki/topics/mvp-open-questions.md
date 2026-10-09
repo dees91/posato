@@ -1198,6 +1198,22 @@ below. This queue retains idea provenance without expanding the original MVP.
     3 linked runs failed, with the deletion during the first sync after the
     link. `user-confirmed` (2026-10-09): dropped; backlog row `TARGETS-009`
     is deleted, and a new occurrence starts a new idea.
+34. **The iPhone's workspace removal has the same per-press cap.**
+    `inferred` (2026-10-09, code reading during `SYNC-021`):
+    `IosCloudKitMailboxProvider` runs at most `MAX_REMOVAL_CALLS` (10)
+    removal calls a press, as the Mac did before `SYNC-021`, so a zone with
+    a long history likely needs several **Remove workspace** presses on the
+    iPhone too. `open`: whether it reproduces on the test iPhone. Filed as
+    an agent proposal under the maintainer's delegation of 2026-10-09.
+    Owner: backlog row `IOS-008`.
+35. **The first sync after a link does not finish on a long-history
+    zone.** `observed` (2026-10-09, `SYNC-021`, a fresh Tart clone on the
+    test Apple Account): the first sync after a link read about 400 pages of
+    deletion-only history, one page per companion process, for about 4.3
+    minutes, and once ended "Sync didn't finish" before the row settled.
+    `open`: whether the first sync should page the history in larger passes
+    as removal now does. Filed as an agent proposal under the maintainer's
+    delegation of 2026-10-09. Owner: backlog row `SYNC-022`.
 
 ## Later platform questions
 

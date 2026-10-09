@@ -17,6 +17,7 @@ import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 import app.posato.feature.sync.testContext
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalPolicyTestDatabase
@@ -134,6 +135,8 @@ internal class FakeMailboxPort : MailboxPort {
     var sweepCalls = 0
     val resumeResets = mutableListOf<ByteArray>()
     var beforeFetch: suspend () -> Unit = {}
+    var beforeDelete: suspend () -> Unit = {}
+    val deleteBudgets = mutableListOf<RemovalBudget>()
 
     override suspend fun saveBundle(
         expectedBinding: AccountBinding,
@@ -153,12 +156,20 @@ internal class FakeMailboxPort : MailboxPort {
         return pages.removeFirstOrNull() ?: ChangeFetchResult.Page(ChangePage(null, false, testCursor(1)))
     }
 
-    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
+    override suspend fun deleteWorkspaceRecords(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): RecordDeleteResult {
         deleteCalls += 1
+        deleteBudgets += budget
+        beforeDelete()
         return deleteResults.removeFirstOrNull() ?: deleteResult
     }
 
-    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+    override suspend fun sweepBundlesIfAnchorMissing(
+        expectedBinding: AccountBinding,
+        budget: RemovalBudget,
+    ): BundleSweepResult {
         sweepCalls += 1
         return sweepResult
     }

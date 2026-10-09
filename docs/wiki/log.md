@@ -2714,6 +2714,22 @@ first removal attempt that does not finish, not to a paused keychain.
   repeatable long-history reproduction before the test account's zone is
   cleaned; `TARGETS-009` is dropped.
 
+## [2026-10-09] task | SYNC-021: one press removes a long-history workspace
+
+- `observed`: on the test Apple Account's zone, about 400 pages of
+  deletion-only history, a Mac removal stopped after 10 passes of 16 pages
+  and needed 3 presses; the first sync after a link read the same history one
+  page per companion process for about 4.3 minutes.
+- One press now keeps resuming while each checkpoint is new, with a 20-minute
+  ceiling, and the Mac row says "Removing workspace…"; the link's sweep and
+  iOS keep their caps (`IOS-008`). One run on the real history removed the
+  workspace with one press in about 6 minutes.
+- `user-confirmed`: ADR 0007 gains a verification-only zone deletion and
+  history seeding amendment, with `T-14` updated; the seam ships only in
+  Development packages with an ad-hoc or Apple Development identity.
+- Verification was kept to a minimum by the maintainer's order; the deferred
+  runs, the seeding operation, the zone cleanup, and the slow first sync after
+  a link (idea 35) belong to backlog row `SYNC-022`.
 ## [2026-10-09] task | SESSION-007: longer quick choices for a manual pause
 
 - `user-confirmed`: setup offers 25 and 45 minutes, 1, 2, 4, and 8 hours, and

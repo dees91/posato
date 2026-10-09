@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import app.posato.core.designsystem.PosatoActionRow
+import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
 import app.posato.core.designsystem.PosatoAlertRole
@@ -65,6 +66,8 @@ import app.posato.generated.resources.sync_icloud_waiting_for_key
 import app.posato.generated.resources.sync_pending
 import app.posato.generated.resources.sync_remove_confirmation
 import app.posato.generated.resources.sync_remove_workspace
+import app.posato.generated.resources.sync_removing_note
+import app.posato.generated.resources.sync_removing_workspace
 import app.posato.generated.resources.sync_retryable
 import app.posato.generated.resources.sync_waiting_explanation
 import org.jetbrains.compose.resources.StringResource
@@ -73,12 +76,14 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun SyncBootstrapSection(
     state: SyncBootstrapUiState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showsRemovalProgress: Boolean = workspaceRemovalResumes,
 ) {
     val snapshot by state.syncState.collectAsState()
     var confirmingRemoval by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
-    val running = state.running || snapshot.checkingJoin || snapshot.status == SyncStatus.SYNCING
+    val running = state.running || snapshot.checkingJoin || snapshot.removing || snapshot.status == SyncStatus.SYNCING
+    val removingHere = showsRemovalProgress && snapshot.removing
     val checking = state.checking
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoDisclosureRow(
@@ -90,6 +95,7 @@ internal fun SyncBootstrapSection(
                     stringResource(
                         when {
                             checking -> Res.string.sync_checking_key
+                            removingHere -> Res.string.sync_removing_workspace
                             state.running || snapshot.status == SyncStatus.SYNCING -> Res.string.session_icloud_running
                             else -> snapshot.status.summary(snapshot.linked)
                         },
@@ -100,7 +106,7 @@ internal fun SyncBootstrapSection(
             trailingContent = { PosatoIcon(if (expanded) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, null) },
         )
         if (expanded) {
-            IcloudOptions(snapshot, running, checking, state::sync) { confirmingRemoval = true }
+            IcloudOptions(snapshot, running, checking, removingHere, state::sync) { confirmingRemoval = true }
         }
     }
     if (confirmingRemoval) {
@@ -124,15 +130,24 @@ private fun IcloudOptions(
     snapshot: AppleSyncState,
     running: Boolean,
     checking: Boolean,
+    removing: Boolean,
     onSync: () -> Unit,
     onRemove: () -> Unit,
 ) {
     PosatoCaption(
         stringResource(
-            if (checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked, snapshot.reason),
+            when {
+                checking -> Res.string.sync_checking_key
+                removing -> Res.string.sync_removing_workspace
+                else -> snapshot.status.message(snapshot.linked, snapshot.reason)
+            },
         ),
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     )
+    if (removing) {
+        PosatoActivityIndicator()
+        PosatoCaption(stringResource(Res.string.sync_removing_note))
+    }
     if (snapshot.status == SyncStatus.WAITING_FOR_KEY) {
         PosatoCaption(stringResource(Res.string.sync_waiting_explanation))
     }

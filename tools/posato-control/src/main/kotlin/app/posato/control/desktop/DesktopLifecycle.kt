@@ -31,7 +31,7 @@ class DesktopLifecycle(
 
     override fun build(options: BuildOptions): BuildResult {
         val started = System.currentTimeMillis()
-        GradleStager(context).stage(options.signingIdentity, options.verify)
+        GradleStager(context).stage(options.signingIdentity, options.verify, options.verificationSeams)
         processes.requireStaged()
         return BuildResult(
             appPath = context.layout.relativize(context.layout.stagedDesktopApplication),

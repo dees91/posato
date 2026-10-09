@@ -39,6 +39,7 @@ import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
 import app.posato.feature.sync.macos.MaintenanceCompanionTransport
 import app.posato.feature.sync.macos.SyncCompanionTransport
+import app.posato.feature.sync.macos.verification.DesktopVerificationSeams
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -61,7 +62,8 @@ import kotlinx.coroutines.Dispatchers
 internal interface DesktopApplicationGraph :
     DesktopApplicationComponents,
     DesktopUpdateBindings,
-    DesktopScheduleBindings {
+    DesktopScheduleBindings,
+    DesktopVerificationBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
@@ -251,6 +253,7 @@ fun createDesktopApplicationGraph(
 }
 
 interface DesktopApplicationComponents : ApplicationGraph {
+    val verificationSeams: DesktopVerificationSeams
     val updateMaintenance: DesktopUpdateMaintenance
     val presence: DesktopPresence
     val pauseSetPreparation: PauseSetPreparation
