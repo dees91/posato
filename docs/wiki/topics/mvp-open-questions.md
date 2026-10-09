@@ -1163,7 +1163,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     the removal took 170 to 250 s in the full runs. A paused iCloud
     Keychain does not explain it. `open`: why the first attempt does not
     finish, and whether people see it after a link outside a fresh clone.
-    Owner: backlog row `SYNC-021`.
+    `observed` (2026-10-09, recheck on `main` `572e341` after PR #147 fixed
+    onboarding): the first press failed in 6 of 6 fresh clones, and removal
+    took 3 or 4 presses and up to about 7 minutes. Throughout, the sync
+    companion read about 110 records a minute in pages of 16. `inferred`:
+    the test Apple Account's zone carries a long history from many
+    verification cycles, and each attempt reaches its deadline before it
+    pages through it. Owner: release 1.4 row `SYNC-021`.
 33. **Deleting a pause set in use by a schedule can fail to save on the
     Mac.** `observed` (2026-10-08, the same build and clones): in one of six
     runs of the desktop verification scenario, about a minute after the
@@ -1176,7 +1182,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     sync after the link. `open`: which read or write fails, and whether it
     only follows a link. Routine verification no longer links iCloud, so only
     the release check of `pause-sets-desktop.json` on a linked clone still
-    exercises it. Owner: backlog row `TARGETS-009`.
+    exercises it. `observed` (2026-10-09, recheck on `main` `572e341`): 0 of
+    3 linked runs failed, with the deletion during the first sync after the
+    link. `user-confirmed` (2026-10-09): dropped; backlog row `TARGETS-009`
+    is deleted, and a new occurrence starts a new idea.
 
 ## Later platform questions
 

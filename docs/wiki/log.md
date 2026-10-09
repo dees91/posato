@@ -2703,3 +2703,13 @@ first removal attempt that does not finish, not to a paused keychain.
 - A link now returns only once that sync has settled, both actions wait
   900 s by default, and results and timeouts report the presses and the
   row's last state. The product defect stays with `SYNC-021`.
+## [2026-10-09] planning | SYNC-021 joins release 1.4; TARGETS-009 dropped
+
+- `observed` (recheck on `main` `572e341`, fresh Tart clones, test Apple
+  Account): the first **Remove workspace** after a link failed in 6 of 6
+  runs; removal took 3 or 4 presses and up to about 7 minutes while the
+  sync companion paged records 16 at a time. Deleting a pause set in use
+  right after a link passed 3 of 3.
+- `user-confirmed`: `SYNC-021` joins release 1.4 wave 1 and builds a
+  repeatable long-history reproduction before the test account's zone is
+  cleaned; `TARGETS-009` is dropped.
