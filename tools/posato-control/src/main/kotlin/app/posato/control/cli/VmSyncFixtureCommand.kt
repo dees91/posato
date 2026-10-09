@@ -45,6 +45,7 @@ class VmSyncFixtureCommand :
         }
         val status = seam(tart, line, STATUS)
         if (action == STATUS) return withLine(line, status)
+        if (status.field("outcome") == "local-only" && status.field("anchor") == ZONE_ABSENT) return deleted(line, ZONE_ALREADY_ABSENT)
         if (status.field("outcome") != "local-only" || status.field("anchor") != "absent") {
             throw ControlException(
                 ErrorCode.PRECONDITION_NOT_MET,
@@ -53,20 +54,27 @@ class VmSyncFixtureCommand :
             )
         }
         val deletion = seam(tart, line, DELETE_ZONE)
-        if (deletion.field("outcome") == "zone-already-absent") {
-            return buildJsonObject {
-                put("vm", line.cloneName)
-                put("outcome", "zone-already-absent")
-            }
+        return when (deletion.field("outcome")) {
+            "zone-deleted" -> deleted(line, "zone-deleted")
+            ZONE_ALREADY_ABSENT -> deleted(line, ZONE_ALREADY_ABSENT)
+            else -> throw ControlException(ErrorCode.COMMAND_FAILED, "The zone deletion did not finish: $deletion.")
         }
-        if (deletion.field("outcome") != "zone-deleted") {
-            throw ControlException(ErrorCode.COMMAND_FAILED, "The zone deletion did not finish: $deletion.")
-        }
+    }
+
+    /**
+     * Always names the earliest next link, also when the zone was already absent: a lost reply or a rerun after a
+     * deletion must not invite an immediate link inside the purge window.
+     */
+    private fun deleted(
+        line: VmLine,
+        outcome: String,
+    ): JsonElement {
+        val now = Instant.now()
         return buildJsonObject {
             put("vm", line.cloneName)
-            put("outcome", "zone-deleted")
-            put("deletedAt", Instant.now().toString())
-            put("nextLinkNotBefore", Instant.now().plusSeconds(WAIT_AFTER_DELETE_SECONDS).toString())
+            put("outcome", outcome)
+            put("checkedAt", now.toString())
+            put("nextLinkNotBefore", now.plusSeconds(WAIT_AFTER_DELETE_SECONDS).toString())
         }
     }
 
@@ -144,6 +152,8 @@ class VmSyncFixtureCommand :
     private companion object {
         const val STATUS = "status"
         const val DELETE_ZONE = "delete-zone"
+        const val ZONE_ABSENT = "zone-absent"
+        const val ZONE_ALREADY_ABSENT = "zone-already-absent"
         const val INSTALLED_MARKER = "build/verification/desktop-application"
         const val STAGED_APPLICATION = "desktopApp/build/compose/binaries/main/${RepoLayout.STAGED_PACKAGE_DIRECTORY}/Posato.app"
         const val WAIT_AFTER_DELETE_SECONDS = 15L * 60L

@@ -92,8 +92,16 @@ abstract class StageMacOsApplication : DefaultTask() {
     @get:Internal
     abstract val stagedApplication: DirectoryProperty
 
+    /** With the verification seams, the staged companion must be signed ad hoc or with Apple Development. */
+    @get:Input
+    abstract val verificationSeams: Property<Boolean>
+
     @get:Inject
     abstract val execOperations: ExecOperations
+
+    init {
+        verificationSeams.convention(false)
+    }
 
     @TaskAction
     fun stage() {
@@ -102,6 +110,19 @@ abstract class StageMacOsApplication : DefaultTask() {
         staged.parentFile.mkdirs()
         execOperations.exec {
             commandLine("/usr/bin/ditto", sourceApplication.get().asFile.absolutePath, staged.absolutePath)
+        }
+        if (verificationSeams.get()) {
+            val details = ByteArrayOutputStream()
+            execOperations.exec {
+                commandLine("/usr/bin/codesign", "-dvv", staged.resolve("Contents/Helpers/PosatoMacOSSync.app").absolutePath)
+                errorOutput = details
+            }
+            val lines = details.toString(Charsets.UTF_8).lines()
+            val leaf = lines.firstOrNull { line -> line.startsWith("Authority=") }?.substringAfter('=')
+            val adHoc = lines.any { line -> line == "Signature=adhoc" }
+            check(PosatoVerificationSeams.allowsCompanionSigning(adHoc, leaf)) {
+                "A package with the verification seams must sign its companion with Apple Development or ad hoc, not ${leaf ?: "this identity"}."
+            }
         }
     }
 }
@@ -314,7 +335,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     private fun verifySeamCompanionSigning(application: File) {
         val companion = signature(application.resolve("Contents/Helpers/PosatoMacOSSync.app"))
         val leaf = companion.authorities.firstOrNull()
-        check(companion.isAdHoc || leaf?.startsWith("Apple Development:") == true) {
+        check(PosatoVerificationSeams.allowsCompanionSigning(companion.isAdHoc, leaf)) {
             "A package with the verification seams must sign its companion with Apple Development or ad hoc, not ${leaf ?: "this identity"}."
         }
     }
@@ -1570,15 +1591,17 @@ if (macOsAllowsRosetta && updateFeed.channel == UpdateChannel.RELEASE) {
 }
 // ADR 0007 amendment of 2026-10-09: the verification seams never meet Developer ID signing, on any channel.
 val macOsVerificationSeams = PosatoVerificationSeams.enabled(providers.gradleProperty(PosatoVerificationSeams.PROPERTY).orNull)
-if (
-    macOsVerificationSeams &&
-    (
-        updateFeed.channel != null ||
-            !providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orNull.isNullOrBlank() ||
-            providers.gradleProperty("posatoMacOsSigningIdentity").orNull.orEmpty().startsWith("Developer ID")
-    )
-) {
-    throw GradleException("-P${PosatoVerificationSeams.PROPERTY} is for development packages and refuses every Developer ID build.")
+if (macOsVerificationSeams) {
+    val developmentIdentity = providers.gradleProperty("posatoMacOsSigningIdentity").orNull ?: "-"
+    val releaseIdentity = providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orNull
+    // An allowlist: an ad-hoc or Apple Development identity only, never a hash or a partial name that could
+    // resolve to Developer ID.
+    if (updateFeed.channel != null || !releaseIdentity.isNullOrBlank() || !PosatoVerificationSeams.allowsIdentity(developmentIdentity)) {
+        throw GradleException(
+            "-P${PosatoVerificationSeams.PROPERTY} is for development packages and refuses every Developer ID build; " +
+                "posatoMacOsSigningIdentity must be - or start with Apple Development:.",
+        )
+    }
 }
 val updatePublicKey = updateFeed.publicKey
 val updaterInfoPlistKeys = buildString {
@@ -1728,6 +1751,7 @@ val stageMacOsDevelopmentPackage by tasks.registering(StageMacOsApplication::cla
     dependsOn(verifyMacOsHelperStructure)
     sourceApplication.set(macOsDistributable)
     stagedApplication.set(macOsDevelopmentApplication)
+    verificationSeams.set(macOsVerificationSeams)
 }
 
 val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentPackaging::class) {

@@ -1,8 +1,10 @@
 package app.posato.feature.sync.macos.verification
 
+import app.posato.feature.sync.bootstrap.AccountBinding
 import app.posato.feature.sync.bootstrap.AnchorReadResult
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.BindingResolution
+import app.posato.feature.sync.bootstrap.ZoneFetchResult
 import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
 import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsSyncCompanionProtocol
@@ -44,12 +46,7 @@ internal class MacOsDesktopVerificationSeams(
                 else -> return@whileLocalOnly result("account-unavailable")
             }
             if (command == STATUS) {
-                val anchor = when (MacOsBootstrapCloudAdapter(transport).readAnchor(binding)) {
-                    is AnchorReadResult.Found -> "present"
-                    AnchorReadResult.Missing -> "absent"
-                    else -> "unknown"
-                }
-                result("local-only", anchor)
+                result("local-only", anchorState(MacOsBootstrapCloudAdapter(transport), binding))
             } else {
                 val bytes = binding.copyBytes()
                 try {
@@ -60,6 +57,18 @@ internal class MacOsDesktopVerificationSeams(
                 }
             }
         } ?: result("workspace-established")
+    }
+
+    private suspend fun anchorState(
+        cloud: MacOsBootstrapCloudAdapter,
+        binding: AccountBinding,
+    ): String {
+        if (cloud.fetchZone(binding) == ZoneFetchResult.Missing) return "zone-absent"
+        return when (cloud.readAnchor(binding)) {
+            is AnchorReadResult.Found -> "present"
+            AnchorReadResult.Missing -> "absent"
+            else -> "unknown"
+        }
     }
 
     private fun VerificationSeamOutcome.label(): String {

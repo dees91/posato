@@ -71,7 +71,7 @@ separate training load (load average 6 to 57) during the VM runs.
 | Failing first: 7 new adapter and `AppleSync` tests on an inert budget stub | 7 red; the cancellation guard green before the change | host `jvmTest` |
 | After the fix (`ae4bb138`) | all `feature.sync` JVM tests green | host `jvmTest` |
 | Companion seam refusals (`swiftTest` with the condition) | pass | host `swiftTest` |
-| Seam control, repeated after review: plain package / seam package with the property / without it / plain DMG of it / the property with a Developer ID development identity | pass / pass / fail with the seam message / fail with the seam message / configuration refused | `build/verification/sync-021/control2/` |
+| Seam control, repeated after review: plain package / seam package with the property / without it / plain DMG of it / the property with a Developer ID name, a SHA-1 hash, an `Apple Development:` name, `-` | pass / pass / fail with the seam message / fail with the seam message / refused, refused, accepted, accepted | `build/verification/sync-021/control2/`, `control3/` |
 | Step 2 at `572e341`, current test account, guest log | the first sync after the link read about 400 pages, one page per companion process, for about 4.3 min; removal took 3 presses of 10, 10, and 6 passes of 16 pages (about 6 s each), about 402 pages, 7:44; pages held deletions only, records were deleted on the last pass | recheck worktree `build/verification/sync-021-measure/` |
 | One E2E run on `1b0f6f15` (plain package, same long history) | first link (run `20261009-221425-0969`) `WAIT_TIMEOUT` after 25 min and 83 presses: the guest log shows the companion refusing its parent with `cdhash mismatch`, because `vm sync` had replaced the bundle under the app `vm onboard` started (a procedure error, not the product); after a relaunch the link (`20261009-224529-9bea`) took 4:46 and 12 presses and settled at "sync did not finish"; one press (`20261009-225025-3aa7`) removed the workspace, `presses == 1`, 6:06, ending not linked; mid-removal (`20261009-225328-dfbd`) the row read "Removing workspace…" with an activity indicator and the note, Sync now and Remove workspace disabled | `build/verification/sync-021/natural/` |
 | `./gradlew quality` on `1fede3de`, the last code commit | pass (6:47, host under the training load; native iOS Swift tests ran) | host |
@@ -89,7 +89,10 @@ Reduced verification, translation of the maintainer's order (2026-10-09):
 first "skip the VM and iPhone verification now; let's consider them done
 and sufficient", then revised to "keep VM and iPhone verification to a
 minimum: once before the PR, where it makes sense". The fix therefore rests
-on the run above, the isolated tests, the seam controls, and `quality`.
+on the run above, the isolated tests, the seam controls, and `quality`. Unit
+tests alone cover the review fold made after that run, because
+`PassGovernor.resumeFrom` affects only a press that resumes a kept cursor
+and the `Main.kt` change runs only with the verification argument.
 
 | Acceptance | State | Owner |
 | --- | --- | --- |

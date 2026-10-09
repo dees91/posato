@@ -15,6 +15,17 @@ object PosatoVerificationSeams {
 
     fun enabled(value: String?): Boolean = value == "true"
 
+    /** The development signing identities a seam build accepts: ad hoc or an Apple Development name. */
+    fun allowsIdentity(identity: String): Boolean = identity == "-" || identity.startsWith(APPLE_DEVELOPMENT)
+
+    /** A seam companion is signed ad hoc or with an Apple Development leaf, never Developer ID. */
+    fun allowsCompanionSigning(
+        adHoc: Boolean,
+        leaf: String?,
+    ): Boolean = adHoc || leaf?.startsWith(APPLE_DEVELOPMENT) == true
+
+    private const val APPLE_DEVELOPMENT = "Apple Development:"
+
     /** What an application bundle carries: the Info.plist key and the companion marker, read from bytes. */
     data class Found(
         val infoPlistKey: Boolean,
