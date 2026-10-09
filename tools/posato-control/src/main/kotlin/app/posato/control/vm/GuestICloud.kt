@@ -3,6 +3,8 @@ package app.posato.control.vm
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
+import java.nio.file.Path
+import kotlin.io.path.exists
 
 /** Whether a guest's iCloud Keychain syncs, as System Settings reports it. */
 enum class ICloudKeychainState(
@@ -11,15 +13,19 @@ enum class ICloudKeychainState(
     SYNCING("syncing"),
     PAUSED("paused"),
     SIGNED_OUT("signed-out"),
+    NEEDS_ATTENTION("needs-attention"),
     UNKNOWN("unknown"),
 }
 
 /**
  * Reads the iCloud Keychain state from System Settings' sidebar. A paused keychain shows the notice
- * "Some iCloud Data Isn't Syncing"; a signed-in guest otherwise shows its Apple Account row.
+ * "Some iCloud Data Isn't Syncing"; a signed-in guest otherwise shows its Apple Account row. The connect alert that a
+ * test account needing a new sign-in raises names "Apple Account" itself, so it is read before that row; a paused
+ * keychain still wins, because Resume Data Sync answers the alert and may need only the account password.
  */
 internal fun iCloudKeychainState(lines: List<RecognizedLine>): ICloudKeychainState = when {
     lines.any { it.shows(PAUSED_NOTICE) } -> ICloudKeychainState.PAUSED
+    lines.any { it.shows(ICLOUD_CONNECT_ALERT) } -> ICloudKeychainState.NEEDS_ATTENTION
     lines.any { it.shows(SIGN_IN_ROW) } -> ICloudKeychainState.SIGNED_OUT
     lines.any { it.shows(ACCOUNT_ROW) } -> ICloudKeychainState.SYNCING
     else -> ICloudKeychainState.UNKNOWN
@@ -59,8 +65,21 @@ internal fun keychainRefusal(
         "Run `posato-control vm icloud --line ${line.id} --resume`, then repair the golden VM the same way.",
     )
 
+    ICloudKeychainState.NEEDS_ATTENTION -> ControlException(
+        ErrorCode.ICLOUD_KEYCHAIN_PAUSED,
+        "${line.cloneName} raised \"This Mac can't connect to iCloud\": the golden VM's test Apple Account needs signing in again.",
+        "Renew the account in the golden VM as described in docs/development/unattended-verification.md: sign in with " +
+            "the account password, and if Apple asks for a two-factor code, ask the maintainer for it.",
+    )
+
     ICloudKeychainState.SYNCING, ICloudKeychainState.UNKNOWN -> null
 }
+
+/**
+ * Left by `vm onboard` when the connect alert showed in this clone. Onboarding answers it with Later, so the screen no
+ * longer shows it, and the iCloud commands read this instead; `vm create` and `vm boot` start without it.
+ */
+internal fun accountAttentionMarker(line: VmLine): Path = vmDirectory(line).resolve("golden-account-needs-attention")
 
 /**
  * A new golden VM or device signing in to the test account can pause iCloud Keychain on the other guests. A paused
@@ -76,6 +95,7 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
+        if (accountAttentionMarker(line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
         return inSettings(line) {
             readState(line, openSettings(line, timeoutMs), timeoutMs)
         }
@@ -86,6 +106,7 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
+        if (accountAttentionMarker(line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
         inSettings(line) {
             val screen = openSettings(line, timeoutMs)
             if (readState(line, screen, timeoutMs) == ICloudKeychainState.PAUSED) resumeDataSync(line, screen, timeoutMs)

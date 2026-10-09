@@ -8,8 +8,10 @@ import app.posato.control.model.Scenario
 import app.posato.control.model.Step
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.nio.file.Files
 import java.time.Duration
 
@@ -44,14 +46,14 @@ class GuestOnboarding(
         guest(line, listOf("launch", "-t", "desktop"))
         guestScenario(line, recipe.copy(steps = recipe.steps.subList(0, split + 1)))
         guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
-        answerUntilReady(line, timeoutMs)
+        var accountAlert = answerUntilReady(line, timeoutMs)
         val resumed = recipe.launch.copy(terminateExisting = false)
         guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(done + 2, final)))
         // A Login Items approval can lag the window's "ready": finish it the same way while the overview asks for it.
         if (found(line, BACKGROUND_NEEDED)) {
             guest(line, listOf("tap", "-t", "desktop", "--text", FINISH_SETUP, "--role", "button"))
             guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
-            answerUntilReady(line, timeoutMs)
+            accountAlert = answerUntilReady(line, timeoutMs) || accountAlert
             guest(line, listOf("tap", "-t", "desktop", "--text", "Back to Session", "--role", "button"))
         }
         if (found(line, BACKGROUND_NEEDED)) {
@@ -59,13 +61,22 @@ class GuestOnboarding(
         }
         // The recipe's final readiness assertion runs only after the late approval had its chance.
         guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(final, recipe.steps.size)))
-        return ControlJson.pretty.parseToJsonElement("""{"line":"${line.id}","ready":true}""").jsonObject
+        // Onboarding passes without iCloud, so an account that needs attention is reported rather than refused. Later
+        // took the alert off the screen, so the marker is what the iCloud commands refuse on until a new clone.
+        if (accountAlert) Files.writeString(accountAttentionMarker(line), "connect alert during vm onboard\n")
+        return buildJsonObject {
+            put("line", line.id)
+            put("ready", true)
+            put("goldenAccountNeedsAttention", accountAlert)
+        }
     }
 
+    /** Answers setup's prompts until the window is ready; true when the iCloud connect alert showed meanwhile. */
     private fun answerUntilReady(
         line: VmLine,
         timeoutMs: Long,
-    ) {
+    ): Boolean {
+        var accountAlert = false
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             // Setup's own administrator request covers System Settings, so the Login Items switch waits for a pass
@@ -75,10 +86,9 @@ class GuestOnboarding(
             // A guest whose test Apple Account needs attention raises this alert over setup's administrator dialog and
             // hides it (`observed` 2026-10-08). Onboarding needs no iCloud, so Later puts it off, as
             // `vm icloud --resume` does, and the pass starts again; an alert that stays falls through to readiness.
-            if (shown.any { it.matches(ICLOUD_CONNECT_ALERT, exact = false) } &&
-                attempt { prompts.answer(line, GuestPrompt.ICLOUD_LATER, PROMPT_TIMEOUT_MS) }
-            ) {
-                continue
+            if (shown.any { it.matches(ICLOUD_CONNECT_ALERT, exact = false) }) {
+                accountAlert = true
+                if (attempt { prompts.answer(line, GuestPrompt.ICLOUD_LATER, PROMPT_TIMEOUT_MS) }) continue
             }
             if (!agentDialog && shown.any { it.matches(HELPER_ROW, exact = false) }) {
                 attempt { prompts.answer(line, GuestPrompt.BACKGROUND, PROMPT_TIMEOUT_MS) }
@@ -88,7 +98,7 @@ class GuestOnboarding(
                 attempt { prompts.answer(line, GuestPrompt.ADMIN, PROMPT_TIMEOUT_MS) }
             }
             // The window is read through accessibility, so a System Settings window in front of it cannot hide it.
-            if (found(line, READY)) return
+            if (found(line, READY)) return accountAlert
             if (found(line, TRY_AGAIN)) guest(line, listOf("tap", "-t", "desktop", "--text", TRY_AGAIN, "--role", "button"))
             Thread.sleep(POLL_MILLIS)
         }

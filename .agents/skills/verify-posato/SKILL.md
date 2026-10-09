@@ -173,7 +173,11 @@ Shortcuts replace the hand-driven setup; reach for them first (rows in the
 driver README):
 
 - `vm onboard --line <line>` finishes first-run onboarding in a fresh clone,
-  helper and prompts included, in about 1.5 minutes. Release 1.2 and earlier
+  helper and prompts included, in about 1.5 minutes. When its result has
+  `goldenAccountNeedsAttention: true`, the run goes on, but tell the
+  maintainer that the golden VM's test account needs renewing
+  ([unattended verification](../../../docs/development/unattended-verification.md));
+  that clone's iCloud commands refuse. Release 1.2 and earlier
   need the manual route in [First install](./features/onboarding.md).
 - `flow set`, `flow session`, `flow schedule`, and `flow icloud link|remove`
   each create a pause set, start a session, add a schedule, or link or remove

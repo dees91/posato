@@ -2662,6 +2662,15 @@ first removal attempt that does not finish, not to a paused keychain.
   routine verification workload from a median of 288 s to 268 s over five
   runs, every run passing. The `verify-posato` skill now orders it that way.
 
+## [2026-10-09] tooling | An expired golden account no longer reads as syncing
+
+- `observed` 2026-10-08: the guest's "This Mac can't connect to iCloud"
+  alert names "Apple Account", so the iCloud Keychain read took it for the
+  signed-in account row and reported `syncing`. The read now reports
+  `needs-attention`, a paused keychain still wins so its unattended repair
+  runs, and `vm onboard` reports and marks a clone that showed the alert.
+  A unit test covers the read; the alert itself could not be raised again on
+  the renewed golden VM, so the onboarding path is not exercised end to end.
 ## [2026-10-09] planning | Verification time for new platforms
 
 - `user-confirmed`: ideas for keeping routine verification near 268 s once
