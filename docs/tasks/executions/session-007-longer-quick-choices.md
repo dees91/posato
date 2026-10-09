@@ -93,6 +93,11 @@ Run directories are under the worktree's ignored `build/verification/runs/`.
   at 10/10/26, 12:00 AM (`232218-fc7c`); test iPhone `flow session`: Until
   end of day at 10/10/2026, 00:00 (`232303-6027`) and 480 minutes from 23:24
   at 07:24 (`232414-123e`). Each run went through Review and Start.
+- **Next merge of `main`, `5ed0b0bb`** (MACOS-027 helper readiness;
+  23:31–23:37): test iPhone Until end of day at 00:00 (`233130-9ef5`) and
+  480 minutes from 23:32 at 07:32 (`233159-e369`); fresh Mac VM clone Until
+  end of day at 12:00 AM (`233659-0c3c`) and 8 hours from 23:37 at 7:37 AM
+  (`233712-c331`).
 - **Skipped** under the maintainer's order of 2026-10-09 (translated): "keep
   VM and iPhone verification to a minimum, once before the PR where it makes
   sense". Not rerun on the final head: the other session scenarios and the

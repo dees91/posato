@@ -2739,6 +2739,7 @@ first removal attempt that does not finish, not to a paused keychain.
   five minutes with a retry every 30 s; the signature check allows 30 s per
   command and 45 s in all. A removed or tampered helper still reads as
   unavailable at once.
+
 ## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
 
 - `observed` in a macOS 26 Tart clone with notarized candidates: a build
