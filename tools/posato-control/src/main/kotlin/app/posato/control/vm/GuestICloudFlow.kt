@@ -13,7 +13,7 @@ import kotlinx.serialization.json.intOrNull
 import java.io.IOException
 
 /** How long `flow icloud` waits for its outcome unless `--timeout-seconds` says otherwise. */
-const val ICLOUD_FLOW_TIMEOUT_SECONDS = 300L
+const val ICLOUD_FLOW_TIMEOUT_SECONDS = 900L
 
 private const val TIMEOUT_OPTION = "--timeout-seconds"
 
@@ -101,6 +101,9 @@ internal fun slicePresses(envelope: String): Int {
     return (result?.get(PRESSES) as? JsonPrimitive)?.intOrNull ?: 0
 }
 
+/** What a slice reported about the row, also one that timed out; null when its output is not an envelope with a result. */
+internal fun sliceResult(envelope: String): JsonObject? = parseEnvelope(envelope)?.result as? JsonObject
+
 /** The final slice's envelope with the presses of the slices before it added, so the result counts every press. */
 internal fun withEarlierPresses(
     envelope: String,
@@ -135,6 +138,7 @@ internal class GuestICloudFlow(
         val total = flowTimeoutSeconds(arguments) ?: return present(withKeychain(invoke(withoutHuman(arguments)), state), human)
         val deadline = System.currentTimeMillis() + total * MILLIS_PER_SECOND
         var earlierPresses = 0
+        var lastResult: JsonObject? = null
         while (true) {
             val remaining = (deadline - System.currentTimeMillis()) / MILLIS_PER_SECOND
             val output = invoke(withFlowTimeout(arguments, remaining.coerceIn(1, SLICE_SECONDS)))
@@ -143,7 +147,8 @@ internal class GuestICloudFlow(
                 return present(withKeychain(counted, state), human)
             }
             earlierPresses += slicePresses(output.envelope)
-            if (System.currentTimeMillis() >= deadline) throw timedOut(total, state, earlierPresses)
+            lastResult = sliceResult(output.envelope) ?: lastResult
+            if (System.currentTimeMillis() >= deadline) throw timedOut(total, state, linkResult(earlierPresses, lastResult))
             context.log("flow icloud is still waiting after a ${SLICE_SECONDS}s slice; checking iCloud Keychain in ${line.cloneName}.")
             state = try {
                 requireSyncing()
@@ -153,7 +158,7 @@ internal class GuestICloudFlow(
                     exception.message ?: exception.code.name,
                     exception.hint,
                     exception,
-                    linkResult(earlierPresses),
+                    linkResult(earlierPresses, lastResult),
                 )
             }
         }
@@ -201,13 +206,15 @@ internal class GuestICloudFlow(
     private fun timedOut(
         total: Long,
         state: ICloudKeychainState,
-        presses: Int
+        result: JsonObject,
     ) = ControlException(
         ErrorCode.WAIT_TIMEOUT,
-        "flow icloud did not finish within $total s; iCloud Keychain in ${line.cloneName} reads ${state.id}.",
-        "A workspace key can take about 20 minutes to reach a new device; rerun with a longer --timeout-seconds. " +
-            "The guest's last envelope is guest/envelope.json in the run directory.",
-        result = linkResult(presses),
+        "flow icloud did not finish within $total s; iCloud Keychain in ${line.cloneName} reads ${state.id}, " +
+            "the row reads ${(result["row"] as? JsonPrimitive)?.content ?: "unknown"}.",
+        "A workspace key can take about 20 minutes to reach a new device, and a long workspace history can keep the first " +
+            "sync running for minutes; rerun with a longer --timeout-seconds. The guest's last envelope is " +
+            "guest/envelope.json in the run directory.",
+        result = result,
     )
 
     private fun resumeFailed(exception: Exception) = ControlException(
@@ -218,8 +225,14 @@ internal class GuestICloudFlow(
         exception,
     )
 
-    /** What a link that did not finish had pressed, which its error envelope reports as a finished one would. */
-    private fun linkResult(presses: Int) = JsonObject(mapOf("action" to JsonPrimitive(LINK_ACTION), PRESSES to JsonPrimitive(presses)))
+    /**
+     * What a link that did not finish had pressed, with the row state of the last slice, which its error envelope
+     * reports as a finished one would.
+     */
+    private fun linkResult(
+        presses: Int,
+        lastSlice: JsonObject?,
+    ) = JsonObject((lastSlice ?: emptyMap()) + mapOf("action" to JsonPrimitive(LINK_ACTION), PRESSES to JsonPrimitive(presses)))
 
     /** Adds the keychain state to a successful flow's result, as `vm create` reports it. */
     private fun withKeychain(
