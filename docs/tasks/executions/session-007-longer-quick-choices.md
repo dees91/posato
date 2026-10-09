@@ -44,3 +44,59 @@ Decided by the agent under the maintainer's delegation of 2026-10-09:
   what the Mac accessibility tree exposes; iOS segments show `25m` … `8h`
   and expose "25 minutes" … "8 hours". `flow session` and the desktop
   scenarios query the Mac labels.
+- **Stale end-of-day choice** (review item 5): a choice that is no longer
+  offered, or that setup keeps past midnight, is cleared and the length
+  returns to 25 minutes; Review and a refused Start report too short instead
+  of starting a short or next-day pause. Review shows the dated end.
+- **iOS reflow** (review item 3): two rows of three lengths when the widest
+  label does not fit a sixth of the row, as at the largest text size.
+
+## Tests written failing first
+
+- `SessionEndOfDayTest` (daylight-saving days, 5-minute edge): 5 of 5 failed
+  against a naive stub, then passed.
+- `SessionEndOfDayChoiceTest` (stale choice, refused Start): 4 of 4 failed
+  against stubs that kept the earlier behaviour, then passed.
+- `JvmSessionTimeFormatTest` zone change: failed while the zone was cached.
+
+## Verification
+
+Run directories are under the worktree's ignored `build/verification/runs/`.
+
+- **Uncommitted tree before `15ee9a09`** (19:43–20:07): test iPhone `flow
+  session` 480, 30, 25 minutes and Until end of day (`194801-8e0c`,
+  `195854-5daf`, `195935-56d5`, `200015-adfe`, `194926-1455`),
+  `session-relaunch-ios` (`200059-cc26`); Simulator `session-start`,
+  `session-start-saved-items`, `session-expiry` (`200426-1085`,
+  `200536-fd6e`, `200714-8b44`); iPad screenshot (`203235-cd47`).
+- **`15ee9a09`**: Simulator `flow session` end of day, 480, 30 minutes and
+  `session-start` (`204710-a87c`, `205003-ac8a`, `205101-4731`,
+  `205157-77b8`).
+- **Uncommitted tree before `66815d11`** (Mac VM, 21:26–21:52): guest clock
+  at 23:52: row shown, Review "Until 12:00 AM", Start at 23:55:38 refused
+  with "Enter 5 minutes or more." and the row hidden (`213745-86a4`,
+  `213758-e358`, `214115-31a0`); `session-start-desktop`, `flow session`
+  480, end of day, 30, 45 minutes, `session-expiry-desktop`
+  (`214334-c9c8`, `214403-c750`, `214424-25d8`, `214443-04b0`,
+  `214506-8f4e`, `214534-fb2a`).
+- **Final code head `010ce6ab`**, host loaded by another job (load average
+  14–37): test iPhone `flow session --until-end-of-day` and `--minutes 480`
+  (`221520-7462`, `221601-6480`); Simulator at the largest text size, two
+  rows of three without clipping (`222802-1460`); Mac VM fresh clones,
+  `pause-sets-desktop` with the reveal step (`222933-cba1`) and `flow
+  session --until-end-of-day` (`223710-452d`).
+- **Skipped** under the maintainer's order of 2026-10-09 (translated): "keep
+  VM and iPhone verification to a minimum, once before the PR where it makes
+  sense". Not rerun on the final head: the other session scenarios, the
+  midnight edge (its timing logic is covered by the tests above; the layout
+  change does not touch it), and `driver-settle-ios`, which failed at step 4
+  at both text sizes because this Simulator types through the hardware
+  keyboard, so **Done** never shows (`222158-7aa4`, `222233-96c2`).
+
+## Review
+
+- Independent review of `66815d11`: `changes-required`; items 3–6 and 8
+  fixed in `010ce6ab`.
+- Open: what Mac VoiceOver speaks for the lengths. The spoken label is set
+  as the text's content description, but the Mac accessibility tree exposed
+  the visible "1 h"; not checked with VoiceOver.
