@@ -963,9 +963,12 @@ badges and counts have accessible labels.
   if it is nearly reached. The wheels show the time left until midnight; turning
   them or choosing a length clears the choice. When the choice is no longer
   offered, or the setup stays open past midnight, it is cleared and the length
-  returns to 25 minutes; Review and a late Start then refuse as too short
-  instead of starting a short or next-day pause. Review names a length in hours
-  and minutes ("8 hours · you stay in control") or **Until end of day**.
+  returns to 25 minutes; Review and a late Start then refuse as too short, or
+  as already passed after midnight, instead of starting a short or next-day
+  pause. This reset is decided by the agent under the maintainer's delegation
+  of 2026-10-09 and awaits the maintainer's confirmation. Review names a length
+  in hours and minutes ("8 hours · you stay in control") or **Until end of
+  day**.
 - Bounds: five minutes through 24 hours. Zero hours restricts minutes to 5–59;
   24 hours restricts minutes to zero. Changing hours clamps the total safely.
 - Wheels snap, support arrow keys and Home/End on desktop, and expose a range

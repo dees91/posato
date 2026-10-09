@@ -1,12 +1,12 @@
 # Execution: `SESSION-007`
 
 - **Brief:** [session-007-longer-quick-choices.md](../specifications/session-007-longer-quick-choices.md)
-- **Status:** `active`: implemented; Mac VM run and independent review pending
+- **Status:** `done`: implemented, reviewed, and verified; ready for review
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
-- **Reviewer:** independent agent, after implementation
+- **Reviewer:** independent agent; `changes-required` on `66815d11`, approved on `51b0d2f7`
 - **Branch:** `task/session-007-longer-quick-choices`
-- **Updated:** 2026-10-09
+- **Updated:** 2026-10-09 (closeout)
 
 ## Plan
 
@@ -55,8 +55,10 @@ Decided by the agent under the maintainer's delegation of 2026-10-09:
 
 - `SessionEndOfDayTest` (daylight-saving days, 5-minute edge): 5 of 5 failed
   against a naive stub, then passed.
-- `SessionEndOfDayChoiceTest` (stale choice, refused Start): 4 of 4 failed
-  against stubs that kept the earlier behaviour, then passed.
+- `SessionViewModelTest` stale end-of-day choice (Review after 23:55 and
+  past midnight, a late Start): the three tests fail with the stale check and
+  the reset on refusal removed, and pass with them. They replace an earlier
+  pure-function test of the same rules.
 - `JvmSessionTimeFormatTest` zone change: failed while the zone was cached.
 
 ## Verification
@@ -87,16 +89,23 @@ Run directories are under the worktree's ignored `build/verification/runs/`.
   session --until-end-of-day` (`223710-452d`).
 - **Skipped** under the maintainer's order of 2026-10-09 (translated): "keep
   VM and iPhone verification to a minimum, once before the PR where it makes
-  sense". Not rerun on the final head: the other session scenarios, the
-  midnight edge (its timing logic is covered by the tests above; the layout
-  change does not touch it), and `driver-settle-ios`, which failed at step 4
-  at both text sizes because this Simulator types through the hardware
-  keyboard, so **Done** never shows (`222158-7aa4`, `222233-96c2`).
+  sense". Not rerun on the final head: the other session scenarios and the
+  Mac midnight edge. `010ce6ab` changed the midnight path (the stale reset),
+  and the `SessionViewModelTest` cases above cover it instead of a VM run.
+- `driver-settle-ios` failed at step 4 on the Simulator at both text sizes,
+  because it types through the hardware keyboard, so **Done** never shows
+  (`222158-7aa4`, `222233-96c2`); on the test iPhone it passed on
+  `51b0d2f7`'s code (`225244-c4a5`). The shorter press-and-drag of the
+  driver's screen swipes may still break scroll scenarios not run here.
 
 ## Review
 
 - Independent review of `66815d11`: `changes-required`; items 3–6 and 8
   fixed in `010ce6ab`.
+- Follow-ups, not changed here: `IosSessionTimeFormat` keeps its formatters'
+  zone from creation (it cannot be verified on iOS in this row), and
+  `FirstCloseChoice.kt:45` formats with `ZoneId.systemDefault()`, which the
+  JVM caches.
 - Open: what Mac VoiceOver speaks for the lengths. The spoken label is set
   as the text's content description, but the Mac accessibility tree exposed
   the visible "1 h"; not checked with VoiceOver.

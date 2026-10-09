@@ -1,6 +1,8 @@
 package app.posato.feature.session.ui
 
 import app.posato.feature.schedules.domain.CentralEuropeanZone
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.utc
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.domain.FakeSessionClock
@@ -396,6 +398,67 @@ class SessionViewModelTest {
         assertEquals(listOf("new.example", "old.example"), viewModel.uiState.value.displayDomains())
     }
 
+    @Test
+    fun `given the end of day chosen when review comes after it is no longer offered then review refuses and continues with 25 minutes`() = runTest(dispatcher) {
+        val clock = FakeSessionClock(BEFORE_MIDNIGHT)
+        val viewModel = endOfDayChosen(clock)
+
+        clock.nowEpochMillis = MIDNIGHT - 4 * MINUTE
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+        val refused = viewModel.uiState.value
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+
+        assertFalse(refused.isReviewing)
+        assertEquals(SessionSetupFailure.TOO_SHORT, refused.setupFailure)
+        assertEquals("formatted-${clock.nowEpochMillis + 25 * MINUTE}", viewModel.uiState.value.formattedReviewEnd)
+    }
+
+    @Test
+    fun `given the end of day chosen when setup stays open past midnight then review does not move to the next midnight`() = runTest(dispatcher) {
+        val clock = FakeSessionClock(BEFORE_MIDNIGHT)
+        val viewModel = endOfDayChosen(clock)
+
+        clock.nowEpochMillis = MIDNIGHT + 2 * MINUTE
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+
+        assertEquals("formatted-${clock.nowEpochMillis + 25 * MINUTE}", viewModel.uiState.value.formattedReviewEnd)
+    }
+
+    @Test
+    fun `given a reviewed end of day when start comes too late then no pause starts and setup continues with 25 minutes`() = runTest(dispatcher) {
+        val clock = FakeSessionClock(BEFORE_MIDNIGHT)
+        val viewModel = endOfDayChosen(clock)
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+
+        clock.nowEpochMillis = MIDNIGHT - 4 * MINUTE
+        viewModel.startSession()
+        scheduler.runCurrent()
+        val refused = viewModel.uiState.value
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+
+        assertIs<LocalSessionStatus.Inactive>(refused.status)
+        assertEquals(SessionSetupFailure.TOO_SHORT, refused.setupFailure)
+        assertEquals("formatted-${clock.nowEpochMillis + 25 * MINUTE}", viewModel.uiState.value.formattedReviewEnd)
+    }
+
+    private fun TestScope.endOfDayChosen(clock: FakeSessionClock): SessionViewModel {
+        val viewModel = collectedViewModel(clock = clock, domains = listOf("stable.example"))
+        viewModel.setSetupVisible(true)
+        scheduler.runCurrent()
+        viewModel.chooseDuration(SessionDurationChoice.EndOfDay)
+        scheduler.runCurrent()
+        assertTrue(viewModel.uiState.value.untilEndOfDay)
+
+        return viewModel
+    }
+
     private fun TestScope.collectedViewModel(
         store: FakeLocalSessionStore = FakeLocalSessionStore(),
         clock: FakeSessionClock = FakeSessionClock(NOW),
@@ -445,6 +508,9 @@ class SessionViewModelTest {
 
     private companion object {
         const val NOW: Long = 1_000_000_000_000L
+        const val MINUTE: Long = 60_000L
+        val MIDNIGHT: Long = utc(ScheduleDate(2026, 10, 9), 22 * 60)
+        val BEFORE_MIDNIGHT: Long = MIDNIGHT - 8 * MINUTE
 
         fun policyStoreOf(
             domains: List<String> = emptyList(),
