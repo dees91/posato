@@ -118,13 +118,29 @@ version from Apple's update server. The driver can prepare it without a person:
 A new device signing in can make the other golden VMs report "Some iCloud
 Data Isn't Syncing". iCloud Keychain items, including the Posato workspace key,
 then stop reaching them. `vm create` reports the state as `iCloudKeychain`
-(`syncing`, `paused`, `signed-out`, or `unknown`), and `vm icloud --line <line>` checks it
-and exits 3 when it is paused or signed out. `vm icloud --line <line> --resume` runs Resume
-Data Sync and answers the account, Mac password, and passcode dialogs. Repair
+(`syncing`, `paused`, `signed-out`, `needs-attention`, or `unknown`), and
+`vm icloud --line <line>` checks it and exits 3 unless it syncs or cannot be
+read. `vm icloud --line <line> --resume` runs Resume Data Sync and answers the
+account, Mac password, and passcode dialogs. Repair
 the golden VM itself, not only a clone: boot it under the clone's name
 (`tart rename`, `vm boot`), run `vm icloud --resume`, `vm shutdown`, and
 rename it back. If Apple asks for the trusted phone number, type it with
 `vm type --secret phone` from the optional phone item above.
+
+When the test account's session in a golden VM expires, every clone raises
+"This Mac can't connect to iCloud because of a problem with" the account.
+`vm onboard` answers it with Later, reports `goldenAccountNeedsAttention`,
+and marks the clone, so `vm icloud` and `flow icloud link` in that clone
+refuse with `ICLOUD_KEYCHAIN_PAUSED` and the state `needs-attention`; they
+also refuse while the alert shows over System Settings. A new clone starts
+unmarked. Renew the account in that golden VM (`observed` 2026-10-08): boot
+it under the clone's name as above, open Apple Account settings from the
+alert with `vm press --line <line> return`, answer
+`vm prompt account-password --line <line>`, and if Apple asks for a
+two-factor code, type it with `vm type --line <line> --text <code>`. The
+code goes to the account's trusted phone number, so the maintainer reads it
+out; this is the only step that needs them. Quit System Settings and any
+other open application, then `vm shutdown` and rename it back.
 
 The `ventura` line holds a macOS 13 golden VM that runs the x86-64 build under
 Rosetta. A guest older than macOS 15 cannot sign in to an Apple Account, so
