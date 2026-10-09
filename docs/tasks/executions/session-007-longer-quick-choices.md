@@ -1,7 +1,7 @@
 # Execution: `SESSION-007`
 
 - **Brief:** [session-007-longer-quick-choices.md](../specifications/session-007-longer-quick-choices.md)
-- **Status:** `active`: brief only; implementation waits for `D1` and `D2`
+- **Status:** `active`: brief only; `D1` and `D2` decided, implementation not started
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
 - **Reviewer:** independent agent, after implementation
@@ -10,8 +10,8 @@
 
 ## Plan
 
-1. Record the maintainer's `D1` and `D2` in `DESIGN.md` and the sessions
-   feature map.
+1. Record `D1` = A and `D2` = A (`user-confirmed`, 2026-10-09; see the
+   brief) in `DESIGN.md` and the sessions feature map.
 2. Write the end-of-day resolution test first, for the daylight-saving and
    5-minute edges. Then resolve **Until end of day** as an end time through
    `SessionSetup.validateEndTime`, and widen the quick choices on both hosts.

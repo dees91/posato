@@ -83,8 +83,13 @@ device's clock. The hour and minute controls still allow any other length.
 
 ## Decisions or blockers
 
-The maintainer decides these before implementation; the options and the
-recommendation are in the pull request:
+Both decided by the maintainer (`user-confirmed`, 2026-10-09):
 
-- `D1`: the final set of quick choices and their labels.
-- `D2`: the phone and Mac layout of those choices.
+- `D1` = A: the quick choices are 25 min, 45 min, 1 h, 2 h, 4 h, 8 h, and
+  **Until end of day**; 60 min becomes 1 h.
+- `D2` = A: one row of the six lengths with short labels (VoiceOver reads
+  them in full), then a separate **Until end of day** row that shows its end
+  (`ends 00:00`), then the wheel. On iOS the row of lengths is the system
+  segmented control; on the Mac it is the drawn choice group.
+
+No blocker.
