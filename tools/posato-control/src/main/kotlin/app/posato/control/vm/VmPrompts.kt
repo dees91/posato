@@ -308,7 +308,7 @@ internal fun guestScreen(
     line: VmLine
 ): GuestScreen {
     VmLifecycle(context).requireRunning(line)
-    return GuestScreen(context, vmEndpoint(context, line, 0), vmDirectory(context, line).resolve(FRAME))
+    return GuestScreen(context, vmEndpoint(line, 0), vmDirectory(line).resolve(FRAME))
 }
 
 internal fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")

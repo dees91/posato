@@ -2669,3 +2669,11 @@ first removal attempt that does not finish, not to a paused keychain.
   measured parallel tracks, one readiness check, shorter onboarding waits)
   are recorded as open in the unattended verification topic for
   `PLATFORM-001`, none accepted yet.
+
+## [2026-10-09] tooling | VM state outlives the worktree
+
+- `observed` 2026-10-08: removing a merged pull request's worktree deleted
+  the Tart log that held a running golden VM's VNC address, and the driver
+  could no longer reach it. The per-clone state and the JDK copy that guests
+  run the driver with now live in Tart's home beside the clones, so a running
+  VM stays reachable from any checkout.

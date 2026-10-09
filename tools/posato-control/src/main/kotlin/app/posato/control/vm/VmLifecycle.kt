@@ -8,8 +8,11 @@ import app.posato.control.core.readKeychainSecret
 import app.posato.control.desktop.AxBridgeBinary
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.nio.file.DirectoryNotEmptyException
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 import java.time.Duration
 import kotlin.io.path.exists
@@ -56,10 +59,10 @@ class VmLifecycle(
         val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
         recordCloneOwner(context, line.cloneName)
-        val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
+        val log = ownerOnlyFile(vmDirectory(line).resolve(RUN_LOG))
         val started = System.currentTimeMillis()
         tart.start(line.cloneName, jdk, log)
-        vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        vmEndpoint(line, BOOT_TIMEOUT_MS)
         val vncHold = VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
@@ -126,9 +129,9 @@ class VmLifecycle(
      */
     fun boot(line: VmLine): JsonObject {
         refuseBoot(tart.list(), context.configuration.value(line.goldenKey), line.cloneName)
-        val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
+        val log = ownerOnlyFile(vmDirectory(line).resolve(RUN_LOG))
         tart.start(line.cloneName, hostJdk(context), log)
-        vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        vmEndpoint(line, BOOT_TIMEOUT_MS)
         val vncHold = VncHold(context, line).start()
         return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName), "vncHold" to JsonPrimitive(vncHold)))
     }
@@ -160,7 +163,7 @@ class VmLifecycle(
             awaitStopped(line)
         }
         tart.delete(line.cloneName)
-        vmDirectory(context, line).toFile().deleteRecursively()
+        vmDirectory(line).toFile().deleteRecursively()
     }
 
     fun running(line: VmLine): Boolean = tart.list().any { it.name == line.cloneName && it.running }
@@ -222,23 +225,37 @@ class VmLifecycle(
 /** The guest directory that holds the driver, fixtures, and evidence; `$HOME` expands in double quotes too. */
 internal const val GUEST_ROOT = "\$HOME/posato-run"
 
-/** An APFS clone of the host JDK at a path without `@`, which Tart's directory-share parser rejects. */
+/**
+ * An APFS clone of the host JDK at a path without `@`, which Tart's directory-share parser rejects. A running guest
+ * reads it through a directory share, so it sits beside the per-clone state rather than in a checkout, named after
+ * the JDK bundle so that a host JDK update gets a fresh copy. It is copied under a temporary name and moved into
+ * place, so two checkouts creating it at once each see a whole copy.
+ */
 internal fun hostJdk(context: RunContext): Path {
-    val target = context.layout.verificationDirectory.resolve("vm").resolve("jdk")
-    if (target.exists()) return target
     val home = context.subprocess.run(
         listOf("/usr/libexec/java_home"),
     ).requireSuccess(ErrorCode.COMMAND_FAILED, "Finding the host JDK").stdout.trim()
     val bundle = Path.of(home).parent.parent
-    Files.createDirectories(target.parent)
+    val target = stateRoot().resolve("jdk-${bundle.fileName}")
+    if (target.exists()) return target
+    Files.createDirectories(stateRoot(), OWNER_ONLY_DIRECTORY)
+    val copy = Files.createTempDirectory(stateRoot(), "jdk-copy").resolve("jdk")
     context.subprocess.run(
-        listOf("/bin/cp", "-cR", bundle.toString(), target.toString()),
+        listOf("/bin/cp", "-cR", bundle.toString(), copy.toString()),
     ).requireSuccess(ErrorCode.COMMAND_FAILED, "Cloning the host JDK")
+    try {
+        Files.move(copy, target, StandardCopyOption.ATOMIC_MOVE)
+    } catch (_: FileAlreadyExistsException) {
+        context.log("Another checkout placed $target first; keeping its copy.")
+    } catch (_: DirectoryNotEmptyException) {
+        context.log("Another checkout placed $target first; keeping its copy.")
+    }
+    copy.parent.toFile().deleteRecursively()
     return target
 }
 
 internal fun ownerOnlyFile(file: Path): Path {
-    Files.createDirectories(file.parent)
+    Files.createDirectories(file.parent, OWNER_ONLY_DIRECTORY)
     Files.deleteIfExists(file)
     return Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))
 }
@@ -246,18 +263,24 @@ internal fun ownerOnlyFile(file: Path): Path {
 private const val RUN_LOG = "tart-run.log"
 private const val ENDPOINT_POLL_MS = 1_000L
 
-/** Per-line state under the ignored verification directory; the Tart log holding the VNC password is owner-only. */
-internal fun vmDirectory(
-    context: RunContext,
-    line: VmLine
-): Path = context.layout.verificationDirectory.resolve("vm").resolve(line.id)
+/**
+ * Per-clone state, such as the Tart log holding the VNC address and password (owner-only). Clone names are
+ * machine-wide, so their state is too: it sits in Tart's home beside the clones, not in a checkout, and outlives the
+ * worktree that created or booted the VM (a removed worktree once took a running VM's address with it, `observed`
+ * 2026-10-08). It stays outside the clone's own Tart directory, which `tart rename` would carry into a golden VM.
+ */
+internal fun vmDirectory(line: VmLine): Path = stateRoot().resolve(line.cloneName)
+
+/** The driver's machine-wide VM state in Tart's home; owner-only, since screen captures and the VNC log pass through it. */
+private fun stateRoot(): Path = tartHome().resolve("posato-control")
+
+private val OWNER_ONLY_DIRECTORY = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))
 
 internal fun vmEndpoint(
-    context: RunContext,
     line: VmLine,
     timeoutMs: Long
 ): VncEndpoint {
-    val log = vmDirectory(context, line).resolve(RUN_LOG)
+    val log = vmDirectory(line).resolve(RUN_LOG)
     val deadline = System.currentTimeMillis() + timeoutMs
     while (true) {
         val endpoint = if (log.exists()) parseVncEndpoint(log.readText()) else null
