@@ -1191,7 +1191,8 @@ below. This queue retains idea provenance without expanding the original MVP.
     `IosCloudKitMailboxProvider` runs at most `MAX_REMOVAL_CALLS` (10)
     removal calls a press, as the Mac did before `SYNC-021`, so a zone with
     a long history likely needs several **Remove workspace** presses on the
-    iPhone too. `open`: whether it reproduces on the test iPhone.
+    iPhone too. `open`: whether it reproduces on the test iPhone. Filed as
+    an agent proposal under the maintainer's delegation of 2026-10-09.
     Owner: backlog row `IOS-008`.
 
 ## Later platform questions

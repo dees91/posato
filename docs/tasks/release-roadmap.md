@@ -149,8 +149,9 @@
   presses and up to about 7 minutes. It joins release 1.4 wave 1 with a
   restated outcome. `TARGETS-009` did not recur in 3 runs and the
   maintainer dropped it; it is deleted from the backlog.
-  The 2026-10-09 backlog addition `IOS-008` (idea 34, `user-confirmed`
-  through the `SYNC-021` plan review) changes no release.
+  The 2026-10-09 backlog addition `IOS-008` (idea 34, an agent proposal
+  under the maintainer's delegation of 2026-10-09, from the `SYNC-021`
+  plan review) changes no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for

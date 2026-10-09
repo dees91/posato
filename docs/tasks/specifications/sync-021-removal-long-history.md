@@ -48,8 +48,10 @@ Apple Account's zone history is cleaned under recorded controls.
 - The app never deletes the zone. Zone deletion and history seeding exist
   only in verification builds, under the proposed ADR 0007 amendment, with
   the controls listed in the record (step 5).
-- iOS is out of scope and its UI does not change. It has the same per-press
-  cap (`MAX_REMOVAL_CALLS` = 10); a new idea and backlog row own it.
+- iOS is out of scope and its UI does not change: a platform-composition
+  boolean shows the new row state only on macOS, and `IosMailboxAdapter`
+  ignores the budget. iOS has the same per-press cap
+  (`MAX_REMOVAL_CALLS` = 10); idea 34 and backlog row `IOS-008` own it.
 
 ## Acceptance
 
@@ -60,35 +62,44 @@ Apple Account's zone history is cleaned under recorded controls.
 - `AC-02`: right after `flow icloud link` returns, which since PR #161 is
   after the first sync settles, the first press at the first moment the row
   allows it removes the workspace.
-- `AC-03`: during a long removal the macOS row shows "Removing workspace…",
-  the note, and the activity indicator, with both actions disabled, and a
-  second press cannot start a second removal. With the guest network off
-  the press ends in the existing retryable state, and a retry resumes.
-- `AC-04`, in this order:
-  1. clean the test account's zone with the verification tool;
-  2. rebuild the fixture with the recorded procedure;
+- `AC-03`: during a long removal, closing and reopening the window shows
+  the macOS row with "Removing workspace…", the note, and the activity
+  indicator, with both actions disabled, and the removal ends with
+  `presses == 1` (also the acceptance of `D3`).
+- `AC-04`, in this order, waiting at least 15 minutes with recorded
+  timestamps after every clean:
+  1. clean the test account's zone with `vm sync-fixture delete-zone`;
+  2. one link, which creates the zone, and one removal; then rebuild the
+     fixture with the recorded procedure (cycles or seeding, `D1`);
   3. a pre-fix build (`572e341`) fails on it;
   4. the fixed build passes (`AC-01`);
-  5. clean again only if the account should be left empty, then wait at
-     least 15 minutes with recorded timestamps, link once, and pass the
-     `SYNC-014` ten-minute survival check before a timed routine removal.
+  5. clean again, so the test account is left empty and routine iCloud runs
+     are fast; after the wait, one link passes the `SYNC-014` ten-minute
+     survival check, then a timed routine removal.
 
-  Each clean runs only when the zone's anchor is absent, `tart list` shows
-  only this row's clone, a `posato-control` read of the test iPhone shows
-  its iCloud row not linked, and the guest's signed-in Apple Account equals
-  the configured test account. Cleaning covers the zone only; each removal
-  already deletes its own workspace-key item, and the tool never touches
-  Keychain items.
+  Each clean needs: the zone's anchor absent, this row's clone the only
+  running Tart VM, and the guest signed in to the configured test account,
+  all three enforced by `vm sync-fixture` itself; and a `-t device`
+  snapshot of the test iPhone showing an enabled **Sync with iCloud**
+  button, which means not linked. Cleaning covers the zone only; each
+  removal already deletes its own workspace-key item, and the tool never
+  touches Keychain items.
+- `AC-05`, iOS unchanged: on the test iPhone, link, remove once; the row
+  looks as it does today and ends not linked.
 
 ## Verification
 
 - Fresh `primary` Tart clones on the test Apple Account with
-  `flow icloud link` and `flow icloud remove`, timed press by press, before
-  and after the fix (`AC-01` to `AC-03`) and through the `AC-04` order.
-- Kotlin adapter tests with a fake transport, written failing first, only
-  for the failure inventory in the record that E2E cannot produce.
-- The release packaging and DMG checks shown to refuse a verification-flag
-  package and to pass a release-configuration one.
+  `flow icloud link` and `flow icloud remove --timeout-seconds 1500`,
+  timed press by press, before and after the fix (`AC-01` to `AC-03`)
+  and through the `AC-04` order; one test-iPhone run for `AC-05`.
+- Isolated tests, written failing first, only for the failure inventory in
+  the record that E2E cannot produce: Kotlin adapter and `AppleSync` tests
+  with fakes, and companion `swiftTest` refusal tests built with the
+  verification condition.
+- The seam check's positive control: the development packaging check on a
+  flag-built package with its input forced off, and the DMG reader on a
+  plain disk image of that package, each failing with the seam message.
 
 ## Decisions or blockers
 
