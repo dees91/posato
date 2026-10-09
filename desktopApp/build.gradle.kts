@@ -1112,8 +1112,6 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         val notes = PosatoUpdateFeed.releaseNotes(releaseNotes.orNull?.asFile)
         val staged = applicationBundle.get().file("Contents/Info.plist").asFile
         val published = publishedApplication(diskImage)
-        // On every channel: a DMG with the verification seams is never published, not even as a candidate.
-        PosatoVerificationSeams.mismatch(published.verificationSeams, expected = false)?.let { problem -> throw GradleException(problem) }
         val (feedUrl, publicKey, buildNumber) = published.updateValues
         check(published.architectures == listOf(architecture.get().machOName)) {
             "The DMG's application is ${published.architectures.joinToString(" ")}, not only ${architecture.get().machOName}."
@@ -1223,7 +1221,6 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         val updateValues: List<String>,
         val architectures: List<String>,
         val allowsRosetta: Boolean,
-        val verificationSeams: PosatoVerificationSeams.Found,
     )
 
     /** The feed URL, key, build number, architectures, and Rosetta switch of the application inside the DMG. */
@@ -1247,6 +1244,9 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         }
         if (attach.exitValue != 0) throw GradleException("Could not mount ${diskImage.name} to read its application.")
         try {
+            // First, on every channel: a DMG with the verification seams is never published, not even as a candidate.
+            PosatoVerificationSeams.mismatch(PosatoVerificationSeams.scan(mountPoint.resolve("Posato.app")), expected = false)
+                ?.let { problem -> throw GradleException(problem) }
             val information = mountPoint.resolve("Posato.app/Contents/Info.plist")
             val executable = mountPoint.resolve("Posato.app/Contents/MacOS/Posato")
             val architectures = ByteArrayOutputStream()
@@ -1264,7 +1264,6 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
                 UPDATE_KEYS.map { key -> plistValue(information, key) },
                 architectures.toString(Charsets.UTF_8).trim().split(Regex("\\s+")),
                 rosettaSwitch,
-                PosatoVerificationSeams.scan(mountPoint.resolve("Posato.app")),
             )
         } finally {
             val detach = execOperations.exec {
