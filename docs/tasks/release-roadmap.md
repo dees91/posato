@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 20 (2026-10-08: release 1.4 adds `MACOS-026`, `SESSION-007`, `MACOS-027`, and `DOCS-005`)
+- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-08
+- **Last amended:** 2026-10-09
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -143,6 +143,12 @@
   has changed since. A defect that the recheck reproduces joins wave 1 by a
   later revision. Release 1.4 has no target date; it is published when its
   rows are done.
+  Revision 21 records the recheck on `main` `572e341` (`user-confirmed`,
+  2026-10-09). `SYNC-021` reproduced in every fresh Tart clone: the first
+  **Remove workspace** failed in 6 of 6 runs, and removal took 3 or 4
+  presses and up to about 7 minutes. It joins release 1.4 wave 1 with a
+  restated outcome. `TARGETS-009` did not recur in 3 runs and the
+  maintainer dropped it; it is deleted from the backlog.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -379,13 +385,17 @@ pause, and reported defects.
 
 The composition was started with one delivery row by the maintainer's
 choice. Revision 19 adds `IOS-007`, a defect in ending a pause on the
-iPhone. Revision 20 completes the composition; `SYNC-021` and `TARGETS-009`
-can still join wave 1 after their recheck. The release has no target date.
-Ordering across the waves:
+iPhone. Revision 20 completes the composition, and revision 21 adds
+`SYNC-021` after its recheck. The release has no target date. Ordering
+across the waves:
 
-- `MACOS-026`, `SESSION-007`, and `MACOS-027` are independent. `MACOS-026`
-  and `MACOS-027` both change the macOS application, so their write
-  surfaces are checked when they start.
+- `MACOS-026`, `SESSION-007`, `MACOS-027`, and `SYNC-021` are independent.
+  `MACOS-026`, `MACOS-027`, and `SYNC-021` all change the macOS
+  application, so their write surfaces are checked when they start.
+- `SYNC-021` reproduces only on a zone with a long history, which the test
+  Apple Account has after many verification link and removal cycles. The
+  row first makes that history repeatable to build; only then is the test
+  account's zone history cleaned, so routine iCloud runs are fast again.
 - `MACOS-027` has a limit of one work session to reproduce the defect in a
   Tart VM along the maintainer's update path. Without a reproduction the
   row records its attempts, returns to the backlog, and no longer holds
@@ -399,8 +409,9 @@ Ordering across the waves:
 | `MACOS-026` | Let an in-app update replace Posato on the Mac without asking "Quit Posato?": the updater's quit request skips the confirmation that a person's quit gets while a pause runs or a schedule is on, and a person's quit still asks. Verify a candidate-channel update from a build with the change to the next with a schedule on and during a pause; without either, the old build does not ask either. | Sessions and enforcement | delivery | R1.4/W1 | None | PR-MAC-UPDATE-QUIT |
 | `SESSION-007` | Offer longer quick choices when a pause is started by hand, next to 25 and 45 minutes: 1 h, 2 h, 4 h, 8 h, and **Until end of day** at midnight on the device's clock, within the existing 5-minute minimum and 24-hour maximum, on Mac and iPhone, with the final set and phone layout settled in `DESIGN.md`. | Sessions and enforcement | delivery | R1.4/W1 | None | PR-SESSION-QUICK-DURATIONS |
 | `MACOS-027` | Find why a long-lived Mac install reports the background helper as unavailable ("Setup incomplete", "could not be checked or enabled", a schedule that "couldn't start here") while System Settings allows it and blocking works, reproduce it in a Tart VM along the maintainer's update path within one work session, and fix the readiness check or its recovery so Session, setup, and schedules agree with what the helper does. Without a reproduction in that session the row records its attempts and returns to the backlog. | Sessions and enforcement | delivery | R1.4/W1 | None | PR-MAC-HELPER-READINESS |
-| `DOCS-005` | Prepare the public packaging for 1.4 without publishing it: recapture the showcase with the interface from `DESIGN-004` and render the media again; describe 1.4 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.4/W2 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027` | PR-RELEASE-1-4-MEDIA |
-| `RELEASE-006` | Verify the 1.4.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.4/W3 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027`, `DOCS-005` | PR-RELEASE-1-4 |
+| `SYNC-021` | Make one **Remove workspace** press remove a Mac's workspace right after a link and when its zone has a long history. On `main` `572e341` in fresh Tart clones on the test Apple Account, the first press ended with "Sync didn't finish" in 6 of 6 runs, and removal took 3 or 4 presses and up to about 7 minutes while the sync companion read records 16 at a time. Find whether the attempt deadline, the page budget, or the first sync after the link causes it; let the removal continue to completion with honest progress instead of failing at a deadline; and build a repeatable long-history reproduction before the test account's zone history is cleaned. | Sessions and enforcement | delivery | R1.4/W1 | None | PR-SYNC-REMOVAL-HISTORY |
+| `DOCS-005` | Prepare the public packaging for 1.4 without publishing it: recapture the showcase with the interface from `DESIGN-004` and render the media again; describe 1.4 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.4/W2 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027`, `SYNC-021` | PR-RELEASE-1-4-MEDIA |
+| `RELEASE-006` | Verify the 1.4.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.4/W3 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027`, `SYNC-021`, `DOCS-005` | PR-RELEASE-1-4 |
 
 ## Backlog
 
@@ -433,8 +444,6 @@ The idea numbers refer to the wiki idea queue.
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
-| `SYNC-021` | Find why the first **Remove workspace** on a Mac right after a link ends after about 60 s with "Sync didn't finish" while a second press removes the workspace, reproduce it in a Tart VM, and fix it so one press removes the workspace, either after the first sync after the link finishes or by waiting for it. | Sessions and enforcement | Idea 32 | A reproduction in a Tart VM on `main` after PR #147, whose fixed onboarding no longer switches the helper off; it then joins release 1.4 wave 1 by a revision |
-| `TARGETS-009` | Find why deleting a pause set that a schedule uses, with **Move to ... and delete**, sometimes fails to save on the Mac right after a link: make the failure diagnosable without logging pause content, reproduce it in a Tart VM, and fix it so the move and the deletion either both happen or neither does and a retry succeeds. | Target management | Idea 33 | A reproduction on `main` after PR #147 or a diagnosed failure; it then joins release 1.4 wave 1 by a revision |
 
 ## Coverage matrix
 
@@ -451,7 +460,7 @@ The idea numbers refer to the wiki idea queue.
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
 | System back gestures | `NAV-001` | Test-iPhone and iPad edge-swipe back and Mac keyboard and trackpad back in Tart, with the explicit **Back** actions kept |
-| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SCHEDULE-006`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `NAV-002`, `SESSION-006`, `IOS-007`, `MACOS-027` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
+| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SCHEDULE-006`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `NAV-002`, `SESSION-006`, `IOS-007`, `MACOS-027`, `SYNC-021` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
 | New homepage and product line | `WEB-002` | The chosen line in `DESIGN.md`, the site, README, and App Store subtitle; the site built and checked on a phone and a wide screen |
 | Public packaging for 1.3 | `DOCS-004` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
 | A native feel on every Apple device | `DESIGN-004` | The direction in `DESIGN.md`; Simulator iPhone and iPad, Mac VM, and test-iPhone runs of the adapted scenarios |
