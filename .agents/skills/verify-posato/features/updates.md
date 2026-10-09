@@ -64,8 +64,10 @@ Preconditions:
   then copy `local.properties`) and build there with that tag's own
   `posato-control`.
   - Mac: `$PC build -t desktop` in the tag worktree, then copy its package
-    into this worktree's staging with `ditto` (path
-    `desktopApp/build/compose/binaries/main/development-package/Posato.app`),
+    into this worktree's staging with `ditto`, from the tag's
+    `desktopApp/build/compose/binaries/main/verification-package/Posato.app`
+    (`development-package` for tags before 1.4) to the same
+    `verification-package` path here,
     `vm create`, onboard by hand (see [First install](./onboarding.md)), and
     create the state to migrate. Then `$PC build -t desktop` here,
     `vm sync`, and `launch` opens the upgraded database.

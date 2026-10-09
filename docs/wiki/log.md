@@ -2686,3 +2686,10 @@ first removal attempt that does not finish, not to a paused keychain.
   could no longer reach it. The per-clone state and the JDK copy that guests
   run the driver with now live in Tart's home beside the clones, so a running
   VM stays reachable from any checkout.
+## [2026-10-09] tooling | quality no longer replaces the verification package
+
+- `observed`: `./gradlew quality` staged its ad-hoc package in the same
+  directory as `posato-control build -t desktop`, so a signed package became
+  ad-hoc after every quality run. Verification VMs then could not finish
+  onboarding, and the build order had to put the signed build last.
+  `posato-control` now stages into its own `verification-package`.

@@ -142,7 +142,6 @@ action. This sequence reached and pressed **Sync now** on the compact iPhone
 during `MVP-001`.
 
 1. Build both applications; use `build -t device --driver`, then `install`.
-   `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
    Launch preserving existing state, never with `--fresh`.
 2. Capture `snapshot --format text` and a screenshot of Session. Expand the
    iCloud row with `tap --text-contains "iCloud," --role button`. For an

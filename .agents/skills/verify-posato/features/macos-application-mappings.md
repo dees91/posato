@@ -32,8 +32,7 @@ Preconditions:
   `local.properties`, and `doctor -t desktop` reports `desktop.staged`,
   `desktop.signingIdentity`, and `desktop.syncProfile` as ok. An ad-hoc package
   refuses to start the helper and the button reports `The application picker
-  could not be opened.`. `./gradlew quality` restages ad-hoc, so run
-  `$PC build -t desktop` after it.
+  could not be opened.`.
 - The app runs in a Tart VM clone (`--vm primary`), whose golden VM grants
   Accessibility and Screen Recording to `tart-guest-agent`.
 - The picker steps address the helper process, so the Mac must not be locked

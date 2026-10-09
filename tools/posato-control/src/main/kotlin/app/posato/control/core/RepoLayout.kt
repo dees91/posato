@@ -28,7 +28,7 @@ class RepoLayout(
         .resolve("compose")
         .resolve("binaries")
         .resolve("main")
-        .resolve("development-package")
+        .resolve(STAGED_PACKAGE_DIRECTORY)
         .resolve("Posato.app")
 
     /** Written only inside a Tart guest by `vm install`: the installed candidate that replaces the staged package. */
@@ -43,6 +43,9 @@ class RepoLayout(
     fun relativize(path: Path): String = if (path.startsWith(root)) root.relativize(path).toString() else path.toString()
 
     companion object {
+        /** The driver's own staging directory, apart from the `development-package` that `./gradlew quality` signs ad hoc. */
+        const val STAGED_PACKAGE_DIRECTORY = "verification-package"
+
         private const val ROOT_MARKER = "rootProject.name = \"Posato\""
 
         fun discover(start: Path = Path.of("").toAbsolutePath()): RepoLayout {

@@ -240,7 +240,7 @@ wait up to 30 seconds for a window and continue without one.
   the relevant row after returning from Pause sets or relaunching. If an
   expanded action is offscreen, use scenario `scrollTo` before tapping it;
   `find` and `wait` do not scroll.
-- An ad-hoc restaged package (what `./gradlew quality` leaves behind) cannot
+- An ad-hoc package (`$PC build -t desktop --signing-identity -`) cannot
   reach the signed daemon, so Check reports the unavailable state on it. That is
   the one non-ready branch reproducible without touching system registration,
   and it also shows the repeated-result sentence and the collapsed-row notice.
