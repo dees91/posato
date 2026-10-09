@@ -2713,3 +2713,16 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: `SYNC-021` joins release 1.4 wave 1 and builds a
   repeatable long-history reproduction before the test account's zone is
   cleaned; `TARGETS-009` is dropped.
+
+## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
+
+- `observed` in a macOS 26 Tart clone with notarized candidates: a build
+  without the change asked "Quit Posato?" during **Install and Relaunch**;
+  with it, the update relaunched the newer build with no dialog while a
+  schedule was on, and after **End session** following a refused install
+  during a pause.
+- A person's quit still asks: Command-Q and **Quit Posato** showed the
+  dialog during a pause, also right after a refused install.
+- The first update that skips the question is from 1.4.0 to a later build;
+  updating from 1.3.0 to 1.4.0 still asks once.
+
