@@ -2723,6 +2723,7 @@ first removal attempt that does not finish, not to a paused keychain.
   during a pause.
 - A person's quit still asks: Command-Q and **Quit Posato** showed the
   dialog during a pause, also right after a refused install.
-- The first update that skips the question is from 1.4.0 to a later build;
-  updating from 1.3.0 to 1.4.0 still asks once.
+- Updating from 1.2 or 1.3 to 1.4.0 still asks once while a schedule is
+  on; press **Quit** to continue. During a pause the install is refused
+  instead; builds before 1.2 never ask. Idea 27 is resolved.
 
