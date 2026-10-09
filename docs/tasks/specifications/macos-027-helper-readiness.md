@@ -106,10 +106,8 @@ cheap 1b check (bundle detritus) runs only if 1a and 2 do not reproduce.
 
 ## Decisions or blockers
 
-- Whether the agent may run read-only checks of the maintainer's real
-  install, never Posato itself: `codesign --verify --deep --strict` with its
-  duration, the extended attributes on the bundle, and the list of Posato
-  background items.
-- Which versions and copies the maintainer's Mac has run. This includes
-  development packages installed before 2026-09-24 and any copy outside
-  `/Applications`.
+- Resolved (`user-confirmed`, 2026-10-09): read-only checks of the
+  maintainer's install were allowed; which builds that Mac ran is unknown.
+- Reproduced under load in Tart; the shown state was the unknown-outcome
+  "Setup incomplete" rather than `UNAVAILABLE`, with the helper enabled. The
+  causes and fix are in the execution record.

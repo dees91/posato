@@ -968,3 +968,40 @@ Mac unblocked for about 25 s while Posato is down, as quitting has since 1.0.
 `vm network --state off` disables every service, after which the helper has
 no proxy target; an offline check keeps the service with an unroutable
 address.
+
+## Helper read as unavailable on a busy Mac (`MACOS-027`)
+
+`observed` (2026-10-09, Tart VM on the peer line, the published 1.3.0 (28)
+and development builds of `main` `ae99a9d`, whose daemon, helper, and
+readiness code equal 1.3.0): under sustained guest CPU and disk load, This
+Mac read "Last Mac setup request did not finish" and Session "Setup
+incomplete. Posato is not blocking websites or apps on this Mac" for about
+40-50 s, while the helper was enabled; both recovered on their own. Two
+causes, both from the on-demand daemon starting slowly:
+
+- The daemon armed its idle exit one second after start and after each
+  disconnect, but a new connection is counted only after its code-signing
+  requirement is checked, which took over a second under load. The daemon
+  then exited with a helper request in flight; the helper saw
+  `XPC_ERROR_CONNECTION_INTERRUPTED`, so the outcome was unknown. ADR 0004
+  allows an exit only with no connection.
+- With disk I/O saturated, launchd took about two minutes to start the
+  daemon for a new connection. The helper's Status waited its full 120 s,
+  failed as an unknown outcome, and ended; the next quiet read showed the
+  unknown answer as incomplete setup.
+
+Separately, a strict deep `codesign` check of the bundle took 6.9 s once
+under load, longer than the readiness check's former 5 s limit per command,
+which maps to `UNAVAILABLE` ("could not be checked or enabled"); that path was
+not seen in the interface. `inferred`: the maintainer's 2026-10-05 report
+during Tart and Gradle work matches these paths, and blocking kept working
+because only the read failed. Whether that day's schedule did not start or
+only reported so stays `open`; a schedule start that meets an unknown read
+is treated as transient.
+
+The fix (PR #158): the daemon exits only after 10 s with no connection,
+request, or disconnect; quiet reads with an unknown outcome keep a shown
+ready state while they last under five minutes, while a check the person
+starts and any `UNAVAILABLE` answer still show at once; and each signing
+command may take 30 s. A helper moved out of the bundle or with a broken
+signature still reads as unavailable.

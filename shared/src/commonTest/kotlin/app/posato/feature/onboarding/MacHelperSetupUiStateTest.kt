@@ -330,6 +330,56 @@ class MacHelperQuietReadRaceTest {
     }
 
     @Test
+    fun `given a ready helper when a later quiet read cannot finish then the confirmed state is kept`() = runTest {
+        var now = 0L
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { now })
+        holder.readQuietly()
+        runCurrent()
+
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        now += 400_000L
+        holder.readQuietly(refresh = true)
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.READY, holder.presentation().readiness)
+        assertEquals(false, holder.presentation().needsSetup())
+    }
+
+    @Test
+    fun `given a ready helper when quiet reads stay unfinished for five minutes then the uncertainty is shown`() = runTest {
+        var now = 0L
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this, elapsedMillis = { now })
+        holder.readQuietly()
+        runCurrent()
+
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        now += 60_000L
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        now += 301_000L
+        holder.readQuietly(refresh = true)
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, holder.presentation().readiness)
+    }
+
+    @Test
+    fun `given a ready helper when a check cannot finish then the uncertainty is shown at once`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this)
+        holder.readQuietly()
+        runCurrent()
+
+        helper.answer = MacHelperReadiness.UNCERTAIN
+        holder.check()
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, holder.presentation().readiness)
+    }
+
+    @Test
     fun `given an unread helper then setup is not required yet`() {
         assertEquals(false, MacSetupPresentation(readiness = null).needsSetup())
         assertEquals(true, MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED).needsSetup())

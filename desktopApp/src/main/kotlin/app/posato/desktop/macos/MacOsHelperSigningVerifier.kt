@@ -11,7 +11,11 @@ internal object MacOsHelperSigningVerifier {
     private const val APPLICATION_IDENTIFIER = "app.posato.macos"
     private const val HELPER_IDENTIFIER = "app.posato.macos.helper"
     private const val MAXIMUM_OUTPUT_BYTES = 16 * 1024
-    private const val COMMAND_TIMEOUT_MILLISECONDS = 5_000L
+
+    // A strict deep check of the whole bundle took about 7 s on a busy Mac; a shorter limit reported
+    // a working helper as unavailable.
+    private const val COMMAND_TIMEOUT_MILLISECONDS = 30_000L
+
     private const val MAXIMUM_BUNDLE_PARENT_DEPTH = 16
     private const val HELPER_RELATIVE_PATH = "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper"
     private const val HELPER_RELATIVE_DEPTH = 6

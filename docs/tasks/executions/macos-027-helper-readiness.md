@@ -1,120 +1,120 @@
 # Execution: `MACOS-027`
 
 - **Brief:** [Mac helper readiness that agrees with what the helper does](../specifications/macos-027-helper-readiness.md)
-- **Status:** `active`: brief written and read-only checks recorded; reproduction has not started
-- **Review tier:** `standard` (escalates to `high-risk` under the brief's rule)
+- **Status:** `active`: reproduced and fixed; waiting for the independent completed-change review
+- **Review tier:** `standard`, decided by the coordinator under the maintainer's delegation of 2026-10-09 (see Decisions)
 - **Implementer:** Claude
 - **Reviewer:** pending
 - **Branch:** `task/macos-027-helper-readiness`
 - **Updated:** 2026-10-09
 
-## Plan
+## Before the reproduction
 
-1. Obtain the maintainer's answers to the brief's decisions: both are
-   answered (below).
-2. Within one work session, run the sequence chosen below in Tart,
-   agreeing VM use with the parallel sessions.
-3. Reproduced: fix, `AC-03`, `AC-04`, Standard review. Otherwise record the
-   attempts and hand the backlog move to the maintainer.
+Plan: read-only checks of the maintainer's install, then one work session
+in Tart (1a under load first), then failing proof, fix, `AC-03`, `AC-04`.
+The maintainer's 1.3.0 (28) passed the strict check in 0.07 s and showed
+three `PosatoMacOSHelper` background records, all at `/Applications`
+(`observed`, 2026-10-09). `user-confirmed`: the symptom cleared on the
+unchanged install, so it is transient; which builds ran there is unknown
+(`inferred` history: development copies until 2026-09-11, notarized
+candidates and in-app updates until 2026-09-24, none after).
 
-## Read-only checks of the maintainer's install (2026-10-09)
+## Reproduction (`AC-01`)
 
-The maintainer allowed the checks (`user-confirmed`). Posato was neither
-launched nor changed. All `observed`:
+Peer-line Tart clone; guest load (eight `yes`, `dd` writes, `find | cat`
+over system folders) and a probe that activates Posato every ~11 s and reads
+This Mac and Session, both in `build/verification/macos-027/`.
 
-- 1.3.0 (28), Developer ID with the project's team, in `/Applications` since
-  2026-10-04. `codesign --verify --deep --strict` passes in 0.07 s, three
-  times with a warm cache.
-- The files carry only `com.apple.provenance`, and there are no stray files at
-  the bundle root. A `Contents/CodeResources` file beside `_CodeSignature/`
-  still passes the strict check.
-- `app.posato.macos.proxy-settings` is enabled in the system domain and
-  starts on demand. The application runs in the GUI domain.
-- `sfltool dumpbtm` shows three `PosatoMacOSHelper` records
-  (`2.app.posato.macos.helper`) for the same `/Applications` URL, all
-  "disabled, allowed":
-  - under UID -2, generation 1, carrying the daemon
-    `16.app.posato.macos.proxy-settings` (enabled, allowed, notified,
-    generation 21);
-  - under UID 0;
-  - under the maintainer's UID 501, generation 2 or 3, with no daemon.
+Loaded runs showed "Last Mac setup request did not finish" and "Setup
+incomplete. Posato is not blocking websites or apps on this Mac" while the
+helper was enabled (table below); idle runs read ready. The daemon, helper,
+and readiness code of `main` `ae99a9d` equal 1.3.0; temporary helper logging
+(never committed) named the failing call. `codesign` took 0.1 s idle and up
+to 6.9 s under load.
 
-  `2.app.posato.macos` is enabled, generation 7.
-- Spotlight finds many same-ID development builds under ignored `build/`.
+## Cause (`AC-02`)
 
-Against the [macOS enforcement](../../wiki/topics/macos-enforcement.md) facts:
+`observed` in the guest's unified log, recorded on the
+[macOS enforcement](../../wiki/topics/macos-enforcement.md) page:
 
-- A disabled helper parent beside an enabled daemon is normal (`MACOS-007`).
-- Records keep `allowed` after unregistering (`MACOS-009`), so the extra
-  records need not be removals.
-- Unlike `MACOS-007`, no record points at another bundle.
+1. **Daemon idle exit races a new connection** (1.3.0, 19:32:35): the
+   on-demand daemon took 4.2 s to start, armed its exit 1 s after start,
+   and exited with `EXIT_SUCCESS` while the helper's connection was still
+   in its code-signing check; the helper got
+   `XPC_ERROR_CONNECTION_INTERRUPTED`, an unknown outcome, and ended. ADR
+   0004 allows an exit only with no connection.
+2. **Slow daemon start under saturated disk I/O**: launchd started the
+   daemon about two minutes after the helper connected; the helper's Status
+   waited its full 120 s ("daemon send timed out after 119985 ms"), failed
+   as an unknown outcome, and ended. The next quiet read stored
+   `UNCERTAIN`, which Session shows as incomplete setup.
+3. A strict deep `codesign` check took 6.9 s once, over the readiness
+   check's 5 s limit per command, which maps to `UNAVAILABLE` ("could not
+   be checked or enabled", the reported copy). Not seen in the interface:
+   0 of 3 cold-cache storm cycles (`probe2-control.log`).
 
-`user-confirmed` (2026-10-09): the symptom no longer shows on the
-maintainer's 1.3.0 (28), installed since 2026-10-04. Idea 29 was reported on
-2026-10-05, so the state appeared on 1.3.0 and later cleared without a change:
-it is **transient**. The maintainer does not know which builds ran on that Mac.
+`inferred`: the maintainer's report during Tart and Gradle work matches
+these paths; only reads failed. Whether that day's schedule did not start
+stays `open` (`ScheduleStartGate` treats an unknown read as transient).
 
-### Host install history before the 2026-09-24 rule (`inferred`)
+## Change
 
-From tracked records only; installs of the published releases are `open`.
+- `RequestCoordinator.swift`: the daemon exits only after 10 s with no
+  connection, request, or disconnect, still only at `Idle` with no
+  connection or lease.
+- `MacHelperSetupUiState.kt` (`UnfinishedQuietReads`): a quiet read with an
+  unknown outcome keeps a shown ready state while such reads last under five
+  minutes; any stored answer ends the run, and a check or setup the person
+  starts still shows its own answer. Three isolated tests in
+  `MacHelperQuietReadRaceTest`, each failing first where it changes
+  behavior, because E2E cannot place reads at the five-minute bound.
+- `MacOsHelperSigningVerifier.kt`: each `codesign` command may take 30 s
+  instead of 5 s; what is verified and every refusal are unchanged.
 
-1. 2026-08-29 to 09-07: Apple Development copies in renamed `/Applications`
-   bundles (`MACOS-003`, `MACOS-004`) and worktree packages (`TARGETS-003`,
-   `MACOS-005`, `SESSION-002`, `SYNC-009` to `SYNC-015`) each registered the
-   same helper and daemon.
-2. 2026-09-11, `MACOS-007`: the daemon record still pointed at a removed copy.
-   Leftover copies were deleted, `sfltool resetbtm` ran (maintainer approved),
-   and a development package registered again.
-3. 2026-09-14, `MVP-001`: attended phases on development builds.
-4. 2026-09-15, `MACOS-008`: from a baseline with no Posato background items,
-   notarized 1.0.0 candidates 3 and then 4 were installed from Safari into
-   `/Applications` and replaced in Finder. The registration kept the parent
-   bundle version 3.
-5. 2026-09-16: `MACOS-009` removed the helper from notarized candidates in the
-   app, which leaves `allowed` records. `DESIGN-003` ran a signed worktree app,
-   and its daemon failed to launch until a Mac restart.
-6. 2026-09-23 to 09-25: `ONBOARDING-003` development runs, then `MACOS-011`
-   Stage 1. That stage ran notarized builds 8 to 14, which updated each other
-   in the app from a loopback feed.
-7. From 2026-09-24 no agent ran Posato on that Mac. 1.3.0 (28) has been in
-   `/Applications` since 2026-10-04.
+## Verification (`AC-03`, `AC-04`)
 
-Hypotheses now:
+| Build | Loaded runs | False "Setup incomplete" |
+| --- | --- | --- |
+| 1.3.0 (28) published | 2 | 2 (45-50 s each) |
+| `main` development build | 1 | 1 (cause 2) |
+| Daemon fix only | 3 | 3 (cause 2, about 2 min into the load) |
+| First grace version (age of the last ready read) | 1 after `purge` | 1: the app had been idle 5.5 min |
+| Final | 6, two after `purge` | 0 |
 
-- **Hypothesis 1a is stronger again** (`inferred`): the defect came and went
-  on an unchanged install, which fits a load-dependent failure. The readiness
-  check verifies the whole bundle, including the Java runtime, with a 5 s
-  timeout. On 2026-10-05 the host also ran Tart guests and Gradle builds for
-  `DESIGN-004`. 1b is unlikely: the bundle is clean.
-- **Hypothesis 2 stays plausible** (`inferred`). The helper reads
-  `SMAppService` from the user context. If that read lands on the UID 501
-  record, which has no daemon, or on a same-ID copy, Status reads not enabled.
-  Enable then fails with `failedEnableResponse`, which the app shows as
-  `UNAVAILABLE`, while the UID -2 daemon keeps blocking. This matches **Finish
-  setup** ending in "Blocking could not be turned on yet", but clears on its
-  own less naturally. **Hypothesis 3** stays unlikely.
+- In the final runs no read reached the 120 s timeout (the longest daemon
+  start was about 100 s), so the kept-ready path after a timed-out read is
+  covered by `MacHelperQuietReadRaceTest` (the read 400 s after the last
+  ready one reproduces the 1-after-`purge` failure), not end to end.
+- `AC-03`: a manual pause with `example.com` blocked (`observe`: `paused`),
+  This Mac "Background helper enabled", also after a login launch; a
+  schedule started on its own at 21:16 with the window closed, `observe`
+  `paused`, no administrator dialog.
+- `AC-04`: with the helper moved out of the bundle, and with its
+  `Info.plist` tampered, This Mac showed "Mac setup needs attention" and
+  "The background helper could not be checked or enabled" at once; restored,
+  ready again. The grace never holds `UNAVAILABLE`.
+- After the E2E runs, Detekt moved the grace into `UnfinishedQuietReads`
+  (no behavior change; tests rerun). `./gradlew quality` and 227
+  `:macosHelper:swiftTest` tests passed. Early 12 GB guest loads filled the
+  host disk; later loads were capped at 2 GB.
 
-### Reproduction sequence chosen from the history
+## Decisions
 
-Runs within one work session, using one VM at a time:
+Under the maintainer's delegation of 2026-10-09:
 
-1. **Hypothesis 1a first.** On a fresh clone with 1.3.0 installed and set up,
-   time the strict check, then put sustained CPU and disk load on the guest
-   (and the host) and purge its cache. Read Session, This Mac, and **Finish
-   setup**, and watch a scheduled start.
-2. **Hypothesis 2 on the closest path.** Steps 1 to 6 above shrink to: a
-   development package that registers the helper from a non-`/Applications`
-   path; 1.0.0 from its DMG in `/Applications`, set up and then removed in
-   the app; set up again; `vm install --replace` to 1.1.0 and then to 1.2.0;
-   the in-app update to 1.3.0; then `sfltool dumpbtm` and readiness after
-   each step.
-
-Open: when the UID 0 and 501 records appeared; whether the schedule started.
-
-## Result
-
-- Pending.
+- Tier `standard`, the coordinator's decision: no contract changes. The
+  signature check keeps its meaning and only its per-command timeout rises
+  from 5 to 30 s; the XPC peer requirement and the daemon registration are
+  unchanged; the daemon's idle exit stays within ADR 0004 ("The daemon
+  exits successfully only at `Idle` with no connection or lease"). The
+  independent review is security-focused.
+- Decided by the agent: unfinished quiet reads keep ready for at most five
+  minutes, so a helper that never answers still surfaces; the bound counts
+  from the first unfinished read, because the age of the last ready read
+  failed after an idle app.
+- Hypotheses 1b and 2 were not run: 1a reproduced and explains the
+  transient symptom; the stale-record question stays `open`.
 
 ## Final
 
-- **Status:** pending
+- **Status:** pending review

@@ -78,8 +78,16 @@ internal class MacHelperSetupUiState(
     private val elapsedMillis: () -> Long = { processStart.elapsedNow().inWholeMilliseconds },
 ) {
     val loginItem: MacLoginItem? = macHelper.loginItem
-    var readiness by mutableStateOf<MacHelperReadiness?>(null)
-        private set
+    private val unfinishedReads = UnfinishedQuietReads(elapsedMillis)
+    private var readinessState by mutableStateOf<MacHelperReadiness?>(null)
+
+    /** Every stored answer ends a run of unfinished quiet reads. */
+    var readiness: MacHelperReadiness?
+        get() = readinessState
+        private set(value) {
+            readinessState = value
+            unfinishedReads.reset()
+        }
     var activity by mutableStateOf<MacSetupActivity?>(null)
         private set
     var removal by mutableStateOf<MacHelperRemoval?>(null)
@@ -270,7 +278,7 @@ internal class MacHelperSetupUiState(
                     macHelper.loginItem?.refresh()
                     val grant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
                     // A setup run may have started while the grant was read; its answer wins.
-                    if (current()) {
+                    if (unfinishedReads.stores(current(), answer, readiness)) {
                         readiness = answer
                         standingGrant = grant
                         consent.settle(answer)
@@ -361,6 +369,38 @@ internal fun rememberMacHelperSetupUiState(
     return state
 }
 
+/**
+ * A quiet read whose outcome is unknown proves nothing about a helper last read as ready: on a busy
+ * Mac launchd can take minutes to start the daemon, and the read then times out while blocking keeps
+ * working. Ready stays while such reads last less than the grace period, and the next activation's
+ * read decides; a check or setup the person starts still shows its own answer.
+ */
+private class UnfinishedQuietReads(
+    private val elapsedMillis: () -> Long,
+) {
+    private var since: Long? = null
+
+    fun reset() {
+        since = null
+    }
+
+    /** Whether a current quiet read's [answer] replaces the [shown] readiness. */
+    fun stores(
+        current: Boolean,
+        answer: MacHelperReadiness,
+        shown: MacHelperReadiness?,
+    ): Boolean {
+        if (!current) {
+            return false
+        }
+        if (answer != MacHelperReadiness.UNCERTAIN || shown != MacHelperReadiness.READY) {
+            return true
+        }
+        val started = since ?: elapsedMillis().also { since = it }
+        return elapsedMillis() - started >= UNCERTAIN_READ_GRACE_MILLIS
+    }
+}
+
 /** One deferred read at the end of the refresh interval, however many activations it absorbs. */
 private class TrailingRead(
     private val scope: CoroutineScope,
@@ -388,6 +428,7 @@ private class TrailingRead(
 
 private const val REFRESH_INTERVAL_MILLIS: Long = 30_000L
 private const val TRAILING_MINIMUM_MILLIS: Long = 1_000L
+private const val UNCERTAIN_READ_GRACE_MILLIS: Long = 300_000L
 private val processStart = TimeSource.Monotonic.markNow()
 
 /** Keeps the consent to automatic starts in step with what this Mac stores and with the grant's actual answers. */

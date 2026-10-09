@@ -49,6 +49,7 @@ final class ConnectionState: @unchecked Sendable {
 }
 
 final class RequestCoordinator: @unchecked Sendable {
+  private static let idleExitQuietPeriod: DispatchTimeInterval = .seconds(10)
   let queue = DispatchQueue(label: "app.posato.macos.proxy-settings.requests")
   let engine: ProxyOwnershipEngine
   let grants: StandingGrantPersistence
@@ -56,6 +57,7 @@ final class RequestCoordinator: @unchecked Sendable {
   let rules: AuthorizationRules
   var leaseDeadline: DispatchTime?
   private var activeConnections = 0
+  private var lastActivity = DispatchTime.now()
   private var powerMonitor: SystemPowerMonitor?
 
   init(
@@ -86,6 +88,7 @@ final class RequestCoordinator: @unchecked Sendable {
   func connectionOpened() {
     queue.async {
       self.activeConnections += 1
+      self.lastActivity = .now()
     }
   }
 
@@ -97,6 +100,7 @@ final class RequestCoordinator: @unchecked Sendable {
     reply: ReplyBox
   ) {
     queue.async {
+      self.lastActivity = .now()
       reply(
         self.process(
           encoded,
@@ -111,6 +115,7 @@ final class RequestCoordinator: @unchecked Sendable {
   func connectionInvalidated(state: ConnectionState) {
     queue.async {
       self.activeConnections = max(0, self.activeConnections - 1)
+      self.lastActivity = .now()
       if state.shouldRestoreOnInvalidation() {
         self.recordCleanupAttempt(try? self.engine.restore())
       } else {
@@ -164,10 +169,15 @@ final class RequestCoordinator: @unchecked Sendable {
     recordCleanupAttempt(try? engine.restore())
   }
 
+  /// launchd starts the daemon for a connection that is counted only after its code-signing
+  /// requirement is checked, which can take seconds on a busy Mac. Exiting one second after start
+  /// or after the last disconnect then dropped a request in flight, so the daemon exits only after
+  /// a quiet period with no connection, request, or disconnect.
   private func scheduleIdleExit() {
-    queue.asyncAfter(deadline: .now() + .seconds(1)) {
+    queue.asyncAfter(deadline: .now() + RequestCoordinator.idleExitQuietPeriod) {
       let shouldExit =
-        self.activeConnections == 0
+        DispatchTime.now() >= self.lastActivity + RequestCoordinator.idleExitQuietPeriod
+        && self.activeConnections == 0
         && self.leaseDeadline == nil
         && (try? self.engine.status()) == .idle
       if shouldExit {
