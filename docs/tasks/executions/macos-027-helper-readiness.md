@@ -76,14 +76,14 @@ these paths. Whether that day's schedule did not start stays `open`.
 | Daemon fix only | 3 | 3 (cause 2, about 2 min into the load) |
 | First grace version (age of the last ready read) | 1 after `purge` | 1: the app had been idle 5.5 min |
 | `355dae6` (10 s quiet exit) | 6, two after `purge` | 0 |
-| Final `fa5f11f` | not run (maintainer's order) | - |
+| Final `c8d9d5b` (code of `fa5f11f`) | 1 after `purge`, host load 96 | 0 |
 
-- The last E2E evidence is on the pre-refactor tree `355dae6`. The rerun on
-  `fa5f11f` and later was skipped by the maintainer's order (2026-10-09):
-  "pomin teraz weryfikacje vm / iphone - uznajmy ze juz sie odbyly i
-  wystarczy", an explicit exception to the verification rule. No read
-  reached the 120 s timeout, so keeping ready after it is covered only by
-  `MacHelperQuietReadRaceTest`.
+- On `c8d9d5b`, one session under the maintainer's revised order
+  (2026-10-09): "ogranicz do minimum weryfikacje vm i iphone - raz przed PR
+  gdy to ma sens": the loaded probe above, `AC-04` with a tampered helper
+  `Info.plist` (unavailable at once), and a manual pause (`observe`
+  `paused`). No read reached the 120 s timeout, so keeping ready after it
+  is covered only by `MacHelperQuietReadRaceTest`.
 - `AC-03` and `AC-04` on `355dae6`: a manual pause with `example.com` blocked (`observe`: `paused`),
   This Mac "Background helper enabled", also after a login launch; a
   schedule started on its own at 21:16 with the window closed, `observe`
@@ -112,8 +112,8 @@ idle app.
 ## Review
 
 - `355dae6`: `changes-required` (Required: evidence predated the refactor;
-  four items taken), addressed in `fa5f11f`; the evidence rerun was waived
-  as above; re-review pending.
+  four items taken), addressed in `fa5f11f`; reduced evidence rerun on
+  `c8d9d5b`; re-review pending.
 
 ## Final
 
