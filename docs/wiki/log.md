@@ -2671,3 +2671,10 @@ first removal attempt that does not finish, not to a paused keychain.
   runs, and `vm onboard` reports and marks a clone that showed the alert.
   A unit test covers the read; the alert itself could not be raised again on
   the renewed golden VM, so the onboarding path is not exercised end to end.
+## [2026-10-09] planning | Verification time for new platforms
+
+- `user-confirmed`: ideas for keeping routine verification near 268 s once
+  Android and Linux are verified (a time budget, path-based platform tracks,
+  measured parallel tracks, one readiness check, shorter onboarding waits)
+  are recorded as open in the unattended verification topic for
+  `PLATFORM-001`, none accepted yet.
