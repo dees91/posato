@@ -399,7 +399,7 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given the end of day chosen when review comes after it is no longer offered then review refuses and continues with 25 minutes`() = runTest(dispatcher) {
+    fun `given the end of day chosen when it is gone at review then review refuses and 25 minutes follow`() = runTest(dispatcher) {
         val clock = FakeSessionClock(BEFORE_MIDNIGHT)
         val viewModel = endOfDayChosen(clock)
 
@@ -416,7 +416,7 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given the end of day chosen when setup stays open past midnight then review does not move to the next midnight`() = runTest(dispatcher) {
+    fun `given the end of day chosen when setup stays open past midnight then review keeps no next midnight`() = runTest(dispatcher) {
         val clock = FakeSessionClock(BEFORE_MIDNIGHT)
         val viewModel = endOfDayChosen(clock)
 
@@ -430,7 +430,7 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given a reviewed end of day when start comes too late then no pause starts and setup continues with 25 minutes`() = runTest(dispatcher) {
+    fun `given a reviewed end of day when start comes too late then no pause starts and 25 minutes follow`() = runTest(dispatcher) {
         val clock = FakeSessionClock(BEFORE_MIDNIGHT)
         val viewModel = endOfDayChosen(clock)
         viewModel.setReviewVisible(true)
