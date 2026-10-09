@@ -72,11 +72,10 @@ schedule state. A quit that a person starts still asks exactly as today.
 
 ## Decisions or blockers
 
-- `D1` (maintainer): the roadmap row says to verify the update "during a
-  pause", but ADR 0008 refuses an installation while a pause runs. The brief
-  reads it as `AC-02` (refusal kept, no quit question, update after End
-  early). Allowing an update during a pause would need an ADR 0008 and ADR
-  0004 revision and a High-risk row instead.
+- `D1` resolved (`user-confirmed`, 2026-10-09): "during a pause" in the
+  roadmap row means `AC-02`. ADR 0008's refusal stays: during a pause there
+  is no install and no quit question, and after **End early** the update
+  installs without asking. Allowing an update during a pause is out of scope.
 - Possible blocker: Developer ID signing of the candidates on the host may
   raise a Keychain access prompt; if it does, that one approval is the
   maintainer's, outside verification.

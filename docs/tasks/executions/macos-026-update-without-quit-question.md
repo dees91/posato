@@ -10,7 +10,8 @@
 
 ## Plan
 
-1. Maintainer decision `D1` in the brief.
+1. Maintainer decision `D1`: accepted (`user-confirmed`, 2026-10-09) as
+   `AC-02`; ADR 0008's refusal during a pause stays.
 2. Reproduce on `main` before the change: candidates N and N+1 built from
    `main` with a throwaway key, a fresh `primary` clone, a schedule on, and
    the "Quit Posato?" dialog after **Install and Relaunch**.
