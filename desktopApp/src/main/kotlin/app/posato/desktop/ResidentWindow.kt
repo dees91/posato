@@ -70,6 +70,10 @@ internal fun ApplicationScope.ResidentPosato(
     var updates by remember { mutableStateOf<ApplicationUpdates?>(null) }
     val scope = rememberCoroutineScope()
     val confirmQuit: suspend () -> Boolean = { confirmsQuit(copy, quitPromptFor(menu, powerOffEpochMillis, System.currentTimeMillis())) }
+    val confirmSystemQuit: suspend () -> Boolean = {
+        val systemTermination = listOfNotNull(powerOffEpochMillis, MacUpdater.takeRelaunchRequest()).maxOrNull()
+        confirmsQuit(copy, quitPromptFor(menu, systemTermination, System.currentTimeMillis()))
+    }
     val quit: suspend () -> Unit = { if (confirmQuit()) exitApplication() }
     LaunchedEffect(Unit) { presence.runWhileResident() }
     LaunchedEffect(Unit) {
@@ -79,7 +83,7 @@ internal fun ApplicationScope.ResidentPosato(
     LaunchedEffect(window.visible) { MacPresenceNative.setMainWindowVisible(window.visible) }
     StatusMenuEffects(presence, copy, menu, window, onPowerOff = { powerOffEpochMillis = it }, onQuit = quit)
     ApplicationEventsEffect(window, onQuitRequest = { response ->
-        scope.launch { if (confirmQuit()) response.performQuit() else response.cancelQuit() }
+        scope.launch { if (confirmSystemQuit()) response.performQuit() else response.cancelQuit() }
     })
     val navigation = remember { ApplicationNavigation() }
     val windowState = rememberWindowState(width = 1060.dp, height = 780.dp)
