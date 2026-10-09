@@ -63,7 +63,7 @@ class GuestOnboarding(
         guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(final, recipe.steps.size)))
         // Onboarding passes without iCloud, so an account that needs attention is reported rather than refused. Later
         // took the alert off the screen, so the marker is what the iCloud commands refuse on until a new clone.
-        if (accountAlert) Files.writeString(accountAttentionMarker(context, line), "connect alert during vm onboard\n")
+        if (accountAlert) Files.writeString(accountAttentionMarker(line), "connect alert during vm onboard\n")
         return buildJsonObject {
             put("line", line.id)
             put("ready", true)

@@ -79,10 +79,7 @@ internal fun keychainRefusal(
  * Left by `vm onboard` when the connect alert showed in this clone. Onboarding answers it with Later, so the screen no
  * longer shows it, and the iCloud commands read this instead; `vm create` and `vm boot` start without it.
  */
-internal fun accountAttentionMarker(
-    context: RunContext,
-    line: VmLine
-): Path = vmDirectory(context, line).resolve("golden-account-needs-attention")
+internal fun accountAttentionMarker(line: VmLine): Path = vmDirectory(line).resolve("golden-account-needs-attention")
 
 /**
  * A new golden VM or device signing in to the test account can pause iCloud Keychain on the other guests. A paused
@@ -98,7 +95,7 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
-        if (accountAttentionMarker(context, line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
+        if (accountAttentionMarker(line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
         return inSettings(line) {
             readState(line, openSettings(line, timeoutMs), timeoutMs)
         }
@@ -109,7 +106,7 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
-        if (accountAttentionMarker(context, line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
+        if (accountAttentionMarker(line).exists()) return ICloudKeychainState.NEEDS_ATTENTION
         inSettings(line) {
             val screen = openSettings(line, timeoutMs)
             if (readState(line, screen, timeoutMs) == ICloudKeychainState.PAUSED) resumeDataSync(line, screen, timeoutMs)

@@ -97,14 +97,16 @@ class GuestScreen(
     /** Captures over a fresh connection: several captures on one connection can stall the Virtualization server. */
     fun read(): List<RecognizedLine> {
         Files.createDirectories(scratch.parent)
-        ImageIO.write(session { client -> client.capture() }, "png", scratch.toFile())
+        // Each read has a frame of its own: the directory is shared by every checkout that drives this clone.
+        val frame = Files.createTempFile(scratch.parent, scratch.fileName.toString().substringBeforeLast('.'), ".png")
         try {
+            ImageIO.write(session { client -> client.capture() }, "png", frame.toFile())
             AxBridgeBinary(context).ensureBuilt()
-            val output = context.subprocess.run(listOf(context.layout.accessibilityBridgeBinary.toString(), "ocr", scratch.toString()))
+            val output = context.subprocess.run(listOf(context.layout.accessibilityBridgeBinary.toString(), "ocr", frame.toString()))
                 .requireSuccess(ErrorCode.COMMAND_FAILED, "Recognizing text on the guest screen")
             return parseRecognizedLines(output.stdout)
         } finally {
-            Files.deleteIfExists(scratch)
+            Files.deleteIfExists(frame)
         }
     }
 

@@ -28,7 +28,7 @@ internal class VncHold(
         }
         context.subprocess.startDetached(
             listOf(launcher.toString(), "vm", "vnc-hold", "--line", line.id),
-            vmDirectory(context, line).resolve(HOLD_LOG),
+            vmDirectory(line).resolve(HOLD_LOG),
         )
         return "started"
     }
@@ -36,7 +36,7 @@ internal class VncHold(
     /** Holds one idle connection until the clone stops running or its server closes it, and returns how long it held it. */
     fun hold(): Long {
         val lifecycle = VmLifecycle(context)
-        val endpoint = vmEndpoint(context, line, ENDPOINT_TIMEOUT_MS)
+        val endpoint = vmEndpoint(line, ENDPOINT_TIMEOUT_MS)
         val started = System.currentTimeMillis()
         // A clone created again under the same name runs a new server, which this connection never reaches.
         VncClient.connect(endpoint.host, endpoint.port, endpoint.password).use { client ->
