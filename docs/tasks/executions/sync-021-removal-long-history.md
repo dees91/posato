@@ -1,9 +1,9 @@
 # Execution: `SYNC-021`
 
 - **Brief:** [One press removes a Mac workspace with a long zone history](../specifications/sync-021-removal-long-history.md)
-- **Status:** `active`: brief only. Decisions `D1`–`D4` are accepted
-  (2026-10-09); implementation waits for the plan review and the
-  maintainer's go.
+- **Status:** `active`: implementation started 2026-10-09 after plan
+  review round 3 (Required items folded; decided by the coordinator under
+  the maintainer's delegation of 2026-10-09).
 - **Review tier:** `high-risk`: the accepted development-only seams (`D1`,
   `D4`) delete CloudKit records or the zone; see the brief
 - **Implementer:** Claude
@@ -44,7 +44,8 @@ change fetches a minute in companion processes of 16 fetches.
    E2E cannot produce: a cursor that never advances and repeated `Unknown`
    exchanges (not drivable), an advancing cursor that never ends (more than
    20 minutes of history), cancellation keeping the continuation in memory,
-   and the `removing` re-entry guard (a second call during a removal). The
+   and the `removing` re-entry guard. The cancellation test is a regression
+   guard written before the loop change. The
    cap tests at `MacOsMailboxAdapterTest:159-205` are rewritten for the
    removal budget; the bootstrap sweep keeps a cap-of-10 assertion;
    `:252-280` stay.
@@ -61,48 +62,41 @@ change fetches a minute in companion processes of 16 fetches.
    `UnknownOutcome` ends it at once; a second token expiry already returns
    `Retryable` in the companion. Cancellation propagates with the last
    banked cursor kept in memory. The companion does not change.
-5. **Progress state.** `AppleSync.removeWorkspace` checks and sets
-   `removing` atomically (`getAndUpdate`), returns at once when it was set,
-   and clears it in `finally`; it precedes `SYNCING`. A platform-composition
+5. **Progress state.** Inside `AppleSync`'s `scope.async`,
+   `removeWorkspace` checks and sets `removing` atomically (`getAndUpdate`),
+   returns when it was set, and clears it in `finally`; it precedes
+   `SYNCING`. A platform-composition
    boolean, true only in the macOS composition, is passed into the row:
    with it the row shows "Removing workspace…", "An older workspace can
    take a few minutes.", and a `PosatoActivityIndicator` with actions
    disabled; without it iOS shows `removing` as today's running state.
    `DESIGN.md` gains the macOS row state; `posato-control`'s `ICloudRow`
    learns `removing`; the verify-posato sync page is updated.
-6. **Verification-only seams.**
-   - Build: `posatoMacOsVerificationSeams` adds `-Xswiftc
-     -DPOSATO_VERIFICATION`, is an input of
-     `:macosSyncCompanion:buildSwiftRelease`, and fails configuration when
-     `posatoMacOsReleaseSigningIdentity` is non-blank, the update channel
-     is release, or a release task is in the task graph. With it, the
-     development package sets `PosatoVerificationSeams` in `Info.plist`.
-     `posato-control build --verification-seams` passes it for fixture
-     runs only. `swiftTest` builds with the condition and tests the
-     refusals (anchor present, non-Development leaf, entitlement present).
-   - Proof: `VerifyMacOsDevelopmentPackaging` gains a `verificationSeams`
-     input (false on release, the property on development) and checks
-     `found == verificationSeams.get()`, as the Rosetta switch does. One
-     function scans the key and the marker literal
-     `posato-verification-seams-v1`, used live under the condition; both the
-     package check and `publishedApplication` use it. Positive control: the
-     development task on a flag-built package with the input forced off,
-     and the DMG reader on a plain `hdiutil create` image of that package,
-     each failing with the seam check's own message.
-   - Companion: `seedHistory` and `deleteZoneForVerification` exist only
-     under the condition. They check the anchor (seeding needs it missing;
-     deletion refuses it present), the absent environment entitlement, and
-     an Apple Development leaf. Seeds use canonical UUID names and
-     non-empty payloads of at most 64 KiB that pass
-     `RecordCodec.validateBundle`, with no new record type.
-   - Kotlin: a separate verification client with its own operation enum and
-     decoder in `feature/sync/macos/verification/`; product adapters and
-     decoding stay product-codes-only. A launch-argument handler, inert
-     without the key, takes `AppleBootstrap.flight` for the whole operation
-     and runs only while `coordinator.checkEstablished()` is `LOCAL_ONLY`,
-     inside the single running instance. `vm sync-fixture seed|delete-zone`
-     itself checks that the anchor is absent, that its clone is the only
-     running Tart VM, and that the guest's account is the test account.
+6. **Verification-only seams**, under the controls of the ADR 0007
+   amendment of 2026-10-09; implementation specifics:
+   - `posatoMacOsVerificationSeams` adds `-Xswiftc -DPOSATO_VERIFICATION`
+     as an input of `:macosSyncCompanion:buildSwiftRelease` and fails
+     configuration on a non-blank `posatoMacOsReleaseSigningIdentity`, a
+     release channel, or a named release task in `taskGraph.whenReady`.
+     `posato-control build --verification-seams` sets it; `swiftTest`
+     builds with the condition and tests the companion refusals.
+   - One scan for the `PosatoVerificationSeams` key and the live marker
+     `posato-verification-seams-v1`, used by `VerifyMacOsDevelopmentPackaging`
+     (`verificationSeams` input, `found == verificationSeams.get()`) and by
+     `GenerateMacOsUpdateFeed.publishedApplication` before the staged
+     `Info.plist` comparison, on every channel. Control: the development
+     check run with `-x :desktopApp:stageMacOsDevelopmentPackage` on a
+     flag-built package without the property, and the feed task on a plain
+     `hdiutil create` image of it, each failing with the seam message; the
+     routine development package run shows the pass.
+   - Companion `seedHistory` (writes, then deletes; canonical UUID names,
+     non-empty payloads of at most 64 KiB passing
+     `RecordCodec.validateBundle`, no new record type) and
+     `deleteZoneForVerification`. Kotlin: a separate verification client,
+     enum, and decoder in `feature/sync/macos/verification/`; a
+     launch-argument handler holding `AppleBootstrap.flight`, requiring
+     `LOCAL_ONLY` and `FileInstanceLock.tryUpgradeForAdmission()`; the
+     tool quits Posato first, and `vm sync-fixture` checks `AC-04` itself.
 7. **Verify** the brief's matrix with `flow icloud remove --timeout-seconds
    1500`, then the `AC-04` order; completed-change review, `qualityLint`,
    `quality`, closeout. The iOS cap is idea 34, backlog row `IOS-008` and
