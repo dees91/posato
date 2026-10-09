@@ -3,6 +3,7 @@ package app.posato.feature.session.ui
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.session.domain.SessionSetup
+import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionTimeFormat
 
 internal sealed interface SessionDurationChoice {
@@ -29,23 +30,35 @@ internal fun sessionSetupTimes(
 ): SessionSetupTimes {
     val choosing = draft.isSettingUp && !draft.isReviewing
     val endOfDay = zone?.takeIf { choosing }?.let { SessionSetup.endOfDay(nowMillis, it) }
-    val chosenEnd = endOfDay?.takeIf { draft.untilEndOfDay }
-    val durationMinutes = chosenEnd?.let { end -> minutesUntil(end, nowMillis) } ?: draft.durationMinutes
-    val previewEnd = when {
-        !choosing -> null
-        chosenEnd != null -> timeFormat.formatClockTime(chosenEnd)
-        else -> timeFormat.formatTime(nowMillis + durationMinutes * MILLIS_PER_MINUTE, nowMillis)
+    val chosenEnd = draft.chosenEndOfDay?.takeIf { it == endOfDay }
+    val durationMinutes = when {
+        chosenEnd != null -> minutesUntil(chosenEnd, nowMillis)
+        choosing && draft.chosenEndOfDay != null -> DEFAULT_SETUP_MINUTES
+        else -> draft.durationMinutes
     }
-    val reviewEnd = draft.resolvedReviewEnd?.let { end ->
-        if (draft.untilEndOfDay) timeFormat.formatClockTime(end) else timeFormat.formatTime(end, nowMillis)
-    }
+    val previewEnd = chosenEnd ?: (nowMillis + durationMinutes * MILLIS_PER_MINUTE)
     return SessionSetupTimes(
         durationMinutes = durationMinutes,
-        untilEndOfDay = if (choosing) chosenEnd != null else draft.untilEndOfDay,
+        untilEndOfDay = if (choosing) chosenEnd != null else draft.chosenEndOfDay != null,
         formattedEndOfDay = endOfDay?.let(timeFormat::formatClockTime),
-        formattedPreviewEnd = previewEnd,
-        formattedReviewEnd = reviewEnd,
+        formattedPreviewEnd = previewEnd.takeIf { choosing }?.let { end -> timeFormat.formatTime(end, nowMillis) },
+        formattedReviewEnd = draft.resolvedReviewEnd?.let { end -> timeFormat.formatTime(end, nowMillis) },
     )
+}
+
+/** Clears an end-of-day choice that is no longer offered, such as after 23:55 or past midnight, so it never becomes a short or next-day pause. */
+internal fun SessionSetupDraft.withoutStaleEndOfDay(
+    nowMillis: Long,
+    zone: ScheduleZone,
+): SessionSetupDraft {
+    val chosen = chosenEndOfDay ?: return this
+    if (chosen == SessionSetup.endOfDay(nowMillis, zone)) return this
+    return copy(chosenEndOfDay = null, durationMinutes = DEFAULT_SETUP_MINUTES, failure = SessionSetupFailure.TOO_SHORT)
+}
+
+internal fun SessionSetupDraft.refused(failure: SessionSetupFailure): SessionSetupDraft {
+    val length = if (chosenEndOfDay != null) DEFAULT_SETUP_MINUTES else durationMinutes
+    return copy(isReviewing = false, resolvedReviewEnd = null, failure = failure, chosenEndOfDay = null, durationMinutes = length)
 }
 
 internal fun minutesUntil(

@@ -91,5 +91,8 @@ Both decided by the maintainer (`user-confirmed`, 2026-10-09):
   them in full), then a separate **Until end of day** row that shows its end
   (`ends 00:00`), then the wheel. On iOS the row of lengths is the system
   segmented control; on the Mac it is the drawn choice group.
+  On the Mac, **Until end of day** ends that same choice group instead of a
+  separate row, so Review stays in the default window: decided by the agent
+  under the maintainer's delegation of 2026-10-09, not yet `user-confirmed`.
 
 No blocker.

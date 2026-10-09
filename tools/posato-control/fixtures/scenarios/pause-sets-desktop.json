@@ -423,6 +423,14 @@
       }
     },
     {
+      "name": "reveal-review",
+      "action": "scrollTo",
+      "query": {
+        "text": "Review session",
+        "role": "button"
+      }
+    },
+    {
       "name": "continue-review",
       "action": "tap",
       "query": {

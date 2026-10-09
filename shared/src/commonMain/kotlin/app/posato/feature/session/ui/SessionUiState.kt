@@ -110,7 +110,7 @@ internal data class SessionLoadState(
 
 internal data class SessionSetupDraft(
     val durationMinutes: Int = DEFAULT_SETUP_MINUTES,
-    val untilEndOfDay: Boolean = false,
+    val chosenEndOfDay: Long? = null,
     val failure: SessionSetupFailure? = null,
     val isSettingUp: Boolean = false,
     val isReviewing: Boolean = false,

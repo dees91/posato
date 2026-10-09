@@ -127,13 +127,13 @@ internal class SessionViewModel(
                 if (choice.minutes !in SessionLimits.MIN_DURATION_MINUTES..SessionLimits.MAX_DURATION_MINUTES) {
                     return
                 }
-                setupDraft.update { draft -> draft.copy(durationMinutes = choice.minutes, untilEndOfDay = false, failure = null) }
+                setupDraft.update { draft -> draft.copy(durationMinutes = choice.minutes, chosenEndOfDay = null, failure = null) }
             }
 
             SessionDurationChoice.EndOfDay -> {
                 val now = clock.currentEpochMillis()
                 val end = SessionSetup.endOfDay(now, zone) ?: return
-                setupDraft.update { draft -> draft.copy(durationMinutes = minutesUntil(end, now), untilEndOfDay = true, failure = null) }
+                setupDraft.update { draft -> draft.copy(durationMinutes = minutesUntil(end, now), chosenEndOfDay = end, failure = null) }
             }
         }
     }
@@ -179,20 +179,18 @@ internal class SessionViewModel(
                 return
             }
             val now = clock.currentEpochMillis()
-            val endOfDay = SessionSetup.endOfDay(now, zone)?.takeIf { draft.untilEndOfDay }
-            when (val validation = SessionSetup.validateChoice(endOfDay, draft.durationMinutes, now)) {
+            if (draft.withoutStaleEndOfDay(now, zone) != draft) {
+                setupDraft.update { state -> state.withoutStaleEndOfDay(now, zone) }
+                return
+            }
+            when (val validation = SessionSetup.validateChoice(draft.chosenEndOfDay, draft.durationMinutes, now)) {
                 is SessionSetupResult.Invalid -> {
                     setupDraft.update { state -> state.copy(failure = validation.reason) }
                 }
 
                 is SessionSetupResult.Valid -> {
                     setupDraft.update { state ->
-                        state.copy(
-                            isReviewing = true,
-                            untilEndOfDay = endOfDay != null,
-                            failure = null,
-                            resolvedReviewEnd = validation.endEpochMillis,
-                        )
+                        state.copy(isReviewing = true, failure = null, resolvedReviewEnd = validation.endEpochMillis)
                     }
                     targetsRefreshRequests.tryEmit(Unit)
                 }
@@ -208,10 +206,9 @@ internal class SessionViewModel(
             return
         }
         val now = clock.currentEpochMillis()
-        val reviewedEndOfDay = draft.resolvedReviewEnd?.takeIf { draft.untilEndOfDay }
-        val end = when (val validation = SessionSetup.validateChoice(reviewedEndOfDay, draft.durationMinutes, now)) {
+        val end = when (val validation = SessionSetup.validateChoice(draft.chosenEndOfDay, draft.durationMinutes, now)) {
             is SessionSetupResult.Invalid -> {
-                setupDraft.update { state -> state.copy(isReviewing = false, resolvedReviewEnd = null, failure = validation.reason) }
+                setupDraft.update { state -> state.refused(validation.reason) }
                 return
             }
 

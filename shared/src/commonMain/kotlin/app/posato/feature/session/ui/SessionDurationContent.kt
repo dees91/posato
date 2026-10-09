@@ -1,11 +1,13 @@
 package app.posato.feature.session.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,9 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import app.posato.core.designsystem.PlatformDurationPicker
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
@@ -104,17 +109,7 @@ private fun CupertinoDurationChoices(
     onChooseDuration: (SessionDurationChoice) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoTabBar(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
-            DurationPresets.forEach { preset ->
-                PosatoTab(
-                    selected = preset.isSelected(state),
-                    onClick = { onChooseDuration(SessionDurationChoice.Length(preset.minutes)) },
-                    modifier = Modifier.weight(1f),
-                    role = Role.RadioButton,
-                    contentPadding = PaddingValues(horizontal = PosatoSpace.Tiny, vertical = PosatoSpace.Medium),
-                ) { PresetLabel(preset.compactLabel, preset.minutes) }
-            }
-        }
+        CompactLengthRows(state, onChooseDuration)
         state.formattedEndOfDay?.let { end ->
             PosatoTabBar(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
                 PosatoTab(
@@ -131,6 +126,36 @@ private fun CupertinoDurationChoices(
             range = SessionLimits.MIN_DURATION_MINUTES..minOf(SessionLimits.MAX_DURATION_MINUTES, COUNTDOWN_LIMIT_MINUTES),
             onChange = { minutes -> onChooseDuration(SessionDurationChoice.Length(minutes)) },
         )
+    }
+}
+
+/** One row of six segments, or two rows of three when the widest label does not fit a sixth of the width, as with large text. */
+@Composable
+private fun CompactLengthRows(
+    state: SessionUiState,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
+) {
+    BoxWithConstraints(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
+        val measurer = rememberTextMeasurer()
+        val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+        val widest = DurationPresets.maxOf { preset -> measurer.measure(preset.compactLabel, style).size.width }
+        val segment = (maxWidth - PosatoSpace.Tiny * (DurationPresets.size + 1)) / DurationPresets.size - PosatoSpace.Tiny * 2
+        val perRow = if (widest <= with(LocalDensity.current) { segment.toPx() }) DurationPresets.size else DurationPresets.size / 2
+        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+            DurationPresets.chunked(perRow).forEach { row ->
+                PosatoTabBar(Modifier.fillMaxWidth()) {
+                    row.forEach { preset ->
+                        PosatoTab(
+                            selected = preset.isSelected(state),
+                            onClick = { onChooseDuration(SessionDurationChoice.Length(preset.minutes)) },
+                            modifier = Modifier.weight(1f),
+                            role = Role.RadioButton,
+                            contentPadding = PaddingValues(horizontal = PosatoSpace.Tiny, vertical = PosatoSpace.Medium),
+                        ) { PresetLabel(preset.compactLabel, preset.minutes) }
+                    }
+                }
+            }
+        }
     }
 }
 
