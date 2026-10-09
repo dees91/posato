@@ -11,8 +11,17 @@ can require Resume restrictions and an attended administrator confirmation.
 
 - `session-inactive` shows NO SESSION ACTIVE, Start a session, and compact
   selected-item counts. With no effective items, Choose paused items is primary.
-- `session-setup` offers 25 min, 45 min, 60 min plus Hours and Minutes wheels
-  with arrow buttons and a real Ends at preview.
+- `session-setup` offers the quick lengths 25 minutes, 45 minutes, 1, 2, 4, and
+  8 hours and **Until end of day** (query `textContains: "Until end of day"`;
+  its label adds `, ends 00:00` or `, ends 12:00 AM`), Hours and Minutes wheels,
+  and a real Ends at preview. Query a length by the label each host exposes:
+  the visible `25 min` … `8 h` on the Mac, where **Until end of day** ends the
+  same choice group, and the spoken `25 minutes` … `8 hours` on iOS, where the
+  segments show `25m` … `8h` and **Until end of day** is its own row. The iOS
+  setup no longer fits a phone screen, so reveal Review with `scrollTo` before
+  choosing a length: the iOS driver starts its screen swipes outside the
+  countdown wheel, but a later scroll would still move the page under a chosen
+  value.
 - `session-review` shows the real end time, selection summary, current warnings,
   Start this pause, and Change duration.
 - `session-details` opens read-only website/app lists in an iOS sheet or Mac

@@ -1,6 +1,7 @@
 package app.posato.feature.session.ui
 
 import app.posato.feature.enforcement.PauseLimits
+import app.posato.feature.schedules.domain.CentralEuropeanZone
 import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.sync.domain.PauseSetId
@@ -89,7 +90,15 @@ class SessionPauseSetTest {
         val owner =
             sessionOwnerOf(store, enforcement, FakeSessionClock(NOW), policyStore, mappings, dispatcher = dispatcher, composition = composition)
         backgroundScope.launch { owner.runWhileHosted() }
-        val viewModel = SessionViewModel(policyStore, mappings, FakeSessionIdGenerator(), FakeSessionClock(NOW), FakeSessionTimeFormat(), owner)
+        val viewModel = SessionViewModel(
+            policyStore,
+            mappings,
+            FakeSessionIdGenerator(),
+            FakeSessionClock(NOW),
+            FakeSessionTimeFormat(),
+            owner,
+            CentralEuropeanZone,
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect {} }
         viewModel.onScreenEntered()
         scheduler.runCurrent()
@@ -151,7 +160,15 @@ class SessionPauseSetTest {
         val clock = FakeSessionClock(NOW)
         val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
         backgroundScope.launch { owner.runWhileHosted() }
-        val viewModel = SessionViewModel(policyStore, mappings, FakeSessionIdGenerator(), clock, FakeSessionTimeFormat(), owner)
+        val viewModel = SessionViewModel(
+            policyStore,
+            mappings,
+            FakeSessionIdGenerator(),
+            clock,
+            FakeSessionTimeFormat(),
+            owner,
+            CentralEuropeanZone,
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect {} }
         viewModel.onScreenEntered()
         scheduler.runCurrent()

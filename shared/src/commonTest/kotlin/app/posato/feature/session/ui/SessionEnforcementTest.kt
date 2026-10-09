@@ -5,6 +5,7 @@ import app.posato.feature.enforcement.EnforcementApplyReport
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
+import app.posato.feature.schedules.domain.CentralEuropeanZone
 import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
@@ -439,6 +440,7 @@ class SessionEnforcementTest {
             clock,
             FakeSessionTimeFormat(),
             owner,
+            CentralEuropeanZone,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
         viewModel.onScreenEntered()

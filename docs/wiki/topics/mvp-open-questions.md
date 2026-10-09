@@ -1106,8 +1106,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     1 h, 2 h, 4 h, 8 h, and **Until end of day** (midnight on this device's
     clock, hidden when less than the 5-minute minimum remains). The 24-hour
     maximum and the wheels stay. Decide the final set, its labels, and the
-    phone layout of seven choices in `DESIGN.md`. Owner: backlog row
-    `SESSION-007`.
+    phone layout of seven choices in `DESIGN.md`. Owner: release 1.4 row
+    `SESSION-007`, delivered in PR #156 (2026-10-09) with the proposed set;
+    `DESIGN.md` records the final set and layout.
 29. **A helper that works but reads as unavailable.**
     `user-confirmed` (2026-10-05, the maintainer's own Mac on 1.3.0 (28),
     a screen recording kept outside the repository): Session said "Setup

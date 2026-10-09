@@ -283,7 +283,7 @@ internal fun SessionReviewContent(
             PosatoEndTime(
                 "Until ${state.formattedReviewEnd.orEmpty()}",
                 Modifier.fillMaxWidth(),
-                "${state.durationMinutes} minutes · you stay in control",
+                "${if (state.untilEndOfDay) END_OF_DAY_LABEL else sessionLengthText(state.durationMinutes)} · you stay in control",
             )
             state.setName?.let { name -> Text("Set: $name", style = MaterialTheme.typography.titleMedium) }
             state.review.actionRequired?.let { required -> SessionReadinessNotice(required, onRetry, onEditItems) }

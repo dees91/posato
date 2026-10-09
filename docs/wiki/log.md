@@ -2714,6 +2714,19 @@ first removal attempt that does not finish, not to a paused keychain.
   repeatable long-history reproduction before the test account's zone is
   cleaned; `TARGETS-009` is dropped.
 
+## [2026-10-09] task | SESSION-007: longer quick choices for a manual pause
+
+- `user-confirmed`: setup offers 25 and 45 minutes, 1, 2, 4, and 8 hours, and
+  **Until end of day**, which ends the pause at the next local midnight.
+- Decided by the agent under the maintainer's delegation of 2026-10-09,
+  awaiting confirmation: on the Mac the choice ends the lengths' group so
+  Review stays in the window; the iOS lengths reflow to two rows at large
+  text; a stale end-of-day choice resets to 25 minutes.
+- `observed`: a drag that starts on the iOS countdown wheel turns the wheel
+  instead of the page, so the iOS driver starts screen swipes outside system
+  pickers; the Mac accessibility tree exposes a length's visible text, not its
+  spoken description.
+
 ## [2026-10-09] fix | MACOS-027: a working Mac helper read as unavailable under load
 
 - `observed`: in Tart under heavy load, 1.3.0 and `main` showed "Setup
@@ -2726,6 +2739,7 @@ first removal attempt that does not finish, not to a paused keychain.
   five minutes with a retry every 30 s; the signature check allows 30 s per
   command and 45 s in all. A removed or tampered helper still reads as
   unavailable at once.
+
 ## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
 
 - `observed` in a macOS 26 Tart clone with notarized candidates: a build
