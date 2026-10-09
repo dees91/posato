@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import app.posato.feature.enforcement.EnforcedSet
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.LocalSessionStatus.Active
 import app.posato.feature.session.domain.LocalSessionStatus.Ended
@@ -32,6 +33,8 @@ internal data class SessionUiState(
     val operationFailure: SessionOperationFailure? = null,
     val isSettingUp: Boolean = false,
     val durationMinutes: Int = DEFAULT_SETUP_MINUTES,
+    val untilEndOfDay: Boolean = false,
+    val formattedEndOfDay: String? = null,
     val setupFailure: SessionSetupFailure? = null,
     val isReviewing: Boolean = false,
     val isReviewReady: Boolean = false,
@@ -107,6 +110,7 @@ internal data class SessionLoadState(
 
 internal data class SessionSetupDraft(
     val durationMinutes: Int = DEFAULT_SETUP_MINUTES,
+    val chosenEndOfDay: Long? = null,
     val failure: SessionSetupFailure? = null,
     val isSettingUp: Boolean = false,
     val isReviewing: Boolean = false,
@@ -151,6 +155,7 @@ internal fun createSessionUiState(
     nowMillis: Long,
     timeFormat: SessionTimeFormat,
     enforcementView: EnforcementViewState = EnforcementViewState(),
+    zone: ScheduleZone? = null,
 ): SessionUiState {
     val policy = targets.policy
     val mappings = targets.mappings
@@ -161,13 +166,15 @@ internal fun createSessionUiState(
         is Ended -> status.record
         else -> null
     }
-    val previewEnd = if (draft.isSettingUp && !draft.isReviewing) nowMillis + draft.durationMinutes * MILLIS_PER_MINUTE else null
+    val times = sessionSetupTimes(draft, nowMillis, timeFormat, zone)
 
     return SessionUiState(
         status = load.status,
         operationFailure = load.failure,
         isSettingUp = draft.isSettingUp,
-        durationMinutes = draft.durationMinutes,
+        durationMinutes = times.durationMinutes,
+        untilEndOfDay = times.untilEndOfDay,
+        formattedEndOfDay = times.formattedEndOfDay,
         setupFailure = draft.failure,
         isReviewing = draft.isReviewing,
         isReviewReady = policy != null && mappings != null,
@@ -178,8 +185,8 @@ internal fun createSessionUiState(
         isStarting = activeCommand == SessionCommand.STARTING,
         isEnding = activeCommand == SessionCommand.ENDING,
         remainingMillis = active?.let { (it.record.endEpochMillis - nowMillis).coerceAtLeast(0) },
-        formattedPreviewEnd = previewEnd?.let { timeFormat.formatTime(it, nowMillis) },
-        formattedReviewEnd = draft.resolvedReviewEnd?.let { timeFormat.formatTime(it, nowMillis) },
+        formattedPreviewEnd = times.formattedPreviewEnd,
+        formattedReviewEnd = times.formattedReviewEnd,
         formattedActiveEnd = lastRecord?.let { timeFormat.formatTime(it.endEpochMillis, nowMillis) },
         enforcement = enforcementView.state,
         enforced = enforcementView.enforced,
@@ -189,8 +196,6 @@ internal fun createSessionUiState(
         pauseSets = targets.sets.choices(targets.applicationCounts),
     )
 }
-
-private const val MILLIS_PER_MINUTE: Long = 60_000L
 
 private fun LocalApplicationMappingsLoadResult?.selectedApplications(): PersistentList<LocalApplicationMapping> {
     return when (this) {

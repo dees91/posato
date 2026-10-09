@@ -1,10 +1,13 @@
 package app.posato.feature.session.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,7 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import app.posato.core.designsystem.PlatformDurationPicker
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
@@ -38,12 +46,11 @@ import org.jetbrains.compose.resources.stringResource
 internal fun SessionDurationContent(
     state: SessionUiState,
     layout: PosatoLayout,
-    onSetDuration: (Int) -> Unit,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
     onReview: () -> Unit,
     onCancel: () -> Unit,
     onChoosePauseSet: (PauseSetId) -> Unit = {},
 ) {
-    val duration = SessionDurationParts(state.durationMinutes)
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
             "How much space\ndo you need?",
@@ -53,31 +60,9 @@ internal fun SessionDurationContent(
         )
         PauseSetPickerRow(state.pauseSets, state.setId, onChoose = onChoosePauseSet, placeholder = state.setName ?: "No pause set")
         if (platformUsesCupertinoChrome) {
-            PosatoTabBar(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
-                DurationPresets.forEach { preset ->
-                    PosatoTab(
-                        selected = state.durationMinutes == preset,
-                        onClick = { onSetDuration(preset) },
-                        modifier = Modifier.weight(1f),
-                        role = Role.RadioButton,
-                    ) { Text("$preset min") }
-                }
-            }
-            PlatformDurationPicker(
-                minutes = state.durationMinutes,
-                range = SessionLimits.MIN_DURATION_MINUTES..minOf(SessionLimits.MAX_DURATION_MINUTES, COUNTDOWN_LIMIT_MINUTES),
-                onChange = onSetDuration,
-            )
+            CupertinoDurationChoices(state, onChooseDuration)
         } else {
-            PosatoChoiceGroup {
-                DurationPresets.forEach { preset ->
-                    PosatoNavigationItem(selected = state.durationMinutes == preset, onClick = { onSetDuration(preset) }) { Text("$preset min") }
-                }
-            }
-            Row(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-                PosatoNumberWheel(duration.hours, duration.hourRange, "Hours", { onSetDuration(duration.withHours(it)) }, Modifier.weight(1f))
-                PosatoNumberWheel(duration.minutes, duration.minuteRange, "Minutes", { onSetDuration(duration.withMinutes(it)) }, Modifier.weight(1f))
-            }
+            DrawnDurationChoices(state, onChooseDuration)
         }
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
             Text("Ends at ${state.formattedPreviewEnd.orEmpty()}")
@@ -118,8 +103,131 @@ internal class SessionDurationParts(
     }
 }
 
+@Composable
+private fun CupertinoDurationChoices(
+    state: SessionUiState,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        CompactLengthRows(state, onChooseDuration)
+        state.formattedEndOfDay?.let { end ->
+            PosatoTabBar(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
+                PosatoTab(
+                    selected = state.untilEndOfDay,
+                    onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) },
+                    modifier = Modifier.weight(1f),
+                    role = Role.RadioButton,
+                    countContent = { Text("ends $end") },
+                ) { Text(END_OF_DAY_LABEL) }
+            }
+        }
+        PlatformDurationPicker(
+            minutes = state.durationMinutes,
+            range = SessionLimits.MIN_DURATION_MINUTES..minOf(SessionLimits.MAX_DURATION_MINUTES, COUNTDOWN_LIMIT_MINUTES),
+            onChange = { minutes -> onChooseDuration(SessionDurationChoice.Length(minutes)) },
+        )
+    }
+}
+
+/** One row of six segments, or two rows of three when the widest label does not fit a sixth of the width, as with large text. */
+@Composable
+private fun CompactLengthRows(
+    state: SessionUiState,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
+) {
+    BoxWithConstraints(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth()) {
+        val measurer = rememberTextMeasurer()
+        val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+        val widest = DurationPresets.maxOf { preset -> measurer.measure(preset.compactLabel, style).size.width }
+        val segment = (maxWidth - PosatoSpace.Tiny * (DurationPresets.size + 1)) / DurationPresets.size - PosatoSpace.Tiny * 2
+        val perRow = if (widest <= with(LocalDensity.current) { segment.toPx() }) DurationPresets.size else DurationPresets.size / 2
+        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+            DurationPresets.chunked(perRow).forEach { row ->
+                PosatoTabBar(Modifier.fillMaxWidth()) {
+                    row.forEach { preset ->
+                        PosatoTab(
+                            selected = preset.isSelected(state),
+                            onClick = { onChooseDuration(SessionDurationChoice.Length(preset.minutes)) },
+                            modifier = Modifier.weight(1f),
+                            role = Role.RadioButton,
+                            contentPadding = PaddingValues(horizontal = PosatoSpace.Tiny, vertical = PosatoSpace.Medium),
+                        ) { PresetLabel(preset.compactLabel, preset.minutes) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawnDurationChoices(
+    state: SessionUiState,
+    onChooseDuration: (SessionDurationChoice) -> Unit,
+) {
+    val duration = SessionDurationParts(state.durationMinutes)
+    val onLength = { minutes: Int -> onChooseDuration(SessionDurationChoice.Length(minutes)) }
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        PosatoChoiceGroup {
+            DurationPresets.forEach { preset ->
+                PosatoNavigationItem(selected = preset.isSelected(state), onClick = { onLength(preset.minutes) }) {
+                    PresetLabel(preset.label, preset.minutes)
+                }
+            }
+            state.formattedEndOfDay?.let { end ->
+                PosatoNavigationItem(selected = state.untilEndOfDay, onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) }) {
+                    Text(END_OF_DAY_LABEL)
+                    PosatoCaption("ends $end")
+                }
+            }
+        }
+        Row(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+            PosatoNumberWheel(duration.hours, duration.hourRange, "Hours", { onLength(duration.withHours(it)) }, Modifier.weight(1f))
+            PosatoNumberWheel(duration.minutes, duration.minuteRange, "Minutes", { onLength(duration.withMinutes(it)) }, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun PresetLabel(
+    text: String,
+    minutes: Int,
+) {
+    val spoken = sessionLengthText(minutes)
+    Text(text, Modifier.semantics { contentDescription = spoken }, maxLines = 1)
+}
+
+internal fun sessionLengthText(minutes: Int): String {
+    val hours = minutes / MINUTES_PER_HOUR
+    val rest = minutes % MINUTES_PER_HOUR
+    val hourText = if (hours == 1) "1 hour" else "$hours hours"
+    val minuteText = if (rest == 1) "1 minute" else "$rest minutes"
+    return when {
+        hours == 0 -> minuteText
+        rest == 0 -> hourText
+        else -> "$hourText $minuteText"
+    }
+}
+
+private class DurationPreset(
+    val minutes: Int,
+    val compactLabel: String,
+    val label: String,
+) {
+    fun isSelected(state: SessionUiState): Boolean {
+        return !state.untilEndOfDay && state.durationMinutes == minutes
+    }
+}
+
+internal const val END_OF_DAY_LABEL: String = "Until end of day"
 private const val MINUTES_PER_HOUR: Int = 60
-private val DurationPresets = listOf(25, 45, 60)
+private val DurationPresets = listOf(
+    DurationPreset(25, "25m", "25 min"),
+    DurationPreset(45, "45m", "45 min"),
+    DurationPreset(60, "1h", "1 h"),
+    DurationPreset(120, "2h", "2 h"),
+    DurationPreset(240, "4h", "4 h"),
+    DurationPreset(480, "8h", "8 h"),
+)
 
 /** The longest time the system countdown picker offers on iOS: 23 hours 59 minutes. */
 private const val COUNTDOWN_LIMIT_MINUTES = 23 * 60 + 59

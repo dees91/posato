@@ -23,6 +23,9 @@ final class ScenarioExecutor {
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
   private static let edgeInset: CGFloat = 2
+  /// Where a screen swipe may start, as fractions of the window height, in order of preference.
+  private static let swipeStarts: [CGFloat] = [0.5, 0.4, 0.8, 0.3, 0.6]
+  private static let swipeDistance: CGFloat = 0.3
   private static let minDragViewportHeight: CGFloat = 80
   private static let screenSwipeCoverage: CGFloat = 0.9
   private static let orientations: [String: UIDeviceOrientation] = [
@@ -585,11 +588,7 @@ final class ScenarioExecutor {
 
   private func pan(in container: XCUIElement, forward: Bool, screenSwipe: Bool) {
     if screenSwipe {
-      if forward {
-        app.swipeUp()
-      } else {
-        app.swipeDown()
-      }
+      swipeScreen(up: forward)
     } else {
       let start = container.coordinate(
         withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.85 : 0.15))
@@ -682,12 +681,27 @@ final class ScenarioExecutor {
   private func reveal(_ anchor: XCUIElement) {
     let screenMidY = app.frame.midY
     let anchorMidY = anchor.frame.midY
-    if anchorMidY > screenMidY {
-      app.swipeUp()
-    } else {
-      app.swipeDown()
-    }
+    swipeScreen(up: anchorMidY > screenMidY)
     Thread.sleep(forTimeInterval: Self.scrollSettle)
+  }
+
+  /// A screen swipe that starts outside system pickers: a drag that begins on a wheel turns the
+  /// wheel and changes its value instead of moving the page.
+  private func swipeScreen(up: Bool) {
+    let wheels = (app.datePickers.allElementsBoundByIndex + app.pickers.allElementsBoundByIndex)
+      .filter { $0.exists }
+      .map(\.frame)
+    let window = app.frame
+    let start =
+      Self.swipeStarts.first { fraction in
+        let point = CGPoint(x: window.midX, y: window.minY + window.height * fraction)
+        return !wheels.contains { $0.contains(point) }
+      } ?? Self.swipeStarts[0]
+    let end = min(max(up ? start - Self.swipeDistance : start + Self.swipeDistance, 0.05), 0.95)
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: start))
+      .press(
+        forDuration: 0.05,
+        thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: end)))
   }
 
   /// The element for `query`, or `nil` when the query cannot be resolved right now.

@@ -189,7 +189,7 @@
       "action": "waitFor",
       "state": "exists",
       "query": {
-        "text": "Review session",
+        "text": "25 minutes",
         "role": "button"
       }
     },

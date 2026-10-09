@@ -1095,7 +1095,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     schedule is on (`quitPromptFor`), and then the update waits until someone
     presses **Quit**. 1.3 has the same path, so the update to 1.4 will ask in
     those states too. `user-confirmed` (2026-10-04): a backlog row, first in line for
-    release 1.4. Owner: backlog row `MACOS-026`.
+    release 1.4. `observed` (2026-10-09): resolved by `MACOS-026`; an
+    updater relaunch now skips the question, while a person's quit still
+    asks. Remaining one-time limit: updating from 1.2 or 1.3 to 1.4.0 still
+    asks once while a schedule is on, because the running build decides.
 28. **Longer quick choices when starting a pause.**
     `user-confirmed` (2026-10-05): session setup offers only 25, 45, and 60
     minutes (`DurationPresets` in `SessionDurationContent.kt`); anything
@@ -1103,8 +1106,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     1 h, 2 h, 4 h, 8 h, and **Until end of day** (midnight on this device's
     clock, hidden when less than the 5-minute minimum remains). The 24-hour
     maximum and the wheels stay. Decide the final set, its labels, and the
-    phone layout of seven choices in `DESIGN.md`. Owner: backlog row
-    `SESSION-007`.
+    phone layout of seven choices in `DESIGN.md`. Owner: release 1.4 row
+    `SESSION-007`, delivered in PR #156 (2026-10-09) with the proposed set;
+    `DESIGN.md` records the final set and layout.
 29. **A helper that works but reads as unavailable.**
     `user-confirmed` (2026-10-05, the maintainer's own Mac on 1.3.0 (28),
     a screen recording kept outside the repository): Session said "Setup
@@ -1118,7 +1122,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     ready. `open`: why the readiness check fails on a long-lived install
     (earlier versions, other background items, the update path), and
     whether a schedule really did not start or only its report is wrong.
-    Owner: backlog row `MACOS-027`.
+    `observed` (2026-10-09, `MACOS-027`, Tart under heavy load): the false
+    "Setup incomplete" reproduced on 1.3.0 and `main` while the helper was
+    enabled. The on-demand daemon exited before a new connection was
+    counted, and under saturated disk I/O launchd started it up to two
+    minutes late, so helper reads ended with an unknown outcome; a strict
+    `codesign` also took 6.9 s against a 5 s limit. Fixed in PR #158, see
+    the [macOS enforcement](macos-enforcement.md) page. Still `open`:
+    whether the 2026-10-05 schedule did not start, and where the extra
+    background-item records on that Mac came from.
 30. **A native feel on iOS and a refined shared design system.**
     `user-confirmed` (2026-10-05): a design critique scored the iOS app 26/40
     because it read as a Material 3 port, and the edge swipe moved only a band

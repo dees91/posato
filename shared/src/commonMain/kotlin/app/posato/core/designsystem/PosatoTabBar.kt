@@ -3,6 +3,7 @@ package app.posato.core.designsystem
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -51,6 +52,7 @@ internal fun PosatoTab(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     role: Role = Role.Tab,
+    contentPadding: PaddingValues = PaddingValues(PosatoSpace.Medium),
     countContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -71,7 +73,7 @@ internal fun PosatoTab(
         contentColor = contentColor.copy(alpha = contentAlpha),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).padding(PosatoSpace.Medium),
+            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).padding(contentPadding),
             horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {

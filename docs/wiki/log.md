@@ -2730,3 +2730,42 @@ first removal attempt that does not finish, not to a paused keychain.
 - Verification was kept to a minimum by the maintainer's order; the deferred
   runs, the seeding operation, the zone cleanup, and the slow first sync after
   a link (idea 35) belong to backlog row `SYNC-022`.
+## [2026-10-09] task | SESSION-007: longer quick choices for a manual pause
+
+- `user-confirmed`: setup offers 25 and 45 minutes, 1, 2, 4, and 8 hours, and
+  **Until end of day**, which ends the pause at the next local midnight.
+- Decided by the agent under the maintainer's delegation of 2026-10-09,
+  awaiting confirmation: on the Mac the choice ends the lengths' group so
+  Review stays in the window; the iOS lengths reflow to two rows at large
+  text; a stale end-of-day choice resets to 25 minutes.
+- `observed`: a drag that starts on the iOS countdown wheel turns the wheel
+  instead of the page, so the iOS driver starts screen swipes outside system
+  pickers; the Mac accessibility tree exposes a length's visible text, not its
+  spoken description.
+
+## [2026-10-09] fix | MACOS-027: a working Mac helper read as unavailable under load
+
+- `observed`: in Tart under heavy load, 1.3.0 and `main` showed "Setup
+  incomplete" with the helper enabled. The on-demand daemon exited before a
+  new connection was counted, and under saturated disk I/O launchd started
+  it up to two minutes late, so helper reads ended with an unknown outcome;
+  a strict `codesign` check also took 6.9 s against a 5 s limit.
+- The daemon now counts a connection when it is accepted and waits 10 s
+  only before its first one; unfinished quiet reads keep ready for up to
+  five minutes with a retry every 30 s; the signature check allows 30 s per
+  command and 45 s in all. A removed or tampered helper still reads as
+  unavailable at once.
+
+## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
+
+- `observed` in a macOS 26 Tart clone with notarized candidates: a build
+  without the change asked "Quit Posato?" during **Install and Relaunch**;
+  with it, the update relaunched the newer build with no dialog while a
+  schedule was on, and after **End session** following a refused install
+  during a pause.
+- A person's quit still asks: Command-Q and **Quit Posato** showed the
+  dialog during a pause, also right after a refused install.
+- Updating from 1.2 or 1.3 to 1.4.0 still asks once while a schedule is
+  on; press **Quit** to continue. During a pause the install is refused
+  instead; builds before 1.2 never ask. Idea 27 is resolved.
+
