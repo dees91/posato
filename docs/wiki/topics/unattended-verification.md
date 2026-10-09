@@ -317,6 +317,26 @@ again; a copy that overlaps a build is untested (`open`). The
 
 ## Open
 
+- `open` (`user-confirmed` 2026-10-09 as ideas for `PLATFORM-001`): keeping
+  routine verification near its 268 s median once Android and Linux are
+  verified too. Measured so far: tracks add to the time only through the
+  longest one, and the shared host slows each of them (the clone took about
+  89 s instead of 51 s next to the phone track). Candidates, none accepted
+  yet:
+  - a time budget: the driver records each step's duration, a pull request
+    reports each track's time, and a routine run stays within about 300 s;
+  - one path-based selection of platform tracks, after the iCloud rule and
+    `IosSwiftTestTrigger`: shared code runs every platform, a platform's own
+    sources only its own, and a release runs all of them;
+  - each new platform as its own parallel track, with its effect on the
+    other tracks measured when it is added; a physical device instead of an
+    emulator, or a non-routine track, when it lengthens the longest one;
+  - one readiness check before a run (the phone unlocked, the golden
+    images' test account healthy, free disk space, no foreign clones),
+    because each platform adds such preconditions;
+  - shorter waits in `vm onboard`, still the longest single step on the
+    critical path at about 105 s.
+
 - `open`: approving a two-factor sign-in request on the test iPhone through
   SpringBoard, and how often the automation-mode passcode returns over days.
 - `open`: an Apple Account sign-out in a VM for the account-gate sync step.

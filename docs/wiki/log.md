@@ -2661,3 +2661,11 @@ first removal attempt that does not finish, not to a paused keychain.
   desktop build run, then syncing the signed package into it, cut the
   routine verification workload from a median of 288 s to 268 s over five
   runs, every run passing. The `verify-posato` skill now orders it that way.
+
+## [2026-10-09] planning | Verification time for new platforms
+
+- `user-confirmed`: ideas for keeping routine verification near 268 s once
+  Android and Linux are verified (a time budget, path-based platform tracks,
+  measured parallel tracks, one readiness check, shorter onboarding waits)
+  are recorded as open in the unattended verification topic for
+  `PLATFORM-001`, none accepted yet.
