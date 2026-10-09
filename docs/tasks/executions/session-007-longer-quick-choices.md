@@ -87,6 +87,12 @@ Run directories are under the worktree's ignored `build/verification/runs/`.
   rows of three without clipping (`222802-1460`); Mac VM fresh clones,
   `pause-sets-desktop` with the reveal step (`222933-cba1`) and `flow
   session --until-end-of-day` (`223710-452d`).
+- **Merge of `main` into the reviewed head, `4aa64ad3`** (2026-10-09,
+  23:21–23:24): fresh Mac VM clone, `flow set` then `flow session`: 8 hours
+  from 23:21 ended at 10/10/26, 7:21 AM (`232155-a310`) and Until end of day
+  at 10/10/26, 12:00 AM (`232218-fc7c`); test iPhone `flow session`: Until
+  end of day at 10/10/2026, 00:00 (`232303-6027`) and 480 minutes from 23:24
+  at 07:24 (`232414-123e`). Each run went through Review and Start.
 - **Skipped** under the maintainer's order of 2026-10-09 (translated): "keep
   VM and iPhone verification to a minimum, once before the PR where it makes
   sense". Not rerun on the final head: the other session scenarios and the

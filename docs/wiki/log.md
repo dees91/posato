@@ -2726,6 +2726,7 @@ first removal attempt that does not finish, not to a paused keychain.
   instead of the page, so the iOS driver starts screen swipes outside system
   pickers; the Mac accessibility tree exposes a length's visible text, not its
   spoken description.
+
 ## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
 
 - `observed` in a macOS 26 Tart clone with notarized candidates: a build
