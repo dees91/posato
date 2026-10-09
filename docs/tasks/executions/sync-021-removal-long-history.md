@@ -96,8 +96,8 @@ about 110 change fetches a minute in companion processes of 16 fetches.
      present reaches them. It runs inside the single running instance or
      refuses while another runs. `posato-control` gains `vm sync-fixture
      seed|delete-zone`.
-   - Authority: the proposed ADR 0007 amendment and `T-14` text in the pull
-     request; no implementation before the maintainer accepts them.
+   - Authority: the ADR 0007 amendment and `T-14` text from the pull
+     request, accepted 2026-10-09, land as the first implementation commit.
 6. **Verify** the brief's matrix, with `AC-03` using `vm network --state
    off` during a removal. That exercises the companion's retryable path
    and the retry, not the no-progress counter, which step 2 covers.

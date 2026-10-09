@@ -20,9 +20,9 @@
   app; enumeration and verification use the looped changes traversal from
   an empty token, never a query); the [threat model](../../security/apple-mvp-threat-model.md)
   `T-14`; [`DESIGN.md`](../../../DESIGN.md) removal copy.
-- **Proposed authority changes:** a verification-only ADR 0007 amendment
-  and a `T-14` update, drafted in the pull request; not accepted until the
-  maintainer accepts their wording.
+- **Authority changes:** a verification-only ADR 0007 amendment and a
+  `T-14` update, accepted as written in the pull request (`user-confirmed`,
+  2026-10-09).
 - **Record:** [execution record](../executions/sync-021-removal-long-history.md)
 
 ## Outcome
@@ -104,5 +104,8 @@ All `user-confirmed` (2026-10-09):
 - `D4`, zone cleanup: a verification-only delete-zone operation that the
   agent runs, under the `AC-04` conditions.
 
-Blocker: implementation waits for the maintainer's acceptance of the
-proposed ADR 0007 amendment and `T-14` text, and for the plan re-review.
+The proposed ADR 0007 amendment and `T-14` text in the pull request are
+accepted as written (`user-confirmed`, 2026-10-09). They become the first
+implementation commit. Implementation waits only for the plan re-review.
+Later choices are decided by the agent under the maintainer's delegation of
+2026-10-09, recorded as such; the review gate stays.
