@@ -20,80 +20,89 @@
   app; enumeration and verification use the looped changes traversal from
   an empty token, never a query); the [threat model](../../security/apple-mvp-threat-model.md)
   `T-14`; [`DESIGN.md`](../../../DESIGN.md) removal copy.
+- **Proposed authority changes:** a verification-only ADR 0007 amendment
+  and a `T-14` update, drafted in the pull request; not accepted until the
+  maintainer accepts their wording.
 - **Record:** [execution record](../executions/sync-021-removal-long-history.md)
 
 ## Outcome
 
 On a Mac, one **Remove workspace** press removes the workspace right after a
 link and when the zone carries a long change history. While it works, the
-row says honestly that removal is in progress instead of failing at a fixed
-deadline. The reproduction can be rebuilt on demand, and only after that is
-the test Apple Account's zone history cleaned.
+macOS row says honestly that removal is in progress instead of failing at a
+fixed deadline. The reproduction can be rebuilt on demand, and the test
+Apple Account's zone history is cleaned under recorded controls.
 
 ## Boundaries
 
-- Find the cause before changing code. Candidates: the per-press work cap,
-  the companion page budget, and the first sync after the link (execution
-  record, hypotheses).
+- Find the cause before changing code (record, step 1).
+- Only removal gets the longer press. `AppleWorkspaceRemoval` passes a
+  progress-bounded budget to `deleteWorkspaceRecords` and
+  `sweepBundlesIfAnchorMissing`; every other caller, including the link's
+  fresh-attempt sweep in `BootstrapMissingAnchorPhase`, keeps the cap of 10
+  passes, so no ADR 0007 bootstrap step changes.
 - Keep removal semantics: bundles first, the anchor last, idempotent
   batches, independent absence verification, the binding gate, and the
-  account-changed and unknown-outcome stops. A pass that makes no progress
-  still ends; continuing is allowed only while the resume cursor advances.
-- The zone stays; the app still never deletes it. A from-empty or
-  zone-deleting removal is out of scope.
-- iPhone removal is out of scope. The record notes whether its path has the
-  same per-press cap, and if so a new idea is filed.
-- The test-account zone cleanup is an explicit last step. It runs only
-  under the safety conditions in `AC-04`.
+  account-changed and unknown-outcome stops. The companion, its pass
+  bounds, and the resume-token format and phases do not change.
+- The app never deletes the zone. Zone deletion and history seeding exist
+  only in verification builds, under the proposed ADR 0007 amendment, with
+  the controls listed in the record (step 5).
+- iOS is out of scope and its UI does not change. It has the same per-press
+  cap (`MAX_REMOVAL_CALLS` = 10); a new idea and backlog row own it.
 
 ## Acceptance
 
-- `AC-01`: before the fix, on the long-history fixture, the first press
-  fails as recorded on 2026-10-09. After the fix, one press removes the
-  workspace in each of 3 fresh Tart clones, with the time recorded.
-- `AC-02`: right after `flow icloud link`, one press removes the workspace
-  even while the first sync after the link is still running or has just
-  ended.
-- `AC-03`: during a long removal the row shows the agreed progress state
-  (`D2`). A failure with no progress, or an account change, still ends in
-  the existing retryable or action-required state, and a retry resumes.
-- `AC-04`: the long-history fixture can be rebuilt from a recorded
-  procedure and shows the pre-fix failure. Only then is the test account's
-  zone history cleaned. Safety conditions: the test Apple Account only; no
-  linked device (every clone destroyed, the test iPhone local-only); the
-  workspace removed first; no new link within the purge window that
-  `SYNC-014` measured. The zone is deleted with the development-only tool
-  (`D4`) from a development-signed build in a Tart clone signed in to the
-  test Apple Account, against the test container's Development environment;
-  the tool refuses in any other environment and is absent from release
-  builds, which a check of the release artifact shows. A routine link and
-  removal afterwards is measured again.
+- `AC-01`: on the long-history fixture, one press of a pre-fix build
+  (`572e341`) fails as recorded on 2026-10-09. One press of the fixed build
+  removes the workspace in each of 3 fresh Tart clones, with the time
+  recorded and `presses == 1` in the `flow icloud remove` envelope.
+- `AC-02`: right after `flow icloud link` returns, which since PR #161 is
+  after the first sync settles, the first press at the first moment the row
+  allows it removes the workspace.
+- `AC-03`: during a long removal the macOS row shows "Removing workspace…",
+  the note, and the activity indicator, with both actions disabled, and a
+  second press cannot start a second removal. With the guest network off
+  the press ends in the existing retryable state, and a retry resumes.
+- `AC-04`, in this order:
+  1. clean the test account's zone with the verification tool;
+  2. rebuild the fixture with the recorded procedure;
+  3. a pre-fix build (`572e341`) fails on it;
+  4. the fixed build passes (`AC-01`);
+  5. clean again only if the account should be left empty, then wait at
+     least 15 minutes with recorded timestamps, link once, and pass the
+     `SYNC-014` ten-minute survival check before a timed routine removal.
+
+  Each clean runs only when the zone's anchor is absent, `tart list` shows
+  only this row's clone, a `posato-control` read of the test iPhone shows
+  its iCloud row not linked, and the guest's signed-in Apple Account equals
+  the configured test account. Cleaning covers the zone only; each removal
+  already deletes its own workspace-key item, and the tool never touches
+  Keychain items.
 
 ## Verification
 
 - Fresh `primary` Tart clones on the test Apple Account with
   `flow icloud link` and `flow icloud remove`, timed press by press, before
-  and after the fix (`AC-01`, `AC-02`, `AC-03`), on the fixture and on the
-  cleaned account (`AC-04`).
-- A companion-side check of the continuation, only for a failure E2E cannot
-  expose reliably, such as a cursor that stops advancing. It is written
-  failing first.
+  and after the fix (`AC-01` to `AC-03`) and through the `AC-04` order.
+- Kotlin adapter tests with a fake transport, written failing first, only
+  for the failure inventory in the record that E2E cannot produce.
+- The release packaging and DMG checks shown to refuse a verification-flag
+  package and to pass a release-configuration one.
 
 ## Decisions or blockers
 
 All `user-confirmed` (2026-10-09):
 
-- `D1`, fixture: step 1 measures pages per pass first. If real link,
-  publish, and removal cycles through `posato-control` build the history in
-  about 30 minutes, the fixture uses them. Otherwise a development-only
-  companion operation writes and deletes N bundle records; it is absent from
-  release builds and refuses outside the Development environment. The
-  maintainer approved this seam for that case.
-- `D2`, progress: the row shows "Removing workspace…" with a visible
-  loading indicator and a note that an older workspace can take a few
-  minutes. The indicator follows `DESIGN.md` and the `DESIGN-004` native
-  controls on each platform.
+- `D1`, fixture: step 1 measures first. If real link, publish, and removal
+  cycles rebuild the history in about 30 minutes, the fixture uses them;
+  otherwise the verification-only seeding operation.
+- `D2`, progress: "Removing workspace…" with an activity indicator and a
+  note that an older workspace can take a few minutes, on macOS.
 - `D3`, after the window closes: removal continues while Posato runs; after
   a quit, the next press starts again idempotently. No cursor is stored.
-- `D4`, zone cleanup: a development-only delete-zone tool that the agent
-  runs, under the `AC-04` conditions. The maintainer approved this seam.
+- `D4`, zone cleanup: a verification-only delete-zone operation that the
+  agent runs, under the `AC-04` conditions.
+
+Blocker: implementation waits for the maintainer's acceptance of the
+proposed ADR 0007 amendment and `T-14` text, and for the plan re-review.

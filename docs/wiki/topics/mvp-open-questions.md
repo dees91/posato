@@ -1186,6 +1186,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     3 linked runs failed, with the deletion during the first sync after the
     link. `user-confirmed` (2026-10-09): dropped; backlog row `TARGETS-009`
     is deleted, and a new occurrence starts a new idea.
+34. **The iPhone's workspace removal has the same per-press cap.**
+    `inferred` (2026-10-09, code reading during `SYNC-021`):
+    `IosCloudKitMailboxProvider` runs at most `MAX_REMOVAL_CALLS` (10)
+    removal calls a press, as the Mac did before `SYNC-021`, so a zone with
+    a long history likely needs several **Remove workspace** presses on the
+    iPhone too. `open`: whether it reproduces on the test iPhone.
+    Owner: backlog row `IOS-008`.
 
 ## Later platform questions
 

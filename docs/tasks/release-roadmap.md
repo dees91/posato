@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped)
+- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped; amended 2026-10-09: backlog addition `IOS-008`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-09
@@ -149,6 +149,8 @@
   presses and up to about 7 minutes. It joins release 1.4 wave 1 with a
   restated outcome. `TARGETS-009` did not recur in 3 runs and the
   maintainer dropped it; it is deleted from the backlog.
+  The 2026-10-09 backlog addition `IOS-008` (idea 34, `user-confirmed`
+  through the `SYNC-021` plan review) changes no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -430,6 +432,7 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-023` | Deliver Firefox support on macOS under the ADR 0005 revision and delivery plan accepted in `MACOS-017`, continuing from the PR #110 spike. | Sessions and enforcement | `MACOS-017` | An accepted `MACOS-017` decision and a planning checkpoint |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
+| `IOS-008` | Let one **Remove workspace** press on the iPhone finish a removal when the zone has a long history: `IosCloudKitMailboxProvider` caps a press at `MAX_REMOVAL_CALLS` (10), as the Mac did before `SYNC-021`. Reproduce it on the test iPhone with the `SYNC-021` fixture and apply the same progress-bounded continuation and progress state. | Sessions and enforcement | Idea 34; `SYNC-021` plan review | A reproduction on the test iPhone; release composition |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |

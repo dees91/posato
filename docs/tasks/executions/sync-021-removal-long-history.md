@@ -7,113 +7,109 @@
 - **Review tier:** `high-risk`: the accepted development-only seams (`D1`,
   `D4`) delete CloudKit records or the zone; see the brief
 - **Implementer:** Claude
-- **Reviewer:** plan review pending
+- **Reviewer:** plan review of `7abfa5c2`: `changes-required` (7 Required, folded below); re-review pending
 - **Branch:** `task/sync-021-removal-long-history`
 - **Updated:** 2026-10-09 (decisions recorded)
 
 ## Evidence before the row
 
-`observed` (2026-10-09, recheck on `main` `572e341` after PR #147, fresh
-`primary` Tart clones, development package, test Apple Account; raw runs
-under the recheck worktree's ignored `build/verification/`):
-
-- Linking took 195 to 228 s with 11 or 12 **Check again** presses. The
-  first sync after the link ran for about 3.3 minutes, or ended in "Sync did
-  not finish".
-- The first **Remove workspace** press failed in 6 of 6 runs, sometimes
-  after about 59 s and sometimes after about 4 minutes of Syncing.
-  Removal took 3 or 4 presses and up to about 7 minutes. Every first press
-  came after the row had left Syncing.
-- During a removal, the guest ran about 110 CloudKit change fetches a
-  minute in short-lived `PosatoMacOSSync` processes, most with exactly 16
-  fetches.
+`observed` (2026-10-09, recheck on `main` `572e341`, fresh `primary`
+clones, development package, test Apple Account): linking took 195 to
+228 s; the first press failed in 6 of 6 runs after about 59 s or about
+4 minutes; removal took 3 or 4 presses and up to about 7 minutes, with
+about 110 change fetches a minute in companion processes of 16 fetches.
 
 ## Hypotheses
 
-1. `inferred`: a per-press cap. `MacOsMailboxAdapter.deleteWorkspaceRecords`
-   runs at most `MAX_DELETE_ATTEMPTS` (10) companion passes, each at most
-   `recordDeletePageBudget` (16) change pages within 30 s, so 160 pages a
-   press. The zone is never deleted (`SYNC-015`), so the traversal from an
-   empty token grows with the account's history. 10 passes of about 6 s
-   match the 59 s first press; the in-memory continuation explains 3 or 4
-   presses. An `Unknown` exchange also spends one of the 10 attempts.
-2. `hypothesis`: pages carry few records, so pages track history, not the
-   live workspace.
-3. `hypothesis`: a press made while the exchange loop still holds
-   `AppleBootstrap.flight` waits for it, which would explain the ~4 min
-   first presses.
-4. `inferred`: a quit drops the continuation; the next press restarts
-   from an empty token, safely but repeating the traversal (accepted, `D3`).
+1. `inferred`: the per-press cap. One press runs at most
+   `MAX_DELETE_ATTEMPTS` (10) passes of at most 16 pages within 30 s; the
+   never-deleted zone's change history from an empty token grows with every
+   cycle. An `Unknown` exchange also spends an attempt.
+2. `hypothesis`: pages carry few records, so pages track history.
+3. `hypothesis`: a press waits behind the exchange loop's
+   `AppleBootstrap.flight` lock, explaining the 4-minute presses.
+4. `inferred`: a quit drops the continuation; accepted under `D3`.
 
 ## Plan
 
-1. **Measure in one `primary` clone, before anything is cleaned.** Link,
-   press **Remove workspace** once, and record from the guest log (`log
-   stream` of `PosatoMacOSSync` and `cloudd`, no product change): passes per
-   press, pages and records per pass, whether pages hold deletions or live
-   records, the time between the press and the first delete request
-   (hypothesis 3), and the pages a full drain needs. Then measure what one
-   real link, publish, and removal cycle adds. If cycles rebuild the
-   measured history in about 30 min, `D1` uses them; otherwise the seeding
-   seam below.
-2. **Failing-first proof.** On the fixture, `flow icloud remove
-   --presses 1` (or its envelope's `presses`) fails before the fix. A
-   Kotlin adapter test with a fake transport that answers `Incomplete` with
-   an advancing cursor for 11 or more passes fails today (returns
-   `Retryable`) and passes after the fix; a second fake that repeats the
-   same cursor must still stop.
-3. **Fix, Kotlin adapter only.** In `deleteWorkspaceRecords` and
-   `sweepBundlesIfAnchorMissing`, replace `repeat(MAX_DELETE_ATTEMPTS)` with
-   a loop that continues while each `Incomplete` cursor differs from the
-   last, and ends with `Retryable` after 3 consecutive passes without
-   progress (an `Unknown` exchange or an unchanged cursor) or a wall-clock
-   ceiling of 20 minutes. Cancellation still propagates, and the stored
-   continuation keeps the last banked cursor.
-   - Unchanged: the companion, its 16-page and 30 s pass bounds, the token
-     format and phases, the verify gate, bundles first and anchor last,
-     binding checks per request, the terminal outcome mapping, and
-     `clearRemovalResumeState`. The ADR 0007 procedure does not change.
-     A one-line note records that one press resumes passes while they
-     advance.
-4. **Progress state.** `AppleSync.removeWorkspace` sets `removing` in
-   `AppleSyncState` before it waits for the flight lock and clears it in
-   `finally`. While it is set, `SyncBootstrapSection` shows "Removing
-   workspace…", the note "An older workspace can take a few minutes.", and
-   a `PosatoActivityIndicator`, and keeps both actions disabled, following
-   the `DESIGN.md` removal-progress pattern. `DESIGN.md` gains that row
-   state. iOS shares the copy; its cap stays (new idea if the same).
-5. **Development-only seams** (only what step 1 needs; delete-zone always):
-   - Companion operations `seedHistory` (save then delete N empty-payload
-     bundle records, leaving only history) and `deleteZoneForVerification`,
-     compiled under a Swift `POSATO_VERIFICATION` condition that only the
-     development package's companion build passes. Release and candidate
-     builds compile without it, so the operation codes do not exist and
-     parse fails as for any unknown operation.
-   - At runtime both refuse unless the companion's
-     `icloud-container-environment` entitlement is absent (Development),
-     and delete-zone also refuses while a local workspace is established.
-   - Entry: a verification-only launch argument of the Posato app, honored
-     only with a development-package `Info.plist` key, following the
-     `MACOS-015` Rosetta switch. `posato-control` gains `vm sync-fixture
+1. **Measure** in one `primary` clone before anything is cleaned: one link,
+   one press, guest `log stream` of `PosatoMacOSSync` and `cloudd`. Record
+   passes per press, pages and records per pass, whether pages hold
+   deletions or live records, the delay from the press to the first delete
+   request, and the pages of a full drain; then what one real cycle adds.
+   Fallback if the logs lack record counts: pages per pass from fetch-log
+   lines per companion process, passes and presses per drain.
+2. **Failure inventory** for isolated tests, each one E2E cannot produce:
+   a cursor that never advances (CloudKit cannot be made to stall); repeated
+   `Unknown` exchanges (killing the companion mid-request is not drivable);
+   an advancing cursor that never ends (needs more than 20 minutes of real
+   history); a restart after an expired token (expiry cannot be forced);
+   cancellation keeping the banked continuation (internal state). Tests in
+   `MacOsMailboxAdapterTest` with a fake transport, written failing first.
+   The cap tests at `:159-205` are rewritten: the delete and removal-sweep
+   variants assert the removal budget continues past ten advancing passes
+   (this replaces the asserted cap, not a new case), and the bootstrap
+   sweep keeps a cap-of-10 assertion. `:252-280` stay unchanged.
+3. **Fix, Kotlin only.** A `RemovalBudget` parameter on both port methods,
+   passed only by `AppleWorkspaceRemoval`; the default is the cap of 10.
+   With the removal budget, a press continues while progress is monotonic:
+   each `Incomplete` cursor must be new against a digest of the cursors
+   seen in this press. A repeated cursor, or a restart after an expired
+   token, counts as no progress, as does an `Unknown` exchange. The press
+   ends `Retryable` after 3 such passes in a row, or at a 20-minute ceiling
+   read from an injectable monotonic `TimeSource` and started at the first
+   pass, after the lock. A companion `Retryable` or `UnknownOutcome` still
+   ends the press at once, and cancellation propagates with the last banked
+   cursor stored. ADR 0007's removal procedure is unchanged.
+4. **Progress state, macOS only.** `AppleSync.removeWorkspace` returns at
+   once while `removing` is set, sets it before waiting for the lock, and
+   clears it in `finally`; `removing` takes precedence over `SYNCING`. The
+   row shows "Removing workspace…", "An older workspace can take a few
+   minutes.", and a `PosatoActivityIndicator`, with actions disabled, only
+   when the platform reports a resuming removal (macOS); the iOS UI is
+   unchanged. `DESIGN.md` gains the row state. `posato-control`'s
+   `ICloudRow` learns `removing`, and the verify-posato sync page is updated.
+5. **Verification-only seams.**
+   - Build: one Gradle property, `posatoMacOsVerificationSeams`, adds
+     `-Xswiftc -DPOSATO_VERIFICATION` and is a declared input of
+     `:macosSyncCompanion:buildSwiftRelease`. Configuration fails when it is
+     combined with Developer ID signing or the Production environment, on
+     any channel. The development package then sets the `Info.plist` key
+     `PosatoVerificationSeams`.
+   - Proof: `verifyMacOsReleasePackaging` and the DMG check refuse that key
+     and the seam's marker string in the companion binary. A positive
+     control shows the check failing on a verification-flag package and
+     passing on a release-configuration one.
+   - Companion: `seedHistory` and `deleteZoneForVerification` exist only
+     under the condition, so a release companion fails to parse them as
+     unknown operations. Both refuse unless the
+     `icloud-container-environment` entitlement is absent and the signing
+     leaf is Apple Development, not Developer ID, and both refuse while a
+     local workspace is established. `seedHistory` also refuses unless the
+     anchor reads missing. It writes and then deletes bundle records with
+     canonical UUID names and non-empty payloads of at most 64 KiB that pass
+     `CloudRecords.validateBundle`, with no new record type.
+     `deleteZoneForVerification` refuses while the anchor is present.
+   - Kotlin: the two operations live in a separate verification-only enum
+     in `feature/sync/macos/verification/`, outside `SyncCompanionOperation`.
+     Only a launch-argument handler that runs when the `Info.plist` key is
+     present reaches them. It runs inside the single running instance or
+     refuses while another runs. `posato-control` gains `vm sync-fixture
      seed|delete-zone`.
-   - Release proof: the release packaging and DMG checks refuse the key and
-     fail if the companion binary contains the seam's marker string,
-     shown on a release-configuration build.
-   - Recorded as a scoped exception to ADR 0007's "never the zone" for
-     verification builds only, with `T-14` noted.
-6. **Verify** the matrix below, then **clean up** (`AC-04`): fixture
-   procedure recorded and shown failing pre-fix; workspace removed; every
-   clone destroyed and the test iPhone local-only; `delete-zone` from a
-   development package in a `primary` clone; no re-link inside the
-   `SYNC-014` purge window; then one routine link and removal timed.
-7. Completed-change review, `qualityLint`, `quality`, closeout.
+   - Authority: the proposed ADR 0007 amendment and `T-14` text in the pull
+     request; no implementation before the maintainer accepts them.
+6. **Verify** the brief's matrix, with `AC-03` using `vm network --state
+   off` during a removal. That exercises the companion's retryable path
+   and the retry, not the no-progress counter, which step 2 covers.
+   Then the `AC-04` order.
+7. Completed-change review, `qualityLint`, `quality`, closeout. The iOS
+   cap is idea 34 and backlog row `IOS-008`, added in this pull request.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Recheck before the row (6 linked clones) | fail 6/6 on the first press | listed above |
-| Planned: step 1 measurement; pre-fix failure on the fixture; adapter tests red then green; one press in 3 fresh clones and right after a link (`AC-01`, `AC-02`); progress state and a no-progress stop (`AC-03`); release artifact without the seams; cleanup and a routine run (`AC-04`) | - | - |
 
 ## Final
 
