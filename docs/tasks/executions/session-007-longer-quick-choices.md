@@ -1,7 +1,7 @@
 # Execution: `SESSION-007`
 
 - **Brief:** [session-007-longer-quick-choices.md](../specifications/session-007-longer-quick-choices.md)
-- **Status:** `active`: brief only; `D1` and `D2` decided, implementation not started
+- **Status:** `active`: implemented; Mac VM run and independent review pending
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
 - **Reviewer:** independent agent, after implementation
@@ -19,3 +19,19 @@
    labels or the Review text change.
 4. Verify in a Mac VM, including a guest clock set near midnight, and on the
    test iPhone. Then run the Standard review.
+
+## Decisions during implementation
+
+Decided by the agent under the maintainer's delegation of 2026-10-09:
+
+- **Review needs a scroll on the iPhone.** With the separate **Until end of
+  day** row, **Review session** sits below the fold on a phone (observed on
+  the 375-point test iPhone and an iPhone 17 Simulator; it still fits on the
+  iPad). The accepted `D2` layout is kept rather than moving Review into the
+  navigation bar. A drag that starts on the system countdown wheel turns the
+  wheel instead of the page, so the iOS driver now starts its screen swipes
+  outside pickers, and `flow session` and the session scenarios reveal Review
+  before choosing a length.
+- **The time left on a running pause stays in minutes** ("479 min left"
+  during an 8-hour pause). The brief asks only that Review name long lengths
+  in hours; changing the active countdown is left out of this row.
