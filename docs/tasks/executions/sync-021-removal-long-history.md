@@ -1,9 +1,7 @@
 # Execution: `SYNC-021`
 
 - **Brief:** [One press removes a Mac workspace with a long zone history](../specifications/sync-021-removal-long-history.md)
-- **Status:** `active`: implementation started 2026-10-09 after plan
-  review round 3 (Required items folded; decided by the coordinator under
-  the maintainer's delegation of 2026-10-09).
+- **Status:** `done` (see `## Final`)
 - **Review tier:** `high-risk`: the accepted development-only seams (`D1`,
   `D4`) delete CloudKit records or the zone; see the brief
 - **Implementer:** Claude
@@ -74,7 +72,7 @@ separate training load (load average 6 to 57) during the VM runs.
 | Seam control, repeated after review: plain package / seam package with the property / without it / plain DMG of it / the property with a Developer ID name, a SHA-1 hash, an `Apple Development:` name, `-` | pass / pass / fail with the seam message / fail with the seam message / refused, refused, accepted, accepted | `build/verification/sync-021/control2/`, `control3/` |
 | Step 2 at `572e341`, current test account, guest log | the first sync after the link read about 400 pages, one page per companion process, for about 4.3 min; removal took 3 presses of 10, 10, and 6 passes of 16 pages (about 6 s each), about 402 pages, 7:44; pages held deletions only, records were deleted on the last pass | recheck worktree `build/verification/sync-021-measure/` |
 | One E2E run on `1b0f6f15` (plain package, same long history) | first link (run `20261009-221425-0969`) `WAIT_TIMEOUT` after 25 min and 83 presses: the guest log shows the companion refusing its parent with `cdhash mismatch`, because `vm sync` had replaced the bundle under the app `vm onboard` started (a procedure error, not the product); after a relaunch the link (`20261009-224529-9bea`) took 4:46 and 12 presses and settled at "sync did not finish"; one press (`20261009-225025-3aa7`) removed the workspace, `presses == 1`, 6:06, ending not linked; mid-removal (`20261009-225328-dfbd`) the row read "Removing workspace…" with an activity indicator and the note, Sync now and Remove workspace disabled | `build/verification/sync-021/natural/` |
-| `./gradlew quality` on `1fede3de`, the last code commit | pass (6:47, host under the training load; native iOS Swift tests ran) | host |
+| `./gradlew quality` on `1fede3de`, then on `daf10b5c`, the last code commit | pass (6:47 and 5:48, host under the training load; native iOS Swift tests ran) | host |
 
 `observed`: hypotheses 1 and 2 hold; hypothesis 3 (a press waiting behind
 the first sync) does not, because the row keeps the press disabled until
@@ -106,4 +104,5 @@ GitHub Projects: backlog item `SYNC-022` added with this change.
 
 ## Final
 
-- **Status:** `active`
+- **Status:** `done`: implementation complete and handed to review; the
+  deferred acceptance parts belong to `SYNC-022`.
