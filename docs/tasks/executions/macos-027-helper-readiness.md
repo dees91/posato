@@ -1,10 +1,10 @@
 # Execution: `MACOS-027`
 
 - **Brief:** [Mac helper readiness that agrees with what the helper does](../specifications/macos-027-helper-readiness.md)
-- **Status:** `active`: reproduced and fixed; waiting for the independent completed-change review
+- **Status:** `done`: reproduced and fixed; review approved
 - **Review tier:** `standard`, decided by the coordinator under the maintainer's delegation of 2026-10-09 (see Decisions)
 - **Implementer:** Claude
-- **Reviewer:** pending
+- **Reviewer:** independent security-focused completed-change review and focused re-review
 - **Branch:** `task/macos-027-helper-readiness`
 - **Updated:** 2026-10-09
 
@@ -92,9 +92,8 @@ these paths. Whether that day's schedule did not start stays `open`.
   `Info.plist` tampered, This Mac showed "Mac setup needs attention" and
   "The background helper could not be checked or enabled" at once; restored,
   ready again. The grace never holds `UNAVAILABLE`.
-- `./gradlew quality` and 230 `:macosHelper:swiftTest` tests passed on
-  `fa5f11f`. Early 12 GB guest loads filled the host disk; later ones were
-  capped at 2 GB.
+- `quality` and 230 Swift tests passed on the final tip. Early 12 GB guest
+  loads filled the host disk; later ones were capped at 2 GB.
 
 ## Decisions
 
@@ -105,16 +104,17 @@ exit rule hold); after the review of `355dae6`, the accept-time count, the
 startup-only 10 s grace, the 30 s retry, the 45 s check deadline, and the
 AC-01 amendment. By the agent: the five-minute bound counts from the first
 unfinished read, because counting from the last ready read failed after an
-idle app.
-- Hypotheses 1b and 2 were not run: 1a reproduced and explains the
-  transient symptom; the stale-record question stays `open`.
+idle app. Hypotheses 1b and 2 were not run, because 1a reproduced and
+explains the transient symptom; the stale-record question stays `open`.
 
 ## Review
 
 - `355dae6`: `changes-required` (Required: evidence predated the refactor;
-  four items taken), addressed in `fa5f11f`; reduced evidence rerun on
-  `c8d9d5b`; re-review pending.
+  four items taken), addressed in `fa5f11f`; reduced evidence on `c8d9d5b`.
+- `7879c1c`: approved. Taken: the count is read last in the idle check and
+  the daemon tests no longer depend on timing (mutations still fail them);
+  Swift tests cover this reorder, so no further VM run.
 
 ## Final
 
-- **Status:** pending re-review
+- **Status:** `done`; PR ready for review, handed to babysit-pr.

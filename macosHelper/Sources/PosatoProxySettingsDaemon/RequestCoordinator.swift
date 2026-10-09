@@ -212,11 +212,13 @@ final class RequestCoordinator: @unchecked Sendable {
     queue.asyncAfter(deadline: .now() + delay) {
       let graceEnd = self.startedAt + self.idleExit.startupGrace
       let pastStartupGrace = self.connections.anyOpened || DispatchTime.now() >= graceEnd
+      // The connection count is read last, after the ownership file, so a connection accepted
+      // during that read still keeps the daemon running.
       let shouldExit =
         pastStartupGrace
-        && self.connections.count == 0
         && self.leaseDeadline == nil
         && (try? self.engine.status()) == .idle
+        && self.connections.count == 0
       if shouldExit {
         self.powerMonitor?.stop()
         self.powerMonitor = nil

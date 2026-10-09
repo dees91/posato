@@ -278,7 +278,7 @@ internal class MacHelperSetupUiState(
                     macHelper.loginItem?.refresh()
                     val grant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
                     // A setup run may have started while the grant was read; its answer wins.
-                    // A kept unfinished read is read again after the refresh interval, so the run always ends.
+                    // A kept unfinished read is read again after the refresh interval, so the run ends with a stored answer.
                     val stored = unfinishedReads.stores(current(), answer, readiness) {
                         val now = elapsedMillis()
                         trailingRead.request(true, now, now) { readQuietly(refresh = true, trailing = true) }
@@ -378,8 +378,10 @@ internal fun rememberMacHelperSetupUiState(
  * A quiet read whose outcome is unknown proves nothing about a helper last read as ready: on a busy
  * Mac launchd can take minutes to start the daemon, and the read then times out while blocking keeps
  * working. Ready stays while such reads last less than the grace period, and a retry after the
- * refresh interval keeps reading until an answer is stored; a check or setup the person starts, and
- * every other answer, still show at once. The clock is monotonic and does not count sleep.
+ * refresh interval reads again; a check or setup the person starts, and every other answer, still
+ * show at once. A retry that is dropped, for example while another read runs, can leave the shown
+ * ready until the next activation; that affects only what is shown, never enforcement. The clock is
+ * monotonic and does not count sleep.
  */
 private class UnfinishedQuietReads(
     private val elapsedMillis: () -> Long,

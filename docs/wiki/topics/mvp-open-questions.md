@@ -1118,7 +1118,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     ready. `open`: why the readiness check fails on a long-lived install
     (earlier versions, other background items, the update path), and
     whether a schedule really did not start or only its report is wrong.
-    Owner: backlog row `MACOS-027`.
+    `observed` (2026-10-09, `MACOS-027`, Tart under heavy load): the false
+    "Setup incomplete" reproduced on 1.3.0 and `main` while the helper was
+    enabled. The on-demand daemon exited before a new connection was
+    counted, and under saturated disk I/O launchd started it up to two
+    minutes late, so helper reads ended with an unknown outcome; a strict
+    `codesign` also took 6.9 s against a 5 s limit. Fixed in PR #158, see
+    the [macOS enforcement](macos-enforcement.md) page. Still `open`:
+    whether the 2026-10-05 schedule did not start, and where the extra
+    background-item records on that Mac came from.
 30. **A native feel on iOS and a refined shared design system.**
     `user-confirmed` (2026-10-05): a design critique scored the iOS app 26/40
     because it read as a Material 3 port, and the edge swipe moved only a band
