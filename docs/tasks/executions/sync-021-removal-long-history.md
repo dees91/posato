@@ -1,13 +1,15 @@
 # Execution: `SYNC-021`
 
 - **Brief:** [One press removes a Mac workspace with a long zone history](../specifications/sync-021-removal-long-history.md)
-- **Status:** `active`: brief only. Implementation waits for the
-  maintainer's go and decisions `D1`–`D4`.
-- **Review tier:** `standard` (see the brief for the escalation conditions)
+- **Status:** `active`: brief only. Decisions `D1`–`D4` are accepted
+  (2026-10-09); implementation waits for the plan review and the
+  maintainer's go.
+- **Review tier:** `high-risk`: the accepted development-only seams (`D1`,
+  `D4`) delete CloudKit records or the zone; see the brief
 - **Implementer:** Claude
 - **Reviewer:** pending
 - **Branch:** `task/sync-021-removal-long-history`
-- **Updated:** 2026-10-09
+- **Updated:** 2026-10-09 (decisions recorded)
 
 ## Evidence before the row
 

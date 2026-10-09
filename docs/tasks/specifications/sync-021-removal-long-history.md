@@ -1,14 +1,16 @@
 # `SYNC-021`: One press removes a Mac workspace with a long zone history
 
-- **Review tier:** `standard`
-- **Tier reason:** The expected fix changes how long one **Remove workspace**
-  press keeps resuming the existing record deletion and what the row shows
-  meanwhile. It does not change what removal enumerates, deletes, or
-  verifies. The row becomes `high-risk`, with a plan review before
-  implementation, if the fix changes the ADR 0007 removal procedure, the
-  resume-token format or phases, key deletion, or ADR 0006 operation
-  semantics. A test seam in product code (decision `D1`) needs the
-  maintainer's approval first.
+- **Review tier:** `high-risk`
+- **Tier reason:** The removal fix alone would be Standard: it changes how
+  long one **Remove workspace** press keeps resuming the existing record
+  deletion and what the row shows meanwhile, not what removal enumerates,
+  deletes, or verifies. The accepted development-only zone deletion (`D4`),
+  and the record seeding that `D1` may need, put destructive CloudKit
+  operations into product code. That a release build can never reach them
+  is a security property, so a brief independent plan review precedes
+  implementation. The fix itself still must not change the ADR 0007
+  removal procedure, the resume-token format or phases, key deletion, or
+  ADR 0006 operation semantics.
 - **Dependencies:** none (release 1.4 wave 1); builds on the completed
   `SYNC-015` record-based removal and `SYNC-014` tombstone.
 - **Integration group:** `PR-SYNC-REMOVAL-HISTORY`
@@ -60,8 +62,12 @@ the test Apple Account's zone history cleaned.
   zone history cleaned. Safety conditions: the test Apple Account only; no
   linked device (every clone destroyed, the test iPhone local-only); the
   workspace removed first; no new link within the purge window that
-  `SYNC-014` measured. A routine link and removal afterwards is measured
-  again.
+  `SYNC-014` measured. The zone is deleted with the development-only tool
+  (`D4`) from a development-signed build in a Tart clone signed in to the
+  test Apple Account, against the test container's Development environment;
+  the tool refuses in any other environment and is absent from release
+  builds, which a check of the release artifact shows. A routine link and
+  removal afterwards is measured again.
 
 ## Verification
 
@@ -75,6 +81,19 @@ the test Apple Account's zone history cleaned.
 
 ## Decisions or blockers
 
-- `D1` (fixture), `D2` (progress copy), `D3` (removal after the window
-  closes), and `D4` (who deletes the zone) are open; options are in the
-  pull request.
+All `user-confirmed` (2026-10-09):
+
+- `D1`, fixture: step 1 measures pages per pass first. If real link,
+  publish, and removal cycles through `posato-control` build the history in
+  about 30 minutes, the fixture uses them. Otherwise a development-only
+  companion operation writes and deletes N bundle records; it is absent from
+  release builds and refuses outside the Development environment. The
+  maintainer approved this seam for that case.
+- `D2`, progress: the row shows "Removing workspace…" with a visible
+  loading indicator and a note that an older workspace can take a few
+  minutes. The indicator follows `DESIGN.md` and the `DESIGN-004` native
+  controls on each platform.
+- `D3`, after the window closes: removal continues while Posato runs; after
+  a quit, the next press starts again idempotently. No cursor is stored.
+- `D4`, zone cleanup: a development-only delete-zone tool that the agent
+  runs, under the `AC-04` conditions. The maintainer approved this seam.
