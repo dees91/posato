@@ -148,9 +148,7 @@ private fun DrawnDurationChoices(
                     PresetLabel(preset.label, preset.minutes)
                 }
             }
-        }
-        state.formattedEndOfDay?.let { end ->
-            PosatoChoiceGroup {
+            state.formattedEndOfDay?.let { end ->
                 PosatoNavigationItem(selected = state.untilEndOfDay, onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) }) {
                     Text(END_OF_DAY_LABEL)
                     PosatoCaption("ends $end")

@@ -35,3 +35,12 @@ Decided by the agent under the maintainer's delegation of 2026-10-09:
 - **The time left on a running pause stays in minutes** ("479 min left"
   during an 8-hour pause). The brief asks only that Review name long lengths
   in hours; changing the active countdown is left out of this row.
+- **On the Mac, Until end of day ends the same choice group.** As a separate
+  row it pushed **Review session** below the default window in a Tart VM,
+  where accessibility scrolling cannot move this page. In one group it sits
+  after the six lengths and wraps to its own line only in a narrow window;
+  iOS keeps the separate row of `D2`.
+- **Mac lengths keep their visible labels** (`25 min` … `8 h`), which is
+  what the Mac accessibility tree exposes; iOS segments show `25m` … `8h`
+  and expose "25 minutes" … "8 hours". `flow session` and the desktop
+  scenarios query the Mac labels.

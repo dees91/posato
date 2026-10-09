@@ -945,10 +945,10 @@ badges and counts have accessible labels.
 - Inactive: NO SESSION ACTIVE (sentence case on iOS: No session active), Room
   for what matters., one primary start action.
   Without effective items, Choose paused items routes to the editor.
-- Setup: YOUR NEXT PAUSE, How much space do you need?, one row of six quick
-  lengths (25 min, 45 min, 1 h, 2 h, 4 h, 8 h), then a separate **Until end of
-  day** row that shows its end (`ends 00:00`), then Hours / Minutes wheels with
-  explicit Increase / Decrease buttons. On iOS setup is pushed as **New pause**
+- Setup: YOUR NEXT PAUSE, How much space do you need?, one choice group of six
+  quick lengths (25 min, 45 min, 1 h, 2 h, 4 h, 8 h) followed by **Until end of
+  day** with its end (`ends 00:00`), which wraps to its own line only in a narrow
+  window, then Hours / Minutes wheels with explicit Increase / Decrease buttons. On iOS setup is pushed as **New pause**
   with a segmented control for the lengths (labels `25m` … `8h`, read in full
   as "25 minutes" … "8 hours"), a one-segment control for **Until end of day**,
   and the system countdown wheel, without the eyebrow or Cancel

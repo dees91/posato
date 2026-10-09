@@ -108,13 +108,13 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         val target = session.target()
         val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
         val begin = Query(text = "Start this pause", role = FlowSteps.ROLE_BUTTON)
-        val firstChoice = Query(text = lengthText(DEFAULT_MINUTES), role = FlowSteps.ROLE_BUTTON)
+        val firstChoice = Query(text = choiceLabel(target, DEFAULT_MINUTES), role = FlowSteps.ROLE_BUTTON)
         FlowSteps.run(backend, listOf(FlowSteps.button("Session"), FlowSteps.button("Start a session"), FlowSteps.waitFor(firstChoice)))
         set?.let { chosen -> chooseSet(backend, target, chosen) }
         val endOfDay = Query(textContains = END_OF_DAY, role = FlowSteps.ROLE_BUTTON)
         val steps = when {
             untilEndOfDay -> listOf(FlowSteps.tap(endOfDay))
-            minutes in PRESETS -> listOf(FlowSteps.button(lengthText(minutes)))
+            minutes in PRESETS -> listOf(FlowSteps.button(choiceLabel(target, minutes)))
             else -> minuteSteps(target, minutes - DEFAULT_MINUTES)
         }
         val chosen = if (untilEndOfDay) END_OF_DAY else lengthText(minutes)
@@ -137,7 +137,16 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         }
     }
 
-    /** The length as Session names it in its quick choices and on Review, such as "25 minutes" or "2 hours". */
+    /** A quick choice's label: the Mac shows and exposes "25 min" or "2 h"; iOS exposes the spoken "25 minutes" or "2 hours". */
+    private fun choiceLabel(
+        target: Target,
+        minutes: Int,
+    ): String {
+        if (target != Target.DESKTOP) return lengthText(minutes)
+        return if (minutes < MINUTES_PER_HOUR) "$minutes min" else "${minutes / MINUTES_PER_HOUR} h"
+    }
+
+    /** The length as Session names it on Review and to VoiceOver on iOS, such as "25 minutes" or "2 hours". */
     private fun lengthText(minutes: Int): String {
         val hours = minutes / MINUTES_PER_HOUR
         val rest = minutes % MINUTES_PER_HOUR
