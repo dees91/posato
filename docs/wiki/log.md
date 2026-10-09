@@ -2694,6 +2694,15 @@ first removal attempt that does not finish, not to a paused keychain.
   onboarding, and the build order had to put the signed build last.
   `posato-control` now stages into its own `verification-package`.
 
+## [2026-10-09] tooling | flow icloud waits for the first sync to settle
+
+- `observed` in the `SYNC-021` recheck: `flow icloud link` returned as soon
+  as **Remove workspace** appeared, while it was disabled and the first sync
+  still ran, and `flow icloud remove` gave up after 300 s on a workspace
+  whose removal took up to about 7 minutes.
+- A link now returns only once that sync has settled, both actions wait
+  900 s by default, and results and timeouts report the presses and the
+  row's last state. The product defect stays with `SYNC-021`.
 ## [2026-10-09] planning | SYNC-021 joins release 1.4; TARGETS-009 dropped
 
 - `observed` (recheck on `main` `572e341`, fresh Tart clones, test Apple

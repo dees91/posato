@@ -16,8 +16,10 @@ import kotlinx.serialization.json.put
 
 /**
  * Links this device to the iCloud workspace or removes it, and waits for the outcome. A link that waits for the
- * workspace key presses Check again; a removal that did not finish is pressed again, as a person would. The state is
- * read from the row's buttons, never from its sentence, since "Sync with iCloud is running." also names the action.
+ * workspace key presses Check again; a removal that did not finish is pressed again, as a person would. A link returns
+ * only once the first sync after it has settled, since the row offers Remove workspace, disabled, while that sync
+ * still runs. Which buttons are offered is read from the row's buttons, never from its sentence, since "Sync with
+ * iCloud is running." also names the action.
  */
 class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iCloud workspace, or remove the workspace, and wait for the outcome.") {
     private val action by argument(help = "link | remove").choice(LINK, REMOVE)
@@ -29,12 +31,16 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         val backend = session.backend()
         val deadline = System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND
         val presses = if (action == LINK) link(backend, deadline) else remove(backend, deadline)
-        return outcome(presses)
+        return outcome(presses, ICloudRow.state(ICloudRow.read(backend)))
     }
 
-    private fun outcome(presses: Int) = buildJsonObject {
+    private fun outcome(
+        presses: Int,
+        row: String?,
+    ) = buildJsonObject {
         put("action", action)
         put("presses", presses)
+        row?.let { put("row", it) }
     }
 
     private fun link(
@@ -43,18 +49,23 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
     ): Int {
         expand(backend)
         var presses = 0
+        var labels = ICloudRow.read(backend)
         while (System.currentTimeMillis() < deadline) {
-            val labels = FlowSteps.labels(backend)
-            if (linked(labels)) return presses
-            // A join already pending, also from a run that timed out, offers Check again instead of Sync with iCloud.
-            val next = listOf(CHECK_AGAIN, SYNC_WITH_ICLOUD).firstOrNull { it in labels }
-            if (next != null) {
-                FlowSteps.run(backend, listOf(FlowSteps.reveal(button(next)), FlowSteps.tap(button(next))))
-                presses++
+            if (ICloudRow.linked(labels)) {
+                if (ICloudRow.settled(labels)) return presses
+            } else {
+                // A join already pending, also from a run that timed out, offers Check again instead of Sync with iCloud.
+                val next = listOf(CHECK_AGAIN, SYNC_WITH_ICLOUD).firstOrNull { it in labels.texts }
+                if (next != null) {
+                    FlowSteps.run(backend, listOf(FlowSteps.reveal(button(next)), FlowSteps.tap(button(next))))
+                    presses++
+                }
             }
             Thread.sleep(POLL_MILLIS)
+            labels = ICloudRow.read(backend)
         }
-        throw timedOut("link", presses)
+        val what = if (ICloudRow.linked(labels)) "first sync after the link" else "link"
+        throw timedOut(what, presses, labels)
     }
 
     private fun remove(
@@ -63,16 +74,17 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
     ): Int {
         expand(backend)
         var presses = 0
+        var labels = ICloudRow.read(backend)
         while (System.currentTimeMillis() < deadline) {
-            val labels = FlowSteps.labels(backend)
-            if (SYNC_WITH_ICLOUD in labels) return presses
-            if (REMOVE_WORKSPACE in labels && labels.none { it.contains(SYNCING) }) {
+            if (SYNC_WITH_ICLOUD in labels.texts) return presses
+            if (ICloudRow.settled(labels)) {
                 confirmRemoval(backend)
                 presses++
             }
             Thread.sleep(POLL_MILLIS)
+            labels = ICloudRow.read(backend)
         }
-        throw timedOut("removal", presses)
+        throw timedOut("removal", presses, labels)
     }
 
     /** Opens the confirmation and presses its Remove workspace, which is the match that is not the row's own button. */
@@ -105,34 +117,36 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         }
     }
 
-    /** Linked: the row offers Sync now or Remove workspace, whatever the latest attempt reported. */
-    private fun linked(labels: List<String>): Boolean = labels.any { it.contains(COMPLETED) } || SYNC_NOW in labels || REMOVE_WORKSPACE in labels
-
     private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
 
-    /** The presses go with the timeout, since the host waits in slices and the next slice may find the outcome. */
+    /**
+     * The presses and the row's last state go with the timeout, since the host waits in slices and the next slice may
+     * find the outcome, and a removal that keeps failing reads differently from one that is still syncing.
+     */
     private fun timedOut(
         what: String,
-        presses: Int
-    ) = ControlException(
-        ErrorCode.WAIT_TIMEOUT,
-        "The iCloud $what did not finish within $timeoutSeconds s.",
-        "On a Tart guest, check `vm icloud --line <line>`; a paused iCloud Keychain never delivers the workspace key.",
-        result = outcome(presses),
-    )
+        presses: Int,
+        labels: ICloudRow.Labels,
+    ): ControlException {
+        val row = ICloudRow.state(labels)
+        return ControlException(
+            ErrorCode.WAIT_TIMEOUT,
+            "The iCloud $what did not finish within $timeoutSeconds s after $presses presses; the row reads ${row ?: "unknown"}.",
+            "On a Tart guest, check `vm icloud --line <line>`; a paused iCloud Keychain never delivers the workspace key. " +
+                "A workspace with a long history can take more than 10 minutes to sync or remove; rerun with a longer --timeout-seconds.",
+            result = outcome(presses, row),
+        )
+    }
 
     private companion object {
         const val LINK = "link"
         const val REMOVE = "remove"
-        const val SYNC_WITH_ICLOUD = "Sync with iCloud"
-        const val SYNC_NOW = "Sync now"
+        const val SYNC_WITH_ICLOUD = ICloudRow.SYNC_WITH_ICLOUD
         const val CHECK_AGAIN = "Check again"
-        const val REMOVE_WORKSPACE = "Remove workspace"
-        const val COMPLETED = "completed its latest sync attempt"
-        const val SYNCING = "Syncing"
+        const val REMOVE_WORKSPACE = ICloudRow.REMOVE_WORKSPACE
         const val POLL_MILLIS = 15_000L
         const val DIALOG_SECONDS = 2.0
         const val MILLIS_PER_SECOND = 1_000L
-        val ACTIONS = setOf(SYNC_WITH_ICLOUD, SYNC_NOW, CHECK_AGAIN, REMOVE_WORKSPACE)
+        val ACTIONS = setOf(SYNC_WITH_ICLOUD, ICloudRow.SYNC_NOW, CHECK_AGAIN, REMOVE_WORKSPACE)
     }
 }
