@@ -8,6 +8,25 @@ do {
   guard let encoded = try readFrame() else {
     exit(EXIT_FAILURE)
   }
+  #if POSATO_VERIFICATION
+    if var request = try VerificationCodec.decode(encoded) {
+      defer { request.clear() }
+      let database = CKCloudDatabase()
+      var response = VerificationHandler.deleteZone(
+        request,
+        dependencies: VerificationDependencies(
+          entitlements: SecTaskEntitlementReader(),
+          environment: SelfVerificationEnvironment(),
+          accounts: CloudKitAccountBindingSource(),
+          clouds: CloudStore(backend: database),
+          zones: database,
+        )
+      )
+      defer { response.clear() }
+      try writeFrame(VerificationCodec.encode(response))
+      exit(EXIT_SUCCESS)
+    }
+  #endif
   var request = try SyncCodec.decode(encoded)
   defer { request.clear() }
   let dependencies = SyncDependencies(

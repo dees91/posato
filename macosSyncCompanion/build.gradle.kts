@@ -1,4 +1,5 @@
 import app.posato.buildlogic.PosatoMacOsArchitecture
+import app.posato.buildlogic.PosatoVerificationSeams
 import app.posato.buildlogic.PosatoVersion
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.Sync
@@ -15,26 +16,36 @@ val macOsArchitecture = PosatoMacOsArchitecture.resolve(providers.gradleProperty
 val macOsMinimumVersion = PosatoMacOsArchitecture.MINIMUM_SYSTEM_VERSION
 val swiftTriple = macOsArchitecture.swiftTriple
 
+// Verification builds compile the ADR 0007 verification-only operations in;
+// the desktop build refuses the property together with any Developer ID build.
+val verificationSeams = PosatoVerificationSeams.enabled(providers.gradleProperty(PosatoVerificationSeams.PROPERTY).orNull)
+
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
     description = "Builds the macOS synchronization companion."
     inputs.files(fileTree("Sources"), "Package.swift")
     inputs.property("swiftTriple", swiftTriple)
+    inputs.property("verificationSeams", verificationSeams)
     outputs.dir(swiftScratchDirectory)
 
-    val swiftCommand = listOf(
-        "/usr/bin/xcrun",
-        "swift",
-        "build",
-        "--configuration",
-        "release",
-        "--scratch-path",
-        swiftScratchDirectory.get().asFile.absolutePath,
-        "-Xswiftc",
-        "-warnings-as-errors",
-        "--triple",
-        swiftTriple,
-    )
+    val swiftCommand = buildList {
+        addAll(
+            listOf(
+                "/usr/bin/xcrun",
+                "swift",
+                "build",
+                "--configuration",
+                "release",
+                "--scratch-path",
+                swiftScratchDirectory.get().asFile.absolutePath,
+                "-Xswiftc",
+                "-warnings-as-errors",
+                "--triple",
+                swiftTriple,
+            ),
+        )
+        if (verificationSeams) addAll(PosatoVerificationSeams.SWIFT_FLAGS)
+    }
     commandLine(swiftCommand)
 }
 
@@ -115,6 +126,9 @@ tasks.register<Exec>("swiftTest") {
         layout.buildDirectory.dir("swift-tests").get().asFile.absolutePath,
         "-Xswiftc",
         "-warnings-as-errors",
+        // The tests cover the verification-only refusals, so they always
+        // compile them; no shipped binary comes from this scratch path.
+        *PosatoVerificationSeams.SWIFT_FLAGS.toTypedArray(),
     )
 }
 
