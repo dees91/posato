@@ -84,15 +84,32 @@ presses, up to about 7 minutes, at about 110 change fetches a minute.
 ## Verification
 
 Order note: the `primary` slot was busy, so steps 3 to 6 ran before the
-step-2 measurement; none of them depends on its result.
+step-2 measurement; none of them depends on its result. Host under a
+separate training load (load average 6 to 57) during the VM runs.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Recheck before the row (6 linked clones) | fail 6/6 on the first press | listed above |
-| Failing first: 7 new adapter and `AppleSync` tests on an inert budget stub | 7 red; the cancellation guard green before the change | host `jvmTest`, 2026-10-09 |
+| Failing first: 7 new adapter and `AppleSync` tests on an inert budget stub | 7 red; the cancellation guard green before the change | host `jvmTest` |
 | After the fix (`ae4bb138`) | all `feature.sync` JVM tests green | host `jvmTest` |
 | Companion seam refusals (`swiftTest` with the condition) | pass | host `swiftTest` |
-| Seam control: plain package / seam package with the property / seam package without it / plain DMG of it | pass / pass / fail with the seam message / fail with the seam message | `build/verification/sync-021/control-*` |
+| Seam control: plain package / seam package with the property / without it / plain DMG of it | pass / pass / fail with the seam message / fail with the seam message | `build/verification/sync-021/control-*` |
+| Step 2 at `572e341`, current test account, guest log | the first sync after the link read about 400 pages, one page per companion process, for about 4.3 min; removal took 3 presses of 10, 10, and 6 passes of 16 pages (about 6 s each), about 402 pages, 7:44; pages held deletions only, records were deleted on the last pass | recheck worktree `build/verification/sync-021-measure/` |
+| One E2E run on `1b0f6f15` (plain package, same long history): link, then one press | link 4:46 (12 presses); removal `presses == 1`, 6:06, ends not linked; mid-removal the row read "Removing workspace…" with an activity indicator and the note, Sync now and Remove workspace disabled | run `20261009-225328-dfbd`, `build/verification/sync-021/natural/` |
+
+`observed`: hypotheses 1 and 2 hold; hypothesis 3 (a press waiting behind
+the first sync) does not, because the row keeps the press disabled until
+that sync ends. `D1` would need seeding: real cycles built about 400 pages
+over hundreds of cycles.
+
+Deferred under the maintainer's order of 2026-10-09, first "pomiń teraz
+weryfikację vm / iphone - uznajmy że już się odbyły i wystarczy", revised to
+"ogranicz do minimum weryfikację vm i iphone - raz przed PR gdy to ma sens":
+the window close and reopen of `AC-03`, the 3 clones of `AC-01`, the
+fixture rebuild, zone cleanup, and waits of `AC-04`, the `AC-05` iPhone run,
+and any run of the zone seam; the seeding operation was not built. The test account keeps its long
+history; a follow-up owns the cleanup. The fix rests on the run above, the
+isolated tests, the seam controls, and `quality`.
 
 ## Final
 
