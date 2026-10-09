@@ -11,7 +11,8 @@ class GradleStager(
 ) {
     fun stage(
         signingIdentity: String?,
-        verify: Boolean
+        verify: Boolean,
+        verificationSeams: Boolean = false,
     ) {
         val identity = signingIdentity ?: context.configuration.value(ConfigurationKey.MACOS_SIGNING_IDENTITY)
         val syncProfile = context.configuration.value(ConfigurationKey.MACOS_SYNC_PROVISIONING_PROFILE)
@@ -25,6 +26,7 @@ class GradleStager(
             if (identity != null) add("-PposatoMacOsSigningIdentity=$identity")
             // An Apple Development identity needs the untracked app.posato.macos.sync profile or packaging fails closed.
             if (syncProfile != null) add("-PposatoMacOsSyncProvisioningProfile=$syncProfile")
+            if (verificationSeams) add("-PposatoMacOsVerificationSeams=true")
         }
         context.subprocess.run(command, workingDirectory = context.layout.root, timeout = GRADLE_TIMEOUT)
             .requireSuccess(

@@ -16,6 +16,8 @@ data class BuildOptions(
     val signingIdentity: String? = null,
     val verify: Boolean = false,
     val driver: Boolean = false,
+    /** Desktop: compile the SYNC-021 verification seams into the development package (fixture runs only). */
+    val verificationSeams: Boolean = false,
 )
 
 @Serializable
