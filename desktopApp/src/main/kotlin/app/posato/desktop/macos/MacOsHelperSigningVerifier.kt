@@ -11,7 +11,13 @@ internal object MacOsHelperSigningVerifier {
     private const val APPLICATION_IDENTIFIER = "app.posato.macos"
     private const val HELPER_IDENTIFIER = "app.posato.macos.helper"
     private const val MAXIMUM_OUTPUT_BYTES = 16 * 1024
-    private const val COMMAND_TIMEOUT_MILLISECONDS = 5_000L
+
+    // A strict deep check of the whole bundle took about 7 s on a busy Mac; a shorter limit reported
+    // a working helper as unavailable. The whole check still ends within one overall deadline, so a
+    // hung codesign cannot hold a readiness read or a scheduled start for minutes.
+    private const val COMMAND_TIMEOUT_MILLISECONDS = 30_000L
+    private const val CHECK_TIMEOUT_MILLISECONDS = 45_000L
+
     private const val MAXIMUM_BUNDLE_PARENT_DEPTH = 16
     private const val HELPER_RELATIVE_PATH = "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper"
     private const val HELPER_RELATIVE_DEPTH = 6
@@ -32,14 +38,15 @@ internal object MacOsHelperSigningVerifier {
         val expectedHelper = appBundle.resolve(HELPER_RELATIVE_PATH).toAbsolutePath().normalize()
         check(resolvedHelper == expectedHelper)
         val helperBundle = checkNotNull(resolvedHelper.parent?.parent?.parent)
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CHECK_TIMEOUT_MILLISECONDS)
 
-        runCommand("/usr/bin/codesign", "--verify", "--deep", "--strict", appBundle.toString())
-        val applicationSigning = signingDetails(appBundle)
+        runCommand(deadline, "/usr/bin/codesign", "--verify", "--deep", "--strict", appBundle.toString())
+        val applicationSigning = signingDetails(deadline, appBundle)
         check(applicationSigning.identifier == APPLICATION_IDENTIFIER)
         check(teamPattern.matches(applicationSigning.teamIdentifier))
-        runCommand("/usr/bin/codesign", "--verify", "--strict", helperBundle.toString())
-        runCommand("/usr/bin/codesign", "--verify", "--strict", resolvedHelper.toString())
-        val helperSigning = signingDetails(helperBundle)
+        runCommand(deadline, "/usr/bin/codesign", "--verify", "--strict", helperBundle.toString())
+        runCommand(deadline, "/usr/bin/codesign", "--verify", "--strict", resolvedHelper.toString())
+        val helperSigning = signingDetails(deadline, helperBundle)
         check(helperSigning.identifier == HELPER_IDENTIFIER)
         check(helperSigning.teamIdentifier == applicationSigning.teamIdentifier)
         return resolvedHelper
@@ -67,8 +74,11 @@ internal object MacOsHelperSigningVerifier {
             ?: error("Packaged application was not found")
     }
 
-    private fun signingDetails(path: Path): SigningDetails {
-        val output = runCommand("/usr/bin/codesign", "-d", "--verbose=4", path.toString())
+    private fun signingDetails(
+        deadline: Long,
+        path: Path,
+    ): SigningDetails {
+        val output = runCommand(deadline, "/usr/bin/codesign", "-d", "--verbose=4", path.toString())
         val identifier = output.lineSequence()
             .firstOrNull { line -> line.startsWith("Identifier=") }
             ?.substringAfter('=')
@@ -80,7 +90,12 @@ internal object MacOsHelperSigningVerifier {
         return SigningDetails(identifier, teamIdentifier)
     }
 
-    private fun runCommand(vararg arguments: String): String {
+    private fun runCommand(
+        deadline: Long,
+        vararg arguments: String,
+    ): String {
+        val remaining = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
+        check(remaining > 0) { "Signing verification timed out" }
         val process = try {
             ProcessBuilder(arguments.toList())
                 .apply {
@@ -91,7 +106,7 @@ internal object MacOsHelperSigningVerifier {
             error("Signing verification is unavailable")
         }
         val finished = try {
-            process.waitFor(COMMAND_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+            process.waitFor(minOf(COMMAND_TIMEOUT_MILLISECONDS, remaining), TimeUnit.MILLISECONDS)
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             process.destroyForcibly()

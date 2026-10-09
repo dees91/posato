@@ -48,6 +48,43 @@ final class ConnectionState: @unchecked Sendable {
   }
 }
 
+/// How long the on-demand daemon waits before it exits idle. launchd starts it for a connection
+/// that reaches the listener only after its code-signing check, which took more than a second on a
+/// busy Mac (MACOS-027), so the first check after start waits longer.
+struct DaemonIdleExit: Sendable {
+  let startupGrace: DispatchTimeInterval
+  let afterDisconnect: DispatchTimeInterval
+
+  static let production = DaemonIdleExit(startupGrace: .seconds(10), afterDisconnect: .seconds(1))
+}
+
+/// Connections counted on the listener's thread the moment it accepts them, so an idle check that
+/// is already due on the daemon's queue still sees them.
+final class OpenConnections: @unchecked Sendable {
+  private let lock = NSLock()
+  private var open = 0
+  private var opened = false
+
+  var count: Int {
+    return lock.withLock { open }
+  }
+
+  var anyOpened: Bool {
+    return lock.withLock { opened }
+  }
+
+  func accept() {
+    lock.withLock {
+      open += 1
+      opened = true
+    }
+  }
+
+  func close() {
+    lock.withLock { open = max(0, open - 1) }
+  }
+}
+
 final class RequestCoordinator: @unchecked Sendable {
   let queue = DispatchQueue(label: "app.posato.macos.proxy-settings.requests")
   let engine: ProxyOwnershipEngine
@@ -55,16 +92,23 @@ final class RequestCoordinator: @unchecked Sendable {
   let identity: SystemIdentity
   let rules: AuthorizationRules
   var leaseDeadline: DispatchTime?
-  private var activeConnections = 0
+  private let connections = OpenConnections()
+  private let startedAt = DispatchTime.now()
   private var powerMonitor: SystemPowerMonitor?
+  private let idleExit: DaemonIdleExit
+  private let terminate: @Sendable () -> Void
 
   init(
     persistence: OwnershipPersistence = DurableOwnershipStore(),
     configuration: ProxyConfigurationAccess = SystemProxyConfiguration(),
     grants: StandingGrantPersistence = StandingGrantStore(),
     identity: SystemIdentity = SystemIdentityReader(),
-    rules: AuthorizationRules = SystemAuthorizationRules()
+    rules: AuthorizationRules = SystemAuthorizationRules(),
+    idleExit: DaemonIdleExit = .production,
+    terminate: @escaping @Sendable () -> Void = { exit(EXIT_SUCCESS) }
   ) {
+    self.idleExit = idleExit
+    self.terminate = terminate
     engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
     self.grants = grants
     self.identity = identity
@@ -83,10 +127,9 @@ final class RequestCoordinator: @unchecked Sendable {
     }
   }
 
+  /// Called synchronously from the listener before the connection resumes.
   func connectionOpened() {
-    queue.async {
-      self.activeConnections += 1
-    }
+    connections.accept()
   }
 
   func perform(
@@ -109,8 +152,8 @@ final class RequestCoordinator: @unchecked Sendable {
   }
 
   func connectionInvalidated(state: ConnectionState) {
+    connections.close()
     queue.async {
-      self.activeConnections = max(0, self.activeConnections - 1)
       if state.shouldRestoreOnInvalidation() {
         self.recordCleanupAttempt(try? self.engine.restore())
       } else {
@@ -164,16 +207,22 @@ final class RequestCoordinator: @unchecked Sendable {
     recordCleanupAttempt(try? engine.restore())
   }
 
-  private func scheduleIdleExit() {
-    queue.asyncAfter(deadline: .now() + .seconds(1)) {
+  func scheduleIdleExit() {
+    let delay = connections.anyOpened ? idleExit.afterDisconnect : idleExit.startupGrace
+    queue.asyncAfter(deadline: .now() + delay) {
+      let graceEnd = self.startedAt + self.idleExit.startupGrace
+      let pastStartupGrace = self.connections.anyOpened || DispatchTime.now() >= graceEnd
+      // The connection count is read last, after the ownership file, so a connection accepted
+      // during that read still keeps the daemon running.
       let shouldExit =
-        self.activeConnections == 0
+        pastStartupGrace
         && self.leaseDeadline == nil
         && (try? self.engine.status()) == .idle
+        && self.connections.count == 0
       if shouldExit {
         self.powerMonitor?.stop()
         self.powerMonitor = nil
-        exit(EXIT_SUCCESS)
+        self.terminate()
       }
     }
   }
