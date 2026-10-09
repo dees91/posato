@@ -2,6 +2,7 @@ package app.posato.control.desktop
 
 import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.RepoLayout
 import app.posato.control.core.RunContext
 import java.time.Duration
 
@@ -19,6 +20,8 @@ class GradleStager(
             add(":desktopApp:stageMacOsDevelopmentPackage")
             if (verify) add(":desktopApp:verifyMacOsDevelopmentPackaging")
             add("--console=plain")
+            // A directory of its own, which `./gradlew quality` and its ad-hoc signing leave alone.
+            add("-PposatoMacOsDevelopmentPackageName=${RepoLayout.STAGED_PACKAGE_DIRECTORY}")
             if (identity != null) add("-PposatoMacOsSigningIdentity=$identity")
             // An Apple Development identity needs the untracked app.posato.macos.sync profile or packaging fails closed.
             if (syncProfile != null) add("-PposatoMacOsSyncProvisioningProfile=$syncProfile")
@@ -27,7 +30,8 @@ class GradleStager(
             .requireSuccess(
                 ErrorCode.BUILD_FAILED,
                 "Staging the desktop package",
-                "Run ./gradlew :desktopApp:stageMacOsDevelopmentPackage manually to inspect the failure.",
+                "Run ./gradlew :desktopApp:stageMacOsDevelopmentPackage -PposatoMacOsDevelopmentPackageName=" +
+                    "${RepoLayout.STAGED_PACKAGE_DIRECTORY} manually to inspect the failure.",
             )
     }
 

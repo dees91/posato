@@ -70,9 +70,10 @@ App ID, expiry, and team match, without printing any of them or its path. The pr
 ID capability. Without the profile the development package fails closed. Do not
 ad-hoc-sign only the companion to bypass it; mixed signing is rejected.
 
-`./gradlew quality` runs the packaging tasks without those properties, so it
-restages an ad-hoc package and silently removes the application picker. Rerun
-`build -t desktop` after it; `doctor` names this case on `desktop.staged`.
+`./gradlew quality` runs the packaging tasks without those properties and
+stages its ad-hoc package in `development-package`, apart from the driver's
+`verification-package`, so it leaves the driver's signed package alone.
+`doctor` reports an ad-hoc driver package on `desktop.staged`.
 
 ## Targets and the JSON envelope
 
@@ -159,7 +160,7 @@ grants a permission.
 | --- | --- | --- |
 | `doctor [--deep] [--request-permissions]` | all (or every target when `-t` is omitted) | Toolchain, configuration presence, TCC permissions, staged/installed/running state, driver state. With `--vm` the guest reports runtime checks only; build prerequisites (Xcode, Gradle wrapper) are checked by `doctor` on the host. |
 | `devices list` / `devices boot [--device-type "iPhone 17"]` / `devices shutdown` | — | Simulator and paired-iPhone inventory; boot or shut down simulators. |
-| `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage`. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
+| `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage` into the driver's own `verification-package`, which `./gradlew quality` does not touch. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
 | `install` | simulator, device | `simctl install` or `devicectl device install app`. |
 | `launch [--fresh] [--capture-logs] [--build] [--arg A] [--env K=V] [--adopt]` | all | Starts the app and tracks it in `build/verification/state.json`. Desktop launches the staged `Posato.app` binary, or the installed candidate after `vm install`, and records its window id. On the simulator it first installs the build when the simulator has no Posato or one whose executable or Debug code library (`Posato.debug.dylib`) differs from the build, so a stale install from another checkout is never tested. `--adopt` (desktop only, alone) tracks the one running instance instead, such as the build an update relaunched; it has no captured log. |
 | `terminate` | all | Stops only the instance this tool started or adopted, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
@@ -516,7 +517,7 @@ tracks the new process.
 
 ## How each target works
 
-**desktop.** `build` stages `desktopApp/build/compose/binaries/main/development-package/Posato.app`
+**desktop.** `build` stages `desktopApp/build/compose/binaries/main/verification-package/Posato.app`
 (ad-hoc signed unless `posato.macos.signingIdentity` is set; the macOS
 application picker requires development signing). An Apple Development identity
 also requires `-PposatoMacOsSyncProvisioningProfile` pointing at an untracked

@@ -1298,8 +1298,14 @@ val macOsSyncCompanionBundle = project(":macosSyncCompanion").layout.buildDirect
 val macOsDistributable = layout.buildDirectory.dir(
     "compose/binaries/main/app/Posato.app",
 )
+// posato-control stages its own package (verification-package), so `quality`, which signs ad hoc, never replaces the
+// development-signed package a verification VM copies.
+val macOsDevelopmentPackageName = providers.gradleProperty("posatoMacOsDevelopmentPackageName").orNull ?: "development-package"
+if (macOsDevelopmentPackageName !in setOf("development-package", "verification-package")) {
+    throw GradleException("-PposatoMacOsDevelopmentPackageName must be development-package or verification-package.")
+}
 val macOsDevelopmentPackageRoot = layout.buildDirectory.dir(
-    "compose/binaries/main/development-package",
+    "compose/binaries/main/$macOsDevelopmentPackageName",
 )
 val macOsDevelopmentApplication = macOsDevelopmentPackageRoot.map { directory -> directory.dir("Posato.app") }
 val macOsSigningIdentity = providers.gradleProperty("posatoMacOsSigningIdentity")

@@ -290,11 +290,12 @@ private class DesktopDoctor(
 
                 mode == "developer-id" -> DoctorCheck.pass("desktop.staged", "The installed candidate is Developer ID-signed.")
 
-                // `./gradlew quality` restages without the signing properties, so a configured identity can still leave an ad-hoc package.
+                // A configured identity still leaves an ad-hoc package after `build -t desktop --signing-identity -`, or after a
+                // hand-run Gradle stage into the driver's directory without the signing properties.
                 configured -> DoctorCheck.fail(
                     "desktop.staged",
-                    "The staged application is $mode-signed even though a signing identity is configured, " +
-                        "so it was staged by a Gradle invocation that did not pass it; the application picker needs development signing.",
+                    "The staged application is $mode-signed even though a signing identity is configured " +
+                        "(for example after `build -t desktop --signing-identity -`); the application picker needs development signing.",
                     "Rerun `posato-control build -t desktop`, which passes the identity and the companion profile.",
                     Severity.WARN,
                 )

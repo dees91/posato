@@ -108,12 +108,14 @@ tracks at the same time, and the clone boots while the host builds
 288 s with the clone created after the builds and 438 s with everything in
 turn, over five runs each, every run passing). Build the driver
 (`installDist`) first, then start `$PC vm create --line primary` in the
-background. Meanwhile run `./gradlew quality` and then `$PC build -t desktop`:
-`quality` restages an ad-hoc package in the path that `vm create` copies, so
-the signed build comes after it. Once both the builds and `vm create` are
-done, `$PC vm sync --line primary` gives the clone the signed package (a few
-seconds). If `vm create` fails while copying because a build restaged the
-package meanwhile, the clone still runs: `vm sync` repairs it, and a run that
+background. Meanwhile run `./gradlew quality` and `$PC build -t desktop`, one
+after the other in either order: `quality` stages its ad-hoc package apart
+from the driver's `verification-package`, so it never replaces what a clone
+copies. `vm create` may still copy the previous build's package, so once both
+the builds and `vm create` are done, `$PC vm sync --line primary` gives the
+clone the new one (a few seconds). If `vm create` fails while copying
+because `build -t desktop` restaged the package meanwhile, the clone still
+runs: `vm sync` repairs it, and a run that
 links iCloud also runs `vm icloud --resume --line primary`, because the
 failed create skipped that check. Then run the two tracks, each in its own
 shell or background job:
@@ -129,10 +131,13 @@ on: a `--vm` command keeps its state in the guest, and only the phone writes
 `build/verification/state.json`. `build/verification/latest` points at
 whichever track finished last, so cite each track's run directory from its
 envelope's `runId`. Keep the Simulator out of a running phone track, because
-both write `state.json`, and run no `./gradlew quality`, `build -t desktop`,
-or driver `installDist` between `vm sync` and `vm destroy`: the clone then
-fails with
-`PACKAGE_OUTDATED` or `TOOL_OUTDATED` until the next `vm sync`. A step that
+both write `state.json`, and run no `build -t desktop` or driver
+`installDist` between `vm sync` and `vm destroy`: the clone then fails with
+`PACKAGE_OUTDATED` or `TOOL_OUTDATED` until the next `vm sync`. A
+`./gradlew quality` meanwhile leaves the clone's package alone but slows
+both tracks. A clone onboarded by a driver from before
+`verification-package` is destroyed and created again, not synced: its
+helper was approved for the old package path. A step that
 needs both, such as a change synced from one device to the other, waits for
 the other track to reach its side first.
 
@@ -267,8 +272,8 @@ A `warn` on `desktop.staged` means the package is ad-hoc signed: everything
 except the macOS application picker still works. Two provisioning conditions
 gate that picker, `desktop.signingIdentity` and `desktop.syncProfile`; both are
 `info` while the checkout is ad-hoc, so an ad-hoc checkout is still `ok: true`.
-Note that `./gradlew quality` restages an ad-hoc package, so rerun
-`$PC build -t desktop` after it before any application-picker recipe.
+`./gradlew quality` stages its ad-hoc package in its own directory, so it
+leaves the driver's package alone.
 
 ## Drive
 
