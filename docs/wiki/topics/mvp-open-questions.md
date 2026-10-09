@@ -1095,7 +1095,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     schedule is on (`quitPromptFor`), and then the update waits until someone
     presses **Quit**. 1.3 has the same path, so the update to 1.4 will ask in
     those states too. `user-confirmed` (2026-10-04): a backlog row, first in line for
-    release 1.4. Owner: backlog row `MACOS-026`.
+    release 1.4. `observed` (2026-10-09): resolved by `MACOS-026`; an
+    updater relaunch now skips the question, while a person's quit still
+    asks. Remaining one-time limit: updating from 1.2 or 1.3 to 1.4.0 still
+    asks once while a schedule is on, because the running build decides.
 28. **Longer quick choices when starting a pause.**
     `user-confirmed` (2026-10-05): session setup offers only 25, 45, and 60
     minutes (`DurationPresets` in `SessionDurationContent.kt`); anything

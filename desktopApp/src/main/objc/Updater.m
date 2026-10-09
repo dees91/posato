@@ -27,6 +27,7 @@ static JavaVM *posatoVirtualMachine;
 static jclass posatoUpdaterClass;
 static jmethodID posatoInstallRequested;
 static jmethodID posatoCycleFinished;
+static jmethodID posatoRelaunchRequested;
 static jmethodID posatoStateChanged;
 static NSArray<NSString *> *posatoCopy;
 
@@ -286,6 +287,13 @@ static void PosatoForgetCookies(void) {
     PosatoClearPendingException(environment);
 }
 
+- (void)updaterWillRelaunchApplication:(SPUUpdater *)updater {
+    JNIEnv *environment = PosatoAttachedEnvironment();
+    if (environment == NULL || posatoUpdaterClass == NULL) return;
+    (*environment)->CallStaticVoidMethod(environment, posatoUpdaterClass, posatoRelaunchRequested);
+    PosatoClearPendingException(environment);
+}
+
 @end
 
 @interface PosatoUpdateMenuTarget : NSObject
@@ -386,7 +394,8 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_update_MacUpdater_nativeStart
     posatoInstallRequested = (*environment)->GetStaticMethodID(environment, updaterClass, "onInstallRequested", "(JLjava/lang/String;I)V");
     posatoCycleFinished = (*environment)->GetStaticMethodID(environment, updaterClass, "onCycleFinished", "()V");
     posatoStateChanged = (*environment)->GetStaticMethodID(environment, updaterClass, "onStateChanged", "(ZZ)V");
-    if (posatoInstallRequested == NULL || posatoCycleFinished == NULL || posatoStateChanged == NULL) {
+    posatoRelaunchRequested = (*environment)->GetStaticMethodID(environment, updaterClass, "onRelaunchRequested", "()V");
+    if (posatoInstallRequested == NULL || posatoCycleFinished == NULL || posatoStateChanged == NULL || posatoRelaunchRequested == NULL) {
         PosatoClearPendingException(environment);
         return JNI_FALSE;
     }

@@ -11,6 +11,8 @@ import java.io.File
 internal object MacUpdater : UpdaterReplies {
     @Volatile private var controller: UpdaterController? = null
 
+    @Volatile private var relaunchRequestedEpochMillis: Long? = null
+
     fun start(
         updaterController: UpdaterController,
         copy: UpdaterCopy,
@@ -50,6 +52,17 @@ internal object MacUpdater : UpdaterReplies {
         }
         val requestStage = if (stage == PENDING_STAGE) InstallRequestStage.PENDING_INSTALLATION else InstallRequestStage.NEW_INSTALLATION
         active.onInstallRequested(token, targetBuild, requestStage)
+    }
+
+    @JvmStatic
+    fun onRelaunchRequested() {
+        relaunchRequestedEpochMillis = System.currentTimeMillis()
+    }
+
+    fun takeRelaunchRequest(): Long? {
+        val requested = relaunchRequestedEpochMillis
+        relaunchRequestedEpochMillis = null
+        return requested
     }
 
     @JvmStatic

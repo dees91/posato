@@ -2726,3 +2726,16 @@ first removal attempt that does not finish, not to a paused keychain.
   instead of the page, so the iOS driver starts screen swipes outside system
   pickers; the Mac accessibility tree exposes a length's visible text, not its
   spoken description.
+## [2026-10-09] task | MACOS-026: in-app updates relaunch without the quit question
+
+- `observed` in a macOS 26 Tart clone with notarized candidates: a build
+  without the change asked "Quit Posato?" during **Install and Relaunch**;
+  with it, the update relaunched the newer build with no dialog while a
+  schedule was on, and after **End session** following a refused install
+  during a pause.
+- A person's quit still asks: Command-Q and **Quit Posato** showed the
+  dialog during a pause, also right after a refused install.
+- Updating from 1.2 or 1.3 to 1.4.0 still asks once while a schedule is
+  on; press **Quit** to continue. During a pause the install is refused
+  instead; builds before 1.2 never ask. Idea 27 is resolved.
+
