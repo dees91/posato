@@ -2,16 +2,12 @@ package app.posato.feature.sync.data
 
 import app.posato.feature.sync.domain.PublicSigningKey
 import app.posato.feature.sync.domain.SyncFormatLimits
-import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.Signature
-import java.security.interfaces.EdECPublicKey
-import java.security.spec.EdECPoint
-import java.security.spec.EdECPublicKeySpec
-import java.security.spec.NamedParameterSpec
+import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
@@ -65,7 +61,7 @@ internal class JdkSyncCryptoProvider(
     override fun createSigningKey(): SyncSigningKey? {
         return cryptographicCall {
             val keyPair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
-            val publicKey = PublicSigningKey.fromBytes((keyPair.public as EdECPublicKey).toRawBytes())
+            val publicKey = PublicSigningKey.fromBytes(keyPair.public.toRawBytes())
                 ?: return@cryptographicCall null
             JdkSyncSigningKey(publicKey, keyPair.private)
         }
@@ -132,41 +128,22 @@ private class JdkSyncSigningKey(
     }
 }
 
-private fun EdECPublicKey.toRawBytes(): ByteArray {
-    val result = point.y.toFixedLittleEndian(SyncFormatLimits.PUBLIC_KEY_BYTES)
-    if (point.isXOdd) {
-        result[result.lastIndex] = (result.last().toInt() or ED25519_X_ODD_MASK).toByte()
-    }
-
-    return result
+/**
+ * The raw key from its X.509 encoding, which the JDK's EdEC keys and Android's Conscrypt keys share; Conscrypt's
+ * Ed25519 keys are not `EdECPublicKey`, so the encoding is the one form both platforms read and write.
+ */
+private fun java.security.PublicKey.toRawBytes(): ByteArray {
+    val encoded = encoded
+    require(encoded.size == ED25519_X509_PREFIX.size + SyncFormatLimits.PUBLIC_KEY_BYTES)
+    require(encoded.copyOf(ED25519_X509_PREFIX.size).contentEquals(ED25519_X509_PREFIX))
+    return encoded.copyOfRange(ED25519_X509_PREFIX.size, encoded.size)
 }
 
 private fun PublicSigningKey.toJdkPublicKey(): java.security.PublicKey {
-    val raw = copyBytes()
-    val isXOdd = raw.last().toInt() and ED25519_X_ODD_MASK != 0
-    raw[raw.lastIndex] = (raw.last().toInt() and ED25519_Y_MASK).toByte()
-    val y = BigInteger(1, raw.reversedArray())
-    val spec = EdECPublicKeySpec(NamedParameterSpec.ED25519, EdECPoint(isXOdd, y))
-
-    return KeyFactory.getInstance("Ed25519").generatePublic(spec)
+    return KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(ED25519_X509_PREFIX + copyBytes()))
 }
 
-private const val ED25519_X_ODD_MASK = 0x80
-private const val ED25519_Y_MASK = 0x7F
-
-private fun BigInteger.toFixedLittleEndian(size: Int): ByteArray {
-    val signedBigEndian = toByteArray()
-    val unsignedBigEndian = if (signedBigEndian.size > 1 && signedBigEndian.first() == 0.toByte()) {
-        signedBigEndian.copyOfRange(1, signedBigEndian.size)
-    } else {
-        signedBigEndian
-    }
-    require(unsignedBigEndian.size <= size)
-    val result = ByteArray(size)
-    unsignedBigEndian.reversedArray().copyInto(result)
-
-    return result
-}
+private val ED25519_X509_PREFIX = byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
 
 private fun <T> cryptographicCall(block: () -> T): T? {
     return try {
