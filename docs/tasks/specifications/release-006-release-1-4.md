@@ -49,9 +49,9 @@ Follow `releasing.md`. Differences for 1.4:
 
 ## Boundaries
 
-- The agent does everything except the Keychain prompts for the release
-  update key (and the Developer ID key if macOS asks), batched into as few
-  requests as possible, and the publication go.
+- The agent does everything except the maintainer touchpoints listed in
+  the [execution record](../executions/release-006-release-1-4.md#plan):
+  the Keychain prompts, one action per message, and the publication go.
 - No new features. A defect found here gets its own row unless the release
   is held for it.
 
