@@ -10,6 +10,16 @@ internal enum class ExclusiveWrite {
     FAILED,
 }
 
+internal sealed interface FileRead {
+    class Found(
+        val bytes: ByteArray,
+    ) : FileRead
+
+    data object Missing : FileRead
+
+    data object Failed : FileRead
+}
+
 /**
  * The few file operations the folder transport needs, on absolute `/` paths:
  * `java.nio` on the JVM and Android, Foundation on iOS.
@@ -19,10 +29,18 @@ internal interface FolderFileSystem {
 
     fun isFile(path: String): Boolean
 
+    /** Reads a whole file; a file that cannot be opened because it is gone is [FileRead.Missing], even when metadata still lists it. */
+    fun readFile(
+        path: String,
+        maximumBytes: Int,
+    ): FileRead
+
     fun read(
         path: String,
         maximumBytes: Int,
-    ): ByteArray?
+    ): ByteArray? {
+        return (readFile(path, maximumBytes) as? FileRead.Found)?.bytes
+    }
 
     /** Writes a temporary sibling and moves it into place only when [path] is absent. */
     fun writeExclusive(

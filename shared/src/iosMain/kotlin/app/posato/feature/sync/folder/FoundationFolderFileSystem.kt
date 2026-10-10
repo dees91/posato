@@ -48,14 +48,18 @@ internal object FoundationFolderFileSystem : FolderFileSystem {
         }
     }
 
-    override fun read(
+    override fun readFile(
         path: String,
         maximumBytes: Int,
-    ): ByteArray? {
-        var result: ByteArray? = null
+    ): FileRead {
+        var result: FileRead = FileRead.Failed
         NSFileCoordinator(filePresenter = null).coordinateReadingItemAtURL(NSURL.fileURLWithPath(path), 0u, null) { url ->
             val data = url?.let { NSData.dataWithContentsOfURL(it) }
-            if (data != null && data.length.toLong() <= maximumBytes) result = data.toByteArray()
+            result = when {
+                data == null -> if (manager.fileExistsAtPath(path)) FileRead.Failed else FileRead.Missing
+                data.length.toLong() > maximumBytes -> FileRead.Failed
+                else -> FileRead.Found(data.toByteArray())
+            }
         }
         return result
     }

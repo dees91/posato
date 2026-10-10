@@ -130,10 +130,11 @@ internal class FolderSyncPorts(
     override suspend fun readAnchor(expectedBinding: AccountBinding): AnchorReadResult {
         return io {
             val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io AnchorReadResult.AccountChanged
-            val file = workspace.child(ANCHOR_FILE)
-            if (!files.isFile(file)) return@io AnchorReadResult.Missing
-            val bytes = files.read(file, MAXIMUM_ANCHOR_BYTES) ?: return@io AnchorReadResult.Retryable
-            decodeAnchor(bytes)?.let { AnchorReadResult.Found(it) } ?: AnchorReadResult.IntegrityFailure
+            when (val read = files.readFile(workspace.child(ANCHOR_FILE), MAXIMUM_ANCHOR_BYTES)) {
+                FileRead.Missing -> AnchorReadResult.Missing
+                FileRead.Failed -> AnchorReadResult.Retryable
+                is FileRead.Found -> decodeAnchor(read.bytes)?.let { AnchorReadResult.Found(it) } ?: AnchorReadResult.IntegrityFailure
+            }
         }
     }
 
@@ -156,9 +157,11 @@ internal class FolderSyncPorts(
         account: KeyAccount,
     ): KeyItemReadResult {
         return io {
-            val file = keyFile(account)
-            if (!files.isFile(file)) return@io KeyItemReadResult.Missing
-            val stored = files.read(file, MAXIMUM_STORED_KEY_BYTES) ?: return@io KeyItemReadResult.Retryable
+            val stored = when (val read = files.readFile(keyFile(account), MAXIMUM_STORED_KEY_BYTES)) {
+                FileRead.Missing -> return@io KeyItemReadResult.Missing
+                FileRead.Failed -> return@io KeyItemReadResult.Retryable
+                is FileRead.Found -> read.bytes
+            }
             val item = protection.open(stored)?.let(WorkspaceKeyItem::fromBytes) ?: return@io KeyItemReadResult.IntegrityFailure
             KeyItemReadResult.Found(item)
         }

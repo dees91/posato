@@ -5,6 +5,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.InvalidPathException
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
@@ -19,15 +20,21 @@ internal object NioFolderFileSystem : FolderFileSystem {
         return path.toPathOrNull()?.let(Files::isRegularFile) == true
     }
 
-    override fun read(
+    override fun readFile(
         path: String,
         maximumBytes: Int,
-    ): ByteArray? {
-        val file = path.toPathOrNull() ?: return null
+    ): FileRead {
+        val file = path.toPathOrNull() ?: return FileRead.Failed
         return try {
-            if (!Files.isRegularFile(file) || Files.size(file) > maximumBytes) null else Files.readAllBytes(file)
+            when {
+                !Files.isRegularFile(file) -> FileRead.Missing
+                Files.size(file) > maximumBytes -> FileRead.Failed
+                else -> FileRead.Found(Files.readAllBytes(file))
+            }
+        } catch (_: NoSuchFileException) {
+            FileRead.Missing
         } catch (_: IOException) {
-            null
+            FileRead.Failed
         }
     }
 
