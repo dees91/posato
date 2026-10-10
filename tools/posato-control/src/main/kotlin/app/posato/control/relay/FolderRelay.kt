@@ -59,9 +59,10 @@ class ShellEndpoint(
 
     override fun push(files: Map<String, ByteArray>) {
         if (files.isEmpty()) return
-        val script = "mkdir -p $root && cd $root && while IFS=\"\$(printf '\\t')\" read -r p d; do " +
-            "dir=\$(dirname \"\$p\"); mkdir -p \"\$dir\"; printf %s \"\$d\" | base64 -d > \"\$dir/$TEMPORARY-relay\" && " +
-            "mv \"\$dir/$TEMPORARY-relay\" \"\$p\"; done"
+        // The temporary name is unique per file and process, so no other writer can replace its content before the rename.
+        val script = "mkdir -p $root && cd $root && i=0; while IFS=\"\$(printf '\\t')\" read -r p d; do " +
+            "i=\$((i + 1)); dir=\$(dirname \"\$p\"); t=\"\$dir/${TEMPORARY}relay-\$\$-\$i\"; mkdir -p \"\$dir\"; " +
+            "printf %s \"\$d\" | base64 -d > \"\$t\" && mv \"\$t\" \"\$p\"; done"
         val stdin = files.entries.joinToString("\n", postfix = "\n") { (path, bytes) -> path + "\t" + Base64.getEncoder().encodeToString(bytes) }
         shell.run(script, stdin)
     }

@@ -1,5 +1,6 @@
 package app.posato.control.cli
 
+import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.linux.LinuxGuest
 import app.posato.control.relay.FolderRelay
@@ -15,6 +16,9 @@ import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 /**
  * Stands in for Dropbox, OneDrive, or Syncthing during folder workspace runs (ADR 0010): each listed device keeps its
@@ -54,10 +58,16 @@ class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Pos
         val relay = FolderRelay(session.layout.syncFolder, endpoints)
         val deadline = System.currentTimeMillis() + durationSeconds * MILLIS_PER_SECOND
         var rounds = 0
-        while (System.currentTimeMillis() < deadline) {
-            relay.round()
-            rounds++
-            Thread.sleep(intervalSeconds * MILLIS_PER_SECOND)
+        // Two relays over the same hub would race on the same files, so a second one refuses to start.
+        val lockFile = session.layout.syncFolder.resolveSibling("relay.lock")
+        Files.createDirectories(lockFile.parent)
+        FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel ->
+            channel.tryLock() ?: throw ControlException(ErrorCode.ALREADY_RUNNING, "Another relay is running", "Stop it before starting a new one.")
+            while (System.currentTimeMillis() < deadline) {
+                relay.round()
+                rounds++
+                Thread.sleep(intervalSeconds * MILLIS_PER_SECOND)
+            }
         }
         return buildJsonObject {
             put("rounds", rounds)
