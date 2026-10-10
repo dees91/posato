@@ -9,7 +9,7 @@ internal actual fun platformTheme(): PlatformTheme {
 }
 
 internal actual fun platformDevice(): PosatoDevice {
-    return PosatoDevice.IPhone
+    return PosatoDevice.Android
 }
 
 internal actual val platformUsesCupertinoChrome: Boolean = false

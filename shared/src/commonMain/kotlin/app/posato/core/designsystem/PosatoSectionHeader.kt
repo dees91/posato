@@ -41,7 +41,7 @@ private fun PosatoSectionHeaderPreview() {
     PosatoComponentPreview {
         PosatoSectionHeader(
             titleContent = { Text("Applications") },
-            supportingContent = { PosatoCaption("On this Mac only") },
+            supportingContent = { PosatoCaption("On this ${platformDevice().noun} only") },
             actionContent = { PosatoButton(onClick = {}) { Text("Choose apps") } },
         )
     }

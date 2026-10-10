@@ -1,0 +1,18 @@
+#!/bin/sh
+# Removes Posato's pausing service and restores /etc/hosts before the package goes (ADR 0010).
+set -e
+case "$1" in
+  remove|upgrade|deconfigure)
+    if [ "$1" = remove ]; then
+      systemctl disable --now posato-helper.service 2>/dev/null || true
+      if [ -f /etc/posato/helper.conf ]; then
+        /opt/posato/lib/runtime/bin/java -cp /opt/posato/lib/app/posato.jar app.posato.linux.helper.MainKt cleanup || true
+      fi
+      rm -f /etc/systemd/system/posato-helper.service /etc/posato/helper.conf
+      rm -rf /var/lib/posato
+      systemctl daemon-reload 2>/dev/null || true
+    fi
+    xdg-desktop-menu uninstall /opt/posato/lib/posato-Posato.desktop 2>/dev/null || true
+    ;;
+esac
+exit 0

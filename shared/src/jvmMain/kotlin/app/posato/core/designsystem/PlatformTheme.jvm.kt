@@ -9,7 +9,7 @@ internal actual fun platformTheme(): PlatformTheme {
 }
 
 internal actual fun platformDevice(): PosatoDevice {
-    return PosatoDevice.Mac
+    return if (System.getProperty("os.name").orEmpty().startsWith("Linux")) PosatoDevice.Linux else PosatoDevice.Mac
 }
 
 internal actual val platformUsesCupertinoChrome: Boolean = false

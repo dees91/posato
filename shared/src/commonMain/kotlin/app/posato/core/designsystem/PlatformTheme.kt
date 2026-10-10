@@ -64,6 +64,8 @@ internal enum class PosatoDevice(
     Mac("Mac"),
     IPhone("iPhone"),
     IPad("iPad"),
+    Linux("computer"),
+    Android("phone"),
 }
 
 internal expect fun platformDevice(): PosatoDevice
@@ -79,9 +81,9 @@ internal fun navigationPlacement(
     landscape: Boolean
 ): PosatoNavigationPlacement {
     return when (device) {
-        PosatoDevice.Mac -> PosatoNavigationPlacement.Sidebar
+        PosatoDevice.Mac, PosatoDevice.Linux -> PosatoNavigationPlacement.Sidebar
         PosatoDevice.IPad -> if (landscape) PosatoNavigationPlacement.Sidebar else PosatoNavigationPlacement.Bottom
-        PosatoDevice.IPhone -> PosatoNavigationPlacement.Bottom
+        PosatoDevice.IPhone, PosatoDevice.Android -> PosatoNavigationPlacement.Bottom
     }
 }
 

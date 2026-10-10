@@ -1,12 +1,14 @@
 package app.posato.control.cli
 
 import app.posato.control.core.ErrorCode
+import app.posato.control.linux.LinuxGuest
 import app.posato.control.relay.FolderRelay
 import app.posato.control.relay.RelayEndpoint
 import app.posato.control.relay.ShellEndpoint
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.long
@@ -22,6 +24,7 @@ import kotlinx.serialization.json.put
 class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Posato folders through a host folder, like a folder sync service.") {
     private val lines by option("--line", help = "A Tart line whose guest folder joins; repeat for more.").multiple()
     private val androidSerials by option("--android", help = "An adb serial whose folder joins; repeat for more.").multiple()
+    private val linux by option("--linux", help = "The Linux clone's folder joins.").flag()
     private val intervalSeconds by option("--interval-seconds", help = "Pause between rounds.").long().default(DEFAULT_INTERVAL_SECONDS)
     private val durationSeconds by option("--duration-seconds", help = "How long to keep relaying.").long().default(DEFAULT_DURATION_SECONDS)
 
@@ -32,7 +35,15 @@ class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Pos
             ShellEndpoint("vm:$id", GUEST_FOLDER, { script, stdin ->
                 tart.exec(line.cloneName, script, stdin).requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying ${line.cloneName}").stdout
             })
-        } + androidSerials.map { serial ->
+        } + listOfNotNull(
+            if (linux) {
+                ShellEndpoint("linux", GUEST_FOLDER, { script, stdin ->
+                    tart.exec(LinuxGuest.CLONE, script, stdin).requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying ${LinuxGuest.CLONE}").stdout
+                })
+            } else {
+                null
+            },
+        ) + androidSerials.map { serial ->
             ShellEndpoint("android:$serial", ANDROID_FOLDER, { script, stdin ->
                 session.context.subprocess.run(listOf("adb", "-s", serial, "shell", script), stdin = stdin)
                     .requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying $serial").stdout
