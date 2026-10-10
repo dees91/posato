@@ -2787,3 +2787,14 @@ first removal attempt that does not finish, not to a paused keychain.
   chosen" after applications are chosen, until the next policy change, in
   both `main` `27c593d` and published 1.3.0. Idea 37 and backlog row
   `TARGETS-010` own the fix; release 1.4 ships with the known limit.
+
+## [2026-10-10] release | RELEASE-006: Posato 1.4.0 published
+
+- Tag `v1.4.0` and its GitHub Release are latest with both DMGs, both feeds
+  (build 29), and `SHA256SUMS`; iOS 1.4.0 (7) waits for App Review.
+- `observed`: updating 1.3.0 to 1.4.0 in the app keeps the automatic-start
+  consent, and a schedule then starts on its own; the first attempt's
+  failure came from that test clone's consent reading 0 (cause `open`).
+- `user-confirmed`: Keychain access to the signing keys is pre-granted, an
+  accepted `T-13` residual risk; `releasing.md` now checks for Rosetta after
+  a macOS update.
