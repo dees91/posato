@@ -68,7 +68,8 @@ import kotlinx.coroutines.launch
 @DependencyGraph(AppScope::class)
 internal interface AndroidApplicationGraph :
     ApplicationGraph,
-    ScheduleBindings {
+    AndroidScheduleBindings,
+    AndroidSessionTimeBindings {
     val appleSync: AppleSync
     val pauseSetPreparation: PauseSetPreparation
     val scheduledPauses: ScheduledPauses
@@ -93,14 +94,6 @@ internal interface AndroidApplicationGraph :
     @Provides
     fun provideFolderSyncControls(folderSync: FolderSync): FolderSyncControls {
         return folderSync
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providePauseClaims(
-        @Named("helper") helper: EnforcementPort,
-    ): PauseClaims {
-        return PauseClaims(helper)
     }
 
     @Provides
@@ -185,60 +178,6 @@ internal interface AndroidApplicationGraph :
         )
         sync.sessionObserver = owner
         return owner
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideSessionIds(): SessionIdGenerator {
-        return RandomSessionIdGenerator
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideSessionClock(): SessionClock {
-        return SessionClock { System.currentTimeMillis() }
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideSessionTimeFormat(): SessionTimeFormat {
-        return JvmSessionTimeFormat()
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideScheduleZone(): ScheduleZone {
-        return JavaScheduleZone()
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideScheduleHost(
-        schedules: ScheduleDependencies,
-        clock: SessionClock,
-        claims: PauseClaims,
-        @Named("helper") enforcement: EnforcementPort,
-        policyStore: LocalTargetPolicyStore,
-        applicationMappings: LocalApplicationMappings,
-        retention: SqlPartRetentionStore,
-    ): ScheduleHost {
-        val ports = ScheduleHostPorts(
-            claims = claims,
-            gate = ScheduleStartGate { if (enforcement.status() == EnforcementOutcome.UNAVAILABLE) StartGate.SETUP_REQUIRED else StartGate.READY },
-            hadConsent = { false },
-            targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
-            maintenanceClosed = { false },
-            targetChanges = merge(policyStore.policyChanges, applicationMappings.invalidations),
-            limits = PauseLimits.MAC,
-            occupied = claims::manualItems,
-            retention = retention,
-        )
-        return ScheduleHost(schedules.store, schedules.zone, clock, ports)
-    }
-
-    @Provides
-    fun provideScheduledPauses(host: ScheduleHost): ScheduledPauses {
-        return host
     }
 
     @Provides

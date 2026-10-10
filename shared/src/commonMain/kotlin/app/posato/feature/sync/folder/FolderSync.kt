@@ -125,16 +125,12 @@ internal class SelectableSyncPorts(
     private val apple: AppleSyncPorts?,
 ) : BootstrapAccountPort,
     BootstrapCloudPort,
-    BootstrapKeyPort,
-    MailboxPort {
+    BootstrapKeyPort by SelectableKeys({ if (choice.selectsFolder(apple)) folder else checkNotNull(apple).keys }),
+    MailboxPort by SelectableMailbox({ if (choice.selectsFolder(apple)) folder else checkNotNull(apple).mailbox }) {
     private val account: BootstrapAccountPort
-        get() = if (apple == null || choice.root() != null) folder else apple.account
+        get() = if (choice.selectsFolder(apple)) folder else checkNotNull(apple).account
     private val cloud: BootstrapCloudPort
-        get() = if (apple == null || choice.root() != null) folder else apple.cloud
-    private val keys: BootstrapKeyPort
-        get() = if (apple == null || choice.root() != null) folder else apple.keys
-    private val mailbox: MailboxPort
-        get() = if (apple == null || choice.root() != null) folder else apple.mailbox
+        get() = if (choice.selectsFolder(apple)) folder else checkNotNull(apple).cloud
 
     override suspend fun resolveBinding(): BindingResolution {
         return account.resolveBinding()
@@ -158,12 +154,22 @@ internal class SelectableSyncPorts(
     ): AnchorCreateResult {
         return cloud.createAnchor(expectedBinding, anchor)
     }
+}
 
+/** A host without CloudKit always uses the folder; an Apple host uses it once a folder is chosen. */
+private fun FolderChoice.selectsFolder(apple: AppleSyncPorts?): Boolean {
+    return apple == null || root() != null
+}
+
+/** The key port of whichever transport is chosen at each call. */
+private class SelectableKeys(
+    private val keys: () -> BootstrapKeyPort,
+) : BootstrapKeyPort {
     override suspend fun readItem(
         expectedBinding: AccountBinding,
         account: KeyAccount,
     ): KeyItemReadResult {
-        return keys.readItem(expectedBinding, account)
+        return keys().readItem(expectedBinding, account)
     }
 
     override suspend fun createItem(
@@ -171,51 +177,55 @@ internal class SelectableSyncPorts(
         account: KeyAccount,
         value: WorkspaceKeyItem,
     ): KeyItemCreateResult {
-        return keys.createItem(expectedBinding, account, value)
+        return keys().createItem(expectedBinding, account, value)
     }
 
     override suspend fun deleteItemAndVerifyAbsent(
         expectedBinding: AccountBinding,
         account: KeyAccount,
     ): KeyItemDeleteResult {
-        return keys.deleteItemAndVerifyAbsent(expectedBinding, account)
+        return keys().deleteItemAndVerifyAbsent(expectedBinding, account)
     }
+}
 
+/** The mailbox of whichever transport is chosen at each call. */
+private class SelectableMailbox(
+    private val mailbox: () -> MailboxPort,
+) : MailboxPort {
     override suspend fun saveBundle(
         expectedBinding: AccountBinding,
         identifier: ByteArray,
         payload: ByteArray,
     ): BundleSaveResult {
-        return mailbox.saveBundle(expectedBinding, identifier, payload)
+        return mailbox().saveBundle(expectedBinding, identifier, payload)
     }
 
     override suspend fun fetchChanges(
         expectedBinding: AccountBinding,
         cursor: MailboxCursor,
     ): ChangeFetchResult {
-        return mailbox.fetchChanges(expectedBinding, cursor)
+        return mailbox().fetchChanges(expectedBinding, cursor)
     }
 
     override suspend fun deleteWorkspaceRecords(
         expectedBinding: AccountBinding,
         budget: RemovalBudget,
     ): RecordDeleteResult {
-        return mailbox.deleteWorkspaceRecords(expectedBinding, budget)
+        return mailbox().deleteWorkspaceRecords(expectedBinding, budget)
     }
 
     override suspend fun sweepBundlesIfAnchorMissing(
         expectedBinding: AccountBinding,
         budget: RemovalBudget,
     ): BundleSweepResult {
-        return mailbox.sweepBundlesIfAnchorMissing(expectedBinding, budget)
+        return mailbox().sweepBundlesIfAnchorMissing(expectedBinding, budget)
     }
 
     override suspend fun clearRemovalResumeState(expectedBinding: AccountBinding) {
-        mailbox.clearRemovalResumeState(expectedBinding)
+        mailbox().clearRemovalResumeState(expectedBinding)
     }
 }
 
-/** Wires the folder transport for one host: its ports, the section controls, and the poll. */
 internal class FolderSync(
     localDirectory: String,
     crypto: SyncCryptoProvider,

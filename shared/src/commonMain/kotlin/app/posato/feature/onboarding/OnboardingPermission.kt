@@ -57,51 +57,6 @@ import app.posato.generated.resources.onboarding_summary_linux_unchecked
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** What the access step says on a host where one access grant, not the Mac helper, lets Posato pause. */
-internal class AccessCopy(
-    val body: StringResource,
-    val action: StringResource,
-    val on: StringResource,
-    val off: StringResource,
-    val unchecked: StringResource,
-    val denied: StringResource,
-    val required: StringResource,
-)
-
-internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
-    return when (this) {
-        OnboardingPermissionPlatform.LINUX -> AccessCopy(
-            Res.string.onboarding_permission_linux_body,
-            Res.string.onboarding_permission_linux_action,
-            Res.string.onboarding_summary_linux_on,
-            Res.string.onboarding_summary_linux_off,
-            Res.string.onboarding_summary_linux_unchecked,
-            Res.string.onboarding_permission_linux_denied,
-            Res.string.onboarding_permission_linux_required,
-        )
-
-        OnboardingPermissionPlatform.ANDROID -> AccessCopy(
-            Res.string.onboarding_permission_android_body,
-            Res.string.onboarding_permission_android_action,
-            Res.string.onboarding_summary_android_on,
-            Res.string.onboarding_summary_android_off,
-            Res.string.onboarding_summary_android_unchecked,
-            Res.string.onboarding_permission_android_denied,
-            Res.string.onboarding_permission_android_required,
-        )
-
-        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.MAC -> AccessCopy(
-            Res.string.onboarding_permission_ios_body,
-            Res.string.onboarding_permission_ios_action,
-            Res.string.onboarding_summary_access_on,
-            Res.string.onboarding_summary_access_off,
-            Res.string.onboarding_summary_access_unchecked,
-            Res.string.onboarding_permission_denied,
-            Res.string.onboarding_permission_required,
-        )
-    }
-}
-
 @Composable
 internal fun ApplicationAccessResult.accessMessage(platform: OnboardingPermissionPlatform = OnboardingPermissionPlatform.IOS): String {
     return when (this) {

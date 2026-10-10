@@ -64,16 +64,7 @@ internal fun FolderOptions(
     onRemove: () -> Unit,
 ) {
     PosatoCaption(
-        stringResource(
-            when {
-                state.checking -> Res.string.sync_checking_key
-                removing -> Res.string.sync_removing_workspace
-                folder == null || (snapshot.status == SyncStatus.LOCAL_ONLY && !snapshot.linked) -> Res.string.sync_folder_description
-                snapshot.status == SyncStatus.WAITING_FOR_KEY -> Res.string.sync_folder_waiting_for_key
-                snapshot.status == SyncStatus.ACTION_REQUIRED && snapshot.reason == null -> Res.string.sync_folder_action_required
-                else -> snapshot.status.message(snapshot.linked, snapshot.reason)
-            },
-        ),
+        stringResource(folderMessage(snapshot, folder, state.checking, removing)),
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     )
     if (removing) {
@@ -92,6 +83,33 @@ internal fun FolderOptions(
         JoinWithCode(state, running)
     }
     state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
+    FolderActions(state, snapshot, running, onRemove)
+}
+
+/** What the expanded folder row says: the current activity, then the state of the link. */
+private fun folderMessage(
+    snapshot: AppleSyncState,
+    folder: String?,
+    checking: Boolean,
+    removing: Boolean,
+): StringResource {
+    return when {
+        checking -> Res.string.sync_checking_key
+        removing -> Res.string.sync_removing_workspace
+        folder == null || (snapshot.status == SyncStatus.LOCAL_ONLY && !snapshot.linked) -> Res.string.sync_folder_description
+        snapshot.status == SyncStatus.WAITING_FOR_KEY -> Res.string.sync_folder_waiting_for_key
+        snapshot.status == SyncStatus.ACTION_REQUIRED && snapshot.reason == null -> Res.string.sync_folder_action_required
+        else -> snapshot.status.message(snapshot.linked, snapshot.reason)
+    }
+}
+
+@Composable
+private fun FolderActions(
+    state: SyncBootstrapUiState,
+    snapshot: AppleSyncState,
+    running: Boolean,
+    onRemove: () -> Unit,
+) {
     PosatoActionRow {
         PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Secondary, enabled = !running) {
             Text(
@@ -184,7 +202,7 @@ internal fun PairingCodeAlert(
 ) {
     PosatoAlert(
         title = stringResource(Res.string.sync_folder_code_title),
-        message = stringResource(Res.string.sync_folder_code_message) + "\n\n" + code.chunked(3).joinToString(" "),
+        message = stringResource(Res.string.sync_folder_code_message) + "\n\n" + code.chunked(CODE_GROUP_CHARACTERS).joinToString(" "),
         onDismiss = onDone,
         actions = listOf(PosatoAlertAction(stringResource(Res.string.sync_folder_code_done), { onDone() }, PosatoAlertRole.Cancel)),
     )
@@ -201,3 +219,6 @@ private fun PairingAcceptResult.message(): StringResource? {
         PairingAcceptResult.UNAVAILABLE -> Res.string.sync_folder_join_unavailable
     }
 }
+
+/** The code is shown in groups of three characters, so it is easier to read out and type. */
+private const val CODE_GROUP_CHARACTERS = 3

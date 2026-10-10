@@ -29,11 +29,13 @@ import platform.posix.memcpy
  * Dropbox, OneDrive) download and upload them; an iCloud placeholder name is
  * reported as its real name and its download is started.
  */
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-internal object FoundationFolderFileSystem : FolderFileSystem {
-    private val manager: NSFileManager
-        get() = NSFileManager.defaultManager
+internal object FoundationFolderFileSystem : FolderFileSystem, FolderReads by FoundationFolderReads, FolderWrites by FoundationFolderWrites
 
+private val manager: NSFileManager
+    get() = NSFileManager.defaultManager
+
+@OptIn(ExperimentalForeignApi::class)
+private object FoundationFolderReads : FolderReads {
     override fun isDirectory(path: String): Boolean {
         return memScoped {
             val directory = alloc<BooleanVar>()
@@ -64,6 +66,31 @@ internal object FoundationFolderFileSystem : FolderFileSystem {
         return result
     }
 
+    override fun names(directory: String): List<String>? {
+        if (!isDirectory(directory)) return emptyList()
+        val entries = manager.contentsOfDirectoryAtPath(directory, null) ?: return null
+        return entries.filterIsInstance<String>().map { name ->
+            if (name.startsWith(".") && name.endsWith(".icloud")) {
+                manager.startDownloadingUbiquitousItemAtURL(NSURL.fileURLWithPath(directory.child(name)), null)
+                name.removePrefix(".").removeSuffix(".icloud")
+            } else {
+                name
+            }
+        }
+    }
+
+    override fun canonical(path: String): String? {
+        if (!manager.fileExistsAtPath(path)) return null
+        return NSURL.fileURLWithPath(path).URLByResolvingSymlinksInPath?.path
+    }
+
+    override fun isWritableDirectory(path: String): Boolean {
+        return isDirectory(path) && manager.isWritableFileAtPath(path)
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+private object FoundationFolderWrites : FolderWrites {
     override fun writeExclusive(
         path: String,
         bytes: ByteArray,
@@ -101,19 +128,6 @@ internal object FoundationFolderFileSystem : FolderFileSystem {
         return written
     }
 
-    override fun names(directory: String): List<String>? {
-        if (!isDirectory(directory)) return emptyList()
-        val entries = manager.contentsOfDirectoryAtPath(directory, null) ?: return null
-        return entries.filterIsInstance<String>().map { name ->
-            if (name.startsWith(".") && name.endsWith(".icloud")) {
-                manager.startDownloadingUbiquitousItemAtURL(NSURL.fileURLWithPath(directory.child(name)), null)
-                name.removePrefix(".").removeSuffix(".icloud")
-            } else {
-                name
-            }
-        }
-    }
-
     override fun delete(path: String): Boolean {
         if (!manager.fileExistsAtPath(path)) return true
         var deleted = false
@@ -132,7 +146,7 @@ internal object FoundationFolderFileSystem : FolderFileSystem {
     }
 
     override fun createPrivateDirectories(path: String): Boolean {
-        if (isDirectory(path)) return true
+        if (FoundationFolderReads.isDirectory(path)) return true
         val attributes = mapOf<Any?, Any?>(
             NSFilePosixPermissions to NSNumber(int = PRIVATE_DIRECTORY_MODE),
             NSFileProtectionKey to NSFileProtectionComplete,
@@ -141,17 +155,8 @@ internal object FoundationFolderFileSystem : FolderFileSystem {
     }
 
     override fun createDirectories(path: String): Boolean {
-        if (isDirectory(path)) return true
+        if (FoundationFolderReads.isDirectory(path)) return true
         return manager.createDirectoryAtPath(path, withIntermediateDirectories = true, attributes = null, error = null)
-    }
-
-    override fun canonical(path: String): String? {
-        if (!manager.fileExistsAtPath(path)) return null
-        return NSURL.fileURLWithPath(path).URLByResolvingSymlinksInPath?.path
-    }
-
-    override fun isWritableDirectory(path: String): Boolean {
-        return isDirectory(path) && manager.isWritableFileAtPath(path)
     }
 
     override fun restrictToOwner(path: String) {
