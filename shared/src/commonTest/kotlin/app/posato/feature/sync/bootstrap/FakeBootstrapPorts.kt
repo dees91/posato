@@ -208,6 +208,11 @@ internal class FakeBootstrapStore(
         }
     }
 
+    override suspend fun discardCandidate(): BootstrapStoreResult<Unit> {
+        if (state is BootstrapState.Candidate) state = BootstrapState.None
+        return BootstrapStoreResult.Success(Unit)
+    }
+
     override suspend fun persistCandidate(candidate: PersistedCandidate): BootstrapStoreResult<Unit> {
         persistCalls += 1
         val failure = writeFailure
