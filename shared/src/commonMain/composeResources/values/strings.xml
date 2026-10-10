@@ -311,6 +311,7 @@ For what matters.</string>
     <string name="mac_unified_next_password">Enter your Mac password so pauses can start without asking again.</string>
     <string name="mac_unified_next_working">Setting up this Mac…</string>
     <string name="sync_folder_title">Folder sync</string>
+    <string name="sync_folder_action_required">Sync needs attention. The workspace in this folder is missing or was replaced. Check the folder, or remove the workspace on this device and link again.</string>
     <string name="sync_folder_description">Sync through a folder links your devices through one folder that Dropbox, OneDrive, Syncthing, or another service keeps in sync. Posato writes only encrypted files there.</string>
     <string name="sync_folder_linking">Linking combines the pause sets and websites saved on your devices and shares an active session. App choices stay on each device. Create the workspace on one device first, then join it from the others.</string>
     <string name="sync_folder_path_label">Folder path</string>

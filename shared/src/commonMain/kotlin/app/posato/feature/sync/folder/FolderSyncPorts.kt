@@ -257,10 +257,10 @@ internal class FolderSyncPorts(
     ): BundleSweepResult {
         return io {
             val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io BundleSweepResult.AccountChanged
-            when {
-                files.isFile(workspace.child(ANCHOR_FILE)) -> BundleSweepResult.AnchorPresent
-                files.deleteTree(workspace.child(BUNDLE_DIRECTORY)) -> BundleSweepResult.Swept
-                else -> BundleSweepResult.Retryable
+            when (files.readFile(workspace.child(ANCHOR_FILE), MAXIMUM_ANCHOR_BYTES)) {
+                is FileRead.Found -> BundleSweepResult.AnchorPresent
+                FileRead.Failed -> BundleSweepResult.Retryable
+                FileRead.Missing -> if (files.deleteTree(workspace.child(BUNDLE_DIRECTORY))) BundleSweepResult.Swept else BundleSweepResult.Retryable
             }
         }
     }
