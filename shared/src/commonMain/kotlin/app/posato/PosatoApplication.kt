@@ -69,6 +69,7 @@ import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
@@ -97,6 +98,7 @@ class PosatoApplication internal constructor(
     private val schedules: ScheduleDependencies,
     private val scheduledPauses: ScheduledPauses,
     private val sessionComposition: SessionComposition,
+    private val folderSync: FolderSyncControls,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -130,7 +132,7 @@ class PosatoApplication internal constructor(
         navigation: ApplicationNavigation = remember { ApplicationNavigation() },
     ) {
         var setupDone by remember { mutableStateOf(false) }
-        val syncState = rememberSyncBootstrapUiState(bootstrap)
+        val syncState = rememberSyncBootstrapUiState(bootstrap, folderSync)
         val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper) {
             sessionOwner.status.value is LocalSessionStatus.Active || sessionOwner.view.value.busy
         }

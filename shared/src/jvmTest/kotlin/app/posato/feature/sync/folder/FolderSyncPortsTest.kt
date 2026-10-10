@@ -11,11 +11,11 @@ import app.posato.feature.sync.data.PrepareBundleResult
 import app.posato.feature.sync.domain.AuthorId
 import app.posato.feature.sync.domain.BundleId
 import app.posato.feature.sync.domain.HybridLogicalClock
+import app.posato.feature.sync.domain.KeyEpochId
 import app.posato.feature.sync.domain.SyncOperation
 import app.posato.feature.sync.domain.SyncOperationPayload
-import app.posato.feature.sync.domain.TransportKey
-import app.posato.feature.sync.domain.KeyEpochId
 import app.posato.feature.sync.domain.TransportEpochId
+import app.posato.feature.sync.domain.TransportKey
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
@@ -23,6 +23,7 @@ import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import java.nio.file.Path
@@ -70,7 +71,7 @@ class FolderSyncPortsTest {
         root: Path,
         local: Path = Files.createTempDirectory("posato-local"),
     ): FolderSyncPorts {
-        return FolderSyncPorts({ root }, local, crypto)
+        return nioPorts({ root }, local, crypto)
     }
 
     private suspend fun FolderSyncPorts.binding(): AccountBinding {
@@ -99,7 +100,7 @@ class FolderSyncPortsTest {
 
     @Test
     fun `given no chosen folder when resolving the binding then the folder transport is unavailable`() = runTest {
-        val ports = FolderSyncPorts({ null }, Files.createTempDirectory("posato-local"), crypto)
+        val ports = nioPorts({ null }, Files.createTempDirectory("posato-local"), crypto)
 
         assertEquals(BindingResolution.Unavailable, ports.resolveBinding())
     }
@@ -129,24 +130,25 @@ class FolderSyncPortsTest {
     }
 
     @Test
-    fun `given bundles from two devices and unrelated files when fetched then each bundle arrives once in name order and the rest is ignored`() = runTest {
-        val root = Files.createTempDirectory("posato-folder")
-        val writer = ports(root)
-        val reader = ports(root)
-        writer.establish()
-        assertEquals(BundleSaveResult.Saved, writer.save(writer.binding(), bundle(2)))
-        assertEquals(BundleSaveResult.Saved, reader.save(reader.binding(), bundle(1)))
-        val bundles = root.resolve("Posato").resolve("bundles")
-        Files.write(bundles.resolve(".tmp-unfinished"), bundle(3).second)
-        Files.write(bundles.resolve("${bundle(4).first.toHexText()} (conflicted copy).pbundle"), bundle(4).second)
-        Files.write(bundles.resolve("notes.txt"), byteArrayOf(97))
+    fun `given bundles from two devices and unrelated files when fetched then each bundle arrives once in name order and the rest is ignored`() =
+        runTest {
+            val root = Files.createTempDirectory("posato-folder")
+            val writer = ports(root)
+            val reader = ports(root)
+            writer.establish()
+            assertEquals(BundleSaveResult.Saved, writer.save(writer.binding(), bundle(2)))
+            assertEquals(BundleSaveResult.Saved, reader.save(reader.binding(), bundle(1)))
+            val bundles = root.resolve("Posato").resolve("bundles")
+            Files.write(bundles.resolve(".tmp-unfinished"), bundle(3).second)
+            Files.write(bundles.resolve("${bundle(4).first.toHexText()} (conflicted copy).pbundle"), bundle(4).second)
+            Files.write(bundles.resolve("notes.txt"), byteArrayOf(97))
 
-        val (first, cursor) = reader.readAll(reader.binding(), emptyCursor())
-        val (second, _) = reader.readAll(reader.binding(), cursor)
+            val (first, cursor) = reader.readAll(reader.binding(), emptyCursor())
+            val (second, _) = reader.readAll(reader.binding(), cursor)
 
-        assertEquals(listOf(bundle(1).second, bundle(2).second).map { it.toList() }, first.map { it.toList() })
-        assertEquals(emptyList(), second)
-    }
+            assertEquals(listOf(bundle(1).second, bundle(2).second).map { it.toList() }, first.map { it.toList() })
+            assertEquals(emptyList(), second)
+        }
 
     @Test
     fun `given a truncated or misnamed bundle file when fetched then it is skipped without blocking and arrives once complete`() = runTest {
@@ -223,7 +225,7 @@ class FolderSyncPortsTest {
         val first = Files.createTempDirectory("posato-folder")
         val second = Files.createTempDirectory("posato-folder")
         var root = first
-        val ports = FolderSyncPorts({ root }, Files.createTempDirectory("posato-local"), crypto)
+        val ports = nioPorts({ root }, Files.createTempDirectory("posato-local"), crypto)
         val binding = ports.establish()
         root = second
 

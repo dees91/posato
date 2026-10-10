@@ -13,10 +13,8 @@ import app.posato.feature.sync.bootstrap.WorkspaceKeyItem
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.data.hkdfSha256
 import app.posato.feature.sync.domain.SyncFormatLimits
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import java.nio.file.Files
-import java.nio.file.Path
 
 private const val CODE_BYTES: Int = 16
 private const val CODE_CHARACTERS: Int = 26
@@ -30,33 +28,6 @@ private val pairingSalt = "app.posato.folder.pairing.v1".encodeToByteArray()
 private val nameLabel = "offer-name".encodeToByteArray()
 private val keyLabel = "offer-key".encodeToByteArray()
 
-internal class PairingOffer(
-    val code: String,
-    val expiresAtMillis: Long,
-) {
-    override fun toString(): String {
-        return "PairingOffer(redacted)"
-    }
-}
-
-internal sealed interface PairingOfferResult {
-    data class Offered(
-        val offer: PairingOffer,
-    ) : PairingOfferResult
-
-    data object Unavailable : PairingOfferResult
-}
-
-internal enum class PairingAcceptResult {
-    JOINED,
-    INVALID_CODE,
-    NOT_FOUND,
-    EXPIRED,
-    REFUSED,
-    WRONG_WORKSPACE,
-    UNAVAILABLE,
-}
-
 /**
  * One-time pairing codes of ADR 0010: a member seals the workspace key item
  * in the folder under a key derived from the code, and a joiner that knows
@@ -65,9 +36,11 @@ internal enum class PairingAcceptResult {
 internal class FolderPairing(
     private val ports: FolderSyncPorts,
     private val crypto: SyncCryptoProvider,
+    private val files: FolderFileSystem,
+    private val ioDispatcher: CoroutineDispatcher,
     private val now: () -> Long,
 ) {
-    private var currentOffer: Path? = null
+    private var currentOffer: String? = null
 
     suspend fun offer(): PairingOfferResult {
         val binding = (ports.resolveBinding() as? BindingResolution.Available)?.binding ?: return PairingOfferResult.Unavailable
@@ -85,8 +58,8 @@ internal class FolderPairing(
             val header = offerMagic + byteArrayOf(OFFER_VERSION.toByte()) + expiresAt.toBytes() + nonce
             val sealed = crypto.sealAesGcm(derived.key, nonce, header + derived.name, itemBytes) ?: return PairingOfferResult.Unavailable
             derived.key.fill(0)
-            val file = workspace.resolve(PAIRING_DIRECTORY).resolve(derived.name.toHex() + OFFER_SUFFIX)
-            if (withContext(Dispatchers.IO) { FolderFiles.writeExclusive(file, header + sealed) } != ExclusiveWrite.CREATED) {
+            val file = workspace.child(PAIRING_DIRECTORY).child(derived.name.toHex() + OFFER_SUFFIX)
+            if (withContext(ioDispatcher) { files.writeExclusive(file, header + sealed) } != ExclusiveWrite.CREATED) {
                 return PairingOfferResult.Unavailable
             }
             currentOffer = file
@@ -99,7 +72,7 @@ internal class FolderPairing(
 
     suspend fun dismiss() {
         val file = currentOffer ?: return
-        withContext(Dispatchers.IO) { FolderFiles.deleteQuietly(file) }
+        withContext(ioDispatcher) { files.delete(file) }
         currentOffer = null
     }
 
@@ -115,8 +88,8 @@ internal class FolderPairing(
         val anchor = (ports.readAnchor(binding) as? AnchorReadResult.Found)?.anchor ?: return PairingAcceptResult.UNAVAILABLE
         val workspace = ports.workspaceDirectory(binding) ?: return PairingAcceptResult.UNAVAILABLE
         val derived = derive(codeBytes).also { codeBytes.fill(0) } ?: return PairingAcceptResult.UNAVAILABLE
-        val file = workspace.resolve(PAIRING_DIRECTORY).resolve(derived.name.toHex() + OFFER_SUFFIX)
-        val stored = withContext(Dispatchers.IO) { if (Files.exists(file)) FolderFiles.readOrNull(file, MAXIMUM_OFFER_BYTES) else null }
+        val file = workspace.child(PAIRING_DIRECTORY).child(derived.name.toHex() + OFFER_SUFFIX)
+        val stored = withContext(ioDispatcher) { if (files.isFile(file)) files.read(file, MAXIMUM_OFFER_BYTES) else null }
             ?: return PairingAcceptResult.NOT_FOUND
         val opened = openOffer(stored, derived)
         derived.key.fill(0)
@@ -131,7 +104,7 @@ internal class FolderPairing(
         itemBytes: ByteArray,
         anchor: WorkspaceAnchor,
         binding: AccountBinding,
-        file: Path,
+        file: String,
     ): PairingAcceptResult {
         try {
             val item = WorkspaceKeyItem.fromBytes(itemBytes) ?: return PairingAcceptResult.REFUSED
@@ -143,11 +116,13 @@ internal class FolderPairing(
             if (!sameWorkspace) return PairingAcceptResult.WRONG_WORKSPACE
             return when (ports.createItem(binding, anchor.account(), item)) {
                 KeyItemCreateResult.Created, KeyItemCreateResult.AlreadyExists -> {
-                    withContext(Dispatchers.IO) { FolderFiles.deleteQuietly(file) }
+                    withContext(ioDispatcher) { files.delete(file) }
                     PairingAcceptResult.JOINED
                 }
 
-                else -> PairingAcceptResult.UNAVAILABLE
+                else -> {
+                    PairingAcceptResult.UNAVAILABLE
+                }
             }
         } finally {
             itemBytes.fill(0)
@@ -168,14 +143,14 @@ internal class FolderPairing(
         return OpenedOffer(item, expiresAt)
     }
 
-    private suspend fun sweepExpired(workspace: Path) {
-        withContext(Dispatchers.IO) {
-            val directory = workspace.resolve(PAIRING_DIRECTORY)
-            FolderFiles.names(directory).orEmpty().filter { it.endsWith(OFFER_SUFFIX) }.forEach { name ->
-                val bytes = FolderFiles.readOrNull(directory.resolve(name), MAXIMUM_OFFER_BYTES)
+    private suspend fun sweepExpired(workspace: String) {
+        withContext(ioDispatcher) {
+            val directory = workspace.child(PAIRING_DIRECTORY)
+            files.names(directory).orEmpty().filter { it.endsWith(OFFER_SUFFIX) }.forEach { name ->
+                val bytes = files.read(directory.child(name), MAXIMUM_OFFER_BYTES)
                 val expiresAt = bytes?.takeIf { it.size >= offerMagic.size + 1 + Long.SIZE_BYTES }
                     ?.copyOfRange(offerMagic.size + 1, offerMagic.size + 1 + Long.SIZE_BYTES)?.toLong()
-                if (expiresAt == null || expiresAt < now()) FolderFiles.deleteQuietly(directory.resolve(name))
+                if (expiresAt == null || expiresAt < now()) files.delete(directory.child(name))
             }
         }
     }

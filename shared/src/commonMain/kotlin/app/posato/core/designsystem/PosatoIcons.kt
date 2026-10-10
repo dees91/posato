@@ -23,6 +23,7 @@ internal object PosatoIcons {
     val Apps = lineIcon("Apps", "M4 4H10V10H4ZM14 4H20V10H14ZM4 14H10V20H4ZM14 14H20V20H14Z")
     val Globe = lineIcon("Globe", "M4 12A8 8 0 1 0 20 12A8 8 0 1 0 4 12M4 12H20M12 4C7 8 7 16 12 20C17 16 17 8 12 4")
     val Cloud = lineIcon("Cloud", "M7 18H18A4 4 0 0 0 18.3 10A6 6 0 0 0 6.7 9A4.5 4.5 0 0 0 7 18Z")
+    val Folder = lineIcon("Folder", "M3 7A2 2 0 0 1 5 5H9L11 7H19A2 2 0 0 1 21 9V17A2 2 0 0 1 19 19H5A2 2 0 0 1 3 17Z")
     val Info = lineIcon("Info", "M4 12A8 8 0 1 0 20 12A8 8 0 1 0 4 12M12 11V16M12 8V8.5")
     val Clock = lineIcon("Clock", "M4 12A8 8 0 1 0 20 12A8 8 0 1 0 4 12M12 7V12L15 14")
     val Check = lineIcon("Check", "M4 12A8 8 0 1 0 20 12A8 8 0 1 0 4 12M8 12L11 15L16 9")

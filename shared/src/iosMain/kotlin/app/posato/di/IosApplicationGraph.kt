@@ -45,6 +45,8 @@ import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.folder.AppleOnlySync
+import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -90,6 +92,11 @@ internal interface IosApplicationGraph :
             @Provides notifications: SessionNotificationPlatform,
             @Provides schedules: IosScheduleBridge,
         ): IosApplicationGraph
+    }
+
+    @Provides
+    fun provideFolderSync(): FolderSyncControls {
+        return AppleOnlySync
     }
 
     @Provides

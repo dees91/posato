@@ -11,6 +11,7 @@ import app.posato.feature.sync.domain.KeyEpochId
 import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.testIdentifier
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,7 +31,7 @@ class FolderPairingTest {
     }
 
     private suspend fun member(root: Path): FolderSyncPorts {
-        val ports = FolderSyncPorts({ root }, Files.createTempDirectory("posato-member"), crypto)
+        val ports = nioPorts({ root }, Files.createTempDirectory("posato-member"), crypto)
         val binding = ports.binding()
         ports.saveZone(binding)
         ports.createAnchor(binding, anchor)
@@ -42,11 +43,11 @@ class FolderPairingTest {
     }
 
     private fun joiner(root: Path): FolderSyncPorts {
-        return FolderSyncPorts({ root }, Files.createTempDirectory("posato-joiner"), crypto)
+        return nioPorts({ root }, Files.createTempDirectory("posato-joiner"), crypto)
     }
 
     private fun pairing(ports: FolderSyncPorts): FolderPairing {
-        return FolderPairing(ports, crypto) { now }
+        return FolderPairing(ports, crypto, NioFolderFileSystem, Dispatchers.IO) { now }
     }
 
     @Test
@@ -126,7 +127,10 @@ class FolderPairingTest {
         val otherRoot = Files.createTempDirectory("posato-folder")
         val other = joiner(otherRoot)
         other.saveZone(other.binding())
-        other.createAnchor(other.binding(), WorkspaceAnchor(WorkspaceId(testIdentifier(9)), TransportEpochId(testIdentifier(8)), KeyEpochId(testIdentifier(7))))
+        other.createAnchor(
+            other.binding(),
+            WorkspaceAnchor(WorkspaceId(testIdentifier(9)), TransportEpochId(testIdentifier(8)), KeyEpochId(testIdentifier(7))),
+        )
         Files.createDirectories(otherRoot.resolve("Posato").resolve("pairing"))
         Files.list(root.resolve("Posato").resolve("pairing")).use { files ->
             files.forEach { Files.copy(it, otherRoot.resolve("Posato").resolve("pairing").resolve(it.fileName)) }
