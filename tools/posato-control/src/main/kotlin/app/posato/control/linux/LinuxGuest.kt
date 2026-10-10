@@ -72,12 +72,12 @@ class LinuxGuest(
     }
 
     fun launch() {
-        exec("pkill -f /opt/posato/bin/posato; sleep 1; nohup /opt/posato/bin/posato > /tmp/posato.log 2>&1 &")
+        exec("pkill -x posato; sleep 1; nohup /opt/posato/bin/posato > /tmp/posato.log 2>&1 &")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato in $CLONE")
     }
 
     fun terminate() {
-        exec("pkill -f /opt/posato/bin/posato; true")
+        exec("pkill -x posato; true")
     }
 
     companion object {

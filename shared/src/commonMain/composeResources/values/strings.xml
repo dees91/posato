@@ -170,7 +170,7 @@ For what matters.</string>
     <string name="onboarding_action_begin">Make some space</string>
     <string name="onboarding_privacy_intro">No Posato account. No activity feed. You choose what to pause and when.</string>
     <string name="onboarding_privacy_collection_detail">No browsing records, usage scores, telemetry or crash uploads.</string>
-    <string name="onboarding_privacy_encryption_detail">If you enable iCloud, changes are encrypted on this device before upload.</string>
+    <string name="onboarding_privacy_encryption_detail">If you sync your devices, changes are encrypted on this device before they leave it.</string>
     <string name="onboarding_privacy_local_apps_detail">Choose apps separately on each device.</string>
     <string name="onboarding_icloud_optional">Optional — Posato works without iCloud.</string>
     <string name="onboarding_permission_control">Nothing is paused until you start a pause or a schedule you set begins.</string>
@@ -347,4 +347,8 @@ For what matters.</string>
     <string name="onboarding_summary_android_on">Access allowed</string>
     <string name="onboarding_summary_android_off">Access still needed</string>
     <string name="onboarding_summary_android_unchecked">Access not checked</string>
+    <string name="onboarding_permission_linux_denied">The pausing service was not installed. Try again and enter your administrator password.</string>
+    <string name="onboarding_permission_android_denied">Some permissions are still off. Allow them to pause websites and apps on this phone.</string>
+    <string name="onboarding_permission_linux_required">Allow pausing on this computer before pausing websites or apps.</string>
+    <string name="onboarding_permission_android_required">Allow access before pausing websites or apps.</string>
 </resources>

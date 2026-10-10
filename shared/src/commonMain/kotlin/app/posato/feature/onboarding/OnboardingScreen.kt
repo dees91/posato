@@ -121,7 +121,11 @@ internal fun OnboardingScreen(
         modifier.fillMaxSize().padding(horizontal = inset, vertical = if (keyboardVisible) PosatoSpace.Section else inset),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
     ) {
-        OnboardingProgress(current = state.step)
+        OnboardingProgress(
+            current = state.step,
+            showsIcloud =
+                permissionPlatform == OnboardingPermissionPlatform.IOS || permissionPlatform == OnboardingPermissionPlatform.MAC,
+        )
         key(state.step) {
             when (state.step) {
                 OnboardingStep.PURPOSE -> {
@@ -164,7 +168,10 @@ internal fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingProgress(current: OnboardingStep) {
+private fun OnboardingProgress(
+    current: OnboardingStep,
+    showsIcloud: Boolean,
+) {
     val label = when (current) {
         OnboardingStep.PURPOSE -> Res.string.onboarding_step_purpose
         OnboardingStep.PRIVACY -> Res.string.onboarding_step_privacy
@@ -179,7 +186,9 @@ private fun OnboardingProgress(current: OnboardingStep) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PosatoEyebrow(stringResource(label), Modifier.weight(1f))
-        PosatoCaption(stringResource(Res.string.onboarding_progress, current.ordinal + 1, OnboardingStep.entries.size))
+        val skipped = if (!showsIcloud && current.ordinal > OnboardingStep.ICLOUD.ordinal) 1 else 0
+        val total = OnboardingStep.entries.size - if (showsIcloud) 0 else 1
+        PosatoCaption(stringResource(Res.string.onboarding_progress, current.ordinal + 1 - skipped, total))
     }
 }
 
