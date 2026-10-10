@@ -67,6 +67,7 @@ import app.posato.control.cli.VmTypeCommand
 import app.posato.control.cli.VmVncHoldCommand
 import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
+import app.posato.control.cli.androidCommand
 import app.posato.control.cli.linuxCommand
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
@@ -165,6 +166,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     UpdateConsentCommand(),
     RelayCommand(),
     linuxCommand(),
+    androidCommand(),
     flowCommand(),
     vmCommand(),
 )
