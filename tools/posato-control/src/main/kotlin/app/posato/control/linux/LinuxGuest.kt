@@ -40,6 +40,23 @@ class LinuxGuest(
         throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not reach its X11 session in time.")
     }
 
+    /** Starts the existing clone again after `stop`, keeping its installation and data. */
+    fun boot(): String {
+        val log = context.layout.verificationDirectory.resolve("linux-run.log")
+        context.subprocess.startDetached(listOf(Tart.TART, "run", CLONE, "--no-graphics"), log)
+        val deadline = System.currentTimeMillis() + BOOT_TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            val probe = runCatching { tart.exec(CLONE, "test -S /tmp/.X11-unix/X0 && echo ready", timeout = Duration.ofSeconds(PROBE_SECONDS)) }
+            if (probe.getOrNull()?.stdout?.contains("ready") == true) return CLONE
+            Thread.sleep(POLL_MILLIS)
+        }
+        throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not reach its X11 session in time.")
+    }
+
+    fun stop() {
+        tart.stop(CLONE)
+    }
+
     fun destroy() {
         if (tart.list().none { it.name == CLONE }) return
         tart.stop(CLONE)

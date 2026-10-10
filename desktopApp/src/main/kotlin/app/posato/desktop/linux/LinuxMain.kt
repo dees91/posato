@@ -2,6 +2,7 @@ package app.posato.desktop.linux
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.posato.di.createDesktopApplicationGraph
@@ -34,7 +35,7 @@ fun main() {
         Window(
             onCloseRequest = ::exitApplication,
             title = "Posato",
-            state = rememberWindowState(width = WINDOW_WIDTH.dp, height = WINDOW_HEIGHT.dp),
+            state = rememberWindowState(placement = WindowPlacement.Maximized, width = WINDOW_WIDTH.dp, height = WINDOW_HEIGHT.dp),
         ) {
             graph.application.Content()
         }

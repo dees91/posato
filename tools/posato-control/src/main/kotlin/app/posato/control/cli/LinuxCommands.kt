@@ -20,6 +20,8 @@ import kotlinx.serialization.json.put
 fun linuxCommand(): LinuxCommand = LinuxCommand().subcommands(
     LinuxCreateCommand(),
     LinuxDestroyCommand(),
+    LinuxBootCommand(),
+    LinuxStopCommand(),
     LinuxInstallCommand(),
     LinuxLaunchCommand(),
     LinuxTerminateCommand(),
@@ -42,6 +44,17 @@ class LinuxCommand : CliktCommand("linux") {
 
 class LinuxCreateCommand : ControlCommand("create", "Clone the Linux golden VM and wait for its X11 session.") {
     override fun execute(session: Session): JsonElement = buildJsonObject { put("vm", LinuxGuest(session.context).create()) }
+}
+
+class LinuxBootCommand : ControlCommand("boot", "Start the stopped Linux clone again with its data.") {
+    override fun execute(session: Session): JsonElement = buildJsonObject { put("vm", LinuxGuest(session.context).boot()) }
+}
+
+class LinuxStopCommand : ControlCommand("stop", "Stop the Linux clone and keep it.") {
+    override fun execute(session: Session): JsonElement {
+        LinuxGuest(session.context).stop()
+        return buildJsonObject { put("vm", LinuxGuest.CLONE) }
+    }
 }
 
 class LinuxDestroyCommand : ControlCommand("destroy", "Stop and delete the Linux clone.") {
