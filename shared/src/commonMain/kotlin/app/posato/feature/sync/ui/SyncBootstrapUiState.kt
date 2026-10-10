@@ -116,6 +116,8 @@ internal class SyncBootstrapUiState(
     fun join(code: String) {
         if (running) return
         running = true
+        // The previous attempt's message would otherwise read as this attempt's outcome until it finishes.
+        joinResult = null
         scope.launch {
             try {
                 val result = folderControls.accept(code)

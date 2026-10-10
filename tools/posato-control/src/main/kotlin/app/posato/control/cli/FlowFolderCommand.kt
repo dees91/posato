@@ -91,9 +91,13 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             listOf(FlowSteps.reveal(button(JOIN_LABEL)), FlowSteps.typeInto(pairingCode, submit = false), FlowSteps.tap(button(JOIN_LABEL))),
         )
         // An offer that has not reached this device's folder yet reads "No offer for this code"; a person presses Join again.
-        waitFor(backend, deadline, "join") { labels ->
+        // A refusal is the outcome, so a run can prove that a wrong code joins nothing.
+        val outcome = waitFor(backend, deadline, "join") { labels ->
+            val refusal = REFUSALS.entries.firstOrNull { (message, _) -> labels.any { it.startsWith(message) } }?.value
             when {
                 ADD_DEVICE in labels -> "linked"
+
+                refusal != null -> refusal
 
                 labels.any {
                     it.startsWith(NOT_YET)
@@ -104,7 +108,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         }
         return buildJsonObject {
             put("action", action)
-            put("outcome", "linked")
+            put("outcome", outcome)
         }
     }
 
@@ -192,6 +196,13 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val JOIN_LABEL = "Join"
         const val DONE = "Done"
         const val NOT_YET = "No offer for this code"
+        val REFUSALS = mapOf(
+            "This code is not valid" to "invalid",
+            "This code has expired" to "expired",
+            "This code cannot open the offer" to "refused",
+            "This code belongs to a workspace in another folder" to "wrongWorkspace",
+            "The folder is not available" to "unavailable",
+        )
         const val USE_ANOTHER = "Use another folder"
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val FOLDER_ROW = "Folder sync,"
