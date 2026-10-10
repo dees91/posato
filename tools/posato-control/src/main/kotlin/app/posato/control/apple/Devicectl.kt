@@ -30,10 +30,13 @@ data class PhysicalDevice(
     val overNetwork: Boolean = false,
 )
 
-/** Reads the device list from the `result` object of `devicectl list devices`. */
+/** Reads the device list from the `result` object of `devicectl list devices`; Xcode 27 also lists simulators there. */
 internal fun parseDevices(result: JsonObject): List<PhysicalDevice> {
     val devices = result["devices"]?.jsonArray ?: return emptyList()
-    return devices.map { element ->
+    val physical = devices.filter { element ->
+        element.jsonObject["hardwareProperties"]?.jsonObject?.get("reality")?.jsonPrimitive?.content != "simulated"
+    }
+    return physical.map { element ->
         val device = element.jsonObject
         val properties = device["deviceProperties"]?.jsonObject
         val connection = device["connectionProperties"]?.jsonObject
