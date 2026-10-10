@@ -37,8 +37,10 @@ class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Pos
             })
         } + listOfNotNull(
             if (linux) {
-                ShellEndpoint("linux", GUEST_FOLDER, { script, stdin ->
-                    tart.exec(LinuxGuest.CLONE, script, stdin).requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying ${LinuxGuest.CLONE}").stdout
+                // The Linux clone's folder is a host directory shared into it, so no command enters the guest.
+                ShellEndpoint("linux", "'" + LinuxGuest.syncShare(session.context) + "'", { script, stdin ->
+                    session.context.subprocess.run(listOf("/bin/sh", "-c", script), stdin = stdin)
+                        .requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying the Linux folder").stdout
                 })
             } else {
                 null
