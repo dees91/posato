@@ -6,6 +6,11 @@ case "$1" in
     for entry in /opt/posato/lib/*.desktop; do
       [ -f "$entry" ] && install -D -m 0644 "$entry" /usr/share/applications/posato.desktop
     done
+    # An upgrade replaces the service's code; a running service starts again on it, an absent one stays absent.
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl daemon-reload >/dev/null 2>&1 || true
+      systemctl try-restart posato-helper.service >/dev/null 2>&1 || true
+    fi
     ;;
 esac
 exit 0

@@ -23,7 +23,8 @@ attention instead of creating it again.
 - `folder-removal`: removing the workspace empties the folder; other devices
   show "Sync needs attention" and never re-create it.
 - `folder-ios`: the iPhone chooses its folder in the Files picker and syncs
-  when Posato comes to the front.
+  when Posato comes to the front (not verified unattended yet: the driver
+  needs the test iPhone on a cable).
 
 ## How to get to it (user POV)
 

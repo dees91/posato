@@ -2,8 +2,10 @@ package app.posato.feature.sync.folder
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.ProviderException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -22,6 +24,10 @@ internal class KeystoreKeyItemProtection : KeyItemProtection {
             byteArrayOf(FORMAT) + cipher.iv + cipher.doFinal(item)
         } catch (_: GeneralSecurityException) {
             null
+        } catch (_: IOException) {
+            null
+        } catch (_: ProviderException) {
+            null
         }
     }
 
@@ -33,6 +39,10 @@ internal class KeystoreKeyItemProtection : KeyItemProtection {
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, stored, 1, IV_BYTES))
             cipher.doFinal(stored, HEADER_BYTES, stored.size - HEADER_BYTES)
         } catch (_: GeneralSecurityException) {
+            null
+        } catch (_: IOException) {
+            null
+        } catch (_: ProviderException) {
             null
         }
     }
