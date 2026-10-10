@@ -78,6 +78,12 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
         }
+        jvmMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+        }
+        androidMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+        }
         jvmMain.dependencies {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.sqldelight.sqlite.driver)
