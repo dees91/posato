@@ -395,7 +395,9 @@ Platform traps that invalidate a run:
 Every command that produces artifacts writes them under
 `build/verification/runs/<run-id>/` (`screenshots/`, `snapshots/`,
 `driver/<target>-<n>/` for iOS results, the app log, and `backup/` for
-reset) and lists them in the envelope's `artifacts`; `build/verification/latest`
+reset) and lists them in the envelope's `artifacts`; every command, host
+`vm` commands and refusals included, also keeps its envelope there as
+`envelope.json`; `build/verification/latest`
 points at the newest run and `$PC artifacts` prints the layout. Everything
 under `build/` is ignored by Git; never copy screenshots, logs, or device
 identifiers into tracked files or task records (they are categorical only).

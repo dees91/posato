@@ -509,8 +509,10 @@ tracks the new process.
 ## Evidence and state
 
 - `build/verification/runs/<run-id>/` holds screenshots, snapshots, logs,
-  driver result bundles, and reset backups. `build/verification/latest`
-  points at the newest run that produced artifacts.
+  driver result bundles, and reset backups, and every command's envelope as
+  `envelope.json`, also for a host `vm` command or a refusal, so each run id a
+  `Verified` line cites has a directory. `build/verification/latest` points at
+  the newest run.
 - `run-result.json` in the run directory holds each step's result (`index`,
   `name`, `action`, `ok`, `error`, `artifacts`) of a failed `run`. On iOS
   every driver invocation also leaves `driver/DEVICE-<n>/result.json`
