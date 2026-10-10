@@ -86,9 +86,12 @@ Git history.
   in Dark Mode, never on the maintainer's Mac. The fixture is two pause sets,
   `Focus` (the first set, renamed and the default, with `example.com`,
   `example.net`, and the built-in Chess application) and `Evening`
-  (`example.net` and Chess), and two schedules, `Deep work` (Focus, weekdays
+  (`example.net`; Chess was chosen in it with single `posato-control`
+  commands after the first schedule list, so `mac-schedules` and
+  `mac-scheduled-active` show no missing-apps notice while `mac-pause-sets`
+  shows Evening without apps), and two schedules, `Deep work` (Focus, weekdays
   09:00 to 11:00) and `Evening reading` (Evening, daily, one hour). The sets
-  were prepared with single `posato-control` commands before the script ran. The VM finished the unified setup first, so the
+  were created with single `posato-control` commands before the script ran. The VM finished the unified setup first, so the
   session started without an administrator prompt. `capture/mac-captures.sh`
   opens Focus from **Pause sets** for `apps` and `websites`, captures the
   list with `sets`, and picks Chess through recognized screen text, because

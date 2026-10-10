@@ -50,10 +50,12 @@ website list now names the included `www` variant and About shows the new
 version. `DOCS-003` recaptured the set for 1.2.0 on 2026-09-27 and added
 Schedules as the third screen, which moved About Posato to fourth. `DOCS-004`
 recaptured both sets for 1.3.0 on 2026-10-02: the first screen now shows the
-pause set Focus with its websites, and Session and Schedules show the set.
-`DOCS-005` recaptured both sets for 1.4.0 on 2026-10-10 with the `DESIGN-004`
-interface and the `SESSION-007` quick choices, on an iPhone 17 Pro Max
-Simulator with iOS 26.5, because Xcode 27 no longer ships that device.
+pause set Focus with its websites, and Session and Schedules show the set;
+the maintainer accepted it on 2026-10-04. `DOCS-005` recaptured both sets for
+1.4.0 on 2026-10-10 with the `DESIGN-004` interface and the `SESSION-007`
+quick choices, on an iPhone 17 Pro Max Simulator with iOS 26.5, because
+Xcode 27 no longer ships that device; the maintainer accepted the 1.4 set
+(`user-confirmed`, 2026-10-10, by questionnaire).
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen

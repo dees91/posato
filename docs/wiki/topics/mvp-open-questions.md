@@ -1222,7 +1222,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     description attribute. `inferred`: VoiceOver on the Mac may speak "1 h".
     `open`: what VoiceOver actually speaks, and whether the Mac buttons need
     the full words. Filed as an agent proposal under the maintainer's
-    delegation of 2026-10-09; no owner yet.
+    delegation of 2026-10-09. Owner: backlog row `SESSION-008`.
 
 ## Later platform questions
 
