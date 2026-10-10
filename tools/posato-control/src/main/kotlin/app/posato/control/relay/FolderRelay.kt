@@ -1,5 +1,6 @@
 package app.posato.control.relay
 
+import app.posato.control.core.ControlException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -91,11 +92,20 @@ class FolderRelay(
     var deletions = 0
         private set
 
+    /** One round over the endpoints that answer now; a device that is off or busy joins again in a later round. */
     fun round() {
         Files.createDirectories(hub)
-        val collected = endpoints.associate { it.name to collect(it) }
+        val collected = endpoints.mapNotNull { endpoint -> reachable { collect(endpoint) }?.let { endpoint to it } }
         val state = hubState()
-        for (endpoint in endpoints) distribute(endpoint, state, collected.getValue(endpoint.name))
+        for ((endpoint, files) in collected) reachable { distribute(endpoint, state, files) }
+    }
+
+    private fun <T> reachable(block: () -> T): T? {
+        return try {
+            block()
+        } catch (_: ControlException) {
+            null
+        }
     }
 
     /** Returns the endpoint's files as collected, so distribution leaves alone what changed on it since. */
