@@ -212,6 +212,8 @@ tasks.register("qualityLint") {
     description = "Runs only Posato's formatting and static analysis, in about a minute, before a commit; quality still gates the push."
     dependsOn(
         "ktlintCheck",
+        ":androidApp:detekt",
+        ":androidApp:ktlintCheck",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":linuxHelper:detekt",
@@ -267,6 +269,9 @@ tasks.register("quality") {
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",
         ":desktopApp:verifySqlDelightMigration",
+        ":androidApp:detekt",
+        ":androidApp:ktlintCheck",
+        ":androidApp:testDebugUnitTest",
         ":linuxHelper:detekt",
         ":linuxHelper:ktlintCheck",
         ":linuxHelper:test",
