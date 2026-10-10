@@ -306,6 +306,31 @@ again; a copy that overlaps a build is untested (`open`). The
   iPhone, although the start requests a sync; `inferred`: that upload was
   interrupted and is not retried until the next foreground or manual sync.
 
+## Linux and Android (release 1.5)
+
+- `observed` (2026-10-10): Linux runs in a Tart clone of Cirrus Labs' Ubuntu
+  image with LightDM logging in to Openbox; `posato-control linux` captures
+  the screen in the guest, recognizes text on the host, and types and clicks
+  with `xdotool`. A polkit rule for the guest user approves `pkexec`, so the
+  root service installs with no prompt. The `.deb` is built by `jpackage`
+  inside the guest from the jar the host builds.
+- `observed`: running the Linux guest next to a macOS guest, or calling
+  `tart exec` every few seconds, crashed the Linux guest ("Internal
+  Virtualization error"). Cross-device runs use one kind of guest at a time,
+  and the relay reaches the Linux folder through a host directory instead of
+  `tart exec`.
+- `observed`: `pgrep -x` cannot find `gnome-calculator`, because the kernel
+  cuts process names to 15 characters; checks read `/proc/<pid>/exe`.
+  `pkill -f` inside `tart exec` matches the shell that runs it.
+- `observed`: Android runs on an emulator of Posato's own (another person's
+  emulator on the same Mac is never used); `posato-control android` reads
+  UIAutomator dumps and grants the Settings permissions with `appops` and
+  `pm grant`, the VPN consent included, so no step is attended.
+- `observed`: clicking recognized text that also appears in a sentence hits
+  the sentence; field labels are matched exactly.
+- `open`: the time budget for routine runs with the two new tracks; the
+  Linux and Android tracks have not been measured against the 268 s median.
+
 ## Observed blocking on macOS
 
 - `observed`: `posato-control observe` in a guest requests a URL through the

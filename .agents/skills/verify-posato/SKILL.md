@@ -1,12 +1,13 @@
 ---
 name: verify-posato
-description: "Drive the real Posato macOS desktop app and iOS app (Simulator or connected iPhone) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
+description: "Drive the real Posato macOS desktop app, iOS app (Simulator or connected iPhone), Linux app (Tart Ubuntu clone), and Android app (own emulator) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, androidApp/, linuxHelper/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
 ---
 
 # Verify Posato
 
-Posato is a Kotlin Multiplatform app with three destinations on two hosts, a
-Compose Desktop macOS app and a Compose iOS app: `Session` (the screen shown
+Posato is a Kotlin Multiplatform app with three destinations on four hosts:
+Compose Desktop apps for macOS and Linux, a Compose iOS app, and an Android
+app. The destinations are `Session` (the screen shown
 after every launch), `Pause sets` (a list of sets, each with its own websites
 and this device's apps), and `Schedules`.
 iPhone and iPad portrait use bottom navigation; macOS and iPad landscape use a
@@ -82,6 +83,17 @@ never from the Apple Developer portal. With the one-time setup in
   own clone, but a later clone can pause it again: run `vm icloud --resume`
   on every clone once all have booted. The in-app update recipe is
   `features/updates.md`; see also the driver README, "Notarized candidates".
+- **Linux in a Tart Ubuntu clone.** `$PC linux create`, `linux install`,
+  and `linux launch`, then `linux click|wait|type|exec`; the guest's polkit
+  rule approves the service installation. Never run it together with a
+  macOS clone. Finish with `$PC linux destroy`. Recipes:
+  [Linux and Android](./features/linux-and-android.md).
+- **Android on Posato's own emulator.** The one named by
+  `posato.android.serial`; another person's emulator is never used. `$PC
+  android install` gives the Settings grants, so no step is attended.
+- **Folder sync between any of them.** Each device keeps its own folder and
+  `$PC relay` copies between them; see
+  [Folder sync](./features/folder-sync.md).
 - **The test iPhone.** `-t device` as before. Screen Time consent is
   `fixtures/scenarios/screen-time-consent.json` in one run; the application
   picker is in the app's own accessibility tree.

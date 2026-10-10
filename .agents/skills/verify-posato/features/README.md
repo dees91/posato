@@ -157,6 +157,12 @@ handles, required state, commands, and observable proof.
 - [Sync with iCloud](./sync.md) covers the one consent action, the truthful
   outcomes it reports, joining in either device order, and how a from-empty
   rerun starts in VMs.
+- [Folder sync](./folder-sync.md) covers choosing a folder, the pairing
+  code, exchange between Mac, Linux, Android, and iPhone through the relay,
+  catch-up after a restart, and removal.
+- [Linux and Android](./linux-and-android.md) covers installation and first
+  run, website and application blocking, the Linux service's self-clear and
+  refusal, and Android's background enforcement.
 - [First install](./onboarding.md) covers the six-step first-run flow, the
   skip prelude every fresh launch needs, the upgrade row, and the degraded
   iCloud outcome.
