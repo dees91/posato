@@ -85,6 +85,50 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - If every copy of the workspace key is lost, synchronized data cannot be
   recovered. Data already copied to another device cannot be erased remotely.
 
+### Linux, Android, and folder sync (release 1.5, proposed)
+
+These limits come with [ADR 0010](../decisions/0010-linux-android-and-folder-workspace.md)
+and are `agent-delegated` until the maintainer accepts that ADR; they apply
+once release 1.5 ships.
+
+- On Linux, website blocking maps each paused website and its `www` name to
+  no address in `/etc/hosts`, so connections to it fail. There is no pause
+  page. A browser that uses its own DNS over HTTPS, visiting a site by its IP
+  address, or another name of the same site bypasses it.
+- On Linux, Posato installs a system service once, with your password. While
+  a pause runs, the service ends the paused apps you chose, so unsaved work in
+  them can be lost. It clears the pause at its end time even when Posato is
+  closed. Removing the package clears an active pause.
+- On Android, website blocking runs as a local VPN that only answers name
+  lookups. Another VPN cannot run at the same time, strict Private DNS and a
+  browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
+  filtered. There is no pause page.
+- On Android, a paused app is covered by a block screen; it can be visible for
+  for up to about a second before the screen appears. The launcher,
+  Settings, the phone, and Posato cannot be paused. Posato needs usage access,
+  display over other apps, notifications, exact alarms, and to be excluded
+  from battery optimization; without them, blocking or schedules may not run.
+- Folder sync works through a folder that a service you already use keeps in
+  sync, such as Dropbox, OneDrive, iCloud Drive, or Syncthing. Posato writes
+  only encrypted files there, but it cannot control when, or whether, that
+  service delivers them, and anyone who can delete files in the folder can
+  stop your devices from syncing.
+- A device joins a folder workspace with a one-time pairing code that is
+  valid for 10 minutes. Someone with the code and access to the folder, or to
+  its file history, can open the workspace. There is no way to remove a single
+  device: to stop sharing with one, remove the workspace and create a new one
+  in another folder.
+- In folder mode, each device keeps the workspace key in a file that only
+  your user can read, not in the Keychain. On Android it is protected by the
+  Android Keystore.
+- On Android, the folder must be a local folder that another app keeps in
+  sync, such as Syncthing; most cloud storage apps for Android do not keep a
+  local folder in sync. On iPhone, Posato syncs the folder when you open it
+  and when iOS gives it background time.
+- A workspace syncs through iCloud or through one folder, never both, and
+  there is no move between them: remove the iCloud workspace before choosing
+  a folder.
+
 ## Supported platforms
 
 - Posato 1.2 for Mac: macOS 15 or later on Apple silicon.
@@ -127,8 +171,8 @@ device that was offline during a session.
 
 | Platform | Status |
 | --- | --- |
-| Android | Planned for a later release |
-| Linux desktop | Planned for a later release |
+| Android | Planned for release 1.5: Android 13 or later |
+| Linux desktop | Planned for release 1.5: Ubuntu 24.04 or later, `.deb` |
 | Windows desktop | Planned for a later release |
 
 No dates are committed. Intel Macs on macOS 13 or later are supported from
