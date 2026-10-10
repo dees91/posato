@@ -15,7 +15,8 @@ class PrEvidenceTest {
             PrComment("dees91", "Looks good."),
             PrComment(
                 "dees91",
-                "Verified 2dd1fac3 on Tart macOS 26: Cmd-Q asks -> pass, run 20261009-220816-023c, run ac01-9103.\n" +
+                "Verified 2dd1fac3 on Tart macOS 26: Cmd-Q asks -> pass, run 20261009-220816-023c, run ac01-9103; " +
+                    "a second run the same way passed.\n" +
                     "> Verified 1111111 on desktop: quoted, run quoted-1",
             ),
             PrComment("someone-else", "Verified 2222222 on desktop: drive-by, run other-1"),

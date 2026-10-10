@@ -100,39 +100,10 @@ subprojects {
 val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
     group = "verification"
     description = "Rejects Polish letters in the repository's documentation, skills, site, and sources."
-    val textExtensions = listOf(
-        "md",
-        "kt",
-        "kts",
-        "swift",
-        "m",
-        "h",
-        "c",
-        "json",
-        "yml",
-        "yaml",
-        "txt",
-        "astro",
-        "ts",
-        "tsx",
-        "js",
-        "mjs",
-        "css",
-        "html",
-        "sh",
-        "xml",
-        "plist",
-        "strings",
-        "xcconfig",
-        "properties",
-        "toml",
-        "sq",
-        "sqm",
-        "entitlements",
-    )
     textFiles.from(
         fileTree(rootDir) {
-            include("*.md")
+            // Named, not *.md: THIRD_PARTY_NOTICES.md reproduces copyright notices as their holders wrote them.
+            include("README.md", "DESIGN.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "PRIVACY.md", "SECURITY.md")
             listOf(
                 "docs",
                 ".agents",
@@ -147,15 +118,13 @@ val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
                 "buildSrc/src",
                 "quality-rules",
                 "prototypes",
-            ).forEach { directory -> textExtensions.forEach { extension -> include("$directory/**/*.$extension") } }
+            ).forEach { directory -> include("$directory/**") }
             exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
         },
     )
     // A future Polish localization lives in its own directories, such as values-pl or pl.lproj; list them here.
     excludedDirectories.set(emptyList<String>())
-    exceptions.set(
-        mapOf("THIRD_PARTY_NOTICES.md" to "Sparkle's copyright notice names its holders as written, including a Polish surname."),
-    )
+    exceptions.set(emptyMap<String, String>())
     repositoryDirectory.set(layout.projectDirectory)
 }
 

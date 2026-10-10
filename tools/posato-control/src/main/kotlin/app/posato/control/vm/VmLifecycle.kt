@@ -256,6 +256,8 @@ private fun createUnderLock(
                 refuseClone(vms, request.golden, line.cloneName, owner)
                 tart.clone(request.golden, line.cloneName)
                 recordCloneOwner(context, line.cloneName)
+                // A golden VM once used as a clone could carry the marker; only this creation decides it.
+                clearLowDiskAllowance(line.cloneName)
                 if (request.allowLowDisk) recordLowDiskAllowance(line.cloneName)
                 Files.deleteIfExists(accountAttentionMarker(line))
                 tart.start(line.cloneName, request.jdk, ownerOnlyFile(vmDirectory(line).resolve(RUN_LOG)))

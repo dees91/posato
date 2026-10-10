@@ -4,6 +4,9 @@ import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.time.Instant
+import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
 
 /** Whether a line's clone is free, used by a session, or left behind by a worktree that no longer exists. */
 enum class LeaseState { FREE, HELD, STALE }
@@ -46,20 +49,33 @@ internal fun leaseState(
     else -> LeaseState.STALE
 }
 
-/** Serializes creators inside this process; the file lock below serializes processes. */
-private val CREATE_MONITOR = Any()
-
 /**
  * Runs [block] while holding the machine-wide clone lock, so a check of Tart's VMs and the clone it allows happen as
- * one step: two sessions that created one line at once both saw no clone and both cloned (review of #166). A file
- * lock alone does not serialize threads of one process, which the JVM refuses to lock twice, so a monitor does that.
+ * one step: two sessions that created one line at once both saw no clone and both cloned (review of #166). Each
+ * `posato-control` process creates at most one clone, so a file lock is enough; two concurrent creates proved it
+ * (run 20261010-123120-4421).
  */
 internal fun <T> withCreateLock(
     lockFile: Path,
     block: () -> T,
-): T = synchronized(CREATE_MONITOR) {
+): T {
     Files.createDirectories(lockFile.parent)
-    FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel ->
+    return FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel ->
         channel.lock().use { block() }
     }
+}
+
+private const val LOW_DISK_MARKER = "posato-low-disk-allowed"
+
+/** Records that this clone was created with `--allow-low-disk`; it sits beside the owner marker and goes with it. */
+internal fun recordLowDiskAllowance(clone: String) {
+    val marker = tartHome().resolve("vms").resolve(clone).resolve(LOW_DISK_MARKER)
+    if (marker.parent.isDirectory()) Files.writeString(marker, Instant.now().toString() + "\n")
+}
+
+/** Whether [clone] was created with `--allow-low-disk`, so its guest commands run down to the hard floor. */
+internal fun lowDiskAllowed(clone: String): Boolean = tartHome().resolve("vms").resolve(clone).resolve(LOW_DISK_MARKER).exists()
+
+internal fun clearLowDiskAllowance(clone: String) {
+    Files.deleteIfExists(tartHome().resolve("vms").resolve(clone).resolve(LOW_DISK_MARKER))
 }

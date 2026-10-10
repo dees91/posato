@@ -23,8 +23,11 @@ internal const val MIN_FREE_DISK_BYTES = 20_000_000_000L
 internal fun minFreeDiskBytes(): Long {
     val raw = System.getenv(MIN_FREE_DISK_ENV) ?: return MIN_FREE_DISK_BYTES
     val requested = raw.toLongOrNull()?.let { it * BYTES_PER_GB.toLong() }
-    if (requested != null && requested > MIN_FREE_DISK_BYTES) return requested
-    System.err.println("posato-control: ignoring $MIN_FREE_DISK_ENV=$raw; it may only raise the ${gigabytes(MIN_FREE_DISK_BYTES)} minimum.")
+    if (requested != null && requested >= MIN_FREE_DISK_BYTES) return requested
+    if (!thresholdWarned) {
+        thresholdWarned = true
+        System.err.println("posato-control: ignoring $MIN_FREE_DISK_ENV=$raw; it may only raise the ${gigabytes(MIN_FREE_DISK_BYTES)} minimum.")
+    }
     return MIN_FREE_DISK_BYTES
 }
 
@@ -32,6 +35,9 @@ internal fun minFreeDiskBytes(): Long {
 internal const val HARD_FLOOR_DISK_BYTES = 5_000_000_000L
 
 private const val MIN_FREE_DISK_ENV = "POSATO_CONTROL_MIN_FREE_DISK_GB"
+
+/** One warning per process about an ignored threshold override. */
+@Volatile private var thresholdWarned = false
 
 /** What may be deleted to free space because a later run regenerates it. */
 internal const val DISK_SPACE_HINT = "Free space by deleting what regenerates: old runs under build/verification/runs, the build " +
@@ -64,6 +70,14 @@ internal fun lowDiskWarning(
     allowLowDisk: Boolean
 ): String? {
     if (free.bytes >= minFreeDiskBytes()) return null
+    if (allowLowDisk && free.bytes < HARD_FLOOR_DISK_BYTES) {
+        throw ControlException(
+            ErrorCode.DISK_SPACE_LOW,
+            "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; no clone is created below " +
+                "${gigabytes(HARD_FLOOR_DISK_BYTES)}, not even with --allow-low-disk.",
+            DISK_SPACE_HINT,
+        )
+    }
     val shortage = "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; a run with a clone needs at " +
         "least ${gigabytes(minFreeDiskBytes())}."
     if (allowLowDisk) return shortage

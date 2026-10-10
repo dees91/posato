@@ -26,8 +26,11 @@ data class VerifiedLine(
 /** A line that starts with the verification line, not one that quotes or mentions it. */
 private val VERIFIED = Regex("""^Verified\s+([0-9a-f]{7,40})\b""")
 
-/** Every `run <id>`, also a label passed as `--run-id`; trailing punctuation is not part of it. */
-private val RUN_ID = Regex("""\brun\s+([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])""")
+/**
+ * Every `run <id>`, also a label passed as `--run-id`. An id holds a digit, so an ordinary word after "run" is not one,
+ * and trailing punctuation is not part of it.
+ */
+private val RUN_ID = Regex("""\brun\s+([A-Za-z0-9._-]*\d[A-Za-z0-9._-]*)""")
 
 /** One pull request comment and the login that posted it. */
 data class PrComment(
@@ -41,7 +44,9 @@ internal fun parseVerifiedLines(
     trustedAuthors: Set<String>,
 ): List<VerifiedLine> = comments.filter { it.author in trustedAuthors }.map { it.body }.flatMap { comment ->
     comment.lines().map { it.trim() }.mapNotNull { line ->
-        VERIFIED.find(line)?.let { match -> VerifiedLine(match.groupValues[1], RUN_ID.findAll(line).map { it.groupValues[1] }.toList()) }
+        VERIFIED.find(line)?.let { match ->
+            VerifiedLine(match.groupValues[1], RUN_ID.findAll(line).map { it.groupValues[1].trimEnd('.', '-', '_') }.toList())
+        }
     }
 }
 
@@ -160,7 +165,9 @@ private class Git(
     fun changed(
         from: String,
         to: String,
-    ): List<String> = run(listOf("git", "diff", "--name-only", from, to), "Listing the changes of $to").lines().filter { it.isNotBlank() }
+    ): List<String> = run(listOf("git", "diff", "--no-renames", "--name-only", from, to), "Listing the changes of $to").lines().filter {
+        it.isNotBlank()
+    }
 
     /** The stable patch id of one path's change, empty when the side does not change it. */
     fun patchId(
@@ -168,9 +175,9 @@ private class Git(
         to: String,
         path: String,
     ): String {
-        val diff = run(listOf("git", "diff", from, to, "--", path), "Reading the change of $path")
+        val diff = run(listOf("git", "diff", "--no-renames", from, to, "--", path), "Reading the change of $path")
         if (diff.isBlank()) return ""
-        return session.context.subprocess.run(listOf("git", "patch-id", "--stable"), workingDirectory = root, stdin = diff)
+        return session.context.subprocess.run(listOf("git", "patch-id", "--verbatim"), workingDirectory = root, stdin = diff)
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Hashing the change of $path").stdout.substringBefore(' ')
     }
 
