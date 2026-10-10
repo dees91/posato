@@ -149,16 +149,7 @@ class PosatoApplication internal constructor(
             combine(sessionOwner.blockingSetup(), scheduledPauses.pause) { blocked, pause -> blocked || pause?.restricts == true }
                 .collect { helperSetup.sessionBlocked = it }
         }
-        if (hostsSession) {
-            LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
-            // An edit to a set a running session uses pauses its additions at once.
-            LaunchedEffect(sessionOwner) {
-                merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
-            }
-            LaunchedEffect(notifier) { notifier.run() }
-            // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
-            LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
-        }
+        if (hostsSession) HostedSessionEffects()
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
             ForegroundEffects(helperSetup)
@@ -193,6 +184,19 @@ class PosatoApplication internal constructor(
                 )
             }
         }
+    }
+
+    /** The session timer, recomposition, notices, and schedules of a process that hosts sessions. */
+    @Composable
+    private fun HostedSessionEffects() {
+        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+        // An edit to a set a running session uses pauses its additions at once.
+        LaunchedEffect(sessionOwner) {
+            merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
+        }
+        LaunchedEffect(notifier) { notifier.run() }
+        // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
+        LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
     }
 
     @Composable

@@ -69,6 +69,7 @@ internal interface DesktopApplicationGraph :
     DesktopApplicationComponents,
     DesktopUpdateBindings,
     DesktopScheduleBindings,
+    DesktopFolderSyncBindings,
     DesktopVerificationBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
@@ -231,37 +232,6 @@ internal interface DesktopApplicationGraph :
             onSetsRemoved = applicationMappings::retainSets,
         ).also(folderSync::startPolling)
     }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideFolderSync(
-        databasePath: String,
-        companion: MaintenanceCompanionTransport,
-    ): FolderSync {
-        val transport: SyncCompanionTransport = companion
-        val keys = MacOsBootstrapKeychainAdapter(transport)
-        val apple = AppleSyncPorts(keys, MacOsBootstrapCloudAdapter(transport), keys, MacOsMailboxAdapter(transport))
-        val localDirectory = Paths.get(databasePath).toAbsolutePath().parent.toString()
-        return FolderSync(
-            localDirectory,
-            JdkSyncCryptoProvider(),
-            apple.takeIf {
-                isMacOs()
-            },
-            NioFolderFileSystem,
-            Dispatchers.IO,
-            System::currentTimeMillis,
-        )
-    }
-
-    @Provides
-    fun provideFolderSyncControls(folderSync: FolderSync): FolderSyncControls {
-        return folderSync
-    }
-}
-
-private fun isMacOs(): Boolean {
-    return System.getProperty("os.name").orEmpty().startsWith("Mac")
 }
 
 fun createDesktopApplicationGraph(

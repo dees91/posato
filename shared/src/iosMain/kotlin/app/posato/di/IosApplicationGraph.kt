@@ -79,7 +79,8 @@ import kotlin.coroutines.resume
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph :
     ApplicationGraph,
-    IosScheduleBindings {
+    IosScheduleBindings,
+    IosFolderSyncBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val pauseSetPreparation: PauseSetPreparation
     val appleSync: AppleSync
@@ -101,35 +102,6 @@ internal interface IosApplicationGraph :
             @Provides schedules: IosScheduleBridge,
             @Provides folderPicker: IosFolderPicker,
         ): IosApplicationGraph
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideFolderSync(
-        keychainProvider: IosKeychainProvider,
-        mailboxProvider: IosCloudKitMailboxProvider,
-        cryptoProvider: IosCryptoProvider,
-        folderPicker: IosFolderPicker,
-    ): FolderSync {
-        val keys = IosBootstrapKeychainAdapter(keychainProvider)
-        val apple = AppleSyncPorts(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, IosMailboxAdapter(mailboxProvider))
-        return FolderSync(
-            localDirectory = iosApplicationSupportDirectory(),
-            crypto = IosSyncCryptoProvider(cryptoProvider),
-            apple = apple,
-            files = FoundationFolderFileSystem,
-            ioDispatcher = Dispatchers.IO,
-            now = { time(null) * MILLIS_PER_SECOND },
-            access = BookmarkFolderAccess(),
-            browser = { pickFolder(folderPicker) },
-            pollsWhileRunning = false,
-            acceptsTypedPath = false,
-        )
-    }
-
-    @Provides
-    fun provideFolderSyncControls(folderSync: FolderSync): FolderSyncControls {
-        return folderSync
     }
 
     @Provides
@@ -342,7 +314,7 @@ private fun buildIosApplicationRuntime(
     return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }
 
-private const val MILLIS_PER_SECOND = 1_000
+internal const val MILLIS_PER_SECOND = 1_000
 
 private val runtimeLock = NSRecursiveLock()
 private var processRuntime: IosApplicationRuntime? = null
@@ -353,12 +325,6 @@ private object NoFolderPicker : IosFolderPicker {
     }
 }
 
-private suspend fun pickFolder(picker: IosFolderPicker): String? {
-    return withContext(Dispatchers.Main) {
-        suspendCancellableCoroutine { continuation -> picker.pickFolder { token -> continuation.resume(token) } }
-    }
-}
-
-private fun iosApplicationSupportDirectory(): String {
+internal fun iosApplicationSupportDirectory(): String {
     return "${NSHomeDirectory().trimEnd('/')}/Library/Application Support/Posato"
 }

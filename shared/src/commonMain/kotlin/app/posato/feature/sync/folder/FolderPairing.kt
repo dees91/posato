@@ -23,6 +23,9 @@ private const val OFFER_LIFETIME_MILLIS: Long = 10 * 60_000L
 private const val OFFER_SUFFIX: String = ".ppair"
 private const val MAXIMUM_OFFER_BYTES: Int = 1_024
 private const val BASE32: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+private const val CHARACTER_BITS: Int = 5
+private const val CHARACTER_MASK: Int = 31
+private const val BYTE_MASK: Int = 0xFF
 private val offerMagic = "PSP1".encodeToByteArray()
 private val pairingSalt = "app.posato.folder.pairing.v1".encodeToByteArray()
 private val nameLabel = "offer-name".encodeToByteArray()
@@ -43,30 +46,46 @@ internal class FolderPairing(
     private var currentOffer: String? = null
 
     suspend fun offer(): PairingOfferResult {
-        val binding = (ports.resolveBinding() as? BindingResolution.Available)?.binding ?: return PairingOfferResult.Unavailable
-        val anchor = (ports.readAnchor(binding) as? AnchorReadResult.Found)?.anchor ?: return PairingOfferResult.Unavailable
-        val item = (ports.readItem(binding, anchor.account()) as? KeyItemReadResult.Found)?.value ?: return PairingOfferResult.Unavailable
-        val workspace = ports.workspaceDirectory(binding) ?: return PairingOfferResult.Unavailable
+        val source = offerSource() ?: return PairingOfferResult.Unavailable
         val codeBytes = crypto.randomBytes(CODE_BYTES)?.takeIf { it.size == CODE_BYTES } ?: return PairingOfferResult.Unavailable
-        val itemBytes = item.copyBytes()
         return try {
             dismiss()
-            sweepExpired(workspace)
+            sweepExpired(source.workspace)
             val expiresAt = now() + OFFER_LIFETIME_MILLIS
-            val derived = derive(codeBytes) ?: return PairingOfferResult.Unavailable
-            val nonce = crypto.randomBytes(SyncFormatLimits.AES_NONCE_BYTES) ?: return PairingOfferResult.Unavailable
-            val header = offerMagic + byteArrayOf(OFFER_VERSION.toByte()) + expiresAt.toBytes() + nonce
-            val sealed = crypto.sealAesGcm(derived.key, nonce, header + derived.name, itemBytes) ?: return PairingOfferResult.Unavailable
-            derived.key.fill(0)
-            val file = workspace.child(PAIRING_DIRECTORY).child(derived.name.toHex() + OFFER_SUFFIX)
-            if (withContext(ioDispatcher) { files.writeExclusive(file, header + sealed) } != ExclusiveWrite.CREATED) {
-                return PairingOfferResult.Unavailable
-            }
-            currentOffer = file
-            PairingOfferResult.Offered(PairingOffer(encodeCode(codeBytes), expiresAt))
+            val file = writeOffer(source.workspace, codeBytes, source.item, expiresAt)
+            currentOffer = file ?: currentOffer
+            if (file == null) PairingOfferResult.Unavailable else PairingOfferResult.Offered(PairingOffer(encodeCode(codeBytes), expiresAt))
         } finally {
             codeBytes.fill(0)
-            itemBytes.fill(0)
+            source.item.fill(0)
+        }
+    }
+
+    private suspend fun offerSource(): OfferSource? {
+        val binding = (ports.resolveBinding() as? BindingResolution.Available)?.binding ?: return null
+        val anchor = (ports.readAnchor(binding) as? AnchorReadResult.Found)?.anchor ?: return null
+        val item = (ports.readItem(binding, anchor.account()) as? KeyItemReadResult.Found)?.value ?: return null
+        val workspace = ports.workspaceDirectory(binding) ?: return null
+        return OfferSource(workspace, item.copyBytes())
+    }
+
+    /** Writes the sealed offer and returns its file, or null when it could not be written. */
+    private suspend fun writeOffer(
+        workspace: String,
+        codeBytes: ByteArray,
+        itemBytes: ByteArray,
+        expiresAt: Long,
+    ): String? {
+        val derived = derive(codeBytes) ?: return null
+        try {
+            val nonce = crypto.randomBytes(SyncFormatLimits.AES_NONCE_BYTES) ?: return null
+            val header = offerMagic + byteArrayOf(OFFER_VERSION.toByte()) + expiresAt.toBytes() + nonce
+            val sealed = crypto.sealAesGcm(derived.key, nonce, header + derived.name, itemBytes) ?: return null
+            val file = workspace.child(PAIRING_DIRECTORY).child(derived.name.toHex() + OFFER_SUFFIX)
+            val written = withContext(ioDispatcher) { files.writeExclusive(file, header + sealed) }
+            return file.takeIf { written == ExclusiveWrite.CREATED }
+        } finally {
+            derived.key.fill(0)
         }
     }
 
@@ -170,6 +189,11 @@ internal class FolderPairing(
         val item: ByteArray,
         val expiresAtMillis: Long,
     )
+
+    private class OfferSource(
+        val workspace: String,
+        val item: ByteArray,
+    )
 }
 
 private fun WorkspaceAnchor.account(): KeyAccount {
@@ -181,14 +205,14 @@ internal fun encodeCode(bytes: ByteArray): String {
     var buffer = 0
     var bits = 0
     for (byte in bytes) {
-        buffer = (buffer shl 8) or (byte.toInt() and 0xFF)
-        bits += 8
-        while (bits >= 5) {
-            builder.append(BASE32[(buffer ushr (bits - 5)) and 31])
-            bits -= 5
+        buffer = (buffer shl Byte.SIZE_BITS) or (byte.toInt() and BYTE_MASK)
+        bits += Byte.SIZE_BITS
+        while (bits >= CHARACTER_BITS) {
+            builder.append(BASE32[(buffer ushr (bits - CHARACTER_BITS)) and CHARACTER_MASK])
+            bits -= CHARACTER_BITS
         }
     }
-    if (bits > 0) builder.append(BASE32[(buffer shl (5 - bits)) and 31])
+    if (bits > 0) builder.append(BASE32[(buffer shl (CHARACTER_BITS - bits)) and CHARACTER_MASK])
     builder.append(BASE32[checkValue(builder)])
     return builder.toString()
 }
@@ -203,25 +227,26 @@ internal fun decodeCode(text: String): ByteArray? {
     var bits = 0
     var index = 0
     for (character in body) {
-        buffer = (buffer shl 5) or BASE32.indexOf(character)
-        bits += 5
-        if (bits >= 8 && index < CODE_BYTES) {
-            result[index++] = (buffer ushr (bits - 8)).toByte()
-            bits -= 8
+        buffer = (buffer shl CHARACTER_BITS) or BASE32.indexOf(character)
+        bits += CHARACTER_BITS
+        if (bits >= Byte.SIZE_BITS && index < CODE_BYTES) {
+            result[index++] = (buffer ushr (bits - Byte.SIZE_BITS)).toByte()
+            bits -= Byte.SIZE_BITS
         }
         buffer = buffer and ((1 shl bits) - 1)
     }
     return result.takeIf { buffer == 0 }
 }
 
+/** Weights each character by its odd position, so any single typing error changes the check character. */
 private fun checkValue(body: CharSequence): Int {
-    return body.foldIndexed(0) { index, sum, character -> (sum + (2 * index + 1) * BASE32.indexOf(character)) % 32 }
+    return body.foldIndexed(0) { index, sum, character -> (sum + (2 * index + 1) * BASE32.indexOf(character)) % BASE32.length }
 }
 
 private fun Long.toBytes(): ByteArray {
-    return ByteArray(Long.SIZE_BYTES) { index -> (this ushr (56 - index * 8)).toByte() }
+    return ByteArray(Long.SIZE_BYTES) { index -> (this ushr (Long.SIZE_BITS - Byte.SIZE_BITS * (index + 1))).toByte() }
 }
 
 private fun ByteArray.toLong(): Long {
-    return fold(0L) { value, byte -> (value shl 8) or (byte.toLong() and 0xFF) }
+    return fold(0L) { value, byte -> (value shl Byte.SIZE_BITS) or (byte.toLong() and BYTE_MASK.toLong()) }
 }

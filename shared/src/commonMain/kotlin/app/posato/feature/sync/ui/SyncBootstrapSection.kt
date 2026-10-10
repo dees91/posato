@@ -92,56 +92,85 @@ internal fun SyncBootstrapSection(
     val controls = state.folderControls
     val folderMode = controls.supported && (folder != null || !controls.icloudSupported)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-        PosatoDisclosureRow(
-            onClick = { expanded = !expanded },
-            onClickLabel = stringResource(if (expanded) Res.string.setup_hide_options else Res.string.setup_show_options),
-            headlineContent = { Text(stringResource(if (folderMode) Res.string.sync_folder_title else Res.string.session_icloud_title)) },
-            supportingContent = {
-                PosatoCaption(
-                    stringResource(
-                        when {
-                            checking -> Res.string.sync_checking_key
-                            removingHere -> Res.string.sync_removing_workspace
-                            state.running || snapshot.status == SyncStatus.SYNCING -> Res.string.session_icloud_running
-                            else -> snapshot.status.summary(snapshot.linked)
-                        },
-                    ),
-                )
-            },
-            leadingContent = { PosatoIcon(if (folderMode) PosatoIcons.Folder else PosatoIcons.Cloud, null) },
-            trailingContent = { PosatoIcon(if (expanded) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, null) },
-        )
-        if (expanded) {
-            when {
-                folderMode -> {
-                    FolderOptions(state, snapshot, folder, running, removingHere) { confirmingRemoval = true }
-                }
-
-                else -> {
-                    IcloudOptions(snapshot, running, checking, removingHere, state::sync) { confirmingRemoval = true }
-                    if (controls.supported && !snapshot.linked && !snapshot.joinPending) {
-                        PosatoCaption(stringResource(Res.string.sync_folder_or))
-                        FolderChooser(state, running)
-                    }
-                }
-            }
+        SyncRow(expanded, folderMode, rowSummary(snapshot, checking, removingHere, state.running)) { expanded = !expanded }
+        if (expanded && folderMode) {
+            FolderOptions(state, snapshot, folder, running, removingHere) { confirmingRemoval = true }
+        } else if (expanded) {
+            IcloudAndFolderOptions(state, snapshot, running, removingHere) { confirmingRemoval = true }
         }
     }
     state.offer?.let { offer -> PairingCodeAlert(offer.code, state::closeCode) }
     if (confirmingRemoval) {
-        PosatoAlert(
-            title = stringResource(Res.string.sync_remove_workspace),
-            message = stringResource(if (folderMode) Res.string.sync_folder_remove_confirmation else Res.string.sync_remove_confirmation),
-            onDismiss = { confirmingRemoval = false },
-            actions = listOf(
-                PosatoAlertAction(stringResource(Res.string.sync_cancel_removal), { confirmingRemoval = false }, PosatoAlertRole.Cancel),
-                PosatoAlertAction(stringResource(Res.string.sync_remove_workspace), {
-                    confirmingRemoval = false
-                    state.removeWorkspace()
-                }, PosatoAlertRole.Destructive),
-            ),
-        )
+        RemoveWorkspaceAlert(folderMode, onDismiss = { confirmingRemoval = false }) {
+            confirmingRemoval = false
+            state.removeWorkspace()
+        }
     }
+}
+
+@Composable
+private fun SyncRow(
+    expanded: Boolean,
+    folderMode: Boolean,
+    summary: StringResource,
+    onToggle: () -> Unit,
+) {
+    PosatoDisclosureRow(
+        onClick = onToggle,
+        onClickLabel = stringResource(if (expanded) Res.string.setup_hide_options else Res.string.setup_show_options),
+        headlineContent = { Text(stringResource(if (folderMode) Res.string.sync_folder_title else Res.string.session_icloud_title)) },
+        supportingContent = { PosatoCaption(stringResource(summary)) },
+        leadingContent = { PosatoIcon(if (folderMode) PosatoIcons.Folder else PosatoIcons.Cloud, null) },
+        trailingContent = { PosatoIcon(if (expanded) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, null) },
+    )
+}
+
+/** iCloud on an Apple host, and below it the choice of a folder while no workspace is linked. */
+@Composable
+private fun IcloudAndFolderOptions(
+    state: SyncBootstrapUiState,
+    snapshot: AppleSyncState,
+    running: Boolean,
+    removingHere: Boolean,
+    onRemove: () -> Unit,
+) {
+    IcloudOptions(snapshot, running, state.checking, removingHere, state::sync, onRemove)
+    if (state.folderControls.supported && !snapshot.linked && !snapshot.joinPending) {
+        PosatoCaption(stringResource(Res.string.sync_folder_or))
+        FolderChooser(state, running)
+    }
+}
+
+/** The collapsed row's line: the current activity first, then the outcome of the latest attempt. */
+private fun rowSummary(
+    snapshot: AppleSyncState,
+    checking: Boolean,
+    removingHere: Boolean,
+    running: Boolean,
+): StringResource {
+    return when {
+        checking -> Res.string.sync_checking_key
+        removingHere -> Res.string.sync_removing_workspace
+        running || snapshot.status == SyncStatus.SYNCING -> Res.string.session_icloud_running
+        else -> snapshot.status.summary(snapshot.linked)
+    }
+}
+
+@Composable
+private fun RemoveWorkspaceAlert(
+    folderMode: Boolean,
+    onDismiss: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    PosatoAlert(
+        title = stringResource(Res.string.sync_remove_workspace),
+        message = stringResource(if (folderMode) Res.string.sync_folder_remove_confirmation else Res.string.sync_remove_confirmation),
+        onDismiss = onDismiss,
+        actions = listOf(
+            PosatoAlertAction(stringResource(Res.string.sync_cancel_removal), { onDismiss() }, PosatoAlertRole.Cancel),
+            PosatoAlertAction(stringResource(Res.string.sync_remove_workspace), { onRemove() }, PosatoAlertRole.Destructive),
+        ),
+    )
 }
 
 @Composable

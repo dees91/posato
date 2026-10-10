@@ -121,7 +121,7 @@ public class CatalogApplicationMappings(
                 emptyList()
             } else {
                 Files.readAllLines(file).mapNotNull { line ->
-                    line.split('\t').takeIf { it.size == FIELDS }?.let { Record(it[0], it[1], it[2], it[3]) }
+                    line.split('\t').takeIf { it.size == FIELDS }?.let { Record(it[0], it[1], it[2], it.last()) }
                 }
             }
         } catch (_: IOException) {

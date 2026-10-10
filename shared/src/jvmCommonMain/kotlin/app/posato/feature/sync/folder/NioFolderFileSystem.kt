@@ -11,7 +11,9 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 
-internal object NioFolderFileSystem : FolderFileSystem {
+internal object NioFolderFileSystem : FolderFileSystem, FolderReads by NioFolderReads, FolderWrites by NioFolderWrites
+
+private object NioFolderReads : FolderReads {
     override fun isDirectory(path: String): Boolean {
         return path.toPathOrNull()?.let(Files::isDirectory) == true
     }
@@ -38,6 +40,34 @@ internal object NioFolderFileSystem : FolderFileSystem {
         }
     }
 
+    override fun names(directory: String): List<String>? {
+        val folder = directory.toPathOrNull() ?: return null
+        return try {
+            if (!Files.isDirectory(folder)) {
+                emptyList()
+            } else {
+                Files.list(folder).use { entries -> entries.map { it.fileName.toString() }.toList() }
+            }
+        } catch (_: IOException) {
+            null
+        }
+    }
+
+    override fun canonical(path: String): String? {
+        return try {
+            path.toPathOrNull()?.toRealPath()?.toString()
+        } catch (_: IOException) {
+            null
+        }
+    }
+
+    override fun isWritableDirectory(path: String): Boolean {
+        val directory = path.toPathOrNull() ?: return false
+        return Files.isDirectory(directory) && Files.isWritable(directory)
+    }
+}
+
+private object NioFolderWrites : FolderWrites {
     override fun writeExclusive(
         path: String,
         bytes: ByteArray,
@@ -47,12 +77,7 @@ internal object NioFolderFileSystem : FolderFileSystem {
         return try {
             Files.createDirectories(file.parent)
             Files.write(temporary, bytes)
-            if (Files.exists(file)) {
-                ExclusiveWrite.EXISTS
-            } else {
-                moveIntoPlace(temporary, file)
-                ExclusiveWrite.CREATED
-            }
+            linkOrMoveIntoPlace(temporary, file)
         } catch (_: FileAlreadyExistsException) {
             ExclusiveWrite.EXISTS
         } catch (_: IOException) {
@@ -77,19 +102,6 @@ internal object NioFolderFileSystem : FolderFileSystem {
             false
         } finally {
             deleteQuietly(temporary)
-        }
-    }
-
-    override fun names(directory: String): List<String>? {
-        val folder = directory.toPathOrNull() ?: return null
-        return try {
-            if (!Files.isDirectory(folder)) {
-                emptyList()
-            } else {
-                Files.list(folder).use { entries -> entries.map { it.fileName.toString() }.toList() }
-            }
-        } catch (_: IOException) {
-            null
         }
     }
 
@@ -132,54 +144,58 @@ internal object NioFolderFileSystem : FolderFileSystem {
         }
     }
 
-    override fun canonical(path: String): String? {
-        return try {
-            path.toPathOrNull()?.toRealPath()?.toString()
-        } catch (_: IOException) {
-            null
-        }
-    }
-
-    override fun isWritableDirectory(path: String): Boolean {
-        val directory = path.toPathOrNull() ?: return false
-        return Files.isDirectory(directory) && Files.isWritable(directory)
-    }
-
     override fun restrictToOwner(path: String) {
         path.toPathOrNull()?.let { setPermissions(it, "rw-------") }
     }
+}
 
-    private fun setPermissions(
-        path: Path,
-        permissions: String,
-    ) {
-        try {
-            Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(permissions))
-        } catch (_: UnsupportedOperationException) {
-            return
-        } catch (_: IOException) {
-            return
-        }
+/**
+ * A hard link fails when [file] exists, so two local writers cannot both create it; a file system without hard links,
+ * such as Android's shared storage, falls back to a check and a move.
+ */
+private fun linkOrMoveIntoPlace(
+    temporary: Path,
+    file: Path,
+): ExclusiveWrite {
+    val linked = try {
+        Files.createLink(file, temporary)
+        ExclusiveWrite.CREATED
+    } catch (_: FileAlreadyExistsException) {
+        ExclusiveWrite.EXISTS
+    } catch (_: UnsupportedOperationException) {
+        null
+    } catch (_: IOException) {
+        null
     }
-
-    private fun deleteQuietly(file: Path): Boolean {
-        return try {
-            Files.deleteIfExists(file)
-            true
-        } catch (_: IOException) {
-            false
-        }
+    if (linked != null) return linked
+    if (Files.exists(file)) return ExclusiveWrite.EXISTS
+    try {
+        Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE)
+    } catch (_: AtomicMoveNotSupportedException) {
+        Files.move(temporary, file)
     }
+    return ExclusiveWrite.CREATED
+}
 
-    private fun moveIntoPlace(
-        temporary: Path,
-        file: Path,
-    ) {
-        try {
-            Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE)
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(temporary, file)
-        }
+private fun setPermissions(
+    path: Path,
+    permissions: String,
+) {
+    try {
+        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(permissions))
+    } catch (_: UnsupportedOperationException) {
+        return
+    } catch (_: IOException) {
+        return
+    }
+}
+
+private fun deleteQuietly(file: Path): Boolean {
+    return try {
+        Files.deleteIfExists(file)
+        true
+    } catch (_: IOException) {
+        false
     }
 }
 
