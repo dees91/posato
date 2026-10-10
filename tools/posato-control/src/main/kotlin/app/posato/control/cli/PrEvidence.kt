@@ -26,11 +26,8 @@ data class VerifiedLine(
 /** A line that starts with the verification line, not one that quotes or mentions it. */
 private val VERIFIED = Regex("""^Verified\s+([0-9a-f]{7,40})\b""")
 
-/**
- * Every `run <id>`, also a label passed as `--run-id`. An id holds a digit, so an ordinary word after "run" is not one,
- * and trailing punctuation is not part of it.
- */
-private val RUN_ID = Regex("""\brun\s+([A-Za-z0-9._-]*\d[A-Za-z0-9._-]*)""")
+/** Every `run <word>`; trailing punctuation is not part of it. */
+private val RUN_WORD = Regex("""\brun\s+([A-Za-z0-9._-]+)""")
 
 /** One pull request comment and the login that posted it. */
 data class PrComment(
@@ -38,27 +35,33 @@ data class PrComment(
     val body: String,
 )
 
-/** The verification lines among a pull request's comments, in their order. */
+/**
+ * The verification lines among a pull request's comments, in their order, with the runs each cites: a word after
+ * "run" that holds a digit, as generated ids do, or that names a run directory, as a `--run-id` label may. An ordinary
+ * word after "run" is neither, so a line citing only a label whose run is missing cites nothing.
+ */
 internal fun parseVerifiedLines(
     comments: List<PrComment>,
     trustedAuthors: Set<String>,
+    runExists: (String) -> Boolean,
 ): List<VerifiedLine> = comments.filter { it.author in trustedAuthors }.map { it.body }.flatMap { comment ->
     comment.lines().map { it.trim() }.mapNotNull { line ->
         VERIFIED.find(line)?.let { match ->
-            VerifiedLine(match.groupValues[1], RUN_ID.findAll(line).map { it.groupValues[1].trimEnd('.', '-', '_') }.toList())
+            val words = RUN_WORD.findAll(line).map { it.groupValues[1].trimEnd('.', '-', '_') }
+            VerifiedLine(match.groupValues[1], words.filter { word -> word.any(Char::isDigit) || runExists(word) }.toList())
         }
     }
 }
 
 /**
  * The paths whose change after the verified commit invalidates the evidence: the application sources and their
- * builds, and the verification driver when the pull request changes it. Documentation, wiki, and skills may change
- * after the run.
+ * builds, and the verification driver when the pull request changes it. Documentation, also a README inside those
+ * directories, wiki, and skills may change after the run.
  */
 internal fun productPaths(
     paths: Collection<String>,
     includeTooling: Boolean,
-): List<String> = paths.filter { path ->
+): List<String> = paths.filterNot { it.endsWith(".md") }.filter { path ->
     PRODUCT_PREFIXES.any { path.startsWith(it) } || path in PRODUCT_FILES || (includeTooling && path.startsWith(TOOLING_PREFIX))
 }.sorted()
 
@@ -99,7 +102,8 @@ class PrEvidenceCommand :
             val body = comment.jsonObject
             PrComment(body["author"]?.jsonObject?.get("login")?.jsonPrimitive?.content.orEmpty(), body["body"]?.jsonPrimitive?.content.orEmpty())
         }
-        val lines = parseVerifiedLines(comments, setOf(author, owner))
+        val runs = session.layout.runsDirectory
+        val lines = parseVerifiedLines(comments, setOf(author, owner)) { runs.resolve(it).exists() }
         val last = lines.lastOrNull() ?: throw ControlException(
             ErrorCode.ASSERTION_FAILED,
             "Pull request #$pr has no `Verified <sha> on <target>: ... run <run-id>` line at the start of a comment by its author or $owner.",
@@ -113,7 +117,8 @@ class PrEvidenceCommand :
         val scope = productPaths(headPaths + git.changed(verifiedBase, last.commit), headPaths.any { it.startsWith(TOOLING_PREFIX) })
         val product = scope.filter { path -> git.patchId(verifiedBase, last.commit, path) != git.patchId(headBase, head, path) }
         val cited = lines.flatMap { it.runIds }.distinct()
-        val missing = cited.filterNot { session.layout.runsDirectory.resolve(it).exists() }
+        val missing = cited.filterNot { runs.resolve(it).exists() }
+        val uncited = lines.filter { it.runIds.isEmpty() }.map { it.commit }
         val report = buildJsonObject {
             put("pr", pr)
             put("head", head)
@@ -122,10 +127,12 @@ class PrEvidenceCommand :
             putJsonArray("productChangesSinceVerified") { product.forEach { add(it) } }
             putJsonArray("citedRuns") { cited.forEach { add(it) } }
             putJsonArray("missingRuns") { missing.forEach { add(it) } }
+            putJsonArray("linesWithoutRun") { uncited.forEach { add(it) } }
         }
         val problems = listOfNotNull(
             "product code changed after ${last.commit}: ${product.joinToString()}".takeIf { product.isNotEmpty() },
             "cited runs missing under build/verification/runs: ${missing.joinToString()}".takeIf { missing.isNotEmpty() },
+            "Verified lines citing no existing run: ${uncited.joinToString()}".takeIf { uncited.isNotEmpty() },
         )
         if (problems.isNotEmpty()) {
             throw ControlException(

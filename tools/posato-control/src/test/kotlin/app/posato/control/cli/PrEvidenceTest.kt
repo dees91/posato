@@ -22,8 +22,26 @@ class PrEvidenceTest {
             PrComment("someone-else", "Verified 2222222 on desktop: drive-by, run other-1"),
             PrComment("dees91", "Earlier: we Verified 3333333 inline, run inline-1"),
         )
-        val parsed = parseVerifiedLines(comments, trustedAuthors = setOf("dees91"))
+        val parsed = parseVerifiedLines(comments, trustedAuthors = setOf("dees91"), runExists = { false })
         assertEquals(listOf("2dd1fac3"), parsed.map { it.commit })
         assertEquals(listOf("20261009-220816-023c", "ac01-9103"), parsed.single().runIds)
+    }
+
+    /** A label without a digit passed the gate with no cited run (review of 4fab21d). */
+    @Test
+    fun `given a label without a digit when its run exists then it is cited, otherwise the line cites nothing`() {
+        val comments = listOf(
+            PrComment("dees91", "Verified 4444444 on desktop: passed, run smoke"),
+            PrComment("dees91", "Verified 5555555 on desktop: passed, run ghost"),
+        )
+        val parsed = parseVerifiedLines(comments, trustedAuthors = setOf("dees91"), runExists = { it == "smoke" })
+        assertEquals(listOf(listOf("smoke"), emptyList()), parsed.map { it.runIds })
+    }
+
+    /** Adding only the driver's README after the verified commit failed the gate (review of 4fab21d). */
+    @Test
+    fun `given documentation inside product and tooling directories when scoping then it is not product code`() {
+        val paths = listOf("tools/posato-control/README.md", "shared/notes.md", "tools/posato-control/src/Main.kt")
+        assertEquals(listOf("tools/posato-control/src/Main.kt"), productPaths(paths, includeTooling = true))
     }
 }

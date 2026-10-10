@@ -54,11 +54,11 @@ class VmLifecycle(
         waitMinutes: Long = 0,
     ): JsonObject {
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
-        val diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
-        diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
+        // Fails before the JDK copy and any wait; the space is checked again right before the clone.
+        lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
         val jdk = hostJdk(context)
         val started = System.currentTimeMillis()
-        val waitedMs = createUnderLock(context, tart, CloneRequest(line, golden, jdk, allowLowDisk, waitMinutes))
+        val (waitedMs, diskWarning) = createUnderLock(context, tart, CloneRequest(line, golden, jdk, allowLowDisk, waitMinutes))
         val vncHold = VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
@@ -233,17 +233,20 @@ private data class CloneRequest(
  * its owner marker, and the running guest are one step for every session; the two-guest limit is checked inside
  * it too. With [waitMinutes] it waits, lock released, while what blocks is still in use: a running guest or a
  * clone whose creating process lives. A stopped clone left by an exited creator never frees itself, so it is
- * refused at once. Returns the milliseconds spent waiting; a refusal carries them as `waitedMs`.
+ * refused at once. Free space is measured again right before the clone, since other sessions may have used it while
+ * this one waited. Returns the milliseconds spent waiting and the low-disk warning, if any; a refusal carries the
+ * milliseconds as `waitedMs`.
  */
 private fun createUnderLock(
     context: RunContext,
     tart: Tart,
     request: CloneRequest,
-): Long {
+): Pair<Long, String?> {
     val line = request.line
     val started = System.currentTimeMillis()
     val deadline = started + Duration.ofMinutes(request.waitMinutes).toMillis()
     val owner = { name: String -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
+    var diskWarning: String? = null
     while (true) {
         val created = try {
             withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
@@ -254,6 +257,8 @@ private fun createUnderLock(
                     return@withCreateLock false
                 }
                 refuseClone(vms, request.golden, line.cloneName, owner)
+                diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), request.allowLowDisk)
+                diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
                 tart.clone(request.golden, line.cloneName)
                 recordCloneOwner(context, line.cloneName)
                 // A golden VM once used as a clone could carry the marker; only this creation decides it.
@@ -274,7 +279,7 @@ private fun createUnderLock(
                 JsonObject(mapOf("waitedMs" to JsonPrimitive(waited))),
             )
         }
-        if (created) return System.currentTimeMillis() - started
+        if (created) return (System.currentTimeMillis() - started) to diskWarning
         Thread.sleep(minOf(LINE_POLL_MS, (deadline - System.currentTimeMillis()).coerceAtLeast(1)))
     }
 }
