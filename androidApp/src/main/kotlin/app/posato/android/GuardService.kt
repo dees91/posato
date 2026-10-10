@@ -30,6 +30,9 @@ import kotlinx.coroutines.launch
 class GuardService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var lastBlockMillis = 0L
+    private var queriedUntil = 0L
+    private var front: String? = null
+    private var frontAt = 0L
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -77,15 +80,18 @@ class GuardService : Service() {
         }
     }
 
+    /**
+     * Follows the app in front across polls, so an app that was already open when a pause started is covered too; the
+     * first poll looks back far enough to find it.
+     */
     private fun blockIfInFront(
         usage: UsageStatsManager,
         packages: Set<String>,
     ) {
         val now = System.currentTimeMillis()
-        val events = usage.queryEvents(now - LOOKBACK_MILLIS, now)
+        val events = usage.queryEvents(if (queriedUntil == 0L) now - INITIAL_LOOKBACK_MILLIS else queriedUntil, now)
+        queriedUntil = now
         val event = UsageEvents.Event()
-        var front: String? = null
-        var frontAt = 0L
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
             if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
@@ -93,7 +99,7 @@ class GuardService : Service() {
                 frontAt = event.timeStamp
             }
         }
-        if (front != null && front in packages && frontAt > lastBlockMillis) {
+        if (front in packages && frontAt > lastBlockMillis) {
             lastBlockMillis = now
             startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
         }
@@ -116,7 +122,7 @@ class GuardService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL = "posato-guard"
         private const val WATCH_MILLIS = 500L
-        private const val LOOKBACK_MILLIS = 10_000L
+        private const val INITIAL_LOOKBACK_MILLIS = 3_600_000L
         private const val WAKE_INTERVAL_MILLIS = 60_000L
 
         fun start(context: Context) {

@@ -3,7 +3,13 @@ package app.posato.android
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.VpnService
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -22,6 +28,22 @@ class DnsVpnService : VpnService() {
     private var tunnel: ParcelFileDescriptor? = null
     private var reader: Thread? = null
     private val forwarders = Executors.newFixedThreadPool(FORWARDERS)
+
+    /** The network underneath and its DNS servers, followed as the device moves between Wi-Fi and mobile data. */
+    @Volatile
+    private var underlying: Underlying? = null
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onLinkPropertiesChanged(
+            network: Network,
+            linkProperties: LinkProperties,
+        ) {
+            underlying = Underlying(network, linkProperties.dnsServers)
+        }
+
+        override fun onLost(network: Network) {
+            if (underlying?.network == network) underlying = null
+        }
+    }
 
     override fun onStartCommand(
         intent: Intent?,
@@ -50,7 +72,11 @@ class DnsVpnService : VpnService() {
     }
 
     private fun startTunnel() {
-        val upstream = upstreamDns()
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+            .build()
+        runCatching { connectivity().registerBestMatchingNetworkCallback(request, networkCallback, Handler(Looper.getMainLooper())) }
         val established = Builder()
             .setSession("Posato")
             .addAddress(TUNNEL_ADDRESS, PREFIX_32)
@@ -59,33 +85,30 @@ class DnsVpnService : VpnService() {
             .setBlocking(true)
             .establish() ?: return
         tunnel = established
-        reader = Thread({ serve(established, upstream) }, "posato-dns").also { it.start() }
+        reader = Thread({ serve(established) }, "posato-dns").also { it.start() }
     }
 
     private fun stopTunnel() {
+        runCatching { connectivity().unregisterNetworkCallback(networkCallback) }
+        underlying = null
         reader?.interrupt()
         reader = null
         runCatching { tunnel?.close() }
         tunnel = null
     }
 
-    private fun serve(
-        established: ParcelFileDescriptor,
-        upstream: List<InetAddress>,
-    ) {
+    private fun serve(established: ParcelFileDescriptor) {
         val input = FileInputStream(established.fileDescriptor)
         val output = FileOutputStream(established.fileDescriptor)
         val buffer = ByteArray(MAX_PACKET)
         try {
             while (!Thread.currentThread().isInterrupted) {
                 val length = input.read(buffer)
-                if (length <= 0) continue
-                val question = DnsPacket.parse(buffer.copyOf(length)) ?: continue
-                if (question.destinationPort != DNS_PORT) continue
-                if (blocked(question.name)) {
-                    synchronized(output) { output.write(question.blockedReply()) }
-                } else {
-                    forwarders.execute { forward(question, upstream, output) }
+                val question = if (length > 0) DnsPacket.parse(buffer.copyOf(length))?.takeIf { it.destinationPort == DNS_PORT } else null
+                when {
+                    question == null -> Unit
+                    blocked(question.name) -> synchronized(output) { output.write(question.blockedReply()) }
+                    else -> forwarders.execute { forward(question, output) }
                 }
             }
         } catch (_: IOException) {
@@ -98,15 +121,17 @@ class DnsVpnService : VpnService() {
         return name in domains || (name.startsWith(WWW) && name.removePrefix(WWW) in domains)
     }
 
+    /** Forwards over a socket bound to the network underneath, read for each question so a network change is followed. */
     private fun forward(
         question: DnsPacket,
-        upstream: List<InetAddress>,
         output: FileOutputStream,
     ) {
-        val server = upstream.firstOrNull() ?: return
+        val current = underlying ?: return
+        val server = current.servers.firstOrNull { it.address.size == IPV4_BYTES } ?: InetAddress.getByName(FALLBACK_DNS)
         try {
             DatagramSocket().use { socket ->
                 protect(socket)
+                current.network.bindSocket(socket)
                 socket.soTimeout = FORWARD_TIMEOUT_MILLIS
                 val query = question.dns
                 socket.send(DatagramPacket(query, query.size, InetSocketAddress(server, DNS_PORT)))
@@ -119,12 +144,14 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private fun upstreamDns(): List<InetAddress> {
-        val connectivity = getSystemService(ConnectivityManager::class.java)
-        val network = connectivity.activeNetwork ?: return listOf(InetAddress.getByName(FALLBACK_DNS))
-        val servers = connectivity.getLinkProperties(network)?.dnsServers.orEmpty().filter { it.address.size == IPV4_BYTES }
-        return servers.ifEmpty { listOf(InetAddress.getByName(FALLBACK_DNS)) }
+    private fun connectivity(): ConnectivityManager {
+        return getSystemService(ConnectivityManager::class.java)
     }
+
+    private class Underlying(
+        val network: Network,
+        val servers: List<InetAddress>,
+    )
 
     companion object {
         private const val TUNNEL_ADDRESS = "10.111.0.1"
