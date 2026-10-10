@@ -1235,6 +1235,21 @@ below. This queue retains idea provenance without expanding the original MVP.
     authorization changes, so iOS is most likely affected too (`open`: a
     test-iPhone run). Filed as an agent proposal under the maintainer's
     delegation of 2026-10-09. Owner: backlog row `TARGETS-010`.
+38. **A stale "Resume restrictions" notice that loops after a pause ends.**
+    `observed` (2026-10-10, the maintainer's Mac on published 1.4.0): after
+    a pause ended naturally, Session showed "No session active" together with
+    "Restrictions not active on this Mac." and a "Resume restrictions" button
+    that switched between enabled and disabled several times a second; a
+    relaunch cleared it. `observed` in an isolated probe of the session
+    owner: after an earlier clean end in the same app run, a session adopted
+    from another device in `RESUME_REQUIRED` that expires unresumed makes
+    `clearAfterEnd` return early without updating the view, the transition is
+    never treated as converged, and the owner loops with no delay (20,001
+    store reads before the probe stopped). Display and CPU only; nothing
+    stays blocked. Not a 1.4 regression: the early return dates from
+    `SYNC-012`, present since at least 1.0.0. `inferred`: the trigger was a pause started on the
+    iPhone. Filed as an agent proposal under the maintainer's delegation of
+    2026-10-09. Owner: backlog row `SESSION-009`.
 
 ## Later platform questions
 
