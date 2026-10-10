@@ -29,7 +29,9 @@ each of them.
   helper, desktop-entry application choice, and `posato-control --vm linux`.
 - M3 `ANDROID-001`: `:androidApp`, DNS `VpnService`, usage-access app
   blocking, schedules with a foreground service, and `posato-control -t android`.
-- Non-goals: iOS folder mode, Windows, migration from iCloud to a folder,
+- M1 also gives iOS the folder mode (`user-confirmed`, 2026-10-10): Files
+  picker, security-scoped bookmark, verified on the test iPhone.
+- Non-goals: Windows, migration from iCloud to a folder,
   device revocation, pause pages on Linux and Android, Google Play, publishing
   (`RELEASE-007`), x86-64 Linux E2E.
 - ADR 0006 format 1 and the macOS enforcement contracts stay unchanged.
@@ -58,6 +60,9 @@ each of them.
   workspace; the other members show "Sync needs attention" and can remove
   their local copy, and none re-creates it. A Mac linked to iCloud must
   remove that workspace before it can choose a folder.
+- `AC-07` — The test iPhone chooses a folder in the Files picker, joins a
+  folder workspace with a code, and a pause started on a Tart Mac in that
+  workspace reaches it when Posato comes to the front.
 
 ## Verification
 

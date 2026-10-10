@@ -8,8 +8,9 @@
 - **Provenance:** the direction is `user-confirmed` (2026-10-10, release 1.5
   composition): Linux and Android, synchronization through a user-selected
   folder, the Mac desktop application in the same workspace, a one-time
-  pairing code without device revocation, and Android application blocking
-  without an accessibility service. The mechanisms below are
+  pairing code without device revocation, Android application blocking
+  without an accessibility service, and (later the same day) iOS in folder
+  mode as well. The mechanisms below are
   `agent-delegated` and need `user-confirmed` before this ADR is accepted.
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
@@ -75,8 +76,13 @@ be visible for up to one polling interval before the block screen covers it.
 ### Folder workspace
 
 A workspace has exactly one transport: CloudKit (iOS and the Mac, as today)
-or one folder. The Mac and Linux desktop applications and the Android
-application offer the folder. iOS stays on CloudKit.
+or one folder. Every application offers the folder: the Mac, Linux, Android,
+and iOS. On iOS the person picks the folder in the Files picker, from any
+location a File Provider offers (iCloud Drive, Dropbox, OneDrive, and
+others); Posato keeps a security-scoped bookmark to it and reads and writes
+through file coordination. The iOS application synchronizes the folder when
+it comes to the front and in its background refresh time; it cannot poll
+while suspended.
 
 Layout under the chosen folder, all names fixed by Posato:
 
@@ -125,7 +131,8 @@ Posato/
 - **Key storage.** Android wraps the workspace key with a non-exportable
   AES key in Android Keystore. Desktop hosts keep it in a file readable
   only by the user (`0600`, directory `0700`) in the application data
-  directory, like an SSH private key; the Mac does the same in folder mode.
+  directory, like an SSH private key; the Mac does the same in folder mode,
+  and iOS keeps the file in its container with complete file protection.
   This is weaker than the Keychain and is stated on the limits page.
   Android excludes the key and the database from backup, and a Keystore key
   that is no longer usable makes the device rejoin with a new code.
