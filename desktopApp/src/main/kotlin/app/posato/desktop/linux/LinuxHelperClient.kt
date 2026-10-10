@@ -14,8 +14,9 @@ import java.nio.file.Paths
 internal class LinuxHelperClient(
     private val socket: Path = Paths.get("/run/posato/helper.sock"),
 ) {
+    /** Whether the service answers; a socket file left by a stopped service does not count. */
     fun installed(): Boolean {
-        return Files.exists(socket)
+        return send("status")?.startsWith("ok") == true
     }
 
     fun send(request: String): String? {
