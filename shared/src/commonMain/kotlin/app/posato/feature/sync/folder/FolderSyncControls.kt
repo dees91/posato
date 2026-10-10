@@ -49,6 +49,11 @@ internal interface FolderSyncControls {
             return false
         }
 
+    val acceptsTypedPath: Boolean
+        get() {
+            return true
+        }
+
     suspend fun browse(): String? {
         return null
     }
