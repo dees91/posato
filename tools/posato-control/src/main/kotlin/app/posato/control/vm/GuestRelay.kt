@@ -46,21 +46,25 @@ object GuestRelay {
         val runId = try {
             relayRunId(forwarded) ?: RunContext.newRunId().also { forwarded.addAll(listOf(RUN_ID_OPTION, it)) }
         } catch (exception: ControlException) {
-            return report(forwarded, "none", exception)
+            return report(forwarded, "none", exception, null)
         }
         val context = RunContext(layout, LocalConfiguration.load(layout), runId, layout.runsDirectory, verbose = false, timeout = Tart.EXEC_TIMEOUT)
         return try {
             relay(context, line, forwarded, runId)
         } catch (exception: ControlException) {
-            report(forwarded, runId, exception)
+            report(forwarded, runId, exception, layout.runsDirectory.resolve(runId))
         }
     }
 
-    /** Prints a refusal as the envelope the command itself would have printed, and returns its exit code. */
+    /**
+     * Prints a refusal as the envelope the command itself would have printed, keeps it in [runDirectory] as every
+     * command does, and returns its exit code.
+     */
     private fun report(
         forwarded: List<String>,
         runId: String,
         exception: ControlException,
+        runDirectory: Path?,
     ): Int {
         val envelope = Envelope(
             ok = false,
@@ -70,11 +74,14 @@ object GuestRelay {
             result = exception.result,
             error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
         )
-        if (HUMAN_OPTION in forwarded) {
-            envelope.humanLines().forEach(::println)
-        } else {
-            println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+        val json = ControlJson.pretty.encodeToString(Envelope.serializer(), envelope)
+        runDirectory?.let { directory ->
+            runCatching {
+                Files.createDirectories(directory)
+                Files.writeString(directory.resolve("envelope.json"), json)
+            }
         }
+        if (HUMAN_OPTION in forwarded) envelope.humanLines().forEach(::println) else println(json)
         return exception.code.exitCode
     }
 
