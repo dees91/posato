@@ -131,7 +131,7 @@ The chain works in this order:
 5. It builds the DMG, then signs, notarizes, and staples that too.
 6. It checks both artifacts with `stapler validate` and `spctl`.
 
-A rejected submission leaves the notarization log under the task's `build/tmp` directory. The first signing run may raise a keychain prompt asking `codesign` to use the Developer ID key.
+A rejected submission leaves the notarization log under the task's `build/tmp` directory. The first signing run may raise a keychain prompt asking `codesign` to use the Developer ID key, unless access is pre-granted ([Releasing](releasing.md#prerequisites)).
 
 ### Intel builds
 
@@ -175,7 +175,7 @@ To build a release together with its signed feed:
   -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
 ```
 
-The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` (`Posato-<version>-intel.dmg` for x86-64) into a clean `build/compose/binaries/main/release-feed/<architecture>/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key. The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
+The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` (`Posato-<version>-intel.dmg` for x86-64) into a clean `build/compose/binaries/main/release-feed/<architecture>/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key unless access is pre-granted ([Releasing](releasing.md#prerequisites)). The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
 
 - both the feed signature and the archive signature verify;
 - the feed has exactly one item, whose `sparkle:version` equals `CFBundleVersion` and exceeds the release floor above;

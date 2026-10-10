@@ -51,7 +51,8 @@ Follow `releasing.md`. Differences for 1.4:
 
 - The agent does everything except the maintainer touchpoints listed in
   the [execution record](../executions/release-006-release-1-4.md#plan):
-  the Keychain prompts, one action per message, and the publication go.
+  the publication go; Keychain access is pre-granted (`user-confirmed`
+  2026-10-10).
 - No new features. A defect found here gets its own row unless the release
   is held for it.
 
@@ -81,8 +82,9 @@ review before tagging.
 
 ## Decisions or blockers
 
-- **Blocker (maintainer):** the Keychain prompts during signing; the
-  publication go.
+- **Blocker (maintainer):** the publication go (given in advance,
+  `user-confirmed` 2026-10-10). Keychain prompts are superseded: access is
+  pre-granted with Always Allow (`user-confirmed` 2026-10-10).
 - **`user-confirmed` (2026-10-10):** the reduced matrix in the record, App
   Store release type `after-approval`, and claiming iOS 26 only, as in 1.3.
 - **Decided by the agent under the maintainer's delegation (2026-10-09):**

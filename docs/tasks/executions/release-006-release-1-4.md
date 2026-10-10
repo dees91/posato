@@ -104,7 +104,9 @@
    for Updates on 1.4.0 against the stable feed answers up to date (the new
    relaunch callback did not break the updater).
    - **Rollback:** as in `releasing.md` (`gh release edit v1.3.0 --latest`,
-     hold iOS, revert the packaging commit), plus: v1.3.0 has both feeds, so
+     hold iOS), but revert only the public files `DOCS-005` changed
+     (README, `website/`, the limits page) instead of its whole commit,
+     plus: v1.3.0 has both feeds, so
      the 1.3 Intel 404 exception no longer applies, and a fix build is 30 or
      higher with `-PposatoMacOsPreviousBuildNumber=29`.
 8. **iOS submission and public checks**; milestone `1.4.0` closed;
@@ -113,11 +115,10 @@
 
 **Maintainer touchpoints, nothing else attended:**
 
-- Signing in step 3 runs back to back while the maintainer is present, one
-  Keychain action per message, never Always Allow for the release key: the
-  Developer ID key (arm64, x86-64, and the second-clone verification
-  candidate), the release update key (two feeds), and the Apple
-  Distribution key at iOS export.
+- `superseded`: signing in step 3 was to run back to back with the
+  maintainer present and never Always Allow for the release key. The
+  maintainer's Keychain had access pre-granted, which they confirmed as the
+  practice (`user-confirmed` 2026-10-10, below), so no prompt appeared.
 - Anything App Store Connect cannot do through the API (an agreement or an
   export-compliance question), if it comes up.
 - The publication go before step 6.
@@ -156,7 +157,15 @@ outside the release gate.
   1.4.0` on `main` `d0662fa3` (with `DOCS-005` #163 merged, so the appcast
   notes and store files are final) plus this row's brief and record. Clean
   clone of R: `./gradlew quality iosSwiftTest` passed (7 min 56 s).
-- **Host incident:** macOS 27.0.1 on the build Mac had no Rosetta, so the
+- **Deviation:** `DOCS-005` (#163) merged before R rather than at
+  publication, so the public README, site, and limits page claimed 1.4 from
+  that merge on; publication follows promptly, and the rollback above is
+  scoped to those files.
+- **Reruns:** the first arm64 feed run stopped at configuration because the
+  notes path was relative to `desktopApp/` ("The release notes file
+  1.4.0-appcast-notes.txt does not exist"); it was rerun with an absolute
+  path. Nothing was signed by the failed run.
+- **Host incident** (`observed`, once): macOS 27.0.1 on the build Mac had no Rosetta, so the
   first x86-64 build stopped at `:desktopApp:checkRuntime` (bad CPU type for
   the x86-64 Temurin `java`) before any signing. The maintainer installed
   Rosetta 2 (`softwareupdate --install-rosetta`); `releasing.md` now checks
@@ -226,4 +235,29 @@ Deviation: the `peer` 1.3.0 installation holds no application, because the
 1.3.0 picker could not be driven (`PROCESS_NOT_ALLOWED` for the helper
 process); data retention after the update is checked on the sets, websites,
 schedule, and helper.
+
+### TB-08 and T-13 review of the release artifacts
+
+- R's product sources equal `main` `d0662fa3`; R differs only in
+  `Version.xcconfig` and this row's documentation.
+- New since `v1.3.0`: the Sparkle relaunch callback that lets an update
+  replace Posato without the quit question (`MACOS-026`); the daemon's
+  connection counting and idle exit, the readiness retry, and the 30 s and
+  45 s signing-check limits (`MACOS-027`); the macOS removal budget and the
+  verification seams, compiled out of every release build (`SYNC-021`); the
+  interface changes of `DESIGN-004` and `SESSION-007`. No entitlement,
+  stored-data schema, or privacy-manifest change: the application, helper,
+  and companion entitlements equal 1.3.0's in both DMGs.
+- Both DMGs: Notarized Developer ID, stapled, strict deep verification,
+  minimum macOS 13.0, no Rosetta switch, single-architecture Mach-O files,
+  Temurin 21.0.12.1, `SUFeedURL` per architecture with one `SUPublicEDKey`,
+  no seam key or marker.
+- Each feed holds one item: build 29, 1.4.0, minimum 13.0, enclosure under
+  `releases/download/v1.4.0/` with the DMG's length; the build task verified
+  both signatures against the embedded key.
+- The IPA: Apple Distribution on the app and the extension, Family Controls,
+  the app group, CloudKit Production, `get-task-allow` false, both privacy
+  manifests.
+- The release key stayed in the maintainer's Keychain; access to it is
+  pre-granted, an accepted residual risk recorded under `T-13`.
 
