@@ -95,11 +95,26 @@ internal class DesktopEntryCatalog(
         val command = tokens.dropWhile { it == "env" || it.contains('=') }.firstOrNull()?.trim('"') ?: return null
         if (command.startsWith("/snap/bin/")) return "/snap/${command.removePrefix("/snap/bin/").substringBefore('.')}/"
         val path = if (command.startsWith("/")) Paths.get(command) else searchPath(command) ?: return null
-        return try {
-            path.toRealPath().toString()
+        val real = try {
+            path.toRealPath()
         } catch (_: IOException) {
-            null
+            return null
         }
+        // Ending an interpreter or a launcher would end every program it runs, and a script is not the process that
+        // runs, so only a native program the entry starts itself can be paused.
+        return real.toString().takeIf { isNativeProgram(real) && !isLauncher(real.fileName.toString()) }
+    }
+
+    private fun isNativeProgram(file: Path): Boolean {
+        return try {
+            Files.newInputStream(file).use { input -> input.readNBytes(ELF_MAGIC.size).contentEquals(ELF_MAGIC) }
+        } catch (_: IOException) {
+            false
+        }
+    }
+
+    private fun isLauncher(name: String): Boolean {
+        return launcherNames.matches(name)
     }
 
     private fun searchPath(command: String): Path? {
@@ -118,6 +133,11 @@ internal class DesktopEntryCatalog(
     }
 
     private companion object {
+        val ELF_MAGIC = byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte())
+        val launcherNames = Regex(
+            "(ba|da|z|fi|k|c|tc)?sh|env|flatpak|snap|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|node(js)?|java|lua[0-9.]*|php[0-9.]*|" +
+                "gjs|gjs-console|qmlscene|mono|wine[0-9]*|xdg-open|gio|exo-open|electron[0-9]*",
+        )
         const val PADDING = 12
         const val WIDTH = 420
         const val HEIGHT = 520

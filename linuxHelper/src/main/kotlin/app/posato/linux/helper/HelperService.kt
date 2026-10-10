@@ -38,8 +38,19 @@ internal class HelperService(
         Runtime.getRuntime().addShutdownHook(Thread { Files.deleteIfExists(paths.socket) })
         val timer = Executors.newSingleThreadScheduledExecutor()
         timer.scheduleWithFixedDelay(::tick, 0, TICK_MILLIS, TimeUnit.MILLISECONDS)
+        val workers = Executors.newFixedThreadPool(CONNECTION_WORKERS)
         while (true) {
-            server.accept().use(::answer)
+            val channel = try {
+                server.accept()
+            } catch (_: IOException) {
+                continue
+            }
+            // A client that never sends its line is cut off, so it cannot hold a worker.
+            val deadline = timer.schedule({ closeQuietly(channel) }, CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            workers.execute {
+                channel.use(::answer)
+                deadline.cancel(false)
+            }
         }
     }
 
@@ -78,28 +89,34 @@ internal class HelperService(
         }
     }
 
+    /** Any failure of one connection, such as a client that left before the answer, ends only that connection. */
     private fun answer(channel: SocketChannel) {
-        val response = try {
+        try {
             val peer = channel.getOption(ExtendedSocketOptions.SO_PEERCRED)
-            if (peer.user.name != person.name && peer.user.name != ROOT) {
+            val response = if (peer.user.name != person.name && peer.user.name != ROOT) {
                 "error\tpeer"
             } else {
                 HelperRequest.parse(readLine(channel))?.let(::handle) ?: "error\trequest"
             }
+            channel.write(ByteBuffer.wrap("$response\n".toByteArray(StandardCharsets.UTF_8)))
         } catch (_: IOException) {
-            "error\tio"
+            return
+        } catch (_: RuntimeException) {
+            return
         }
-        channel.write(ByteBuffer.wrap("$response\n".toByteArray(StandardCharsets.UTF_8)))
     }
 
+    /** A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. */
     private fun tick() {
-        synchronized(lock) {
-            val applied = state.applied ?: return
-            if (now() >= applied.endEpochMillis) {
-                writeHosts(emptyList())
-                save(HelperState(null, applied.sessionId))
-            } else {
-                endChosenProcesses()
+        runCatching {
+            synchronized(lock) {
+                val applied = state.applied ?: return@runCatching
+                if (now() >= applied.endEpochMillis) {
+                    writeHosts(emptyList())
+                    save(HelperState(null, applied.sessionId))
+                } else {
+                    endChosenProcesses()
+                }
             }
         }
     }
@@ -139,8 +156,18 @@ internal class HelperService(
         return String(buffer.array(), 0, buffer.position(), StandardCharsets.UTF_8).substringBefore('\n')
     }
 
+    private fun closeQuietly(channel: SocketChannel) {
+        try {
+            channel.close()
+        } catch (_: IOException) {
+            return
+        }
+    }
+
     private companion object {
         const val TICK_MILLIS = 1_000L
+        const val CONNECTION_WORKERS = 4
+        const val CONNECTION_TIMEOUT_MILLIS = 5_000L
         const val MAX_REQUEST_BYTES = 1_048_576
         const val ROOT = "root"
     }

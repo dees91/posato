@@ -28,6 +28,14 @@ class HelperRequestTest {
     }
 
     @Test
+    fun `given a directory matcher other than one snap's directory when parsed then it is refused`() {
+        assertNull(HelperRequest.parse("apply\ts\t1\texample.org\t/"))
+        assertNull(HelperRequest.parse("apply\ts\t1\texample.org\t/usr/"))
+        assertNull(HelperRequest.parse("apply\ts\t1\texample.org\t/snap/"))
+        assertNull(HelperRequest.parse("apply\ts\t1\texample.org\t/snap/firefox/current/"))
+    }
+
+    @Test
     fun `given too many hosts or a relative or controlled executable path when parsed then it is refused`() {
         val many = (0..4_096).joinToString(",") { "h$it.example" }
         assertNull(HelperRequest.parse("apply\ts\t1\t$many\t"))
