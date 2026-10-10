@@ -58,8 +58,10 @@ or plan a schedule. App choices stay on the device where you made them.
 
 ### Start a timed pause
 
-Choose a pause set and a duration from **5 minutes to 24 hours**, review your
-choices, and start the session. Posato blocks your chosen websites and apps on that device,
+Choose a pause set and a duration: a quick choice from 25 minutes to 8 hours,
+**Until end of day**, or any length from **5 minutes to 24 hours** (up to 23
+hours 59 minutes on iPhone). Review your
+choices and start the session. Posato blocks your chosen websites and apps on that device,
 within the [limits](#limits) below. The session ends at the selected time or
 when you deliberately end it early. On iPhone, restrictions can linger after it
 ends. On a Mac, a one-time setup lets pauses and schedules start without asking

@@ -957,10 +957,10 @@ badges and counts have accessible labels.
   the lengths (labels `25m` … `8h`, read in full as "25 minutes" … "8 hours"),
   a one-segment control for **Until end of day**, and the system countdown
   wheel, without the eyebrow or Cancel. The set and the iOS layout are
-  `user-confirmed` (2026-10-09, `SESSION-007`); the single Mac group and the
-  iOS reflow to two rows of three when large text does not fit six are decided
-  by the agent under the maintainer's delegation of 2026-10-09 and await the
-  maintainer's confirmation.
+  `user-confirmed` (2026-10-09, `SESSION-007`). The single Mac group with
+  **Until end of day**, its visible labels (25 min … 8 h), and the iOS reflow
+  to two rows of three when large text does not fit six are `user-confirmed`
+  (2026-10-10, by questionnaire in `DOCS-005`).
 - **Until end of day** is an end time, not a length: the pause ends at the next
   local midnight. It is shown only while that midnight is 5 minutes to 24 hours
   away, and Start keeps the midnight that Review showed, refusing as too short
@@ -969,8 +969,9 @@ badges and counts have accessible labels.
   offered, or the setup stays open past midnight, it is cleared and the length
   returns to 25 minutes; Review and a late Start then refuse as too short, or
   as already passed after midnight, instead of starting a short or next-day
-  pause. This reset is decided by the agent under the maintainer's delegation
-  of 2026-10-09 and awaits the maintainer's confirmation. Review names a length
+  pause. This reset is `user-confirmed` (2026-10-10, by questionnaire in
+  `DOCS-005`).
+  Review names a length
   in hours and minutes ("8 hours · you stay in control") or **Until end of
   day**.
 - Bounds: five minutes through 24 hours. Zero hours restricts minutes to 5–59;

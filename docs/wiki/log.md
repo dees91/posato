@@ -2769,3 +2769,14 @@ first removal attempt that does not finish, not to a paused keychain.
   on; press **Quit** to continue. During a pause the install is refused
   instead; builds before 1.2 never ask. Idea 27 is resolved.
 
+
+## [2026-10-10] task | DOCS-005: Posato 1.4 public packaging prepared
+
+- The showcase, both App Store screenshot sets, the README, `posato.app`,
+  the What's New, the update feed notes, and the GitHub release notes now
+  show Posato 1.4 from real captures of `27c593d`; they publish with
+  `RELEASE-006`.
+- The `SESSION-007` Mac choice group, its labels, the 25-minute reset, and
+  the iOS reflow are `user-confirmed` (2026-10-10) in `DESIGN.md`.
+- `observed`: the Mac exposes the quick lengths as "1 h" … "8 h"; what
+  VoiceOver speaks is idea 36, owned by backlog row `SESSION-008`.

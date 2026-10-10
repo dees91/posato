@@ -8,13 +8,13 @@
 
 The Availability, Limits, and Supported platforms sections were relocated
 verbatim from the root README as accepted in `RELEASE-001`; `RELEASE-002` and
-`RELEASE-003` and `RELEASE-004` updated Availability for the 1.0, 1.1, and 1.2 releases; the README keeps a
+`RELEASE-003` and `RELEASE-004` updated Availability for the 1.0, 1.1, and 1.2 releases, and `DOCS-004` and `DOCS-005` for 1.3 and 1.4; the README keeps a
 summary and links here. The Planned platforms section records the maintainer's
 2026-09-16 direction for later releases.
 
 ## Availability
 
-Posato 1.3 for Mac is available from GitHub Releases, as `Posato-1.3.0.dmg` for Apple silicon and `Posato-1.3.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store.
+Posato 1.4 for Mac is available from GitHub Releases, as `Posato-1.4.0.dmg` for Apple silicon and `Posato-1.4.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
