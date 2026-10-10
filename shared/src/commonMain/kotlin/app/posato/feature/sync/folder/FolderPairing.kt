@@ -108,11 +108,13 @@ internal class FolderPairing(
         val workspace = ports.workspaceDirectory(binding) ?: return PairingAcceptResult.UNAVAILABLE
         val derived = derive(codeBytes).also { codeBytes.fill(0) } ?: return PairingAcceptResult.UNAVAILABLE
         val file = workspace.child(PAIRING_DIRECTORY).child(derived.name.toHex() + OFFER_SUFFIX)
-        val stored = withContext(ioDispatcher) { if (files.isFile(file)) files.read(file, MAXIMUM_OFFER_BYTES) else null }
-            ?: return PairingAcceptResult.NOT_FOUND
-        val opened = openOffer(stored, derived)
+        // A coordinated read, not a metadata check first, so a File Provider offer that is not downloaded yet is fetched.
+        val read = withContext(ioDispatcher) { files.readFile(file, MAXIMUM_OFFER_BYTES) }
+        val opened = (read as? FileRead.Found)?.let { openOffer(it.bytes, derived) }
         derived.key.fill(0)
         return when {
+            read == FileRead.Missing -> PairingAcceptResult.NOT_FOUND
+            read == FileRead.Failed -> PairingAcceptResult.UNAVAILABLE
             opened == null -> PairingAcceptResult.REFUSED
             opened.expiresAtMillis < now() -> PairingAcceptResult.EXPIRED.also { opened.item.fill(0) }
             else -> store(opened.item, anchor, binding, file)

@@ -3,9 +3,9 @@
 Posato on Linux (a `.deb` for Ubuntu 24.04 or later) and Android (13 or
 later) shows the same Session, Pause sets, and Schedules screens as the Apple
 applications. During a pause, Linux maps each blocked website and its `www`
-name to no address in `/etc/hosts` and ends the chosen applications, through
+name to `0.0.0.0` and `::` in `/etc/hosts` and ends the chosen applications, through
 a root service installed once with the person's approval. Android answers
-blocked names with no address through a local DNS-only VPN, and covers a
+blocked names with `0.0.0.0` and `::` through a local DNS-only VPN, and covers a
 chosen application with a block screen. Neither shows a pause page.
 
 ## Sub-features
