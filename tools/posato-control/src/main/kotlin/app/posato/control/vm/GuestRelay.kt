@@ -43,26 +43,39 @@ object GuestRelay {
             removeAt(index)
             removeAt(index)
         }
-        val runId = relayRunId(forwarded) ?: RunContext.newRunId().also { forwarded.addAll(listOf(RUN_ID_OPTION, it)) }
+        val runId = try {
+            relayRunId(forwarded) ?: RunContext.newRunId().also { forwarded.addAll(listOf(RUN_ID_OPTION, it)) }
+        } catch (exception: ControlException) {
+            return report(forwarded, "none", exception)
+        }
         val context = RunContext(layout, LocalConfiguration.load(layout), runId, layout.runsDirectory, verbose = false, timeout = Tart.EXEC_TIMEOUT)
         return try {
             relay(context, line, forwarded, runId)
         } catch (exception: ControlException) {
-            val envelope = Envelope(
-                ok = false,
-                command = forwarded.firstOrNull() ?: "posato-control",
-                runId = runId,
-                durationMs = 0,
-                result = exception.result,
-                error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
-            )
-            if (HUMAN_OPTION in forwarded) {
-                envelope.humanLines().forEach(::println)
-            } else {
-                println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
-            }
-            exception.code.exitCode
+            report(forwarded, runId, exception)
         }
+    }
+
+    /** Prints a refusal as the envelope the command itself would have printed, and returns its exit code. */
+    private fun report(
+        forwarded: List<String>,
+        runId: String,
+        exception: ControlException,
+    ): Int {
+        val envelope = Envelope(
+            ok = false,
+            command = forwarded.firstOrNull() ?: "posato-control",
+            runId = runId,
+            durationMs = 0,
+            result = exception.result,
+            error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
+        )
+        if (HUMAN_OPTION in forwarded) {
+            envelope.humanLines().forEach(::println)
+        } else {
+            println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+        }
+        return exception.code.exitCode
     }
 
     private fun relay(
