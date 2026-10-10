@@ -2818,5 +2818,5 @@ first removal attempt that does not finish, not to a paused keychain.
   "Restrictions not active on this Mac." with a flickering "Resume
   restrictions" button until a relaunch. An isolated probe traced it to an
   early return in `clearAfterEnd` that leaves the view stale, so the session
-  owner loops. Present since 1.1.0; idea 38 and backlog row `SESSION-009`
+  owner loops. Present since at least 1.0.0; idea 38 and backlog row `SESSION-009`
   own the fix.

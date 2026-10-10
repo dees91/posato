@@ -1247,7 +1247,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     never treated as converged, and the owner loops with no delay (20,001
     store reads before the probe stopped). Display and CPU only; nothing
     stays blocked. Not a 1.4 regression: the early return dates from
-    `SYNC-012` (1.1.0). `inferred`: the trigger was a pause started on the
+    `SYNC-012`, present since at least 1.0.0. `inferred`: the trigger was a pause started on the
     iPhone. Filed as an agent proposal under the maintainer's delegation of
     2026-10-09. Owner: backlog row `SESSION-009`.
 
