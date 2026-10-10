@@ -12,6 +12,7 @@ import app.posato.feature.sync.data.IosCloudKitMailboxProvider
 import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.UnavailableIosKeychainProvider
+import app.posato.feature.sync.folder.IosFolderPicker
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import kotlinx.coroutines.runBlocking
 import platform.UIKit.UIViewController
@@ -26,6 +27,7 @@ fun mainViewController(
     notificationProvider: SessionNotificationPlatform,
     scheduleEnforcementProvider: IosEnforcementProvider,
     scheduleMonitorProvider: IosScheduleMonitorProvider,
+    folderPicker: IosFolderPicker,
 ): UIViewController {
     val runtime = createIosApplicationRuntime(
         cryptoProvider,
@@ -36,6 +38,7 @@ fun mainViewController(
         mailboxProvider,
         notificationProvider,
         IosScheduleBridge(IosEnforcement(scheduleEnforcementProvider), scheduleMonitorProvider),
+        folderPicker,
     )
 
     // The one-time pause set upgrade runs before any host starts; a failure stays pending for the next launch.

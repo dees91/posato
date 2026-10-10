@@ -123,19 +123,30 @@ internal fun FolderChooser(
     running: Boolean,
 ) {
     val path = rememberTextFieldState()
-    PosatoTextField(
-        state = path,
-        label = stringResource(Res.string.sync_folder_path_label),
-        enabled = !running,
-        errorMessage = if (state.folderRefused) stringResource(Res.string.sync_folder_invalid) else null,
-        onSubmit = { state.chooseFolder(path.text.toString()) },
-    )
+    val typed = state.folderControls.acceptsTypedPath
+    if (typed) {
+        PosatoTextField(
+            state = path,
+            label = stringResource(Res.string.sync_folder_path_label),
+            enabled = !running,
+            errorMessage = if (state.folderRefused) stringResource(Res.string.sync_folder_invalid) else null,
+            onSubmit = { state.chooseFolder(path.text.toString()) },
+        )
+    } else if (state.folderRefused) {
+        PosatoCaption(stringResource(Res.string.sync_folder_invalid))
+    }
     PosatoActionRow {
-        PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = PosatoButtonStyle.Secondary, enabled = !running) {
-            Text(stringResource(Res.string.sync_folder_use))
+        if (typed) {
+            PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                Text(stringResource(Res.string.sync_folder_use))
+            }
         }
         if (state.folderControls.canBrowse) {
-            PosatoButton(onClick = state::browseFolder, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            PosatoButton(
+                onClick = state::browseFolder,
+                style = if (typed) PosatoButtonStyle.Quiet else PosatoButtonStyle.Secondary,
+                enabled = !running,
+            ) {
                 Text(stringResource(Res.string.sync_folder_browse))
             }
         }

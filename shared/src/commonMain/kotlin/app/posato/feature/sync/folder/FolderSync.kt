@@ -227,6 +227,7 @@ internal class FolderSync(
     private val access: FolderAccess = FolderAccess.Paths(files),
     private val browser: (suspend () -> String?)? = null,
     private val pollsWhileRunning: Boolean = true,
+    override val acceptsTypedPath: Boolean = true,
 ) : FolderSyncControls {
     private val choice = FolderChoice(localDirectory, files, access)
     private val folderPorts = FolderSyncPorts(choice::root, localDirectory, crypto, files, ioDispatcher, protection)
