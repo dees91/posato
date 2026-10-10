@@ -1,7 +1,9 @@
 # Execution: `RELEASE-006`
 
 - **Brief:** [Verify the 1.4.0 candidates and publish Posato 1.4](../specifications/release-006-release-1-4.md)
-- **Status:** `done`: published 2026-10-10; iOS 1.4.0 waiting for App Review
+- **Status:** `active`: macOS 1.4.0 published 2026-10-10; iOS 1.4.0 waiting
+  for App Review. Pending (`releasing.md` step 9): record the App Review
+  outcome, set `done`, and delete the never-published verification candidates
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review and completed-change review
