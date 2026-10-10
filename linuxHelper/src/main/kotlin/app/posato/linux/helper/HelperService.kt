@@ -35,6 +35,7 @@ internal class HelperService(
         val server = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
         server.bind(UnixDomainSocketAddress.of(paths.socket))
         Files.setPosixFilePermissions(paths.socket, PosixFilePermissions.fromString("rw-rw-rw-"))
+        Runtime.getRuntime().addShutdownHook(Thread { Files.deleteIfExists(paths.socket) })
         val timer = Executors.newSingleThreadScheduledExecutor()
         timer.scheduleWithFixedDelay(::tick, 0, TICK_MILLIS, TimeUnit.MILLISECONDS)
         while (true) {
