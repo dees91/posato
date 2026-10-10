@@ -24,9 +24,9 @@ Follow `releasing.md`. Differences for 1.4:
 
 - **Version:** `MARKETING_VERSION = 1.4.0`; macOS build 29 for both
   architectures (both published feeds hold 28; the `MACOS-026` candidates
-  9101 to 9103 were signed with a throwaway key and ran only in destroyed
-  VM clones, so they do not raise the floor); iOS build 7 (`store status`:
-  next free).
+  9101 to 9103 read a loopback feed signed with a throwaway key and ran
+  only in destroyed VM clones, so no installation reading the stable feeds
+  holds them); iOS build 7 (`store status`: next free).
 - **No verification seams in any release artifact.** The release packaging
   check and the DMG scan must report no seam key and no marker for both
   architectures, and the build must run without
@@ -39,7 +39,13 @@ Follow `releasing.md`. Differences for 1.4:
 - **Reduced matrix:** no stored-data migration since `v1.3.0` (no schema,
   entitlement, or privacy-manifest change), so the replacement and iPhone
   upgrade checks of 1.3 are not repeated; the in-app update covers data
-  retention.
+  retention. `MACOS-027` changed the helper daemon and the signing
+  timeouts, so a cold boot and the updated installation are checked for
+  ready setup and a schedule that starts on its own.
+- **Sync format:** unchanged since `v1.3.0` (`inferred` from the diff: the
+  sync changes are the macOS removal budget and its progress state, not the
+  synced kinds or payloads), so iOS 1.3 and a 1.4 Mac work together while
+  iOS 1.4 waits for App Review.
 
 ## Boundaries
 
@@ -77,6 +83,8 @@ review before tagging.
 
 - **Blocker (maintainer):** the Keychain prompts during signing; the
   publication go.
-- **Decided by the agent under the maintainer's delegation (2026-10-09):**
-  the reduced matrix, build numbers, App Store release type
+- **To be confirmed by the maintainer before step 4** (`releasing.md`
+  requires `user-confirmed`): the reduced matrix, App Store release type
   `after-approval`, and claiming iOS 26 only, as in 1.3.
+- **Decided by the agent under the maintainer's delegation (2026-10-09):**
+  the build numbers and the `DOCS-005` coupling in the record.
