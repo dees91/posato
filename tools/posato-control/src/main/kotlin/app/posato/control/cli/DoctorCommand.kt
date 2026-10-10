@@ -38,7 +38,10 @@ class DoctorCommand :
         if (requestPermissions) AxBridge(session.context).permissions(request = true)
         val targets = session.options.target?.let { listOf(it) } ?: Target.entries
         targets.forEach { target -> checks.addAll(targetChecks(session, target)) }
-        if (Target.DEVICE in targets && !skipAutomationProbe) automationProbe(session)?.let(checks::add)
+        // Only on request: the probe brings the XCTest runner to the front of a phone another session may be driving.
+        if (session.options.target == Target.DEVICE && !runsInVirtualMachine() && !skipAutomationProbe) {
+            automationProbe(session)?.let(checks::add)
+        }
         val ok = checks.none { !it.ok && it.severity == Severity.ERROR.name.lowercase() }
         return ControlJson.pretty.encodeToJsonElement(DoctorReport.serializer(), DoctorReport(ok, checks))
     }

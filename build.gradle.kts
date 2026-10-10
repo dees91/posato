@@ -100,18 +100,62 @@ subprojects {
 val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
     group = "verification"
     description = "Rejects Polish letters in the repository's documentation, skills, site, and sources."
+    val textExtensions = listOf(
+        "md",
+        "kt",
+        "kts",
+        "swift",
+        "m",
+        "h",
+        "c",
+        "json",
+        "yml",
+        "yaml",
+        "txt",
+        "astro",
+        "ts",
+        "tsx",
+        "js",
+        "mjs",
+        "css",
+        "html",
+        "sh",
+        "xml",
+        "plist",
+        "strings",
+        "xcconfig",
+        "properties",
+        "toml",
+        "sq",
+        "sqm",
+        "entitlements",
+    )
     textFiles.from(
         fileTree(rootDir) {
-            include("README.md", "DESIGN.md", "AGENTS.md", "CONTRIBUTING.md", "PRIVACY.md", "SECURITY.md")
-            include("docs/**", ".agents/**", "website/src/**", "video/**")
-            include("shared/src/**", "desktopApp/src/**", "iosApp/**", "macosHelper/**", "macosSyncCompanion/**")
-            include("tools/**", "buildSrc/src/**", "quality-rules/**", "prototypes/**")
+            include("*.md")
+            listOf(
+                "docs",
+                ".agents",
+                "website/src",
+                "video",
+                "shared/src",
+                "desktopApp/src",
+                "iosApp",
+                "macosHelper",
+                "macosSyncCompanion",
+                "tools",
+                "buildSrc/src",
+                "quality-rules",
+                "prototypes",
+            ).forEach { directory -> textExtensions.forEach { extension -> include("$directory/**/*.$extension") } }
             exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
-            exclude("**/*.png", "**/*.jpg", "**/*.gif", "**/*.mp4", "**/*.webm", "**/*.icns", "**/*.ttf", "**/*.otf", "**/*.jar")
-            exclude("**/*.car", "**/*.mov", "**/*.pdf", "**/*.zip", "**/*.xcresult/**")
         },
     )
-    exceptions.set(emptyMap<String, String>())
+    // A future Polish localization lives in its own directories, such as values-pl or pl.lproj; list them here.
+    excludedDirectories.set(emptyList<String>())
+    exceptions.set(
+        mapOf("THIRD_PARTY_NOTICES.md" to "Sparkle's copyright notice names its holders as written, including a Polish surname."),
+    )
     repositoryDirectory.set(layout.projectDirectory)
 }
 

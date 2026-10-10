@@ -74,7 +74,7 @@ class VmSyncCommand : ControlCommand("sync", "Copy the freshly staged package an
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        requireGuestRoom(session.layout.root)
+        requireGuestRoom(session.layout.root, line)
         VmLifecycle(session.context).sync(line)
         return buildJsonObject { put("vm", line.cloneName) }
     }
@@ -97,9 +97,10 @@ class VmInstallCommand :
     ).flag()
 
     override fun execute(session: Session): JsonElement {
-        requireGuestRoom(session.layout.root)
+        val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root, line)
         val installation = CandidateInstall(session.context).install(
-            VmLine.parse(lineOption),
+            line,
             Path.of(dmg),
             applicationLabel,
             applicationsLabel,
@@ -201,7 +202,11 @@ class VmBootCommand :
     ControlCommand("boot", "Boot the line's existing VM headless without cloning, to prepare a golden image under the clone's name.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
 
-    override fun execute(session: Session): JsonElement = VmLifecycle(session.context).boot(VmLine.parse(lineOption))
+    override fun execute(session: Session): JsonElement {
+        val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root, line)
+        return VmLifecycle(session.context).boot(line)
+    }
 }
 
 class VmVncHoldCommand :

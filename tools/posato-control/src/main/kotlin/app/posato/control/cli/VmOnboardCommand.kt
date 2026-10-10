@@ -18,12 +18,13 @@ class VmOnboardCommand :
     ).long().default(DEFAULT_TIMEOUT_SECONDS)
     private val allowSchedules by option(
         "--allow-schedules",
-        help = "Also give the consent to start schedules on their own, which setup leaves to the Schedules card.",
+        help = "Give the consent to start schedules on their own on the Schedules card when setup left it off.",
     ).flag()
 
     override fun execute(session: Session): JsonElement {
-        requireGuestRoom(session.layout.root)
-        return GuestOnboarding(session.context).run(VmLine.parse(lineOption), timeoutSeconds * MILLIS_PER_SECOND, allowSchedules)
+        val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root, line)
+        return GuestOnboarding(session.context).run(line, timeoutSeconds * MILLIS_PER_SECOND, allowSchedules)
     }
 
     private companion object {

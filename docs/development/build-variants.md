@@ -11,13 +11,13 @@ is long; the pointers below name where each piece lives. Release steps are in
 
 | Property | Effect | Where |
 | --- | --- | --- |
-| `posatoMacOsArchitecture=x86_64` | Intel build: x86-64 Temurin runtime and native leaves, `appcast-intel.xml`. Needs Rosetta 2 on the host; configuration refuses without it. | `desktopApp/build.gradle.kts:1363`, `desktopApp/build.gradle.kts:1423`, `desktopApp/build.gradle.kts:1428` |
-| `posatoMacOsUpdateChannel=release\|candidate` (+ `posatoMacOsUpdateFeedUrl`, `posatoMacOsUpdatePublicKey` for candidates) | Picks the feed URL and key written into `Info.plist`; a Developer ID build refuses without a channel. | `desktopApp/build.gradle.kts:1593`, `desktopApp/build.gradle.kts:1815` |
-| `posatoMacOsAllowRosetta=true` | Verification-only switch that lets the Intel build run under Rosetta in an arm64 guest; refused on the release channel and on arm64. | `desktopApp/build.gradle.kts:1600` |
-| `posatoMacOsVerificationSeams=true` | Compiles the SYNC-021 seams into the companion and adds their `Info.plist` key; configuration refuses any channel, any release identity, and any development identity other than `-` or `Apple Development:`. | `desktopApp/build.gradle.kts:1608`, `desktopApp/build.gradle.kts:1622`, `macosSyncCompanion/build.gradle.kts:21` |
-| `posatoMacOsSigningIdentity` | Development signing identity (`-` for ad hoc). | `desktopApp/build.gradle.kts:1720` |
-| `posatoMacOsReleaseSigningIdentity`, `posatoMacOsSyncDeveloperIdProfile` | Developer ID signing of the release package and its companion. | `desktopApp/build.gradle.kts:1837` |
-| `posatoMacOsBuildNumber`, `posatoMacOsPreviousBuildNumber`, `posatoMacOsReleaseNotes` | Build number, the floor a release must exceed, and the signed feed notes. | `desktopApp/build.gradle.kts:1911` |
+| `posatoMacOsArchitecture=x86_64` | Intel build: x86-64 Temurin runtime and native leaves, `appcast-intel.xml`. Needs Rosetta 2 on the host; configuration refuses without it. | macOsArchitecture (`desktopApp/build.gradle.kts:1363`), Rosetta preflight (`desktopApp/build.gradle.kts:1423`), posatoJavaHome (`desktopApp/build.gradle.kts:1428`) |
+| `posatoMacOsUpdateChannel=release\|candidate` (+ `posatoMacOsUpdateFeedUrl`, `posatoMacOsUpdatePublicKey` for candidates) | Picks the feed URL and key written into `Info.plist`; a Developer ID build refuses without a channel. | updateFeed (`desktopApp/build.gradle.kts:1593`), checkMacOsUpdateChannel (`desktopApp/build.gradle.kts:1815`) |
+| `posatoMacOsAllowRosetta=true` | Verification-only switch that lets the Intel build run under Rosetta in an arm64 guest; refused on the release channel and on arm64. | macOsAllowsRosetta (`desktopApp/build.gradle.kts:1600`) |
+| `posatoMacOsVerificationSeams=true` | Compiles the SYNC-021 seams into the companion and adds their `Info.plist` key; configuration refuses any channel, any release identity, and any development identity other than `-` or `Apple Development:`. | macOsVerificationSeams (`desktopApp/build.gradle.kts:1608`), updaterInfoPlistKeys (`desktopApp/build.gradle.kts:1622`), verificationSeams (`macosSyncCompanion/build.gradle.kts:21`) |
+| `posatoMacOsSigningIdentity` | Development signing identity (`-` for ad hoc). | signMacOsDevelopmentPackage (`desktopApp/build.gradle.kts:1720`) |
+| `posatoMacOsReleaseSigningIdentity`, `posatoMacOsSyncDeveloperIdProfile` | Developer ID signing of the release package and its companion. | signMacOsReleasePackage (`desktopApp/build.gradle.kts:1837`) |
+| `posatoMacOsBuildNumber`, `posatoMacOsPreviousBuildNumber`, `posatoMacOsReleaseNotes` | Build number, the floor a release must exceed, and the signed feed notes. | generateMacOsUpdateFeed (`desktopApp/build.gradle.kts:1911`) |
 
 ## Tasks by variant
 

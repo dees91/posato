@@ -23,7 +23,7 @@ class VmExecCommand :
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        requireGuestRoom(session.layout.root)
+        requireGuestRoom(session.layout.root, line)
         val output = Tart(session.context).exec(line.cloneName, script)
         return buildJsonObject {
             put("vm", line.cloneName)

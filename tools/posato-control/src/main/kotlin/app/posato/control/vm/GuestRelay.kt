@@ -96,7 +96,8 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
-        requireGuestRoom(context.layout.root)
+        // Removing a workspace is how a linked clone becomes destroyable, so it runs below the minimum.
+        if (!removesICloudWorkspace(forwarded)) requireGuestRoom(context.layout.root, line)
         requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
@@ -213,3 +214,8 @@ internal fun relayRunId(args: List<String>): String? {
 }
 
 private const val RUN_ID_OPTION = "--run-id"
+
+/** `flow icloud remove`, which unlinks a guest so that `vm destroy` can free its disk. */
+internal fun removesICloudWorkspace(forwarded: List<String>): Boolean = forwarded.take(ICLOUD_REMOVE.size) == ICLOUD_REMOVE
+
+private val ICLOUD_REMOVE = listOf("flow", "icloud", "remove")

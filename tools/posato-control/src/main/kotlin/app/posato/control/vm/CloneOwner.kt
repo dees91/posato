@@ -104,3 +104,14 @@ internal fun describeCloneOwner(
     val process = if (creatorRuns(owner)) "is still running, so the clone may still be booting" else "has exited"
     return "$clone was created at ${owner.createdAt} by run ${owner.runId} in $place; its creating process ${owner.pid} $process."
 }
+
+private const val LOW_DISK_MARKER = "posato-low-disk-allowed"
+
+/** Records that this clone was created with `--allow-low-disk`; it sits beside the owner marker and goes with it. */
+internal fun recordLowDiskAllowance(clone: String) {
+    val marker = tartHome().resolve("vms").resolve(clone).resolve(LOW_DISK_MARKER)
+    if (marker.parent.isDirectory()) Files.writeString(marker, Instant.now().toString() + "\n")
+}
+
+/** Whether [clone] was created with `--allow-low-disk`, so its guest commands run down to the hard floor. */
+internal fun lowDiskAllowed(clone: String): Boolean = tartHome().resolve("vms").resolve(clone).resolve(LOW_DISK_MARKER).exists()

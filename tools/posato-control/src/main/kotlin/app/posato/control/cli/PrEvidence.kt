@@ -7,6 +7,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -22,23 +23,41 @@ data class VerifiedLine(
     val runIds: List<String>,
 )
 
-private val VERIFIED = Regex("""\bVerified\s+([0-9a-f]{7,40})\b""")
-private val RUN_ID = Regex("""\b(\d{8}-\d{6}-[0-9a-f]{4})\b""")
+/** A line that starts with the verification line, not one that quotes or mentions it. */
+private val VERIFIED = Regex("""^Verified\s+([0-9a-f]{7,40})\b""")
+
+/** Every `run <id>`, also a label passed as `--run-id`; trailing punctuation is not part of it. */
+private val RUN_ID = Regex("""\brun\s+([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])""")
+
+/** One pull request comment and the login that posted it. */
+data class PrComment(
+    val author: String,
+    val body: String,
+)
 
 /** The verification lines among a pull request's comments, in their order. */
-internal fun parseVerifiedLines(comments: List<String>): List<VerifiedLine> = comments.flatMap { comment ->
-    comment.lines().mapNotNull { line ->
+internal fun parseVerifiedLines(
+    comments: List<PrComment>,
+    trustedAuthors: Set<String>,
+): List<VerifiedLine> = comments.filter { it.author in trustedAuthors }.map { it.body }.flatMap { comment ->
+    comment.lines().map { it.trim() }.mapNotNull { line ->
         VERIFIED.find(line)?.let { match -> VerifiedLine(match.groupValues[1], RUN_ID.findAll(line).map { it.groupValues[1] }.toList()) }
     }
 }
 
 /**
  * The paths whose change after the verified commit invalidates the evidence: the application sources and their
- * builds. Documentation, wiki, skills, and the verification tooling may change after the run.
+ * builds, and the verification driver when the pull request changes it. Documentation, wiki, and skills may change
+ * after the run.
  */
-internal fun productChanges(paths: List<String>): List<String> = paths.filter { path ->
-    PRODUCT_PREFIXES.any { path.startsWith(it) } || path in PRODUCT_FILES
-}
+internal fun productPaths(
+    paths: Collection<String>,
+    includeTooling: Boolean,
+): List<String> = paths.filter { path ->
+    PRODUCT_PREFIXES.any { path.startsWith(it) } || path in PRODUCT_FILES || (includeTooling && path.startsWith(TOOLING_PREFIX))
+}.sorted()
+
+private const val TOOLING_PREFIX = "tools/posato-control/"
 
 private val PRODUCT_PREFIXES = listOf(
     "shared/",
@@ -65,34 +84,36 @@ class PrEvidenceCommand :
     private val pr by option("--pr", help = "Pull request number.").int().required()
 
     override fun execute(session: Session): JsonElement {
-        val subprocess = session.context.subprocess
-        val root = session.layout.root
-        val view = subprocess.run(listOf("gh", "pr", "view", pr.toString(), "--json", "headRefOid,comments"), workingDirectory = root)
-            .requireSuccess(ErrorCode.COMMAND_FAILED, "Reading pull request #$pr")
-        val json = ControlJson.lenient.parseToJsonElement(view.stdout).jsonObject
-        val head = json.getValue("headRefOid").jsonPrimitive.content
-        val bodies = json["comments"]?.jsonArray.orEmpty().map { it.jsonObject["body"]?.jsonPrimitive?.content.orEmpty() }
-        val lines = parseVerifiedLines(bodies)
+        val git = Git(session)
+        val view = git.json(listOf("gh", "pr", "view", pr.toString(), "--json", "headRefOid,baseRefName,author,comments"))
+        val head = view.getValue("headRefOid").jsonPrimitive.content
+        val base = view.getValue("baseRefName").jsonPrimitive.content
+        val author = view["author"]?.jsonObject?.get("login")?.jsonPrimitive?.content.orEmpty()
+        val owner = git.json(listOf("gh", "repo", "view", "--json", "owner")).getValue("owner").jsonObject.getValue("login").jsonPrimitive.content
+        val comments = view["comments"]?.jsonArray.orEmpty().map { comment ->
+            val body = comment.jsonObject
+            PrComment(body["author"]?.jsonObject?.get("login")?.jsonPrimitive?.content.orEmpty(), body["body"]?.jsonPrimitive?.content.orEmpty())
+        }
+        val lines = parseVerifiedLines(comments, setOf(author, owner))
         val last = lines.lastOrNull() ?: throw ControlException(
             ErrorCode.ASSERTION_FAILED,
-            "Pull request #$pr has no `Verified <sha> on <target>: ... run <run-id>` comment.",
+            "Pull request #$pr has no `Verified <sha> on <target>: ... run <run-id>` line at the start of a comment by its author or $owner.",
             "Post one for the head's product code (verify-posato, Evidence).",
         )
-        listOf(last.commit, head).forEach { commit ->
-            if (!subprocess.run(listOf("git", "cat-file", "-e", "$commit^{commit}"), workingDirectory = root).succeeded) {
-                subprocess.run(listOf("git", "fetch", "-q", "origin", "pull/$pr/head"), workingDirectory = root)
-            }
-        }
-        val changed = subprocess.run(listOf("git", "diff", "--name-only", last.commit, head), workingDirectory = root)
-            .requireSuccess(ErrorCode.COMMAND_FAILED, "Comparing ${last.commit} with the head $head")
-            .stdout.lines().filter { it.isNotBlank() }
-        val product = productChanges(changed)
+        git.fetch(base, pr)
+        // Each side against its own merge base, so a rebase onto a newer main does not count as a change.
+        val headBase = git.mergeBase("origin/$base", head)
+        val verifiedBase = git.mergeBase("origin/$base", last.commit)
+        val headPaths = git.changed(headBase, head)
+        val scope = productPaths(headPaths + git.changed(verifiedBase, last.commit), headPaths.any { it.startsWith(TOOLING_PREFIX) })
+        val product = scope.filter { path -> git.patchId(verifiedBase, last.commit, path) != git.patchId(headBase, head, path) }
         val cited = lines.flatMap { it.runIds }.distinct()
         val missing = cited.filterNot { session.layout.runsDirectory.resolve(it).exists() }
         val report = buildJsonObject {
             put("pr", pr)
             put("head", head)
             put("verifiedCommit", last.commit)
+            put("author", author)
             putJsonArray("productChangesSinceVerified") { product.forEach { add(it) } }
             putJsonArray("citedRuns") { cited.forEach { add(it) } }
             putJsonArray("missingRuns") { missing.forEach { add(it) } }
@@ -111,4 +132,50 @@ class PrEvidenceCommand :
         }
         return report
     }
+}
+
+/** The few Git and GitHub reads `pr-evidence` needs, each failing as a command failure with what it was doing. */
+private class Git(
+    private val session: Session,
+) {
+    private val root = session.layout.root
+
+    fun json(command: List<String>): JsonObject = ControlJson.lenient.parseToJsonElement(
+        session.context.subprocess.run(command, workingDirectory = root)
+            .requireSuccess(ErrorCode.COMMAND_FAILED, command.joinToString(" ")).stdout,
+    ).jsonObject
+
+    fun fetch(
+        base: String,
+        pr: Int,
+    ) {
+        session.context.subprocess.run(listOf("git", "fetch", "-q", "origin", base, "pull/$pr/head"), workingDirectory = root)
+    }
+
+    fun mergeBase(
+        base: String,
+        commit: String,
+    ): String = run(listOf("git", "merge-base", base, commit), "Finding the merge base of $commit").trim()
+
+    fun changed(
+        from: String,
+        to: String,
+    ): List<String> = run(listOf("git", "diff", "--name-only", from, to), "Listing the changes of $to").lines().filter { it.isNotBlank() }
+
+    /** The stable patch id of one path's change, empty when the side does not change it. */
+    fun patchId(
+        from: String,
+        to: String,
+        path: String,
+    ): String {
+        val diff = run(listOf("git", "diff", from, to, "--", path), "Reading the change of $path")
+        if (diff.isBlank()) return ""
+        return session.context.subprocess.run(listOf("git", "patch-id", "--stable"), workingDirectory = root, stdin = diff)
+            .requireSuccess(ErrorCode.COMMAND_FAILED, "Hashing the change of $path").stdout.substringBefore(' ')
+    }
+
+    private fun run(
+        command: List<String>,
+        what: String,
+    ): String = session.context.subprocess.run(command, workingDirectory = root).requireSuccess(ErrorCode.COMMAND_FAILED, what).stdout
 }

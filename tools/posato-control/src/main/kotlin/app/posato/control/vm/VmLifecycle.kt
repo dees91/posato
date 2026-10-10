@@ -56,16 +56,9 @@ class VmLifecycle(
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
         val diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
         diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
-        val waitedMs = awaitLine(tart, context, golden, line.cloneName, waitMinutes)
-        refuseClone(tart.list(), golden, line.cloneName) { name -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
         val jdk = hostJdk(context)
-        tart.clone(golden, line.cloneName)
-        recordCloneOwner(context, line.cloneName)
-        Files.deleteIfExists(accountAttentionMarker(line))
-        val log = ownerOnlyFile(vmDirectory(line).resolve(RUN_LOG))
         val started = System.currentTimeMillis()
-        tart.start(line.cloneName, jdk, log)
-        vmEndpoint(line, BOOT_TIMEOUT_MS)
+        val waitedMs = createUnderLock(context, tart, CloneRequest(line, golden, jdk, allowLowDisk, waitMinutes))
         val vncHold = VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
@@ -220,12 +213,73 @@ class VmLifecycle(
 
     private companion object {
         const val POLL_MS = 1_000L
-        const val BOOT_TIMEOUT_MS = 60_000L
         const val AGENT_TIMEOUT_MS = 240_000L
         const val SHUTDOWN_TIMEOUT_MS = 180_000L
         val AGENT_PROBE: Duration = Duration.ofSeconds(8)
     }
 }
+
+/** What one `vm create` asks for. */
+private data class CloneRequest(
+    val line: VmLine,
+    val golden: String,
+    val jdk: Path,
+    val allowLowDisk: Boolean,
+    val waitMinutes: Long,
+)
+
+/**
+ * Clones and starts [request]'s VM while holding the machine-wide clone lock, so the check of Tart's VMs, the clone,
+ * its owner marker, and the running guest are one step for every session; the two-guest limit is checked inside
+ * it too. With [waitMinutes] it waits, lock released, while what blocks is still in use: a running guest or a
+ * clone whose creating process lives. A stopped clone left by an exited creator never frees itself, so it is
+ * refused at once. Returns the milliseconds spent waiting; a refusal carries them as `waitedMs`.
+ */
+private fun createUnderLock(
+    context: RunContext,
+    tart: Tart,
+    request: CloneRequest,
+): Long {
+    val line = request.line
+    val started = System.currentTimeMillis()
+    val deadline = started + Duration.ofMinutes(request.waitMinutes).toMillis()
+    val owner = { name: String -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
+    while (true) {
+        val created = try {
+            withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
+                val vms = tart.list()
+                val block = waitableBlock(vms, request.golden, line.cloneName) { name -> readCloneOwner(name)?.let(::creatorRuns) == true }
+                if (block != null && System.currentTimeMillis() < deadline) {
+                    context.log("Waiting for ${line.cloneName}: $block")
+                    return@withCreateLock false
+                }
+                refuseClone(vms, request.golden, line.cloneName, owner)
+                tart.clone(request.golden, line.cloneName)
+                recordCloneOwner(context, line.cloneName)
+                if (request.allowLowDisk) recordLowDiskAllowance(line.cloneName)
+                Files.deleteIfExists(accountAttentionMarker(line))
+                tart.start(line.cloneName, request.jdk, ownerOnlyFile(vmDirectory(line).resolve(RUN_LOG)))
+                vmEndpoint(line, BOOT_TIMEOUT_MS)
+                true
+            }
+        } catch (refusal: ControlException) {
+            val waited = System.currentTimeMillis() - started
+            throw ControlException(
+                refusal.code,
+                refusal.message ?: refusal.code.name,
+                refusal.hint,
+                refusal,
+                JsonObject(mapOf("waitedMs" to JsonPrimitive(waited))),
+            )
+        }
+        if (created) return System.currentTimeMillis() - started
+        Thread.sleep(minOf(LINE_POLL_MS, (deadline - System.currentTimeMillis()).coerceAtLeast(1)))
+    }
+}
+
+private const val BOOT_TIMEOUT_MS = 60_000L
+private const val LINE_POLL_MS = 30_000L
+private const val CREATE_LOCK = "create.lock"
 
 /** The guest directory that holds the driver, fixtures, and evidence; `$HOME` expands in double quotes too. */
 internal const val GUEST_ROOT = "\$HOME/posato-run"

@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
@@ -26,6 +27,10 @@ abstract class VerifyEnglishText : DefaultTask() {
     @get:Input
     abstract val exceptions: MapProperty<String, String>
 
+    /** Repository-relative directory name patterns whose files may be Polish, such as a `values-pl` resource set. */
+    @get:Input
+    abstract val excludedDirectories: ListProperty<String>
+
     @get:Internal
     abstract val repositoryDirectory: DirectoryProperty
 
@@ -36,9 +41,12 @@ abstract class VerifyEnglishText : DefaultTask() {
         }
         val root = repositoryDirectory.get().asFile
         val allowed = exceptions.get()
+        val directories = excludedDirectories.get()
         val findings = textFiles.files
             .map { it to it.relativeTo(root).invariantSeparatorsPath }
-            .filter { (_, path) -> path !in allowed }
+            .filter { (_, path) -> path !in allowed && directories.none { directory -> "/$directory/" in "/$path" } }
+            // A binary that happens to carry a text extension is not repository text.
+            .filter { (file, _) -> file.readBytes().none { it == 0.toByte() } }
             .sortedBy { (_, path) -> path }
             .flatMap { (file, path) ->
                 file.readLines().withIndex().filter { (_, line) -> POLISH.containsMatchIn(line) }.map { (index, _) -> "$path:${index + 1}" }

@@ -33,7 +33,7 @@ class VmPushCommand :
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        requireGuestRoom(session.layout.root)
+        requireGuestRoom(session.layout.root, line)
         val source = pushSource(from)
         val segments = guestSegments(to)
         val digest = MessageDigest.getInstance("SHA-256").digest(source.readBytes()).joinToString("") { "%02x".format(it) }

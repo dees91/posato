@@ -12,6 +12,7 @@ import app.posato.control.model.StepError
 import kotlinx.serialization.SerializationException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.Base64
 import kotlin.io.path.exists
 import kotlin.io.path.readText
@@ -43,7 +44,8 @@ class IosDriverRunner(
     fun run(
         scenario: Scenario,
         udid: String,
-        bundleId: String
+        bundleId: String,
+        timeout: Duration? = null,
     ): DriverRun {
         val testRun = ensureBuilt(udid)
         val invocation = nextInvocation()
@@ -58,6 +60,7 @@ class IosDriverRunner(
             mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId) + secrets,
             log,
             redact = if (secrets.isEmpty()) { text -> text } else DriverSecrets::redactKeyTaps,
+            timeout = timeout,
         )
         if (log.exists()) driverLogFailure(log.readText())?.let { throw it }
         if (!resultBundle.exists()) {

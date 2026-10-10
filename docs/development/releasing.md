@@ -200,11 +200,12 @@ is ready for review.
    equal the verified feeds, and verify.
 3. On the kept `peer` clone: About, Check for Updates, Install Update,
    Install and Relaunch, `launch --adopt`; data, schedule, and helper are
-   kept and `observe` blocks. Any loss is a failure. Prepare that clone with
-   `vm onboard --allow-schedules` and prove that a schedule starts on its own
-   on the old version before updating: setup does not give the consent to
-   automatic starts, and a clone without it once read as an update defect
-   (`RELEASE-006`).
+   kept and `observe` blocks. Any loss is a failure. Before updating, check
+   that clone's `scheduleConsent` from `vm onboard` (use
+   `--allow-schedules` when it is false) and prove that a schedule starts on
+   its own on the old version: setup records the consent from 1.2 on, but
+   one 1.3.0 test clone still read it as off, which once read as an update
+   defect (`RELEASE-006`, cause `open`).
 
 Replacing a release older than `MACOS-026` shows that release's own "Quit
 Posato?" during Install and Relaunch; click Quit (`observed`,

@@ -97,7 +97,8 @@ class DeviceLifecycle(
     /**
      * Runs the driver once without touching Posato, which makes iOS enable UI automation. A locked iPhone, or one
      * waiting for its XCTest passcode after a restart, then shows here at the start of a session instead of failing
-     * the first interaction an hour later (release 1.4 retro). It takes the driver's start-up time, about 6 to 12 s.
+     * the first interaction an hour later (release 1.4 retro). It takes the driver's start-up time, about 6 to 12 s,
+     * and brings the XCTest runner to the front briefly, so it runs only for an explicit `doctor -t device`.
      */
     override fun automationProbe(): DoctorCheck {
         if (xcodeBuild.driverState(Target.DEVICE) != XcodeBuild.DriverState.FRESH) {
@@ -109,7 +110,7 @@ class DeviceLifecycle(
         }
         return try {
             val probe = Scenario(launch = LaunchConfiguration(skip = true))
-            IosDriverRunner(context, xcodeBuild, Target.DEVICE).run(probe, session.udid(), IOS_BUNDLE_ID)
+            IosDriverRunner(context, xcodeBuild, Target.DEVICE).run(probe, session.udid(), IOS_BUNDLE_ID, PROBE_TIMEOUT)
             DoctorCheck.pass("device.automation", "The test iPhone accepts UI automation.")
         } catch (exception: ControlException) {
             val locked = exception.code == ErrorCode.DEVICE_AUTOMATION_LOCKED
@@ -370,6 +371,9 @@ class DeviceBackend private constructor(
         }
     }
 }
+
+/** How long the automation probe may take before it counts as failed; a healthy run takes about 10 s. */
+private val PROBE_TIMEOUT: java.time.Duration = java.time.Duration.ofSeconds(60)
 
 /**
  * The one-time iPhone provisioning conditions. Developer mode and Screen Time are reported, never granted: Screen Time

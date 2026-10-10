@@ -79,9 +79,9 @@ class GuestOnboarding(
     }
 
     /**
-     * Whether Posato in the guest holds the consent to start schedules on its own. Setup does not give it: the
-     * Schedules card asks separately, and a clone without it made a release's update check fail although the updated
-     * version kept every consent it had (`RELEASE-006`, 2026-10-10).
+     * Whether Posato in the guest holds the consent to start schedules on its own. Setup records it from 1.2 on, but one
+     * 1.3.0 test clone still read 0, which made a release's update check fail although the updated version kept every
+     * consent it had (`RELEASE-006`, 2026-10-10; cause `open`), so it is read rather than assumed.
      */
     private fun scheduleConsent(line: VmLine): Boolean = scheduleConsentGiven(Tart(context).exec(line.cloneName, SCHEDULE_CONSENT_QUERY).stdout)
 

@@ -1,24 +1,29 @@
 package app.posato.control.vm
 
-import app.posato.control.core.RunContext
-import java.time.Duration
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
 /** Whether a line's clone is free, used by a session, or left behind by a worktree that no longer exists. */
 enum class LeaseState { FREE, HELD, STALE }
 
 /**
- * What another session will release and so is worth waiting for: the line's clone, a running golden VM, or two
- * running guests. Null when nothing blocks, or when only a missing golden VM does, which no wait repairs.
+ * What another session will release and so is worth waiting for: a running golden VM, the line's clone while it runs
+ * or its creating process lives, or a second running guest. Null when nothing blocks, or when only something that
+ * never frees itself does: a missing golden VM, or a stopped clone whose creator has exited.
  */
 internal fun waitableBlock(
     vms: List<TartVm>,
     golden: String,
     clone: String,
+    creatorAlive: (String) -> Boolean,
 ): String? {
     val source = vms.firstOrNull { it.name == golden } ?: return null
+    val existing = vms.firstOrNull { it.name == clone }
     return when {
         source.running -> "The golden VM '$golden' is running."
-        vms.any { it.name == clone } -> "The clone '$clone' exists."
+        existing != null -> "The clone '$clone' is in use.".takeIf { existing.running || creatorAlive(clone) }
         vms.count { it.running } >= MAX_RUNNING_GUESTS -> "Two macOS guests already run."
         else -> null
     }
@@ -41,26 +46,20 @@ internal fun leaseState(
     else -> LeaseState.STALE
 }
 
-/**
- * Waits up to [minutes] for what another session will release: the line's clone, a running golden VM, or a second
- * running guest. Parallel sessions share both, and before this wait each one invented its own lock (release 1.4
- * retro). Returns the milliseconds waited; the clone refusal afterwards names whatever still blocks.
- */
-internal fun awaitLine(
-    tart: Tart,
-    context: RunContext,
-    golden: String,
-    clone: String,
-    minutes: Long,
-): Long {
-    val started = System.currentTimeMillis()
-    val deadline = started + Duration.ofMinutes(minutes).toMillis()
-    while (System.currentTimeMillis() < deadline) {
-        val block = waitableBlock(tart.list(), golden, clone) ?: break
-        context.log("Waiting for $clone: $block")
-        Thread.sleep(LINE_POLL_MS)
-    }
-    return System.currentTimeMillis() - started
-}
+/** Serializes creators inside this process; the file lock below serializes processes. */
+private val CREATE_MONITOR = Any()
 
-private const val LINE_POLL_MS = 30_000L
+/**
+ * Runs [block] while holding the machine-wide clone lock, so a check of Tart's VMs and the clone it allows happen as
+ * one step: two sessions that created one line at once both saw no clone and both cloned (review of #166). A file
+ * lock alone does not serialize threads of one process, which the JVM refuses to lock twice, so a monitor does that.
+ */
+internal fun <T> withCreateLock(
+    lockFile: Path,
+    block: () -> T,
+): T = synchronized(CREATE_MONITOR) {
+    Files.createDirectories(lockFile.parent)
+    FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel ->
+        channel.lock().use { block() }
+    }
+}
