@@ -1,0 +1,2 @@
+- A new look that feels at home on iPhone and iPad: navigation bars with large titles, system menus and time pickers, and swipe actions in lists. Swipe from the left edge to go back.
+- Longer quick choices when you start a pause: 1, 2, 4, or 8 hours, or Until end of day, next to 25 and 45 minutes.
