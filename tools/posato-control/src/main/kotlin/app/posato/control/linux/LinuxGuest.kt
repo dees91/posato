@@ -52,7 +52,13 @@ class LinuxGuest(
         script: String,
         stdin: String? = null,
     ): ProcessOutput {
-        return tart.exec(CLONE, "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; $script", stdin)
+        // The guest agent's control socket sometimes refuses one connection; a person's retry is what the next attempt is.
+        var attempt = 0
+        while (true) {
+            val output = tart.exec(CLONE, "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; $script", stdin)
+            if (AGENT_ERROR !in output.stderr || ++attempt >= AGENT_ATTEMPTS) return output
+            Thread.sleep(AGENT_RETRY_MILLIS)
+        }
     }
 
     /** Copies `build/linux/package` into the guest, packages it with jpackage there, and installs the `.deb` with apt. */
@@ -87,6 +93,9 @@ class LinuxGuest(
         private const val BOOT_TIMEOUT_MILLIS = 180_000L
         private const val PROBE_SECONDS = 10L
         private const val POLL_MILLIS = 2_000L
+        private const val AGENT_ERROR = "Tart Guest Agent"
+        private const val AGENT_ATTEMPTS = 4
+        private const val AGENT_RETRY_MILLIS = 1_500L
     }
 }
 
