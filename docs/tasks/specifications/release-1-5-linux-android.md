@@ -39,25 +39,35 @@ each of them.
 - `AC-01` — Two Tart Macs sharing one host folder pair with a code; a
   pause set change and a pause started on one appear on the other, and the
   existing iCloud path still links.
-- `AC-02` — On a Tart Ubuntu guest, a pause blocks a chosen host (name
-  resolves to no address) and ends a chosen application, and both are
-  released at the end and after an early end; the helper clears by itself
-  at the end when the application is not running.
+- `AC-02` — On a Tart Ubuntu guest, a pause makes connections to a chosen
+  host fail and ends a chosen application, and both are released at the end
+  and after an early end; the helper clears by itself at the end when the
+  application is not running and the application reports that expiry after
+  it starts again; a malformed host is refused; removing the package
+  leaves `/etc/hosts` as it was.
 - `AC-03` — On an Android emulator, a pause makes a chosen host unresolvable
   and covers a chosen application with the block screen, and both are
-  released at the end.
+  released at the end; a schedule received while Posato is closed starts on
+  time, also after a reboot.
 - `AC-04` — A Linux guest, an Android emulator, and a Tart Mac in one
-  folder workspace: a pause started on one applies on the other two.
-- `AC-05` — A wrong or expired pairing code joins nothing and leaves the
-  workspace intact.
+  folder workspace: a pause started on one applies on the other two within
+  two minutes, and a device killed during a fetch catches up after restart.
+- `AC-05` — A wrong, mistyped, expired, tampered, or already used pairing
+  code joins nothing and leaves the workspace intact.
+- `AC-06` — **Remove workspace** on one member deletes the folder's
+  workspace; the other members show "Sync needs attention" and can remove
+  their local copy, and none re-creates it. A Mac linked to iCloud must
+  remove that workspace before it can choose a folder.
 
 ## Verification
 
 - `./gradlew quality` on the stack tip; Android `assembleDebug`; `.deb`
   built in the Linux guest.
-- Isolated contract tests written first for the folder mailbox (partial or
-  foreign files, re-delivery) and the pairing envelope (wrong code, expiry,
-  tampering), because E2E cannot produce those inputs reliably.
+- Isolated contract tests written first for the folder mailbox (partial,
+  invalid, or foreign files, re-delivery, a missing `workspace` file), the
+  pairing envelope (wrong or mistyped code, expiry, tampering, another
+  workspace), and the Linux helper's request validation and `/etc/hosts`
+  rewriting, because E2E cannot produce those inputs reliably.
 - `posato-control` runs for `AC-01` to `AC-05`; evidence under
   `build/verification/`.
 
