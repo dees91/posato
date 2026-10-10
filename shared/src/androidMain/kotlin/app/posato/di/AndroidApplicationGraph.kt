@@ -44,6 +44,7 @@ import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.KeystoreKeyItemProtection
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -318,6 +319,7 @@ public fun createAndroidApplicationRuntime(
         files = app.posato.feature.sync.folder.NioFolderFileSystem,
         ioDispatcher = Dispatchers.IO,
         now = System::currentTimeMillis,
+        protection = KeystoreKeyItemProtection(),
         browser = browseFolder,
     )
     val graph = createGraphFactory<AndroidApplicationGraph.Factory>().create(

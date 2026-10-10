@@ -72,7 +72,42 @@
 
 ## Result
 
-- Pending.
+- **One branch instead of the planned stack.** The work landed as one branch
+  (`platform-linux-android`); the folder transport, Linux, and Android
+  share the onboarding, sync section, and `posato-control` changes, so a
+  split would have rebased every commit twice. The commits stay grouped by
+  row.
+- **Folder transport (`SYNC-018`).** `FolderSyncPorts` implements the
+  bootstrap account, cloud, key, and mailbox ports over a `FolderFileSystem`
+  port (`NioFolderFileSystem` for the desktop and Android,
+  `FoundationFolderFileSystem` with file coordination and security-scoped
+  bookmarks on iOS); `FolderPairing` creates and accepts pairing offers;
+  `SelectableSyncPorts` keeps iCloud on Apple hosts until a folder is
+  chosen. The bootstrap coordinator, exchange loop, and reducer are
+  unchanged. Android seals the workspace key with Android Keystore; the
+  desktop keeps it in a `0600` file; iOS with complete file protection.
+- **Linux (`LINUX-001`).** `:linuxHelper` is the root service (hosts block,
+  process ending, self-clear, request validation); `desktopApp` gains the
+  Linux entry point, enforcement, desktop-entry app choices, XDG paths, and
+  a `.deb` built by `jpackage` with `prerm` and `postinst` scripts.
+- **Android (`ANDROID-001`).** `:androidApp` with a DNS-only `VpnService`,
+  a usage-access guard service with the block screen, exact-alarm and boot
+  wake-ups, launcher app choices, and the shared Compose interface.
+- **Defects found by E2E and fixed test first:** a folder file listed by
+  stale metadata but gone reads as missing; sweep and removal tolerate it;
+  a leftover link attempt for another folder blocked linking; Ed25519 keys
+  failed on Android until converted through X.509; a new join attempt now
+  clears the previous refusal. Verification-tool defects: the relay raced
+  with itself (unique temporary names and a single-instance lock) and the
+  pairing-code field was matched inside a sentence.
+- **Found and moved to the backlog:** `SESSION-010` (idea 39): a device that
+  links while a pause runs adopts it before the policy phase writes the
+  set's websites, so it enforces nothing until the next pause. The order
+  predates folder sync and also applies to iCloud links.
+- **Documentation:** ADR 0010 (Proposed), the limits page's proposed 1.5
+  section, the `posato-control` README, the `verify-posato` feature map
+  (`folder-sync.md`, `linux-and-android.md`), the unattended verification
+  guide (Linux golden VM and Android emulator), and the wiki topics.
 
 ## Completed-change review
 
