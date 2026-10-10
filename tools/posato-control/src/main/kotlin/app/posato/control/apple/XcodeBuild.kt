@@ -83,6 +83,7 @@ class XcodeBuild(
         environment: Map<String, String>,
         log: Path,
         redact: (String) -> String = { it },
+        timeout: Duration? = null,
     ): Int {
         val command = listOf(
             "/usr/bin/xcodebuild",
@@ -95,7 +96,11 @@ class XcodeBuild(
             resultBundle.toString(),
             "-only-testing:PosatoDriverUITests/DriverTests/testRunScenario",
         )
-        val output = context.subprocess.run(command, environment = environment.mapKeys { (key, _) -> "TEST_RUNNER_$key" }, timeout = TEST_TIMEOUT)
+        val output = context.subprocess.run(
+            command,
+            environment = environment.mapKeys { (key, _) -> "TEST_RUNNER_$key" },
+            timeout = timeout ?: TEST_TIMEOUT,
+        )
         Files.createDirectories(log.parent)
         Files.writeString(log, redact(output.stdout + "\n--- stderr ---\n" + output.stderr))
         return output.exitCode

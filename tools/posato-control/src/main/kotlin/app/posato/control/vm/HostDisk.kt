@@ -16,6 +16,29 @@ import kotlin.io.path.exists
  */
 internal const val MIN_FREE_DISK_BYTES = 20_000_000_000L
 
+/**
+ * The minimum in force: [MIN_FREE_DISK_BYTES], or `POSATO_CONTROL_MIN_FREE_DISK_GB` when it is above it, which only
+ * verifies the guards without filling a disk. A lower value is ignored with a warning: the variable never weakens them.
+ */
+internal fun minFreeDiskBytes(): Long {
+    val raw = System.getenv(MIN_FREE_DISK_ENV) ?: return MIN_FREE_DISK_BYTES
+    val requested = raw.toLongOrNull()?.let { it * BYTES_PER_GB.toLong() }
+    if (requested != null && requested >= MIN_FREE_DISK_BYTES) return requested
+    if (!thresholdWarned) {
+        thresholdWarned = true
+        System.err.println("posato-control: ignoring $MIN_FREE_DISK_ENV=$raw; it may only raise the ${gigabytes(MIN_FREE_DISK_BYTES)} minimum.")
+    }
+    return MIN_FREE_DISK_BYTES
+}
+
+/** Below this no guest command runs, also in a clone created with `--allow-low-disk`. */
+internal const val HARD_FLOOR_DISK_BYTES = 5_000_000_000L
+
+private const val MIN_FREE_DISK_ENV = "POSATO_CONTROL_MIN_FREE_DISK_GB"
+
+/** One warning per process about an ignored threshold override. */
+@Volatile private var thresholdWarned = false
+
 /** What may be deleted to free space because a later run regenerates it. */
 internal const val DISK_SPACE_HINT = "Free space by deleting what regenerates: old runs under build/verification/runs, the build " +
     "directories of worktrees you no longer use (`./gradlew clean`), Xcode's DerivedData, ~/.gradle/caches, and Tart's image " +
@@ -46,14 +69,45 @@ internal fun lowDiskWarning(
     free: FreeSpace,
     allowLowDisk: Boolean
 ): String? {
-    if (free.bytes >= MIN_FREE_DISK_BYTES) return null
+    if (free.bytes >= minFreeDiskBytes()) return null
+    if (allowLowDisk && free.bytes < HARD_FLOOR_DISK_BYTES) {
+        throw ControlException(
+            ErrorCode.DISK_SPACE_LOW,
+            "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; no clone is created below " +
+                "${gigabytes(HARD_FLOOR_DISK_BYTES)}, not even with --allow-low-disk.",
+            DISK_SPACE_HINT,
+        )
+    }
     val shortage = "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; a run with a clone needs at " +
-        "least ${gigabytes(MIN_FREE_DISK_BYTES)}."
+        "least ${gigabytes(minFreeDiskBytes())}."
     if (allowLowDisk) return shortage
     throw ControlException(
         ErrorCode.DISK_SPACE_LOW,
         shortage,
         "$DISK_SPACE_HINT Pass --allow-low-disk to create the clone anyway.",
+    )
+}
+
+/**
+ * Stops a command that works inside [line]'s running guest while the host is below the minimum. A guest's
+ * copy-on-write disk grows with what it writes, so a load test inside one clone once filled the host to 100%; then
+ * every tool call of every session failed with "No space left on device" until a person freed space (release 1.4
+ * retro). A clone created with `--allow-low-disk` runs down to [HARD_FLOOR_DISK_BYTES]. Commands that free space or
+ * only read state (`vm destroy`, `vm shutdown`, `vm leases`, `doctor`, `flow icloud remove`) stay available.
+ */
+internal fun requireGuestRoom(
+    repository: Path,
+    line: VmLine,
+) {
+    val free = lowestFreeSpace(repository)
+    val minimum = if (lowDiskAllowed(line.cloneName)) HARD_FLOOR_DISK_BYTES else minFreeDiskBytes()
+    if (free.bytes >= minimum) return
+    throw ControlException(
+        ErrorCode.DISK_SPACE_LOW,
+        "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; guest commands in ${line.cloneName} stop " +
+            "below ${gigabytes(minimum)} so a growing clone cannot fill the host.",
+        "Destroy the clones you own (`posato-control vm destroy --line <line>`); a guest still linked to iCloud first " +
+            "runs `flow icloud remove`, which this guard allows, or is destroyed with `--keep-workspace`. Then: $DISK_SPACE_HINT",
     )
 }
 

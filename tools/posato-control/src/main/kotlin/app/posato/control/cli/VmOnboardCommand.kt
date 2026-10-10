@@ -2,7 +2,9 @@ package app.posato.control.cli
 
 import app.posato.control.vm.GuestOnboarding
 import app.posato.control.vm.VmLine
+import app.posato.control.vm.requireGuestRoom
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.serialization.json.JsonElement
@@ -14,11 +16,16 @@ class VmOnboardCommand :
         "--timeout-seconds",
         help = "How long each setup attempt may take to report ready.",
     ).long().default(DEFAULT_TIMEOUT_SECONDS)
+    private val allowSchedules by option(
+        "--allow-schedules",
+        help = "Give the consent to start schedules on their own on the Schedules card when setup left it off.",
+    ).flag()
 
-    override fun execute(session: Session): JsonElement = GuestOnboarding(session.context).run(
-        VmLine.parse(lineOption),
-        timeoutSeconds * MILLIS_PER_SECOND,
-    )
+    override fun execute(session: Session): JsonElement {
+        val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root, line)
+        return GuestOnboarding(session.context).run(line, timeoutSeconds * MILLIS_PER_SECOND, allowSchedules)
+    }
 
     private companion object {
         const val DEFAULT_TIMEOUT_SECONDS = 420L

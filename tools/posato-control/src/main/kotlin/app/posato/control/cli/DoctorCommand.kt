@@ -11,9 +11,9 @@ import app.posato.control.model.DoctorCheck
 import app.posato.control.model.DoctorReport
 import app.posato.control.model.Severity
 import app.posato.control.vm.DISK_SPACE_HINT
-import app.posato.control.vm.MIN_FREE_DISK_BYTES
 import app.posato.control.vm.gigabytes
 import app.posato.control.vm.lowestFreeSpace
+import app.posato.control.vm.minFreeDiskBytes
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.serialization.json.JsonElement
@@ -26,6 +26,10 @@ class DoctorCommand :
 
     private val deep by option("--deep", help = "Also verify the Gradle daemon JVM (slower).").flag()
     private val requestPermissions by option("--request-permissions", help = "Trigger the macOS Accessibility and Screen Recording prompts.").flag()
+    private val skipAutomationProbe by option(
+        "--skip-automation-probe",
+        help = "Skip the device's UI automation probe, a short driver run that otherwise reveals a locked iPhone.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val checks = mutableListOf<DoctorCheck>()
@@ -34,6 +38,10 @@ class DoctorCommand :
         if (requestPermissions) AxBridge(session.context).permissions(request = true)
         val targets = session.options.target?.let { listOf(it) } ?: Target.entries
         targets.forEach { target -> checks.addAll(targetChecks(session, target)) }
+        // Only on request: the probe brings the XCTest runner to the front of a phone another session may be driving.
+        if (session.options.target == Target.DEVICE && !runsInVirtualMachine() && !skipAutomationProbe) {
+            automationProbe(session)?.let(checks::add)
+        }
         val ok = checks.none { !it.ok && it.severity == Severity.ERROR.name.lowercase() }
         return ControlJson.pretty.encodeToJsonElement(DoctorReport.serializer(), DoctorReport(ok, checks))
     }
@@ -45,17 +53,42 @@ class DoctorCommand :
     private fun toolchain(session: Session): List<DoctorCheck> = if (runsInVirtualMachine()) {
         listOf(sqliteCheck())
     } else {
-        buildToolchain(session) + diskSpaceCheck(session)
+        buildToolchain(session) + diskSpaceCheck(session) + rosettaCheck(session)
+    }
+
+    /**
+     * The Intel build runs an x86-64 JDK on the host, which needs Rosetta 2. A macOS update can leave Rosetta out
+     * (`observed` once, macOS 27.0.1), and the build then failed only deep inside `checkRuntime` (release 1.4 retro).
+     */
+    private fun rosettaCheck(session: Session): DoctorCheck {
+        val probe = session.context.subprocess.run(listOf("/usr/bin/arch", "-x86_64", "/usr/bin/true"))
+        return if (probe.succeeded) {
+            DoctorCheck.pass("host.rosetta", "Rosetta 2 runs x86-64 code.")
+        } else {
+            DoctorCheck.fail(
+                "host.rosetta",
+                "Rosetta 2 is not installed; x86-64 (Intel) builds cannot run their JDK.",
+                "Run `softwareupdate --install-rosetta --agree-to-license` (administrator password).",
+                Severity.WARN,
+            )
+        }
+    }
+
+    /** The device backend's automation probe; null when no device backend can be made. */
+    private fun automationProbe(session: Session): DoctorCheck? = try {
+        session.backend(Target.DEVICE).automationProbe()
+    } catch (exception: ControlException) {
+        DoctorCheck.fail("device.automation", exception.message ?: exception.code.name, exception.hint, Severity.WARN)
     }
 
     /** A host that runs out of space breaks a build or a clone midway, long after this check could have said so. */
     private fun diskSpaceCheck(session: Session): DoctorCheck {
         val free = lowestFreeSpace(session.layout.root)
         val detail = "${gigabytes(free.bytes)} free on the volume holding ${free.path}."
-        return if (free.bytes >= MIN_FREE_DISK_BYTES) {
+        return if (free.bytes >= minFreeDiskBytes()) {
             DoctorCheck.pass("host.diskSpace", detail)
         } else {
-            val needed = "A run needs at least ${gigabytes(MIN_FREE_DISK_BYTES)}; `vm create` refuses below it."
+            val needed = "A run needs at least ${gigabytes(minFreeDiskBytes())}; `vm create` and guest commands refuse below it."
             DoctorCheck.fail("host.diskSpace", "$detail $needed", DISK_SPACE_HINT, Severity.WARN)
         }
     }

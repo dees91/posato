@@ -182,7 +182,12 @@ driver README):
   `goldenAccountNeedsAttention: true`, the run goes on, but tell the
   maintainer that the golden VM's test account needs renewing
   ([unattended verification](../../../docs/development/unattended-verification.md));
-  that clone's iCloud commands refuse. Release 1.2 and earlier
+  that clone's iCloud commands refuse. Its `scheduleConsent` says whether the
+  clone may start schedules on its own. Setup records that consent from 1.2
+  on, but one 1.3.0 test clone still read it as off (`RELEASE-006`, cause
+  `open`), so check `scheduleConsent` and pass `--allow-schedules` when it is
+  false before any recipe whose schedule must start by itself; `flow
+  schedule` warns when it is missing. Release 1.2 and earlier
   need the manual route in [First install](./features/onboarding.md).
 - `flow set`, `flow session`, `flow schedule`, and `flow icloud link|remove`
   each create a pause set, start a session, add a schedule, or link or remove
@@ -194,8 +199,21 @@ driver README):
 - `./gradlew qualityLint` between commits; `./gradlew quality` before ready.
 
 Clone names are machine-wide: every worktree and session shares
-`posato-run-<line>`. When `vm create` reports that the clone already exists,
-pick a free line or wait for its owner; destroy only a clone you created.
+`posato-run-<line>`, and Virtualization runs at most two guests. `vm leases`
+lists each line's clone, the worktree that holds it, and whether it is free,
+held, or stale (stopped, its worktree gone). Parallel sessions create clones
+with `vm create --line <line> --wait-minutes 60`: creation holds a machine-wide
+lock, and the wait lasts only while the blocking guest runs or its creator
+lives; a stale clone is refused at once, naming it. Destroy your clone as soon
+as its check is done. Destroy only a clone you created, or, as the
+coordinating session, a stale one whose creating process has exited and whose
+worktree is gone.
+
+Guest commands (`--vm`, `vm exec`, `vm sync`, `vm install`, `vm push`, `vm onboard`, `vm boot`, `vm sync-fixture`) refuse with `DISK_SPACE_LOW` while the
+host has less than 20 GB free (5 GB in a clone created with
+`--allow-low-disk`; `flow icloud remove` always runs): a clone's disk grows with what the guest writes, and one load test
+once filled the host until every session stopped. Keep a deliberate disk load
+inside a guest to 2 GB in total and delete it right after.
 
 Connected iPhone (needs `posato.apple.developmentTeam` in the ignored
 `local.properties`; keep the phone unlocked):
@@ -237,7 +255,13 @@ run's `backup/desktop/` directory afterwards.
 
 ## Doctor
 
-Before driving, and whenever something looks off:
+Before driving, and whenever something looks off. Run `doctor -t device` at
+the start of a session that needs the iPhone: its `device.automation` check
+starts the driver once (about 10 s), so a locked phone or one waiting for its
+XCTest passcode shows now instead of at the first tap; ask the maintainer to
+unlock it then. The probe briefly brings the XCTest runner to the front, so
+run it only while no other session drives the phone, and only with an
+explicit `-t device`; `--skip-automation-probe` leaves it out.
 
 ```shell
 $PC doctor -t <target> | jq '{ok: .result.ok, failing: [.result.checks[] | select(.ok | not) | {id, severity, detail, hint}]}'
@@ -378,7 +402,9 @@ Platform traps that invalidate a run:
 Every command that produces artifacts writes them under
 `build/verification/runs/<run-id>/` (`screenshots/`, `snapshots/`,
 `driver/<target>-<n>/` for iOS results, the app log, and `backup/` for
-reset) and lists them in the envelope's `artifacts`; `build/verification/latest`
+reset) and lists them in the envelope's `artifacts`; every command, host
+`vm` commands and refusals included, also keeps its envelope there as
+`envelope.json`; `build/verification/latest`
 points at the newest run and `$PC artifacts` prints the layout. Everything
 under `build/` is ignored by Git; never copy screenshots, logs, or device
 identifiers into tracked files or task records (they are categorical only).
@@ -400,6 +426,12 @@ Proof standard for a feature:
    request: `Verified <sha> on <target>: <scenario or command> -> <result>, run <run-id>`.
    Verify and post again after any later application change; reviewers block
    a merge on evidence that does not name the head.
+6. Before `gh pr ready`, run `$PC pr-evidence --pr <number>` in the worktree
+   that holds the runs. It reads lines that start with `Verified` in comments
+   by the author or the repository owner, and fails when the last one's
+   product change differs from the head's (rebases do not count) or a cited
+   `run <id>` has no directory here. Pass the run id
+   as one `--run-id <id>`; a second one is refused.
 
 Report an unreachable path with the exact command and the failing check
 (`TCC_ACCESSIBILITY_DENIED`, `NO_CONNECTED_DEVICE`, `DEVELOPMENT_TEAM_MISSING`).

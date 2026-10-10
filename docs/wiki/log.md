@@ -2798,3 +2798,16 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: Keychain access to the signing keys is pre-granted, an
   accepted `T-13` residual risk; `releasing.md` now checks for Rosetta after
   a macOS update.
+
+## [2026-10-10] tooling | Release 1.4 retro: verification guards and evidence checks
+
+- `posato-control` refuses guest-side commands below 20 GB free (5 GB in a
+  `--allow-low-disk` clone), serializes `vm create` with a machine-wide lock,
+  lists clone leases (`vm leases`), reports schedule consent, probes the
+  iPhone's UI automation (`doctor -t device`), checks Rosetta, and keeps every
+  command's envelope in its run directory.
+- `pr-evidence --pr N` checks a pull request's `Verified` line against the
+  head's product change and its cited runs before `gh pr ready`.
+- `docs/development/build-variants.md` maps the Mac package variants; the
+  `agent-delegated` provenance label joins `AGENTS.md`; `qualityLint` rejects
+  Polish letters in repository text.

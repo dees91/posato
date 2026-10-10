@@ -144,7 +144,9 @@ verification VMs), and development provisioning profiles come from
 It uses the App Store Connect team key configured in the ignored
 `local.properties`. Use it instead of the Apple Developer portal or ad hoc
 App Store Connect API calls; when it lacks an operation a task needs, extend
-the tool rather than scripting around it.
+the tool rather than scripting around it. The Gradle tasks and checks behind
+each package variant are mapped in
+[`docs/development/build-variants.md`](docs/development/build-variants.md).
 
 ## Suppression policy
 
@@ -235,7 +237,10 @@ Use these labels when provenance changes meaning:
 - `inferred`: reasoned from evidence;
 - `hypothesis`: proposed and awaiting a test;
 - `open`: unresolved;
-- `superseded`: retained history replaced by a newer conclusion.
+- `superseded`: retained history replaced by a newer conclusion;
+- `agent-delegated`: decided by an agent within an explicit maintainer
+  delegation; it needs `user-confirmed` before it enters an ADR,
+  `DESIGN.md`, or a product or security document.
 
 Prefer current user corrections, current reproducible observations,
 authoritative platform documentation, final PoC and spike result artifacts,

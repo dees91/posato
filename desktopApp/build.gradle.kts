@@ -1410,6 +1410,21 @@ val posatoJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFo
     languageVersion.set(JavaLanguageVersion.of(21))
     vendor.set(JvmVendorSpec.ADOPTIUM)
 }
+// The x86-64 build runs an x86-64 JDK on the Apple silicon host, which needs Rosetta 2. A macOS update once left it out,
+// and the build then failed only inside checkRuntime with an unreadable "A problem occurred starting process" (release
+// 1.4 retro), so it is checked here, before the Intel JDK is unpacked.
+if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) {
+    val rosetta = providers.exec {
+        commandLine("/usr/bin/arch", "-x86_64", "/usr/bin/true")
+        isIgnoreExitValue = true
+    }.result.get()
+    if (rosetta.exitValue != 0) {
+        throw GradleException(
+            "-P${PosatoMacOsArchitecture.PROPERTY}=x86_64 needs Rosetta 2, which is not installed on this Mac. " +
+                "Run `softwareupdate --install-rosetta --agree-to-license` and build again.",
+        )
+    }
+}
 val posatoJavaHome = if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) {
     PosatoTemurin.intelHome(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile) { archive, destination ->
         providers.exec {

@@ -1,5 +1,6 @@
 import app.posato.buildlogic.IosSwiftTestTrigger
 import app.posato.buildlogic.VerifyApprovedQualityExceptions
+import app.posato.buildlogic.VerifyEnglishText
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import dev.detekt.gradle.extensions.FailOnSeverity
@@ -94,6 +95,37 @@ subprojects {
             sarif.required.set(true)
         }
     }
+}
+
+val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
+    group = "verification"
+    description = "Rejects Polish letters in the repository's documentation, skills, site, and sources."
+    textFiles.from(
+        fileTree(rootDir) {
+            // Named, not *.md: THIRD_PARTY_NOTICES.md reproduces copyright notices as their holders wrote them.
+            include("README.md", "DESIGN.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "PRIVACY.md", "SECURITY.md")
+            listOf(
+                "docs",
+                ".agents",
+                "website/src",
+                "video",
+                "shared/src",
+                "desktopApp/src",
+                "iosApp",
+                "macosHelper",
+                "macosSyncCompanion",
+                "tools",
+                "buildSrc/src",
+                "quality-rules",
+                "prototypes",
+            ).forEach { directory -> include("$directory/**") }
+            exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
+        },
+    )
+    // A future Polish localization lives in its own directories, such as values-pl or pl.lproj; list them here.
+    excludedDirectories.set(emptyList<String>())
+    exceptions.set(emptyMap<String, String>())
+    repositoryDirectory.set(layout.projectDirectory)
 }
 
 val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityExceptions::class) {
@@ -200,6 +232,7 @@ tasks.register("qualityLint") {
         ":posato-provisioning:ktlintCheck",
         ":posato-control:swiftFormatCheck",
         verifyApprovedQualityExceptions,
+        verifyEnglishText,
     )
 }
 
@@ -251,5 +284,6 @@ tasks.register("quality") {
         ":posato-provisioning:ktlintCheck",
         ":posato-provisioning:test",
         verifyApprovedQualityExceptions,
+        verifyEnglishText,
     )
 }

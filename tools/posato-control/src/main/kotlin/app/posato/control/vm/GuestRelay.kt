@@ -43,27 +43,46 @@ object GuestRelay {
             removeAt(index)
             removeAt(index)
         }
-        val runId = forwarded.getOrNull(forwarded.indexOf("--run-id") + 1)?.takeIf { "--run-id" in forwarded }
-            ?: RunContext.newRunId().also { forwarded.addAll(listOf("--run-id", it)) }
+        val runId = try {
+            relayRunId(forwarded) ?: RunContext.newRunId().also { forwarded.addAll(listOf(RUN_ID_OPTION, it)) }
+        } catch (exception: ControlException) {
+            return report(forwarded, "none", exception, null)
+        }
         val context = RunContext(layout, LocalConfiguration.load(layout), runId, layout.runsDirectory, verbose = false, timeout = Tart.EXEC_TIMEOUT)
         return try {
             relay(context, line, forwarded, runId)
         } catch (exception: ControlException) {
-            val envelope = Envelope(
-                ok = false,
-                command = forwarded.firstOrNull() ?: "posato-control",
-                runId = runId,
-                durationMs = 0,
-                result = exception.result,
-                error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
-            )
-            if (HUMAN_OPTION in forwarded) {
-                envelope.humanLines().forEach(::println)
-            } else {
-                println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
-            }
-            exception.code.exitCode
+            report(forwarded, runId, exception, layout.runsDirectory.resolve(runId))
         }
+    }
+
+    /**
+     * Prints a refusal as the envelope the command itself would have printed, keeps it in [runDirectory] as every
+     * command does, and returns its exit code.
+     */
+    private fun report(
+        forwarded: List<String>,
+        runId: String,
+        exception: ControlException,
+        runDirectory: Path?,
+    ): Int {
+        val envelope = Envelope(
+            ok = false,
+            command = forwarded.firstOrNull() ?: "posato-control",
+            runId = runId,
+            durationMs = 0,
+            result = exception.result,
+            error = ErrorPayload(exception.code.name, exception.message ?: exception.code.name, exception.hint),
+        )
+        val json = ControlJson.pretty.encodeToString(Envelope.serializer(), envelope)
+        runDirectory?.let { directory ->
+            runCatching {
+                Files.createDirectories(directory)
+                Files.writeString(directory.resolve("envelope.json"), json)
+            }
+        }
+        if (HUMAN_OPTION in forwarded) envelope.humanLines().forEach(::println) else println(json)
+        return exception.code.exitCode
     }
 
     private fun relay(
@@ -77,6 +96,8 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
+        // Removing a workspace is how a linked clone becomes destroyable, so it runs below the minimum.
+        if (!removesICloudWorkspace(forwarded)) requireGuestRoom(context.layout.root, line)
         requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
@@ -170,3 +191,31 @@ private fun skipsLaunch(scenario: String): Boolean = try {
 } catch (_: SerializationException) {
     false
 }
+
+/**
+ * The run id a relayed command names, as `--run-id <id>` or `--run-id=<id>`, or null when the relay chooses one. A
+ * second `--run-id` is refused: the guest would keep only one of them and the evidence would land under the other.
+ */
+internal fun relayRunId(args: List<String>): String? {
+    val ids = args.withIndex().mapNotNull { (index, word) ->
+        when {
+            word == RUN_ID_OPTION -> args.getOrNull(index + 1)
+                ?: throw ControlException(ErrorCode.USAGE, "$RUN_ID_OPTION needs a value.")
+
+            word.startsWith("$RUN_ID_OPTION=") -> word.removePrefix("$RUN_ID_OPTION=")
+
+            else -> null
+        }
+    }
+    if (ids.size > 1) {
+        throw ControlException(ErrorCode.USAGE, "$RUN_ID_OPTION is given ${ids.size} times: ${ids.joinToString()}.", "Pass one run id.")
+    }
+    return ids.singleOrNull()
+}
+
+private const val RUN_ID_OPTION = "--run-id"
+
+/** `flow icloud remove`, which unlinks a guest so that `vm destroy` can free its disk. */
+internal fun removesICloudWorkspace(forwarded: List<String>): Boolean = forwarded.take(ICLOUD_REMOVE.size) == ICLOUD_REMOVE
+
+private val ICLOUD_REMOVE = listOf("flow", "icloud", "remove")

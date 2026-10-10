@@ -7,6 +7,7 @@ import app.posato.control.core.RepoLayout
 import app.posato.control.vm.GUEST_ROOT
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
+import app.posato.control.vm.requireGuestRoom
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
@@ -38,6 +39,7 @@ class VmSyncFixtureCommand :
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root, line)
         val tart = Tart(session.context)
         if (action == DELETE_ZONE) {
             requireOnlyThisClone(session, tart, line)

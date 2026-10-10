@@ -156,4 +156,4 @@ internal fun relocateGuestPaths(
     runId: String
 ): String = envelope.replace("build/verification/runs/$runId/", "build/verification/runs/$runId/guest/")
 
-private const val MAX_RUNNING_GUESTS = 2
+internal const val MAX_RUNNING_GUESTS = 2

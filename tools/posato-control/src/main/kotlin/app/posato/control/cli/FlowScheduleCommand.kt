@@ -4,9 +4,12 @@ import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
+import app.posato.control.core.runsInVirtualMachine
 import app.posato.control.model.Query
 import app.posato.control.model.States
 import app.posato.control.model.Step
+import app.posato.control.vm.SCHEDULE_CONSENT_QUERY
+import app.posato.control.vm.scheduleConsentGiven
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -60,6 +63,14 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             put("end", endTime.text)
             set?.let { put("set", it) }
             put("enabled", !off)
+            if (target == Target.DESKTOP && runsInVirtualMachine()) {
+                val consent = scheduleConsentGiven(
+                    session.context.subprocess.run(listOf("/bin/sh", "-c", SCHEDULE_CONSENT_QUERY)).stdout,
+                )
+                put("scheduleConsent", consent)
+                // Without the consent the saved plan never starts on its own, which once read as an update defect.
+                if (!consent) put("warning", "This Mac has not allowed schedules to start on their own; the plan will not start. $CONSENT_HINT")
+            }
         }
     }
 
@@ -283,3 +294,5 @@ internal object ScheduleDays {
 
     fun summary(target: List<String>): String = target.joinToString(", ") { day -> day.take(SHORT_LENGTH) }
 }
+
+private const val CONSENT_HINT = "Tap \"Allow schedules to start on this Mac\" on Schedules, or create the clone with `vm onboard --allow-schedules`."

@@ -27,7 +27,13 @@ follow the process in [`AGENTS.md`](../../AGENTS.md#code-review) and the
 - Application changes need the verification line from the
   [verify-posato Evidence steps](../../.agents/skills/verify-posato/SKILL.md#evidence)
   at the reviewed head, or a named blocker. Documentation-only changes need
-  none.
+  none. Run `posato-control pr-evidence --pr <number>` in the author's
+  worktree, or ask for its output: it fails when the verified commit's product
+  code differs from the head or a cited run has no directory.
+- A decision labelled `agent-delegated` may stand in a task record or pull
+  request, but block its promotion into an ADR, `DESIGN.md`, or a product or
+  security document until it is `user-confirmed`; "accepted without
+  objection" is not a confirmation.
 
 ## What to read
 

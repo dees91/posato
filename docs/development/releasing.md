@@ -25,10 +25,12 @@ Composition and the release guard come from the
   candidates use a throwaway test key
   ([Update feed and channels](apple-provisioning.md#update-feed-and-channels)).
 - **Intel:** Rosetta on the build Mac ([Intel builds](apple-provisioning.md#intel-builds)).
-  A major macOS update can leave it out (`observed` once: macOS 27.0.1 had
-  none in `RELEASE-006`), so check `arch -x86_64 /usr/bin/true` before step 3; when
-  it fails, the maintainer runs `softwareupdate --install-rosetta
-  --agree-to-license`.
+  `posato-control doctor` reports it as `host.rosetta`, and an x86-64 build
+  refuses at configuration without it, naming the install command (a macOS
+  update left it out once, `observed` in `RELEASE-006`).
+- **Build variants:** which Gradle tasks build the development, candidate,
+  release, and Intel packages, and which checks guard each, are mapped in
+  [build variants](build-variants.md).
 - **Verification:** the `primary`, `peer`, `legacy`, and `ventura` golden
   VMs, the test iPhone, and their `local.properties` keys
   ([unattended verification](unattended-verification.md)).
@@ -198,7 +200,12 @@ is ready for review.
    equal the verified feeds, and verify.
 3. On the kept `peer` clone: About, Check for Updates, Install Update,
    Install and Relaunch, `launch --adopt`; data, schedule, and helper are
-   kept and `observe` blocks. Any loss is a failure.
+   kept and `observe` blocks. Any loss is a failure. Before updating, check
+   that clone's `scheduleConsent` from `vm onboard` (use
+   `--allow-schedules` when it is false) and prove that a schedule starts on
+   its own on the old version: setup records the consent from 1.2 on, but
+   one 1.3.0 test clone still read it as off, which once read as an update
+   defect (`RELEASE-006`, cause `open`).
 
 Replacing a release older than `MACOS-026` shows that release's own "Quit
 Posato?" during Install and Relaunch; click Quit (`observed`,
