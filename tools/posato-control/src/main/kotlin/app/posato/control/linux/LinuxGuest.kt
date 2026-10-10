@@ -29,25 +29,24 @@ class LinuxGuest(
     fun create(): String {
         if (tart.list().any { it.name == CLONE }) throw ControlException(ErrorCode.ALREADY_EXISTS, "$CLONE already exists; `linux destroy` first.")
         tart.clone(golden, CLONE)
-        val log = context.layout.verificationDirectory.resolve("linux-run.log")
-        context.subprocess.startDetached(listOf(Tart.TART, "run", CLONE, "--no-graphics"), log)
-        val deadline = System.currentTimeMillis() + BOOT_TIMEOUT_MILLIS
-        while (System.currentTimeMillis() < deadline) {
-            val probe = runCatching { tart.exec(CLONE, "test -S /tmp/.X11-unix/X0 && echo ready", timeout = Duration.ofSeconds(PROBE_SECONDS)) }
-            if (probe.getOrNull()?.stdout?.contains("ready") == true) return CLONE
-            Thread.sleep(POLL_MILLIS)
-        }
-        throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not reach its X11 session in time.")
+        return boot()
     }
 
     /** Starts the existing clone again after `stop`, keeping its installation and data. */
     fun boot(): String {
         val log = context.layout.verificationDirectory.resolve("linux-run.log")
-        context.subprocess.startDetached(listOf(Tart.TART, "run", CLONE, "--no-graphics"), log)
+        val share = syncShare(context)
+        Files.createDirectories(share)
+        share.toFile().setWritable(true, false)
+        val command = listOf(Tart.TART, "run", CLONE, "--no-graphics", "--dir=$SHARE_NAME:$share")
+        context.subprocess.startDetached(command, log)
         val deadline = System.currentTimeMillis() + BOOT_TIMEOUT_MILLIS
         while (System.currentTimeMillis() < deadline) {
             val probe = runCatching { tart.exec(CLONE, "test -S /tmp/.X11-unix/X0 && echo ready", timeout = Duration.ofSeconds(PROBE_SECONDS)) }
-            if (probe.getOrNull()?.stdout?.contains("ready") == true) return CLONE
+            if (probe.getOrNull()?.stdout?.contains("ready") == true) {
+                exec(MOUNT_SHARE).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Mounting the synchronized folder in $CLONE")
+                return CLONE
+            }
             Thread.sleep(POLL_MILLIS)
         }
         throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not reach its X11 session in time.")
@@ -105,6 +104,16 @@ class LinuxGuest(
 
     companion object {
         const val CLONE = "posato-run-linux"
+
+        /** The guest sees the host folder `build/verification/linux-sync` here; the relay serves it from the host. */
+        const val GUEST_SHARE = "/mnt/shared"
+        private const val SHARE_NAME = "posato-sync"
+        private const val MOUNT_SHARE = "sudo -n mkdir -p $GUEST_SHARE && " +
+            "(mountpoint -q $GUEST_SHARE || sudo -n mount -t virtiofs com.apple.virtio-fs.automount $GUEST_SHARE)"
+        const val GUEST_FOLDER = "$GUEST_SHARE/$SHARE_NAME"
+
+        fun syncShare(context: RunContext): Path = context.layout.verificationDirectory.resolve("linux-share").resolve(SHARE_NAME)
+
         const val DEFAULT_GOLDEN = "posato-golden-linux"
         const val VERSION = "1.5.0"
         private const val BOOT_TIMEOUT_MILLIS = 180_000L
