@@ -34,6 +34,10 @@ import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.folder.AppleSyncPorts
+import app.posato.feature.sync.folder.FolderSync
+import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.NioFolderFileSystem
 import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
 import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
@@ -57,6 +61,7 @@ import dev.zacsweers.metro.createGraph
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import java.nio.file.Paths
 
 @DependencyGraph(AppScope::class)
 internal interface DesktopApplicationGraph :
@@ -190,24 +195,22 @@ internal interface DesktopApplicationGraph :
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
         sessions: LocalSessionSyncStore,
-        companion: MaintenanceCompanionTransport,
+        folderSync: FolderSync,
         schedules: ScheduleSyncStore,
         zone: ScheduleZone,
         clock: SessionClock,
         applicationMappings: LocalApplicationMappings,
     ): AppleSync {
-        val transport: SyncCompanionTransport = companion
-        val keys = MacOsBootstrapKeychainAdapter(transport)
+        val ports = folderSync.ports
         val crypto = JdkSyncCryptoProvider()
         val store = SqlBootstrapStore(database, databaseDispatcher)
-        val mailbox = MacOsMailboxAdapter(transport)
-        val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto, mailbox)
+        val coordinator = BootstrapCoordinator(ports, ports, ports, store, crypto, ports)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
         return AppleSync(
             coordinator,
             core,
-            MacOsMailboxAdapter(transport),
-            keys,
+            ports,
+            ports,
             store,
             policySync,
             crypto,
@@ -221,8 +224,39 @@ internal interface DesktopApplicationGraph :
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             onSetsRemoved = applicationMappings::retainSets,
+        ).also(folderSync::startPolling)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFolderSync(
+        databasePath: String,
+        companion: MaintenanceCompanionTransport,
+    ): FolderSync {
+        val transport: SyncCompanionTransport = companion
+        val keys = MacOsBootstrapKeychainAdapter(transport)
+        val apple = AppleSyncPorts(keys, MacOsBootstrapCloudAdapter(transport), keys, MacOsMailboxAdapter(transport))
+        val localDirectory = Paths.get(databasePath).toAbsolutePath().parent.toString()
+        return FolderSync(
+            localDirectory,
+            JdkSyncCryptoProvider(),
+            apple.takeIf {
+                isMacOs()
+            },
+            NioFolderFileSystem,
+            Dispatchers.IO,
+            System::currentTimeMillis,
         )
     }
+
+    @Provides
+    fun provideFolderSyncControls(folderSync: FolderSync): FolderSyncControls {
+        return folderSync
+    }
+}
+
+private fun isMacOs(): Boolean {
+    return System.getProperty("os.name").orEmpty().startsWith("Mac")
 }
 
 fun createDesktopApplicationGraph(

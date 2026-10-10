@@ -59,6 +59,9 @@ import app.posato.generated.resources.sync_action_required_shared_capacity
 import app.posato.generated.resources.sync_cancel_removal
 import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_completed
+import app.posato.generated.resources.sync_folder_or
+import app.posato.generated.resources.sync_folder_remove_confirmation
+import app.posato.generated.resources.sync_folder_title
 import app.posato.generated.resources.sync_icloud_description
 import app.posato.generated.resources.sync_icloud_retryable
 import app.posato.generated.resources.sync_icloud_running
@@ -80,16 +83,19 @@ internal fun SyncBootstrapSection(
     showsRemovalProgress: Boolean = workspaceRemovalResumes,
 ) {
     val snapshot by state.syncState.collectAsState()
+    val folder by state.folder.collectAsState()
     var confirmingRemoval by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
     val running = state.running || snapshot.checkingJoin || snapshot.removing || snapshot.status == SyncStatus.SYNCING
     val removingHere = showsRemovalProgress && snapshot.removing
     val checking = state.checking
+    val controls = state.folderControls
+    val folderMode = controls.supported && (folder != null || !controls.icloudSupported)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoDisclosureRow(
             onClick = { expanded = !expanded },
             onClickLabel = stringResource(if (expanded) Res.string.setup_hide_options else Res.string.setup_show_options),
-            headlineContent = { Text(stringResource(Res.string.session_icloud_title)) },
+            headlineContent = { Text(stringResource(if (folderMode) Res.string.sync_folder_title else Res.string.session_icloud_title)) },
             supportingContent = {
                 PosatoCaption(
                     stringResource(
@@ -102,17 +108,30 @@ internal fun SyncBootstrapSection(
                     ),
                 )
             },
-            leadingContent = { PosatoIcon(PosatoIcons.Cloud, null) },
+            leadingContent = { PosatoIcon(if (folderMode) PosatoIcons.Folder else PosatoIcons.Cloud, null) },
             trailingContent = { PosatoIcon(if (expanded) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, null) },
         )
         if (expanded) {
-            IcloudOptions(snapshot, running, checking, removingHere, state::sync) { confirmingRemoval = true }
+            when {
+                folderMode -> {
+                    FolderOptions(state, snapshot, folder, running, removingHere) { confirmingRemoval = true }
+                }
+
+                else -> {
+                    IcloudOptions(snapshot, running, checking, removingHere, state::sync) { confirmingRemoval = true }
+                    if (controls.supported && !snapshot.linked && !snapshot.joinPending) {
+                        PosatoCaption(stringResource(Res.string.sync_folder_or))
+                        FolderChooser(state, running)
+                    }
+                }
+            }
         }
     }
+    state.offer?.let { offer -> PairingCodeAlert(offer.code, state::closeCode) }
     if (confirmingRemoval) {
         PosatoAlert(
             title = stringResource(Res.string.sync_remove_workspace),
-            message = stringResource(Res.string.sync_remove_confirmation),
+            message = stringResource(if (folderMode) Res.string.sync_folder_remove_confirmation else Res.string.sync_remove_confirmation),
             onDismiss = { confirmingRemoval = false },
             actions = listOf(
                 PosatoAlertAction(stringResource(Res.string.sync_cancel_removal), { confirmingRemoval = false }, PosatoAlertRole.Cancel),

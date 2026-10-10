@@ -36,14 +36,10 @@ import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
 import app.posato.feature.sync.mailbox.RemovalBudget
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.attribute.PosixFilePermissions
 
 internal const val WORKSPACE_DIRECTORY: String = "Posato"
 internal const val ANCHOR_FILE: String = "workspace"
@@ -56,6 +52,7 @@ private const val CURSOR_DELIVERED: Byte = 1
 private const val CURSOR_CAUGHT_UP: Byte = 2
 private const val MAXIMUM_ANCHOR_BYTES: Int = 1_024
 private const val MAXIMUM_STORED_KEY_BYTES: Int = 4_096
+private const val MAXIMUM_SEEN_BYTES: Int = 16 * 1_024 * 1_024
 private val anchorMagic = "PSW1".encodeToByteArray()
 private val bindingDomain = "app.posato.folder.binding.v1".encodeToByteArray()
 
@@ -82,15 +79,22 @@ internal interface KeyItemProtection {
  * per bundle the mailbox, and a local file the workspace key item.
  */
 internal class FolderSyncPorts(
-    private val chosenRoot: () -> Path?,
-    private val localDirectory: Path,
+    private val chosenRoot: () -> String?,
+    private val localDirectory: String,
     private val crypto: SyncCryptoProvider,
+    private val files: FolderFileSystem,
+    private val ioDispatcher: CoroutineDispatcher,
     private val protection: KeyItemProtection = KeyItemProtection.None,
 ) : BootstrapAccountPort,
     BootstrapCloudPort,
     BootstrapKeyPort,
     MailboxPort {
     private val codec = EncryptedBundleCodec(crypto)
+
+    private suspend fun <T> io(block: suspend () -> T): T {
+        return withContext(ioDispatcher) { block() }
+    }
+
     private val seenLock = Mutex()
     private var seenCache: SeenNames? = null
 
@@ -101,39 +105,34 @@ internal class FolderSyncPorts(
         }
     }
 
-    internal suspend fun workspaceDirectory(expectedBinding: AccountBinding): Path? {
-        return io { rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) }
+    internal suspend fun workspaceDirectory(expectedBinding: AccountBinding): String? {
+        return io { rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) }
     }
 
     override suspend fun fetchZone(expectedBinding: AccountBinding): ZoneFetchResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io ZoneFetchResult.AccountChanged
-            if (Files.isDirectory(workspace)) ZoneFetchResult.Found else ZoneFetchResult.Missing
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io ZoneFetchResult.AccountChanged
+            if (files.isDirectory(workspace)) ZoneFetchResult.Found else ZoneFetchResult.Missing
         }
     }
 
     override suspend fun saveZone(expectedBinding: AccountBinding): ZoneSaveResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io ZoneSaveResult.AccountChanged
-            try {
-                if (Files.isDirectory(workspace)) {
-                    ZoneSaveResult.AlreadyExists
-                } else {
-                    Files.createDirectories(workspace)
-                    ZoneSaveResult.Created
-                }
-            } catch (_: IOException) {
-                ZoneSaveResult.Retryable
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io ZoneSaveResult.AccountChanged
+            when {
+                files.isDirectory(workspace) -> ZoneSaveResult.AlreadyExists
+                files.createDirectories(workspace) -> ZoneSaveResult.Created
+                else -> ZoneSaveResult.Retryable
             }
         }
     }
 
     override suspend fun readAnchor(expectedBinding: AccountBinding): AnchorReadResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io AnchorReadResult.AccountChanged
-            val file = workspace.resolve(ANCHOR_FILE)
-            if (!Files.exists(file)) return@io AnchorReadResult.Missing
-            val bytes = FolderFiles.readOrNull(file, MAXIMUM_ANCHOR_BYTES) ?: return@io AnchorReadResult.Retryable
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io AnchorReadResult.AccountChanged
+            val file = workspace.child(ANCHOR_FILE)
+            if (!files.isFile(file)) return@io AnchorReadResult.Missing
+            val bytes = files.read(file, MAXIMUM_ANCHOR_BYTES) ?: return@io AnchorReadResult.Retryable
             decodeAnchor(bytes)?.let { AnchorReadResult.Found(it) } ?: AnchorReadResult.IntegrityFailure
         }
     }
@@ -143,8 +142,8 @@ internal class FolderSyncPorts(
         anchor: WorkspaceAnchor,
     ): AnchorCreateResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io AnchorCreateResult.AccountChanged
-            when (FolderFiles.writeExclusive(workspace.resolve(ANCHOR_FILE), encodeAnchor(anchor))) {
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io AnchorCreateResult.AccountChanged
+            when (files.writeExclusive(workspace.child(ANCHOR_FILE), encodeAnchor(anchor))) {
                 ExclusiveWrite.CREATED -> AnchorCreateResult.Created
                 ExclusiveWrite.EXISTS -> AnchorCreateResult.Conflict
                 ExclusiveWrite.FAILED -> AnchorCreateResult.Retryable
@@ -158,8 +157,8 @@ internal class FolderSyncPorts(
     ): KeyItemReadResult {
         return io {
             val file = keyFile(account)
-            if (!Files.exists(file)) return@io KeyItemReadResult.Missing
-            val stored = FolderFiles.readOrNull(file, MAXIMUM_STORED_KEY_BYTES) ?: return@io KeyItemReadResult.Retryable
+            if (!files.isFile(file)) return@io KeyItemReadResult.Missing
+            val stored = files.read(file, MAXIMUM_STORED_KEY_BYTES) ?: return@io KeyItemReadResult.Retryable
             val item = protection.open(stored)?.let(WorkspaceKeyItem::fromBytes) ?: return@io KeyItemReadResult.IntegrityFailure
             KeyItemReadResult.Found(item)
         }
@@ -175,9 +174,9 @@ internal class FolderSyncPorts(
             try {
                 if (item.size != KEYCHAIN_ITEM_BYTES) return@io KeyItemCreateResult.IntegrityFailure
                 val sealed = protection.seal(item) ?: return@io KeyItemCreateResult.IntegrityFailure
-                ensurePrivateDirectory(keyFile(account).parent)
-                when (FolderFiles.writeExclusive(keyFile(account), sealed)) {
-                    ExclusiveWrite.CREATED -> KeyItemCreateResult.Created.also { restrictToOwner(keyFile(account)) }
+                if (!files.createPrivateDirectories(keyFile(account).parentPath())) return@io KeyItemCreateResult.Retryable
+                when (files.writeExclusive(keyFile(account), sealed)) {
+                    ExclusiveWrite.CREATED -> KeyItemCreateResult.Created.also { files.restrictToOwner(keyFile(account)) }
                     ExclusiveWrite.EXISTS -> KeyItemCreateResult.AlreadyExists
                     ExclusiveWrite.FAILED -> KeyItemCreateResult.Retryable
                 }
@@ -193,7 +192,7 @@ internal class FolderSyncPorts(
     ): KeyItemDeleteResult {
         return io {
             val file = keyFile(account)
-            if (FolderFiles.deleteQuietly(file) && !Files.exists(file)) KeyItemDeleteResult.DeletedAndAbsent else KeyItemDeleteResult.Retryable
+            if (files.delete(file) && !files.isFile(file)) KeyItemDeleteResult.DeletedAndAbsent else KeyItemDeleteResult.Retryable
         }
     }
 
@@ -203,14 +202,16 @@ internal class FolderSyncPorts(
         payload: ByteArray,
     ): BundleSaveResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io BundleSaveResult.AccountChanged
-            if (!Files.isRegularFile(workspace.resolve(ANCHOR_FILE))) return@io BundleSaveResult.IntegrityFailure
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io BundleSaveResult.AccountChanged
+            if (!files.isFile(workspace.child(ANCHOR_FILE))) return@io BundleSaveResult.IntegrityFailure
             if (identifier.size != SyncFormatLimits.IDENTIFIER_BYTES) return@io BundleSaveResult.IntegrityFailure
-            val file = workspace.resolve(BUNDLE_DIRECTORY).resolve(identifier.toHex() + BUNDLE_SUFFIX)
-            when (FolderFiles.writeExclusive(file, payload)) {
+            val file = workspace.child(BUNDLE_DIRECTORY).child(identifier.toHex() + BUNDLE_SUFFIX)
+            when (files.writeExclusive(file, payload)) {
                 ExclusiveWrite.CREATED -> BundleSaveResult.Saved
+
                 ExclusiveWrite.FAILED -> BundleSaveResult.Retryable
-                ExclusiveWrite.EXISTS -> when (val existing = FolderFiles.readOrNull(file, MAILBOX_BUNDLE_BYTES)) {
+
+                ExclusiveWrite.EXISTS -> when (val existing = files.read(file, MAILBOX_BUNDLE_BYTES)) {
                     null -> BundleSaveResult.Retryable
                     else -> if (existing.contentEquals(payload)) BundleSaveResult.Identical else BundleSaveResult.Conflict
                 }
@@ -223,10 +224,10 @@ internal class FolderSyncPorts(
         cursor: MailboxCursor,
     ): ChangeFetchResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io ChangeFetchResult.AccountChanged
-            if (!Files.isRegularFile(workspace.resolve(ANCHOR_FILE))) return@io ChangeFetchResult.ZoneMissing
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io ChangeFetchResult.AccountChanged
+            if (!files.isFile(workspace.child(ANCHOR_FILE))) return@io ChangeFetchResult.ZoneMissing
             val seen = seenLock.withLock { advanceSeen(expectedBinding, cursor) } ?: return@io ChangeFetchResult.Retryable
-            val names = FolderFiles.names(workspace.resolve(BUNDLE_DIRECTORY)) ?: return@io ChangeFetchResult.Retryable
+            val names = files.names(workspace.child(BUNDLE_DIRECTORY)) ?: return@io ChangeFetchResult.Retryable
             val candidates = names.mapNotNull(::bundleIdentifierOrNull).filter { it !in seen }.sorted()
             for ((index, name) in candidates.withIndex()) {
                 val bundle = readCheckedBundle(workspace, name) ?: continue
@@ -242,8 +243,8 @@ internal class FolderSyncPorts(
         budget: RemovalBudget,
     ): RecordDeleteResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io RecordDeleteResult.AccountChanged
-            if (FolderFiles.deleteTree(workspace)) RecordDeleteResult.DeletedAndAbsent else RecordDeleteResult.Retryable
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io RecordDeleteResult.AccountChanged
+            if (files.deleteTree(workspace)) RecordDeleteResult.DeletedAndAbsent else RecordDeleteResult.Retryable
         }
     }
 
@@ -252,10 +253,10 @@ internal class FolderSyncPorts(
         budget: RemovalBudget,
     ): BundleSweepResult {
         return io {
-            val workspace = rootFor(expectedBinding)?.resolve(WORKSPACE_DIRECTORY) ?: return@io BundleSweepResult.AccountChanged
+            val workspace = rootFor(expectedBinding)?.child(WORKSPACE_DIRECTORY) ?: return@io BundleSweepResult.AccountChanged
             when {
-                Files.exists(workspace.resolve(ANCHOR_FILE)) -> BundleSweepResult.AnchorPresent
-                FolderFiles.deleteTree(workspace.resolve(BUNDLE_DIRECTORY)) -> BundleSweepResult.Swept
+                files.isFile(workspace.child(ANCHOR_FILE)) -> BundleSweepResult.AnchorPresent
+                files.deleteTree(workspace.child(BUNDLE_DIRECTORY)) -> BundleSweepResult.Swept
                 else -> BundleSweepResult.Retryable
             }
         }
@@ -265,16 +266,16 @@ internal class FolderSyncPorts(
         io {
             seenLock.withLock {
                 seenCache = null
-                FolderFiles.deleteQuietly(seenFile(expectedBinding))
+                files.delete(seenFile(expectedBinding))
             }
         }
     }
 
     private fun readCheckedBundle(
-        workspace: Path,
+        workspace: String,
         name: String,
     ): MailboxBundle? {
-        val bytes = FolderFiles.readOrNull(workspace.resolve(BUNDLE_DIRECTORY).resolve(name + BUNDLE_SUFFIX), MAILBOX_BUNDLE_BYTES)
+        val bytes = files.read(workspace.child(BUNDLE_DIRECTORY).child(name + BUNDLE_SUFFIX), MAILBOX_BUNDLE_BYTES)
         val bundle = bytes?.let(EncryptedBundle::fromBytes) ?: return null
         val header = (codec.inspectHeader(bundle) as? InspectBundleHeaderResult.Success)?.header ?: return null
         val expectedSize = SyncFormatLimits.HEADER_BYTES + header.ciphertextLength + SyncFormatLimits.SIGNATURE_BYTES
@@ -295,43 +296,39 @@ internal class FolderSyncPorts(
             else -> current.names
         }
         if (names != current.names || cursor.isFirstPage()) {
-            ensurePrivateDirectory(localDirectory)
-            if (!FolderFiles.replace(file, names.joinToString("\n").encodeToByteArray())) return null
+            if (!files.createPrivateDirectories(localDirectory)) return null
+            if (!files.replace(file, names.joinToString("\n").encodeToByteArray())) return null
         }
         seenCache = SeenNames(file, names)
         return names
     }
 
-    private fun readSeen(file: Path): Set<String>? {
-        if (!Files.exists(file)) return emptySet()
-        val bytes = FolderFiles.readOrNull(file, Int.MAX_VALUE) ?: return null
+    private fun readSeen(file: String): Set<String>? {
+        if (!files.isFile(file)) return emptySet()
+        val bytes = files.read(file, Int.MAX_VALUE) ?: return null
         return bytes.decodeToString().split('\n').filter { it.isNotEmpty() }.toSet()
     }
 
-    private fun seenFile(binding: AccountBinding): Path {
-        return localDirectory.resolve("folder-seen-" + binding.copyBytes().copyOf(8).toHex())
+    private fun seenFile(binding: AccountBinding): String {
+        return localDirectory.child("folder-seen-" + binding.copyBytes().copyOf(8).toHex())
     }
 
-    private fun keyFile(account: KeyAccount): Path {
-        return localDirectory.resolve("keys").resolve(account.text + KEY_SUFFIX)
+    private fun keyFile(account: KeyAccount): String {
+        return localDirectory.child("keys").child(account.text + KEY_SUFFIX)
     }
 
-    private fun rootFor(expectedBinding: AccountBinding): Path? {
+    private fun rootFor(expectedBinding: AccountBinding): String? {
         val root = chosenRoot() ?: return null
         return root.takeIf { bindingFor(it) == expectedBinding }
     }
 
-    private fun bindingFor(root: Path): AccountBinding? {
-        val real = try {
-            root.toRealPath().toString()
-        } catch (_: IOException) {
-            return null
-        }
+    private fun bindingFor(root: String): AccountBinding? {
+        val real = files.canonical(root) ?: return null
         return crypto.sha256(bindingDomain + byteArrayOf(0) + real.encodeToByteArray())?.let(AccountBinding::fromBytes)
     }
 
     private data class SeenNames(
-        val file: Path,
+        val file: String,
         val names: Set<String>,
     )
 }
@@ -362,26 +359,4 @@ internal fun decodeAnchor(bytes: ByteArray): WorkspaceAnchor? {
     val transport = SyncIdentifier.fromUuidV4Bytes(bytes.copyOfRange(start + identifiers, start + identifiers * 2)) ?: return null
     val key = SyncIdentifier.fromUuidV4Bytes(bytes.copyOfRange(start + identifiers * 2, start + identifiers * 3)) ?: return null
     return WorkspaceAnchor(WorkspaceId(workspace), TransportEpochId(transport), KeyEpochId(key))
-}
-
-internal fun ensurePrivateDirectory(directory: Path) {
-    Files.createDirectories(directory)
-    restrictToOwner(directory, "rwx------")
-}
-
-private fun restrictToOwner(
-    path: Path,
-    permissions: String = "rw-------",
-) {
-    try {
-        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(permissions))
-    } catch (_: UnsupportedOperationException) {
-        return
-    } catch (_: IOException) {
-        return
-    }
-}
-
-private suspend fun <T> io(block: suspend () -> T): T {
-    return withContext(Dispatchers.IO) { block() }
 }
