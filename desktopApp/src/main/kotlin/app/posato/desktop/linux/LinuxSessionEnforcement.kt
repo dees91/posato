@@ -31,10 +31,11 @@ internal class LinuxSessionEnforcement(
         return report(if (send(line) == "ok") EnforcementOutcome.APPLIED else EnforcementOutcome.FAILED)
     }
 
+    /** Only a service that is not installed holds nothing; one that does not answer may still hold a pause. */
     override suspend fun clear(): EnforcementOutcome {
         return when (send("clear")) {
             "ok" -> EnforcementOutcome.CLEARED
-            null -> if (client.installed()) EnforcementOutcome.FAILED else EnforcementOutcome.CLEARED
+            null -> if (client.present()) EnforcementOutcome.FAILED else EnforcementOutcome.CLEARED
             else -> EnforcementOutcome.FAILED
         }
     }

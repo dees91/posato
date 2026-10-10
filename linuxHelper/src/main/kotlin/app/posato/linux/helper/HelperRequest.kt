@@ -50,8 +50,12 @@ internal sealed interface HelperRequest {
             return host.length <= MAX_HOST_LENGTH && host.split('.').let { labels -> labels.size >= 2 && labels.all(label::matches) }
         }
 
+        /** An executable's absolute path, or one snap's directory, which holds every revision of that snap. */
         private fun isPath(path: String): Boolean {
-            return path.startsWith("/") && path.length <= MAX_PATH_LENGTH && path.none { it.isISOControl() } && "/../" !in "$path/"
+            val wellFormed = path.startsWith("/") && path.length <= MAX_PATH_LENGTH && path.none { it.isISOControl() } && "/../" !in "$path/"
+            return wellFormed && (!path.endsWith("/") || snapDirectory.matches(path))
         }
+
+        private val snapDirectory = Regex("/snap/[a-z0-9][a-z0-9-]*(_[a-z0-9]+)?/")
     }
 }
