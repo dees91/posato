@@ -20,6 +20,7 @@ enum class ConfigurationKey(
     VM_LEGACY_GOLDEN("posato.vm.legacyGolden", "POSATO_VM_LEGACY_GOLDEN"),
     VM_VENTURA_GOLDEN("posato.vm.venturaGolden", "POSATO_VM_VENTURA_GOLDEN"),
     VM_LINUX_GOLDEN("posato.vm.linuxGolden", "POSATO_VM_LINUX_GOLDEN"),
+    ANDROID_SERIAL("posato.android.serial", "POSATO_ANDROID_SERIAL"),
     VM_ADMIN_KEYCHAIN_SERVICE("posato.vm.adminKeychainService", "POSATO_VM_ADMIN_KEYCHAIN_SERVICE"),
     VM_ADMIN_KEYCHAIN_ACCOUNT("posato.vm.adminKeychainAccount", "POSATO_VM_ADMIN_KEYCHAIN_ACCOUNT"),
     VM_ACCOUNT_KEYCHAIN_SERVICE("posato.vm.accountKeychainService", "POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE"),
