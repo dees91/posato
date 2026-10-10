@@ -163,6 +163,9 @@
   The 2026-10-10 backlog addition `SESSION-009` (idea 38, from a
   maintainer report, filed as an agent proposal under the same delegation)
   changes no release.
+  The 2026-10-11 backlog addition `SESSION-010` (idea 39, found by the
+  release 1.5 cross-device run and filed as an agent proposal under the
+  same delegation) changes no release.
   Revision 22 composes release 1.5 (`user-confirmed`, 2026-10-10): Posato
   leaves the Apple-only release train for Linux and Android, synchronized
   through one folder that the person keeps synchronized with a service of
@@ -486,6 +489,7 @@ The idea numbers refer to the wiki idea queue.
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
 | `TARGETS-010` | Refresh a pause set's "Apps on this Mac" or apps summary in the Pause sets list as soon as applications are chosen, removed, or cleared, without waiting for a policy change: emit the device-local application mappings' invalidations after every successful change on the Mac and on iOS, and check the other readers of those invalidations (Schedules set source, session recompose, Mac presence). Not a 1.4 regression: published 1.3.0 behaves the same. | Target management | Idea 37; `DOCS-005` review | A release composition; first candidate for 1.5 |
 | `SESSION-009` | Clear the Mac's "Restrictions not active on this Mac" notice when a session that arrived from another device ends unresumed: when the early return in `clearAfterEnd` finds nothing applied (`confirmedClear` and no enforced identity), also clear the pending action and return the view to inactive, so the transition owner stops re-sending transitions in a tight loop that flickers the Resume button and rereads the store. Test first with an isolated regression in the session owner tests, then one linked Mac VM and test-iPhone run. Present since at least 1.0.0; a relaunch clears it. | Sessions and enforcement | Idea 38; maintainer report 2026-10-10 | A release composition |
+| `SESSION-010` | Capture an adopted session's paused items after the same pass's pause-set changes are applied: a device that links while another device's pause is running adopts that session in the session phase, before the policy phase writes the set's websites locally, so it freezes its pre-link set and enforces nothing (`NOTHING_TO_ENFORCE`) until the next pause. Write the failing exchange test first, then recapture once after the policy phase or read the set's websites from the converged projection, without letting a policy-capacity failure suppress a session end. Present since sync began; also affects iCloud links. | Sessions and enforcement | Idea 39; release 1.5 cross-device run 2026-10-11 | A release composition |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
 | `PLATFORM-002` | Bring Posato to Windows under ADR 0010: enforcement mechanism, privilege model, packaging, and verification. | Platform coverage | `PLATFORM-001` | A planning checkpoint after release 1.5 |
