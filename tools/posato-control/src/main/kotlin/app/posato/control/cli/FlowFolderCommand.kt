@@ -46,8 +46,8 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         folder: String,
         deadline: Long,
     ): JsonElement {
-        val chosen = FlowSteps.labels(backend).firstOrNull { it.startsWith(CHOSEN_PREFIX) }
-        if (chosen != null && chosen != CHOSEN_PREFIX + folder && USE_ANOTHER in FlowSteps.labels(backend)) {
+        // An unlinked device chooses its folder again, as a person would, so no earlier choice carries over.
+        if (USE_ANOTHER in FlowSteps.labels(backend)) {
             FlowSteps.run(backend, listOf(FlowSteps.reveal(button(USE_ANOTHER)), FlowSteps.tap(button(USE_ANOTHER))))
         }
         if (USE_FOLDER in FlowSteps.labels(backend)) {
@@ -90,7 +90,18 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             backend,
             listOf(FlowSteps.reveal(button(JOIN_LABEL)), FlowSteps.typeInto(pairingCode, submit = false), FlowSteps.tap(button(JOIN_LABEL))),
         )
-        waitFor(backend, deadline, "join") { labels -> "linked".takeIf { ADD_DEVICE in labels } }
+        // An offer that has not reached this device's folder yet reads "No offer for this code"; a person presses Join again.
+        waitFor(backend, deadline, "join") { labels ->
+            when {
+                ADD_DEVICE in labels -> "linked"
+
+                labels.any {
+                    it.startsWith(NOT_YET)
+                } && JOIN_LABEL in labels -> null.also { FlowSteps.run(backend, listOf(FlowSteps.tap(button(JOIN_LABEL)))) }
+
+                else -> null
+            }
+        }
         return buildJsonObject {
             put("action", action)
             put("outcome", "linked")
@@ -180,8 +191,8 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val ADD_DEVICE = "Add a device"
         const val JOIN_LABEL = "Join"
         const val DONE = "Done"
+        const val NOT_YET = "No offer for this code"
         const val USE_ANOTHER = "Use another folder"
-        const val CHOSEN_PREFIX = "Folder: "
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val FOLDER_ROW = "Folder sync,"
         const val ICLOUD_ROW = "iCloud,"

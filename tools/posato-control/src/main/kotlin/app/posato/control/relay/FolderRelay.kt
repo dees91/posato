@@ -93,12 +93,13 @@ class FolderRelay(
 
     fun round() {
         Files.createDirectories(hub)
-        for (endpoint in endpoints) collect(endpoint)
+        val collected = endpoints.associate { it.name to collect(it) }
         val state = hubState()
-        for (endpoint in endpoints) distribute(endpoint, state)
+        for (endpoint in endpoints) distribute(endpoint, state, collected.getValue(endpoint.name))
     }
 
-    private fun collect(endpoint: RelayEndpoint) {
+    /** Returns the endpoint's files as collected, so distribution leaves alone what changed on it since. */
+    private fun collect(endpoint: RelayEndpoint): Map<String, String> {
         val current = endpoint.list()
         val previous = lastSeen[endpoint.name] ?: emptyMap()
         val hubNow = hubState()
@@ -114,16 +115,19 @@ class FolderRelay(
             if (Files.deleteIfExists(hub.resolve(path))) deletions++
         }
         pruneEmptyDirectories()
+        return current
     }
 
     private fun distribute(
         endpoint: RelayEndpoint,
         state: Map<String, String>,
+        collected: Map<String, String>,
     ) {
         val current = endpoint.list()
-        val missing = state.filter { (path, hash) -> current[path] != hash }.keys
+        val unchanged = { path: String -> current[path] == collected[path] }
+        val missing = state.filter { (path, hash) -> current[path] != hash && unchanged(path) }.keys
         endpoint.push(missing.associateWith { Files.readAllBytes(hub.resolve(it)) })
-        val extra = current.keys - state.keys
+        val extra = (current.keys - state.keys).filter { path -> path in collected && unchanged(path) }
         endpoint.delete(extra)
         copies += missing.size
         deletions += extra.size
