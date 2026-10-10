@@ -1395,6 +1395,41 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
+// Linux (ADR 0010): one application jar with the Compose runtime for both Linux architectures and the root service;
+// `linux/package-deb.sh` turns it into a `.deb` with jpackage on a Linux machine of the target architecture.
+val linuxDesktopRuntime: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+dependencies {
+    linuxDesktopRuntime(libs.compose.desktop.linux.arm64)
+    linuxDesktopRuntime(libs.compose.desktop.linux.x64)
+    linuxDesktopRuntime(project(":linuxHelper"))
+}
+
+val linuxAppJar by tasks.registering(Jar::class) {
+    group = "distribution"
+    description = "Builds the Linux application jar that linux/package-deb.sh packages."
+    archiveFileName.set("posato.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("linux/jar"))
+    manifest { attributes("Main-Class" to "app.posato.desktop.linux.LinuxMainKt") }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val runtime = configurations.runtimeClasspath
+    dependsOn(runtime, linuxDesktopRuntime)
+    from(sourceSets.main.map { it.output })
+    from({ (runtime.get() + linuxDesktopRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
+}
+
+val linuxPackageInputs by tasks.registering(Copy::class) {
+    group = "distribution"
+    description = "Collects the Linux jar and its packaging scripts."
+    from(linuxAppJar)
+    from(layout.projectDirectory.dir("linux"))
+    into(layout.buildDirectory.dir("linux/package"))
+}
+
 sqldelight {
     databases {
         create("MacOsApplicationMappingsDatabase") {

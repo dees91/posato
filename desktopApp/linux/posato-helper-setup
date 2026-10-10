@@ -1,0 +1,28 @@
+#!/bin/sh
+# Installs Posato's pausing service for one person (ADR 0010). Run by pkexec from the application.
+set -eu
+user="${1:-}"
+case "$user" in
+  ''|*[!a-z0-9_-]*) echo "posato-helper-setup: invalid user" >&2; exit 2 ;;
+esac
+uid=$(id -u "$user")
+[ "$uid" -gt 0 ] || { echo "posato-helper-setup: refusing root" >&2; exit 2; }
+root=/opt/posato
+install -d -m 0755 /etc/posato
+printf 'user=%s\nuid=%s\n' "$user" "$uid" > /etc/posato/helper.conf
+chmod 0644 /etc/posato/helper.conf
+cat > /etc/systemd/system/posato-helper.service <<UNIT
+[Unit]
+Description=Posato pausing service
+After=network.target
+
+[Service]
+ExecStart=$root/lib/runtime/bin/java -XX:+DisableAttachMechanism -cp $root/lib/app/posato.jar app.posato.linux.helper.MainKt serve
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now posato-helper.service

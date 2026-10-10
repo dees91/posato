@@ -33,9 +33,11 @@ internal enum class OnboardingStep {
     SUMMARY
 }
 
-internal enum class OnboardingPermissionPlatform {
+public enum class OnboardingPermissionPlatform {
     IOS,
-    MAC
+    MAC,
+    LINUX,
+    ANDROID,
 }
 
 internal data class OnboardingViewState(

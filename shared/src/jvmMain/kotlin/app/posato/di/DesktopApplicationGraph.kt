@@ -6,6 +6,7 @@ import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.notifications.UnavailableSessionNotifications
+import app.posato.feature.onboarding.ApplicationAccessPort
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -84,6 +85,8 @@ internal interface DesktopApplicationGraph :
             @Provides databasePath: String,
             @Provides macHelper: MacHelperPort,
             @Provides notifications: SessionNotificationPlatform,
+            @Provides platform: OnboardingPermissionPlatform,
+            @Provides applicationAccess: ApplicationAccessPort,
         ): DesktopApplicationGraph
     }
 
@@ -161,12 +164,14 @@ internal interface DesktopApplicationGraph :
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         macHelper: MacHelperPort,
+        platform: OnboardingPermissionPlatform,
+        applicationAccess: ApplicationAccessPort,
     ): OnboardingDependencies {
         return OnboardingDependencies(
             setupStore = SqlLocalSetupStore(database, databaseDispatcher),
-            applicationAccess = UnavailableApplicationAccess,
+            applicationAccess = applicationAccess,
             macHelper = macHelper,
-            permissionPlatform = OnboardingPermissionPlatform.MAC,
+            permissionPlatform = platform,
         )
     }
 
@@ -265,6 +270,8 @@ fun createDesktopApplicationGraph(
     macHelper: MacHelperPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
     notifications: SessionNotificationPlatform = UnavailableSessionNotifications,
+    platform: OnboardingPermissionPlatform = OnboardingPermissionPlatform.MAC,
+    applicationAccess: ApplicationAccessPort = UnavailableApplicationAccess,
 ): DesktopApplicationComponents {
     return synchronized(desktopGraphLock) {
         val existing = processDesktopGraph
@@ -278,6 +285,8 @@ fun createDesktopApplicationGraph(
                 databasePath,
                 macHelper,
                 notifications,
+                platform,
+                applicationAccess,
             ).also {
                 processDatabasePath = databasePath
                 processDesktopGraph = it

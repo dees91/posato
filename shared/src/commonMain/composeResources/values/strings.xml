@@ -337,4 +337,14 @@ For what matters.</string>
     <string name="sync_folder_join_wrong_workspace">This code belongs to a workspace in another folder.</string>
     <string name="sync_folder_join_unavailable">The folder is not available. Check it and try again.</string>
     <string name="sync_folder_remove_confirmation">This deletes the shared workspace from the folder for every device. Changes not yet delivered from this device are discarded. Websites saved on this device stay. Every other device must remove the old workspace and link again.</string>
+    <string name="onboarding_permission_linux_body">Posato asks for your administrator password once to install the small service that pauses the websites and apps you choose on this %1$s.</string>
+    <string name="onboarding_permission_linux_action">Allow pausing on this computer</string>
+    <string name="onboarding_summary_linux_on">Pausing service installed</string>
+    <string name="onboarding_summary_linux_off">Pausing service still needed</string>
+    <string name="onboarding_summary_linux_unchecked">Pausing service not checked</string>
+    <string name="onboarding_permission_android_body">Posato needs a few permissions to pause the websites and apps you choose on this %1$s: usage access, display over other apps, a local VPN that only answers website names, notifications, and exact alarms for schedules.</string>
+    <string name="onboarding_permission_android_action">Allow access</string>
+    <string name="onboarding_summary_android_on">Access allowed</string>
+    <string name="onboarding_summary_android_off">Access still needed</string>
+    <string name="onboarding_summary_android_unchecked">Access not checked</string>
 </resources>

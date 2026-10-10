@@ -67,6 +67,7 @@ import app.posato.control.cli.VmTypeCommand
 import app.posato.control.cli.VmVncHoldCommand
 import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
+import app.posato.control.cli.linuxCommand
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Envelope
@@ -96,6 +97,41 @@ class PosatoControl : CliktCommand(name = "posato-control") {
             "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device."
 
     override fun run() = Unit
+}
+
+private fun vmCommand(): VmCommand {
+    return VmCommand().subcommands(
+        VmCreateCommand(),
+        VmSyncCommand(),
+        VmBootCommand(),
+        VmShutdownCommand(),
+        VmTypeCommand(),
+        VmInstallCommand(),
+        VmDestroyCommand(),
+        VmLeasesCommand(),
+        VmPromptCommand(),
+        VmClickCommand(),
+        VmDragCommand(),
+        VmScrollCommand(),
+        VmAllowNotificationsCommand(),
+        VmPressCommand(),
+        VmScreenshotCommand(),
+        VmVncHoldCommand(),
+        VmICloudCommand(),
+        VmNetworkCommand(),
+        VmSyncFixtureCommand(),
+        VmTextCommand(),
+        VmWaitTextCommand(),
+        VmExecCommand(),
+        VmPushCommand(),
+        VmKillCommand(),
+        VmDialogsCommand(),
+        VmOnboardCommand(),
+    )
+}
+
+private fun flowCommand(): FlowCommand {
+    return FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand(), FlowFolderCommand())
 }
 
 fun buildCommand(): PosatoControl = PosatoControl().subcommands(
@@ -128,35 +164,9 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ResourcesCommand(),
     UpdateConsentCommand(),
     RelayCommand(),
-    FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand(), FlowFolderCommand()),
-    VmCommand().subcommands(
-        VmCreateCommand(),
-        VmSyncCommand(),
-        VmBootCommand(),
-        VmShutdownCommand(),
-        VmTypeCommand(),
-        VmInstallCommand(),
-        VmDestroyCommand(),
-        VmLeasesCommand(),
-        VmPromptCommand(),
-        VmClickCommand(),
-        VmDragCommand(),
-        VmScrollCommand(),
-        VmAllowNotificationsCommand(),
-        VmPressCommand(),
-        VmScreenshotCommand(),
-        VmVncHoldCommand(),
-        VmICloudCommand(),
-        VmNetworkCommand(),
-        VmSyncFixtureCommand(),
-        VmTextCommand(),
-        VmWaitTextCommand(),
-        VmExecCommand(),
-        VmPushCommand(),
-        VmKillCommand(),
-        VmDialogsCommand(),
-        VmOnboardCommand(),
-    ),
+    linuxCommand(),
+    flowCommand(),
+    vmCommand(),
 )
 
 fun run(args: Array<String>): Int {
