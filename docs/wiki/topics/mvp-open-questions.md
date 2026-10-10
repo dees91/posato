@@ -1250,6 +1250,16 @@ below. This queue retains idea provenance without expanding the original MVP.
     `SYNC-012`, present since at least 1.0.0. `inferred`: the trigger was a pause started on the
     iPhone. Filed as an agent proposal under the maintainer's delegation of
     2026-10-09. Owner: backlog row `SESSION-009`.
+39. **A device that links during a running pause adopts it without the
+    set's websites.** `observed` (2026-10-11, release 1.5 cross-device run):
+    Android started a pause, then a Linux device joined the folder
+    workspace. Linux adopted the session with no websites and showed
+    "Restrictions need attention", because the exchange runs the session
+    phase before the policy phase and adoption captures the receiving
+    device's local set once. A pause started after the link applied within
+    24 s. `inferred`: the same pass order applies to an iCloud link, so
+    the defect predates folder sync. Filed as an agent proposal under the
+    maintainer's delegation of 2026-10-09. Owner: backlog row `SESSION-010`.
 
 ## Later platform questions
 
