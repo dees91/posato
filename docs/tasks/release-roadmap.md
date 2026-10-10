@@ -169,7 +169,8 @@
   their choice. `PLATFORM-001` and `SYNC-018` move from the backlog into
   the release and are delivered by one long run. The maintainer accepted
   the direction in chat: the Mac desktop application also offers the
-  folder transport, a workspace keeps one transport, iOS stays on iCloud;
+  folder transport, a workspace keeps one transport, and iOS joins the
+  folder mode too (added the same day);
   a device joins with a one-time pairing code and there is no device
   revocation (a new workspace replaces it), which ADR 0010 records as a
   revision of ADR 0002; Android blocks applications through usage access
@@ -447,7 +448,7 @@ Theme: Posato runs on Linux and Android as well as on Apple devices. The
 devices of one person share pauses, pause sets, and schedules through a
 folder that Dropbox, OneDrive, Syncthing, or any other service keeps
 synchronized; Posato only reads and writes encrypted files in it. The Mac
-can join such a workspace; the iPhone stays on iCloud.
+and the iPhone can join such a workspace instead of using iCloud.
 
 The maintainer asked for one long run (`user-confirmed`, 2026-10-10). The
 rows are delivered as stacked pull requests in the order of the table.
@@ -458,7 +459,7 @@ with one milestone per pull request.
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
 | `PLATFORM-001` | Record the platform decision in ADR 0010: Linux and Android first, Windows later; per-platform enforcement mechanisms and privilege models; one shared Compose interface. | Platform coverage | discovery | R1.5/W1 | None | PR-PORTABLE-FOLDER |
-| `SYNC-018` | Synchronize a workspace through one user-selected folder with the format-1 encrypted operation model: one file per bundle, a one-time pairing code that delivers the workspace key, no device revocation; offered by the Mac desktop application and verified between two Tart Macs over a shared folder. | Portable synchronization | delivery | R1.5/W1 | `PLATFORM-001` | PR-PORTABLE-FOLDER |
+| `SYNC-018` | Synchronize a workspace through one user-selected folder with the format-1 encrypted operation model: one file per bundle, a one-time pairing code that delivers the workspace key, no device revocation; offered by the Mac desktop application and the iOS application, verified between two Tart Macs over a shared folder and on the test iPhone. | Portable synchronization | delivery | R1.5/W1 | `PLATFORM-001` | PR-PORTABLE-FOLDER |
 | `LINUX-001` | Ship Posato for Linux from the shared desktop application as a `.deb` package: a systemd helper that blocks websites through `/etc/hosts` and ends chosen applications, applications chosen from desktop entries, the folder transport, and `posato-control --vm linux` with a Tart Ubuntu guest. | Platform coverage | delivery | R1.5/W2 | `SYNC-018` | PR-LINUX |
 | `ANDROID-001` | Ship Posato for Android from the shared interface: websites blocked by a local DNS filter (`VpnService`), applications by usage access and a full-screen block screen, schedules, the folder transport, and `posato-control -t android` on an emulator, ending with a Linux, Android, and Mac workspace that pauses across all three. | Platform coverage | delivery | R1.5/W3 | `SYNC-018`, `LINUX-001` | PR-ANDROID |
 | `RELEASE-007` | Verify and publish Posato 1.5.0, including the Linux package and the Android APK on GitHub Releases. | Release readiness | delivery | R1.5/W4 | `SYNC-018`, `LINUX-001`, `ANDROID-001` | PR-RELEASE-1-5 |
