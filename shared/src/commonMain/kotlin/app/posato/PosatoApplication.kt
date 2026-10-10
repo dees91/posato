@@ -141,6 +141,7 @@ class PosatoApplication internal constructor(
             store,
             onboardingDependencies.applicationAccess,
             helperSetup,
+            folderSync.icloudSupported,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         LaunchedEffect(helperSetup) {

@@ -3,6 +3,7 @@ package app.posato.control.vm
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.core.RunContext
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
@@ -32,10 +33,14 @@ class Tart(
         name: String,
         jdk: Path,
         log: Path
-    ): Process = context.subprocess.startDetached(
-        listOf(TART, "run", name, "--no-graphics", "--vnc-experimental", "--dir=$JDK_SHARE:$jdk:ro"),
-        log,
-    )
+    ): Process {
+        val folder = context.layout.syncFolder
+        Files.createDirectories(folder)
+        return context.subprocess.startDetached(
+            listOf(TART, "run", name, "--no-graphics", "--vnc-experimental", "--dir=$JDK_SHARE:$jdk:ro", "--dir=$SYNC_FOLDER_SHARE:$folder"),
+            log,
+        )
+    }
 
     /** Runs a `/bin/sh` script in the logged-in user's Aqua session of the guest. */
     fun exec(
@@ -84,6 +89,8 @@ class Tart(
         const val TART = "tart"
         const val JDK_SHARE = "jdk"
         const val GUEST_JDK_BIN = "/Volumes/My Shared Files/jdk/Contents/Home/bin"
+        const val SYNC_FOLDER_SHARE = "sync-folder"
+        const val GUEST_SYNC_FOLDER = "/Volumes/My Shared Files/sync-folder"
         val EXEC_TIMEOUT: Duration = Duration.ofMinutes(10)
         private val CLONE_TIMEOUT: Duration = Duration.ofMinutes(5)
         private val COPY_TIMEOUT: Duration = Duration.ofMinutes(10)
