@@ -83,8 +83,7 @@ review before tagging.
 
 - **Blocker (maintainer):** the Keychain prompts during signing; the
   publication go.
-- **To be confirmed by the maintainer before step 4** (`releasing.md`
-  requires `user-confirmed`): the reduced matrix, App Store release type
-  `after-approval`, and claiming iOS 26 only, as in 1.3.
+- **`user-confirmed` (2026-10-10):** the reduced matrix in the record, App
+  Store release type `after-approval`, and claiming iOS 26 only, as in 1.3.
 - **Decided by the agent under the maintainer's delegation (2026-10-09):**
   the build numbers and the `DOCS-005` coupling in the record.

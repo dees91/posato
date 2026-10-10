@@ -2,7 +2,7 @@
 
 - **Brief:** [Verify the 1.4.0 candidates and publish Posato 1.4](../specifications/release-006-release-1-4.md)
 - **Status:** `active`: plan revised after the plan review; waiting for
-  its re-review, the maintainer's confirmations, and `DOCS-005`
+  its re-review and for `DOCS-005`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review (changes-required, folded here)
@@ -49,7 +49,7 @@
      --screenshots docs/store/en-US/screenshots`, plus `--subtitle` only if
      `DOCS-005` changes it, at a pinned `DOCS-005` head; a rerun reports
      every item `unchanged`.
-4. **Reduced matrix**, once each, after the maintainer's confirmations:
+4. **Reduced matrix** (`user-confirmed` 2026-10-10), once each:
    - `primary` (macOS 26), fresh arm64 DMG: unified setup reads ready; a
      manual pause chosen with **1 h** and one with **Until end of day** shows
      the expected end (`SESSION-007`), `observe` blocked then allowed. Then
@@ -96,8 +96,6 @@
 
 **Maintainer touchpoints, nothing else attended:**
 
-- Before step 4: confirm the reduced matrix, `after-approval`, and iOS 26
-  only.
 - Signing in step 3 runs back to back while the maintainer is present, one
   Keychain action per message, never Always Allow for the release key: the
   Developer ID key (arm64, x86-64, and the second-clone verification
@@ -110,9 +108,10 @@
   if `DOCS-005` changes it.
 
 **Decisions (agent, under the maintainer's delegation of 2026-10-09):**
-macOS build 29 and iOS build 7; the `DOCS-005` coupling above. The reduced
-matrix, `after-approval`, and iOS 26 only wait for the maintainer's
-confirmation.
+macOS build 29 and iOS build 7; the `DOCS-005` coupling above.
+
+**`user-confirmed` (2026-10-10):** the reduced matrix in step 4, App Store
+release type `after-approval`, and claiming iOS 26 only.
 
 ## High-risk plan review
 
@@ -122,5 +121,5 @@ confirmation.
   need `user-confirmed`.
 - **Resolution:** a cold boot on `primary` and the updated `peer`
   installation check ready setup and a schedule that starts on its own; the
-  three acceptances wait for the maintainer before step 4. All Recommended
+  three acceptances are `user-confirmed` (2026-10-10). All Recommended
   and Optional findings are folded above.
