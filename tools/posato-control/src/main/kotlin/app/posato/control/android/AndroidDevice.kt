@@ -103,11 +103,21 @@ class AndroidScreen(
         text: String,
         exact: Boolean,
         timeoutMillis: Long,
+        scrolls: Boolean = false,
     ): List<AndroidNode> {
         val deadline = System.currentTimeMillis() + timeoutMillis
+        var attempt = 0
         while (true) {
             val matches = nodes().filter { if (exact) it.text.trim() == text else it.text.contains(text, ignoreCase = true) }
             if (matches.isNotEmpty()) return matches
+            // A control below or above the visible part of a screen is reached the way a person reaches it, by scrolling.
+            if (scrolls) {
+                if (attempt++ % SCROLL_CYCLE < SCROLLS_DOWN) {
+                    swipeUp()
+                } else {
+                    swipeDown()
+                }
+            }
             if (System.currentTimeMillis() >= deadline) {
                 throw ControlException(ErrorCode.WAIT_TIMEOUT, "\"$text\" did not appear on ${device.serial} within ${timeoutMillis / MILLIS} s.")
             }
@@ -129,12 +139,18 @@ class AndroidScreen(
     }
 
     fun swipeUp() {
-        device.shell("input swipe 540 1800 540 700 300")
+        device.shell("input swipe 540 1700 540 900 300")
+    }
+
+    fun swipeDown() {
+        device.shell("input swipe 540 900 540 1700 300")
     }
 
     private companion object {
         const val POLL_MILLIS = 1_000L
         const val MILLIS = 1_000
+        const val SCROLLS_DOWN = 4
+        const val SCROLL_CYCLE = 8
         const val LEFT = 0
         const val TOP = 1
         const val RIGHT = 2

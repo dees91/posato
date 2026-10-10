@@ -128,7 +128,7 @@ class AndroidTapCommand : AndroidControlCommand("tap", "Tap the element with thi
 
     override fun execute(session: Session): JsonElement {
         val device = device(session).screen
-        val node = device.waitFor(text, exact, timeoutSeconds * ANDROID_MILLIS).sortedBy {
+        val node = device.waitFor(text, exact, timeoutSeconds * ANDROID_MILLIS, scrolls = true).sortedBy {
             it.y
         }.getOrElse(index) { error("No match $index for $text") }
         device.tap(node)
