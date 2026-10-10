@@ -1,8 +1,8 @@
 # Execution: `RELEASE-006`
 
 - **Brief:** [Verify the 1.4.0 candidates and publish Posato 1.4](../specifications/release-006-release-1-4.md)
-- **Status:** `active`: plan approved; waiting for `DOCS-005` and the
-  coordinator's go for step 3
+- **Status:** `active`: candidates verified; waiting for the
+  completed-change review, then the publication sitting
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review (changes-required, folded here)
@@ -128,7 +128,13 @@
 macOS build 29 and iOS build 7; the `DOCS-005` coupling above.
 
 **`user-confirmed` (2026-10-10):** the reduced matrix in step 4, App Store
-release type `after-approval`, and claiming iOS 26 only.
+release type `after-approval`, and claiming iOS 26 only. Also: Keychain
+access to the signing keys, the release update key included, is pre-granted
+with Always Allow (chosen at 1.3.0, accepted again on 2026-10-10), so no
+prompt appeared and signing ran unattended; `releasing.md` now says so. The
+publication go is given in advance, to apply once the completed-change
+review passes. Opening build 7 from TestFlight is left to the maintainer,
+outside the release gate.
 
 ## High-risk plan review
 
@@ -143,3 +149,81 @@ release type `after-approval`, and claiming iOS 26 only.
   three acceptances are `user-confirmed` (2026-10-10). The re-review's
   TestFlight finding made that step best-effort. All Recommended and
   Optional findings of both rounds are folded above.
+
+## Result
+
+- **R** = `16a00f3d843930f4e61581b1ee627e74dd0b0a39`: `MARKETING_VERSION =
+  1.4.0` on `main` `d0662fa3` (with `DOCS-005` #163 merged, so the appcast
+  notes and store files are final) plus this row's brief and record. Clean
+  clone of R: `./gradlew quality iosSwiftTest` passed (7 min 56 s).
+- **Host incident:** macOS 27.0.1 on the build Mac had no Rosetta, so the
+  first x86-64 build stopped at `:desktopApp:checkRuntime` (bad CPU type for
+  the x86-64 Temurin `java`) before any signing. The maintainer installed
+  Rosetta 2 (`softwareupdate --install-rosetta`); `releasing.md` now checks
+  for it before step 3.
+- **macOS 1.4.0 (29)**, release channel, Developer ID G2, floor 28 from the
+  published feeds:
+  - `Posato-1.4.0.dmg` (arm64)
+    `4983d3ef6fa5daa181058b40158bc0f0664c1e32275f615671e0c84f479a1534`;
+    `appcast.xml`
+    `a7185b40fdae17cc35c48adef295c2105560e96a1911eea11c6cd8061fe8fa67`;
+  - `Posato-1.4.0-intel.dmg` (x86-64)
+    `877a0806e29a6566dd8bf80fd1acea2b2119da911ae08449ea84b3997f0309c3`;
+    `appcast-intel.xml`
+    `fde0ca466e4ba5528e1dcdf04898e8ea35abc8193ad86d7984848ff887e9389a`;
+  - merged `SHA256SUMS`
+    `ebfda48aef06ba7f7ebd9c651231fe4e9e83ccbaf478a52c944c78dccf09f09d`,
+    `shasum -a 256 -c` OK; each feed has one item, `sparkle:version` 29,
+    and an enclosure length equal to its DMG.
+  - Consumed macOS build number: 29 (both architectures).
+- **Host DMG checks, both architectures:** every Mach-O has the DMG's
+  architecture; no Rosetta switch; `SUFeedURL` ends in `appcast.xml` or
+  `appcast-intel.xml` with the release key; minimum macOS 13.0; Temurin
+  21.0.12.1 in both; strict deep `codesign`, `spctl` (Notarized Developer
+  ID), and `stapler validate` pass. The application, helper, and companion
+  entitlements equal 1.3.0's in both DMGs.
+- **No verification seams:** `verifyMacOsReleasePackaging` and the
+  `generateMacOsUpdateFeed` DMG scan ran and passed for both; `grep -a -c
+  posato-verification-seams-v1` prints 0 for the companion and for every
+  executable in both release DMGs and in the verification candidate;
+  `plutil -extract PosatoVerificationSeams` fails on every bundle's
+  `Info.plist`.
+- **x86-64 verification candidate** (second clean clone, candidate channel,
+  Rosetta switch, loopback feed, throwaway key never stored, build 9201):
+  notarized,
+  `0ac292b3c66571db27100041dafe1ba5682694e49d9940f9bf28d752697e5bb0`; never
+  published; that clone was deleted after hashing.
+- **iOS 1.4.0 (7):** archived, exported (Apple Distribution, `get-task-allow`
+  false, Family Controls, the app group, CloudKit `Production`, the sync
+  keychain group, both privacy manifests), validated, uploaded, `VALID`.
+  IPA `81c0287e6142e2f265ac35aea7f769c973c77ecc42c26eddefa43bfe9aa7f02c`.
+  Consumed iOS build number: 7.
+- **Store record:** `store prepare` created 1.4.0, attached build 7, set
+  `after-approval`, What's New, and the description, and replaced both
+  screenshot sets from R's `DOCS-005` files; a rerun reported every item
+  `unchanged`; `store status`: `PREPARE_FOR_SUBMISSION`. Not submitted.
+
+### Verification on the candidates (2026-10-10)
+
+Run directories are under this worktree's ignored `build/verification/runs/`;
+the command transcript is `build/verification/release-006/transcript.log`.
+The host was loaded by an unrelated training job throughout.
+
+| Check | Target | Result |
+| --- | --- | --- |
+| Fresh arm64 DMG: setup, update consent, This Mac ready | `primary`, macOS 26 | pass (`090652-4260`, `090741-09e0`) |
+| Pause with **1 h**: "Until 10:10 AM, 59 min left", `observe` blocked, End early, allowed | `primary` | pass (`091006-1c40`, `091012-5776`, `091022-6111`, `091029-0e5d`) |
+| Pause **Until end of day**: "Until 10/11/26, 12:00 AM", blocked, End early, allowed | `primary` | pass (`091031-8261`, `091040-d5fb`, `091054-d94b`, `091101-9a61`) |
+| Cold boot: schedule 09:19 set before `vm shutdown`/`vm boot`; Posato started at login; `observe` blocked before any manual open; then This Mac "Background helper enabled" | `primary` | pass (`091106-b3de`, `092019-1bcc`, `092040-12ab`) |
+| Fresh arm64 DMG: setup and one blocking pause | `legacy`, macOS 15 | pass (`091357-9c00`, `091433-4872`, `091635-b6c0`) |
+| x86-64 release DMG: Gatekeeper accepted, "This version is for Intel Macs" | `ventura`, macOS 13 | pass (`092252-4717`, `092349-0f01`) |
+| x86-64 verification candidate: setup and one blocking pause | `ventura` | pass (`092613-a0bd`, `092831-0da8`) |
+| Plain development package of R: link (13 presses, sync completed), pause-set notice, **one press** of Remove workspace to not linked (3 min 21 s) | `primary` | pass (`092726-5652`, `093621-85c7`, `093629-0383`) |
+| R's development build: a pause shows "Website Not Allowed" in Safari; End early; edge swipe back from a set to the list | test iPhone | pass (`094208-d6d5`, `094221-bc0b`, `094231-7b48`) |
+| 1.3.0 installed, set up, update consent allowed, a set with two websites; kept running for step 7 | `peer` | ready (`093047-03a3`, `093133-d2a2`, `093307-58f2`) |
+
+Deviation: the `peer` 1.3.0 installation holds no application, because the
+1.3.0 picker could not be driven (`PROCESS_NOT_ALLOWED` for the helper
+process); data retention after the update is checked on the sets, websites,
+schedule, and helper.
+

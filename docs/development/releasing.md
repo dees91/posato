@@ -25,6 +25,10 @@ Composition and the release guard come from the
   candidates use a throwaway test key
   ([Update feed and channels](apple-provisioning.md#update-feed-and-channels)).
 - **Intel:** Rosetta on the build Mac ([Intel builds](apple-provisioning.md#intel-builds)).
+  A major macOS update can leave it out (macOS 27.0.1 had none in
+  `RELEASE-006`), so check `arch -x86_64 /usr/bin/true` before step 3; when
+  it fails, the maintainer runs `softwareupdate --install-rosetta
+  --agree-to-license`.
 - **Verification:** the `primary`, `peer`, `legacy`, and `ventura` golden
   VMs, the test iPhone, and their `local.properties` keys
   ([unattended verification](unattended-verification.md)).
@@ -33,9 +37,12 @@ Composition and the release guard come from the
 
 **Who does what.** The agent does every step it can, including the merges
 after the publication go (since `RELEASE-005`; the maintainer merged in
-`RELEASE-004`). The maintainer answers the Keychain prompts for the release
-key (and the Developer ID key if macOS asks), gives the go, and does what the
-App Store Connect API cannot. Ask for one Keychain action per message.
+`RELEASE-004`). The maintainer gives the go and does what the App Store
+Connect API cannot. Keychain access to the signing keys, the release update
+key included, may be pre-granted with Always Allow, so signing runs
+unattended (`user-confirmed`, 2026-10-10); the risk is that any process
+running as the maintainer can then use those keys without a prompt. When a
+prompt does appear, ask for one Keychain action per message.
 
 ## 1. Open the row and plan
 
