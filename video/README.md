@@ -41,14 +41,14 @@ moves every crop taken from it, and nothing else reports that.
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,620,233 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,558,142 bytes.
 - `../.github/assets/step-websites.png`, `step-duration.png`, and
   `step-schedules.png`: 1920 x 1080 composed stills on a transparent
   background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 497,081 bytes, with a JPEG poster for the first paint, phones, and
+  faststart, 515,041 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
@@ -73,8 +73,9 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures come from the product tree of revision `cfec5ef` (the `main`
-head the `DOCS-004` branch started from, Posato 1.3), driven through
+All captures come from the product tree of revision `27c593d` (the `main`
+head the `DOCS-005` branch started from, Posato 1.4, with the `DESIGN-004`
+interface), driven through
 `posato-control` by the scripts in `capture/` without a hand on either
 device, and reduced with FFmpeg only: Mac frames to 1272 pixels wide, iPhone
 frames to 660 pixels wide. No label, timer value, service result, or
@@ -85,21 +86,21 @@ Git history.
   in Dark Mode, never on the maintainer's Mac. The fixture is two pause sets,
   `Focus` (the first set, renamed and the default, with `example.com`,
   `example.net`, and the built-in Chess application) and `Evening`
-  (`example.net`, and Chess added after the scheduled-pause frame), and two
-  schedules, `Deep work` (Focus, weekdays 09:00 to 11:00) and `Evening reading`
-  (Evening, daily, one hour). The VM finished the unified setup first, so the
+  (`example.net` and Chess), and two schedules, `Deep work` (Focus, weekdays
+  09:00 to 11:00) and `Evening reading` (Evening, daily, one hour). The sets
+  were prepared with single `posato-control` commands before the script ran. The VM finished the unified setup first, so the
   session started without an administrator prompt. `capture/mac-captures.sh`
   opens Focus from **Pause sets** for `apps` and `websites`, captures the
   list with `sets`, and picks Chess through recognized screen text, because
   the resident helper and the picker are two processes with one name;
   `session` selects 45 minutes with the default set, reviews, starts, and
   ends early; `schedules HH:MM` saves `Deep work`, captures it alone, then
-  saves `Evening reading` with the Evening set; and `scheduled` captures
+  saves `Evening reading` with the Evening set through `flow schedule`; and `scheduled` captures
   Session once `Evening reading` started on its own. The duration, review,
   and active frames were captured within one minute so their end times agree.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
   install, in Dark Mode, after the first-install skip scenario. The Focus and
-  Evening sets, the two synthetic domains, the Screen Time consent, one
+  Evening sets, the two synthetic domains, the Screen Time consent when asked, one
   built-in application in Focus (Calculator, which Posato shows only as a
   count), the notification permission, and the `Deep work` schedule were all
   driven by `capture/iphone-captures.sh`, which deletes the schedule again.

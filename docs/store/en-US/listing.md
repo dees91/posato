@@ -6,6 +6,8 @@ below and submitted to App Review for version 1.0.0 (3). `DOCS-003` prepared
 the 1.2 description, What's New, and screenshots on 2026-09-27 for
 `RELEASE-004`; nothing was uploaded. `DOCS-004` prepared the 1.3 subtitle,
 description, What's New, and screenshots on 2026-10-02 for `RELEASE-005`.
+`DOCS-005` prepared the 1.4 description, What's New, and screenshots on
+2026-10-10 for `RELEASE-006`.
 
 ## Name
 
@@ -24,8 +26,8 @@ characters, over the subtitle's 30; the maintainer chose this shorter form on
 The description is [description.txt](description.txt), the exact text
 `posato-provisioning store prepare --description` uploads. Since 1.2 it adds
 schedules, schedule sync, the one-time Mac setup, and the advice to update
-every device; 1.3 adds pause sets and Intel Macs. Earlier text is in Git
-history.
+every device; 1.3 adds pause sets and Intel Macs; 1.4 adds the longer quick
+choices. Earlier text is in Git history.
 
 ## Keywords
 
@@ -48,8 +50,10 @@ website list now names the included `www` variant and About shows the new
 version. `DOCS-003` recaptured the set for 1.2.0 on 2026-09-27 and added
 Schedules as the third screen, which moved About Posato to fourth. `DOCS-004`
 recaptured both sets for 1.3.0 on 2026-10-02: the first screen now shows the
-pause set Focus with its websites, and Session and Schedules show the set; it
-awaits the maintainer's acceptance.
+pause set Focus with its websites, and Session and Schedules show the set.
+`DOCS-005` recaptured both sets for 1.4.0 on 2026-10-10 with the `DESIGN-004`
+interface and the `SESSION-007` quick choices, on an iPhone 17 Pro Max
+Simulator with iOS 26.5, because Xcode 27 no longer ships that device.
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen
@@ -69,7 +73,10 @@ from `IOS-004`:
 ### Capture recipe
 
 Repeat these steps for each Simulator: iPhone 17 Pro Max (1320 × 2868) and
-iPad Pro 13-inch (M5) in portrait (2064 × 2752). Drive the app with
+iPad Pro 13-inch (M5) in portrait (2064 × 2752). When Xcode no longer lists the
+iPhone, create it with `xcrun simctl create` from the
+`com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max` device type and an
+installed iOS 26 runtime. Drive the app with
 [`posato-control`](../../../tools/posato-control/README.md) and name the booted
 Simulator with `--udid <udid>`.
 
@@ -100,10 +107,14 @@ Simulator with `--udid <udid>`.
 uploads both sets in file-name order; see the
 [iOS App Store release](../../development/apple-provisioning.md#ios-app-store-release).
 
+## What's New in 1.4.0
+
+[whats-new-1.4.0.txt](whats-new-1.4.0.txt) is the text for
+`store prepare --whats-new`. It names only what changed on iPhone and iPad.
+
 ## What's New in 1.3.0
 
-[whats-new-1.3.0.txt](whats-new-1.3.0.txt) is the text for
-`store prepare --whats-new`.
+[whats-new-1.3.0.txt](whats-new-1.3.0.txt) was the 1.3.0 text.
 
 ## What's New in 1.2.0
 

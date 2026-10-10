@@ -28,7 +28,7 @@ open_sets() {
 open_focus() {
   open_sets
   pc tap --text-contains "Focus, Default" --role button | ok
-  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+  pc wait --for exists --text "Back to Pause sets" --role button --timeout-seconds 60 | ok
 }
 # Adds domains in the open set; Done closes the entry and the keyboard.
 # The keyboard covers later rows, so the domains are checked after Done.
@@ -55,25 +55,26 @@ allow_notices() {
 websites() {
   ready
   open_sets
+  # The set's own menu renames it; the alert's field is found by its placeholder.
+  pc tap --text-contains "My set, Default" --role button | ok
+  pc wait --for exists --text "Back to Pause sets" --role button --timeout-seconds 60 | ok
   pc tap --text "More actions for My set" --role button | ok
   pc tap --text "Rename" --role button | ok
-  pc type --role textField --input "Focus" --clear | ok
+  pc type --text "Name" --role textField --input "Focus" --clear | ok
   pc tap --text "Save" --role button | ok
-  pc wait --for exists --text-contains "Focus, Default" --role button --timeout-seconds 60 | ok
-  pc tap --text-contains "Focus, Default" --role button | ok
-  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+  pc wait --for exists --text "More actions for Focus" --role button --timeout-seconds 60 | ok
   add_domains example.com example.net
-  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text "Back to Pause sets" --role button | ok
   pc tap --text-contains "Focus, Default" --role button | ok
   pc wait --for exists --text-contains "example.net" --role text --timeout-seconds 30 | ok
   shot iphone-websites
-  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text "Back to Pause sets" --role button | ok
   pc tap --text "New set" --role button | ok
-  pc type --role textField --input "Evening" --clear | ok
+  pc type --text "Name" --role textField --input "Evening" --clear | ok
   pc tap --text "Save" --role button | ok
-  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+  pc wait --for exists --text "Back to Pause sets" --role button --timeout-seconds 60 | ok
   add_domains example.net
-  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text "Back to Pause sets" --role button | ok
   pc wait --for exists --text-contains "Evening, " --role button --timeout-seconds 60 | ok
   shot iphone-pause-sets
   pc tap --text "Session" --role button | ok
@@ -109,7 +110,7 @@ PY
     {"name":"save","action":"tap","query":{"text":"Save","role":"button"}},
     {"name":"chosen","action":"waitFor","state":"exists","query":{"textContains":"Apps, 1","role":"button"}}]'
   shot iphone-apps
-  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text "Back to Pause sets" --role button | ok
   pc tap --text "Session" --role button | ok
 }
 
@@ -119,8 +120,8 @@ session() {
   pc wait --for exists --text "Start a session" --role button --timeout-seconds 60 | ok
   pc tap --text "Start a session" --role button | ok
   # The Pause set row pushes Review session below the fold on a phone.
-  pc wait --for exists --text "45 min" --role button --timeout-seconds 60 | ok
-  pc tap --text "45 min" --role button | ok
+  pc wait --for exists --text "45 minutes" --role button --timeout-seconds 60 | ok
+  pc tap --text "45 minutes" --role button | ok
   shot iphone-duration-45
   steps '[{"name":"review-reveal","action":"scrollTo","query":{"text":"Review session","role":"button"}},
     {"name":"review","action":"tap","query":{"text":"Review session","role":"button"}}]'
@@ -147,11 +148,14 @@ schedules() {
   steps '[{"name":"save-reveal","action":"scrollTo","query":{"text":"Save schedule","role":"button"}},
     {"name":"save","action":"tap","query":{"text":"Save schedule","role":"button"}}]'
   allow_notices
-  pc wait --for exists --text "Edit Deep work" --role button --timeout-seconds 60 | ok
+  pc wait --for exists --text-contains "Deep work," --role button --timeout-seconds 60 | ok
   shot iphone-schedules
-  pc tap --text "Delete Deep work" --role button | ok
-  pc tap --text "Delete" --role button | ok
-  pc wait --for absent --text "Edit Deep work" --role button --timeout-seconds 60 | ok
+  # A schedule row's actions sit behind a swipe; the deletion asks once more.
+  steps '[{"name":"swipe","action":"swipeLeft","query":{"textContains":"Deep work,","role":"button"}},
+    {"name":"ask","action":"tap","query":{"text":"Delete","role":"button"}},
+    {"name":"question","action":"waitFor","state":"exists","query":{"text":"Keep","role":"button"}},
+    {"name":"confirm","action":"tap","query":{"text":"Delete","role":"button"}},
+    {"name":"deleted","action":"waitFor","state":"absent","query":{"textContains":"Deep work,","role":"button"}}]'
   pc tap --text "Session" --role button | ok
 }
 

@@ -43,26 +43,26 @@ export type StoryScene = {
 
 export const MAC_TARGETS = {
   pauseSetsSidebar: [108, 253],
-  focusSet: [900, 150],
-  addField: [700, 278],
-  addButton: [1158, 279],
-  appsTab: [986, 183],
-  chooseApps: [1133, 258],
+  focusSet: [700, 165],
+  addField: [700, 311],
+  addButton: [1153, 311],
+  appsTab: [985, 226],
+  chooseApps: [406, 301],
   startSession: [413, 286],
-  fortyFive: [487, 376],
-  reviewSession: [415, 822],
+  fortyFive: [487, 369],
+  reviewSession: [415, 844],
   startThisPause: [417, 404],
-  endSessionEarly: [423, 494],
-  endSessionConfirm: [403, 229],
+  endSessionEarly: [401, 494],
+  endSessionConfirm: [402, 231],
   schedulesSidebar: [107, 319],
   addSchedule: [409, 287],
-  saveSchedule: [412, 794],
+  saveSchedule: [412, 746],
 } as const satisfies Record<string, Point>;
 
 export const IPHONE_TARGETS = {
-  appsTab: [472, 519],
-  chooseApps: [514, 629],
-  schedulesTab: [527, 1305],
+  appsTab: [458, 245],
+  chooseApps: [146, 355],
+  schedulesTab: [525, 1347],
 } as const satisfies Record<string, Point>;
 
 const OPEN_COPY = {
@@ -334,7 +334,7 @@ export const HERO = {
   transitionFrames: 20,
   closeTransitionFrames: 28,
   loopTransitionFrames: 24,
-  choice: { start: 0, end: 72, capture: "mac-websites.png", headline: "Choose what\nto pause.", crop: [328, 368], pose: [770, 370, 720, 420, 1.35], title: [430, 96] },
+  choice: { start: 0, end: 72, capture: "mac-websites.png", headline: "Choose what\nto pause.", crop: [328, 400], pose: [770, 370, 720, 420, 1.35], title: [430, 96] },
   duration: { start: 72, end: 114, capture: "mac-duration-45.png", headline: "Start your pause.", crop: [300, 95], pose: [250, 305, 1040, 640, 1], title: [150, 96] },
   start: { start: 114, end: 168, capture: "mac-review-45.png", headline: "Start your pause.", crop: [300, 150], pose: [250, 305, 1040, 600, 1], title: [150, 96], click: 156 },
   active: { start: 168, end: 300, capture: "mac-active-45.png", headline: "A little space.", crop: [300, 40], pose: [250, 305, 1040, 575, 1], title: [150, 96] },

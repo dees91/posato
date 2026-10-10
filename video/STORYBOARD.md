@@ -1,6 +1,6 @@
 # Posato showcase storyboard
 
-- **Revision:** 4 (2026-10-02, `DOCS-004`: pause sets in Posato 1.3)
+- **Revision:** 5 (2026-10-10, `DOCS-005`: the `DESIGN-004` interface and longer quick choices in Posato 1.4; scenes and timing unchanged)
 - **Format:** `Hero` 24 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
 - **Audience:** someone meeting Posato on GitHub or posato.app who has ten seconds to decide whether it is for them.
 - **Executable projection:** `src/storyboard.ts`. Copy, frame numbers, targets, and captures live there; `src/storyboard.test.ts` enforces this document's rules.

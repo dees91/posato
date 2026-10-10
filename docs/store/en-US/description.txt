@@ -2,7 +2,7 @@ Choose the websites and apps you want to step away from, keep them in pause sets
 
 PAUSE ON YOUR TERMS
 
-Pick a pause set and a duration: a quick choice from 25 minutes to 8 hours, Until end of day, or any length from 5 minutes to 24 hours. Posato uses Apple's Screen Time controls to pause that set for the session. You can deliberately end it early or remove Posato at any time. The pause gives you a moment to reconsider before opening something out of habit.
+Pick a pause set and a duration: a quick choice from 25 minutes to 8 hours, Until end of day, or your own length on the timer. Posato uses Apple's Screen Time controls to pause that set for the session. You can deliberately end it early or remove Posato at any time. The pause gives you a moment to reconsider before opening something out of habit.
 
 PAUSE SETS
 

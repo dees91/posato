@@ -1214,6 +1214,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     `open`: whether the first sync should page the history in larger passes
     as removal now does. Filed as an agent proposal under the maintainer's
     delegation of 2026-10-09. Owner: backlog row `SYNC-022`.
+36. **What VoiceOver on the Mac says for a quick length.** `observed`
+    (2026-10-10, `DOCS-005`, a Tart clone with Posato 1.4 from `27c593d`):
+    the Mac accessibility tree gives the length buttons the visible titles
+    "1 h" and "8 h"; the full "1 hour" description that iOS reads is not
+    exposed as the title, and the guest could not be scripted to read the
+    description attribute. `inferred`: VoiceOver on the Mac may speak "1 h".
+    `open`: what VoiceOver actually speaks, and whether the Mac buttons need
+    the full words. Filed as an agent proposal under the maintainer's
+    delegation of 2026-10-09; no owner yet.
 
 ## Later platform questions
 
