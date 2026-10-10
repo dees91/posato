@@ -12,7 +12,7 @@ case "$1" in
       rm -rf /var/lib/posato
       systemctl daemon-reload 2>/dev/null || true
     fi
-    xdg-desktop-menu uninstall /opt/posato/lib/posato-Posato.desktop 2>/dev/null || true
+    rm -f /usr/share/applications/posato.desktop
     ;;
 esac
 exit 0

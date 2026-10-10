@@ -23,6 +23,8 @@ import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_permission_android_action
 import app.posato.generated.resources.onboarding_permission_android_body
+import app.posato.generated.resources.onboarding_permission_android_denied
+import app.posato.generated.resources.onboarding_permission_android_required
 import app.posato.generated.resources.onboarding_permission_check_failed
 import app.posato.generated.resources.onboarding_permission_control
 import app.posato.generated.resources.onboarding_permission_defer
@@ -31,6 +33,8 @@ import app.posato.generated.resources.onboarding_permission_ios_action
 import app.posato.generated.resources.onboarding_permission_ios_body
 import app.posato.generated.resources.onboarding_permission_linux_action
 import app.posato.generated.resources.onboarding_permission_linux_body
+import app.posato.generated.resources.onboarding_permission_linux_denied
+import app.posato.generated.resources.onboarding_permission_linux_required
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_approval
 import app.posato.generated.resources.onboarding_permission_mac_check_again
@@ -60,6 +64,8 @@ internal class AccessCopy(
     val on: StringResource,
     val off: StringResource,
     val unchecked: StringResource,
+    val denied: StringResource,
+    val required: StringResource,
 )
 
 internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
@@ -70,6 +76,8 @@ internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
             Res.string.onboarding_summary_linux_on,
             Res.string.onboarding_summary_linux_off,
             Res.string.onboarding_summary_linux_unchecked,
+            Res.string.onboarding_permission_linux_denied,
+            Res.string.onboarding_permission_linux_required,
         )
 
         OnboardingPermissionPlatform.ANDROID -> AccessCopy(
@@ -78,6 +86,8 @@ internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
             Res.string.onboarding_summary_android_on,
             Res.string.onboarding_summary_android_off,
             Res.string.onboarding_summary_android_unchecked,
+            Res.string.onboarding_permission_android_denied,
+            Res.string.onboarding_permission_android_required,
         )
 
         OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.MAC -> AccessCopy(
@@ -86,6 +96,8 @@ internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
             Res.string.onboarding_summary_access_on,
             Res.string.onboarding_summary_access_off,
             Res.string.onboarding_summary_access_unchecked,
+            Res.string.onboarding_permission_denied,
+            Res.string.onboarding_permission_required,
         )
     }
 }
@@ -100,11 +112,11 @@ internal fun ApplicationAccessResult.accessMessage(platform: OnboardingPermissio
                 }
 
                 LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED -> {
-                    stringResource(Res.string.onboarding_permission_required)
+                    stringResource(platform.accessCopy().required)
                 }
 
                 LocalApplicationMappingsAccess.AUTHORIZATION_DENIED -> {
-                    stringResource(Res.string.onboarding_permission_denied)
+                    stringResource(platform.accessCopy().denied)
                 }
 
                 LocalApplicationMappingsAccess.RESTRICTED -> {

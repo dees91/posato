@@ -1,0 +1,11 @@
+#!/bin/sh
+# Lists Posato in the desktop's applications; the pausing service is installed later from the app (ADR 0010).
+set -e
+case "$1" in
+  configure)
+    for entry in /opt/posato/lib/*.desktop; do
+      [ -f "$entry" ] && install -D -m 0644 "$entry" /usr/share/applications/posato.desktop
+    done
+    ;;
+esac
+exit 0
