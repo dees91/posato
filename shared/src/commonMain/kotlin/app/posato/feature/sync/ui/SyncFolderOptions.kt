@@ -25,6 +25,7 @@ import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
 import app.posato.generated.resources.action_sync_with_folder
 import app.posato.generated.resources.sync_checking_key
+import app.posato.generated.resources.sync_folder_action_required
 import app.posato.generated.resources.sync_folder_add_device
 import app.posato.generated.resources.sync_folder_browse
 import app.posato.generated.resources.sync_folder_change
@@ -69,6 +70,7 @@ internal fun FolderOptions(
                 removing -> Res.string.sync_removing_workspace
                 folder == null || (snapshot.status == SyncStatus.LOCAL_ONLY && !snapshot.linked) -> Res.string.sync_folder_description
                 snapshot.status == SyncStatus.WAITING_FOR_KEY -> Res.string.sync_folder_waiting_for_key
+                snapshot.status == SyncStatus.ACTION_REQUIRED && snapshot.reason == null -> Res.string.sync_folder_action_required
                 else -> snapshot.status.message(snapshot.linked, snapshot.reason)
             },
         ),
@@ -103,8 +105,10 @@ internal fun FolderOptions(
             )
         }
         if (snapshot.linked) {
-            PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                Text(stringResource(Res.string.sync_folder_add_device))
+            if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
+                PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                    Text(stringResource(Res.string.sync_folder_add_device))
+                }
             }
             PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running) {
                 Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)

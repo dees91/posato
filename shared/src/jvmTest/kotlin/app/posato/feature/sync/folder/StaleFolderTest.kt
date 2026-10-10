@@ -4,6 +4,8 @@ import app.posato.feature.sync.bootstrap.AnchorReadResult
 import app.posato.feature.sync.bootstrap.BindingResolution
 import app.posato.feature.sync.bootstrap.WorkspaceAnchor
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
+import app.posato.feature.sync.mailbox.BundleSweepResult
+import app.posato.feature.sync.mailbox.RemovalBudget
 import app.posato.feature.sync.testContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -43,5 +45,22 @@ class StaleFolderTest {
         val binding = assertIs<BindingResolution.Available>(stale.resolveBinding()).binding
 
         assertEquals(AnchorReadResult.Missing, stale.readAnchor(binding))
+    }
+
+    @Test
+    fun `given metadata that still reports a removed workspace when its leftovers are swept then the sweep completes`() = runTest {
+        val root = Files.createTempDirectory("posato-folder")
+        val crypto = JdkSyncCryptoProvider()
+        Files.createDirectories(root.resolve("Posato"))
+        val stale = FolderSyncPorts(
+            { root.toString() },
+            Files.createTempDirectory("posato-local").toString(),
+            crypto,
+            StaleMetadataFileSystem,
+            Dispatchers.IO,
+        )
+        val binding = assertIs<BindingResolution.Available>(stale.resolveBinding()).binding
+
+        assertEquals(BundleSweepResult.Swept, stale.sweepBundlesIfAnchorMissing(binding, RemovalBudget.Capped))
     }
 }

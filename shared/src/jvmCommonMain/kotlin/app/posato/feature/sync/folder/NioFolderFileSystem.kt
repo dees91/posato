@@ -101,8 +101,10 @@ internal object NioFolderFileSystem : FolderFileSystem {
         val directory = path.toPathOrNull() ?: return false
         return try {
             if (Files.exists(directory)) {
-                Files.walk(directory).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
+                Files.walk(directory).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
             }
+            true
+        } catch (_: NoSuchFileException) {
             true
         } catch (_: IOException) {
             false
