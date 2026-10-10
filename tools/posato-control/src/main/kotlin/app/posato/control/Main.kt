@@ -27,6 +27,7 @@ import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PrEvidenceCommand
 import app.posato.control.cli.PressCommand
+import app.posato.control.cli.RelayCommand
 import app.posato.control.cli.ResetCommand
 import app.posato.control.cli.ResourcesCommand
 import app.posato.control.cli.RunCommand
@@ -126,6 +127,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
+    RelayCommand(),
     FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand(), FlowFolderCommand()),
     VmCommand().subcommands(
         VmCreateCommand(),

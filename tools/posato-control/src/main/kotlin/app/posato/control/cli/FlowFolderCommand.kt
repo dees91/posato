@@ -16,10 +16,11 @@ import kotlinx.serialization.json.put
 /**
  * Drives the folder workspace of ADR 0010 on Session's sync row: `link` chooses the folder and links (creating a
  * workspace, or ending in "waiting for a code" when the folder already holds one), `offer` shows a pairing code and
- * returns it, `join` enters a code, and `remove` removes the workspace. Each waits for the row to show the outcome.
+ * returns it with its dialog left open, `done` closes that dialog and withdraws the offer, `join` enters a code, and
+ * `remove` removes the workspace. Each waits for the row to show the outcome.
  */
 class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, show or enter a pairing code, or remove the workspace.") {
-    private val action by argument(help = "link | offer | join | remove").choice(LINK, OFFER, JOIN, REMOVE)
+    private val action by argument(help = "link | offer | done | join | remove").choice(LINK, OFFER, DONE_ACTION, JOIN, REMOVE)
     private val path by option("--path", help = "The folder to link, as the device sees it (link).")
     private val code by option("--code", help = "The pairing code from another device (join).")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(DEFAULT_TIMEOUT_SECONDS)
@@ -27,6 +28,10 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
         val deadline = System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND
+        if (action == DONE_ACTION) {
+            FlowSteps.run(backend, listOf(FlowSteps.button(DONE, optional = true, timeoutSeconds = 2.0)))
+            return buildJsonObject { put("action", action) }
+        }
         expand(backend)
         return when (action) {
             LINK -> link(backend, requireOption(path, "--path"), deadline)
@@ -41,6 +46,10 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         folder: String,
         deadline: Long,
     ): JsonElement {
+        val chosen = FlowSteps.labels(backend).firstOrNull { it.startsWith(CHOSEN_PREFIX) }
+        if (chosen != null && chosen != CHOSEN_PREFIX + folder && USE_ANOTHER in FlowSteps.labels(backend)) {
+            FlowSteps.run(backend, listOf(FlowSteps.reveal(button(USE_ANOTHER)), FlowSteps.tap(button(USE_ANOTHER))))
+        }
         if (USE_FOLDER in FlowSteps.labels(backend)) {
             FlowSteps.run(
                 backend,
@@ -65,7 +74,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         FlowSteps.run(backend, listOf(FlowSteps.reveal(button(ADD_DEVICE)), FlowSteps.tap(button(ADD_DEVICE)), FlowSteps.sleep(DIALOG_SECONDS)))
         val shown = FlowSteps.nodes(backend).flatMap { listOfNotNull(it.label, it.value) }.firstNotNullOfOrNull { CODE_PATTERN.find(it)?.value }
             ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "No pairing code was shown after Add a device.")
-        FlowSteps.run(backend, listOf(FlowSteps.button(DONE)))
+        // The offer stays in the folder while its dialog is open; `flow folder done` (or Done) withdraws it.
         return buildJsonObject {
             put("action", action)
             put("code", shown.replace(" ", ""))
@@ -165,12 +174,14 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val OFFER = "offer"
         const val JOIN = "join"
         const val REMOVE = "remove"
+        const val DONE_ACTION = "done"
         const val USE_FOLDER = "Use this folder"
         const val SYNC_WITH_FOLDER = "Sync with this folder"
         const val ADD_DEVICE = "Add a device"
         const val JOIN_LABEL = "Join"
         const val DONE = "Done"
         const val USE_ANOTHER = "Use another folder"
+        const val CHOSEN_PREFIX = "Folder: "
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val FOLDER_ROW = "Folder sync,"
         const val ICLOUD_ROW = "iCloud,"

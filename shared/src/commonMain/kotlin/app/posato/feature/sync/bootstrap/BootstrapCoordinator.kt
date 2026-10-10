@@ -50,6 +50,14 @@ internal class BootstrapCoordinator(
         }
     }
 
+    /** Forgets a link attempt in the previous folder or account before the person links in another one. */
+    suspend fun discardCandidate() {
+        mutex.withLock {
+            joins.clear()
+            store.discardCandidate()
+        }
+    }
+
     suspend fun establishedContext(): SyncContext? = mutex.withLock {
         when (val state = store.read()) {
             is BootstrapStoreResult.Failure -> null

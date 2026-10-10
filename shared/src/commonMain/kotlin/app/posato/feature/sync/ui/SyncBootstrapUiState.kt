@@ -65,6 +65,7 @@ internal class SyncBootstrapUiState(
         running = true
         scope.launch {
             try {
+                if (offer != null) closeCode()
                 sync.removeWorkspace()
             } finally {
                 running = false
@@ -74,8 +75,9 @@ internal class SyncBootstrapUiState(
 
     /** A folder may be chosen only while nothing is linked, so a workspace never changes transport under it. */
     fun chooseFolder(path: String) {
-        if (running || syncState.value.linked || syncState.value.joinPending) return
+        if (running || syncState.value.linked) return
         folderRefused = folderControls.choose(path) != FolderChoiceResult.CHOSEN
+        if (!folderRefused) scope.launch { sync.discardCandidate() }
     }
 
     fun browseFolder() {
@@ -88,6 +90,7 @@ internal class SyncBootstrapUiState(
         folderControls.clear()
         joinResult = null
         folderRefused = false
+        scope.launch { sync.discardCandidate() }
     }
 
     fun showCode() {

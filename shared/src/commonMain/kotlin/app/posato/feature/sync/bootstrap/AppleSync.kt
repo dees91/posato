@@ -239,6 +239,15 @@ internal class AppleSync(
         }.await()
     }
 
+    /** A folder choice changes the transport's binding, so an unfinished link attempt for the old one is dropped. */
+    suspend fun discardCandidate() {
+        guarded {
+            coordinator.discardCandidate()
+            mutableState.refreshLinked(coordinator)
+            if (!state.value.linked) publish(SyncStatus.LOCAL_ONLY)
+        }
+    }
+
     suspend fun captureWorkspace(): BootstrapStoreResult<EstablishedWorkspace?> {
         return authoring.captureWorkspace()
     }
