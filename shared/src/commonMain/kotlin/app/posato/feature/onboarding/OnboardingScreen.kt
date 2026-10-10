@@ -121,11 +121,7 @@ internal fun OnboardingScreen(
         modifier.fillMaxSize().padding(horizontal = inset, vertical = if (keyboardVisible) PosatoSpace.Section else inset),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
     ) {
-        OnboardingProgress(
-            current = state.step,
-            showsIcloud =
-                permissionPlatform == OnboardingPermissionPlatform.IOS || permissionPlatform == OnboardingPermissionPlatform.MAC,
-        )
+        OnboardingProgress(current = state.step, showsIcloud = permissionPlatform.offersIcloud())
         key(state.step) {
             when (state.step) {
                 OnboardingStep.PURPOSE -> {
@@ -165,6 +161,10 @@ internal fun OnboardingScreen(
             }
         }
     }
+}
+
+private fun OnboardingPermissionPlatform.offersIcloud(): Boolean {
+    return this == OnboardingPermissionPlatform.IOS || this == OnboardingPermissionPlatform.MAC
 }
 
 @Composable
