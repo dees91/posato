@@ -16,6 +16,7 @@ import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
 import app.posato.control.vm.VmPrompts
 import app.posato.control.vm.VncHold
+import app.posato.control.vm.requireGuestRoom
 import app.posato.control.vm.vmAdminPassword
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -47,10 +48,14 @@ class VmCreateCommand : ControlCommand("create", "Clone the line's golden VM, bo
         "--allow-low-disk",
         help = "Create the clone below the free-space minimum and report the shortage as diskSpaceWarning instead of refusing.",
     ).flag()
+    private val waitMinutes by option(
+        "--wait-minutes",
+        help = "Wait up to this long for another session to release the line's clone or a guest slot before refusing.",
+    ).long().default(0)
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        val created = VmLifecycle(session.context).create(line, allowLowDisk)
+        val created = VmLifecycle(session.context).create(line, allowLowDisk, waitMinutes)
         // A paused iCloud Keychain only shows much later as a workspace key that never arrives, so repair it now. A
         // later clone signing in can pause this one again, so verification resumes every clone once all have booted.
         val iCloud = GuestICloud(session.context)
@@ -69,6 +74,7 @@ class VmSyncCommand : ControlCommand("sync", "Copy the freshly staged package an
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root)
         VmLifecycle(session.context).sync(line)
         return buildJsonObject { put("vm", line.cloneName) }
     }
@@ -91,6 +97,7 @@ class VmInstallCommand :
     ).flag()
 
     override fun execute(session: Session): JsonElement {
+        requireGuestRoom(session.layout.root)
         val installation = CandidateInstall(session.context).install(
             VmLine.parse(lineOption),
             Path.of(dmg),

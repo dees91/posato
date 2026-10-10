@@ -2,6 +2,7 @@ package app.posato.control.cli
 
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
+import app.posato.control.vm.requireGuestRoom
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -22,6 +23,7 @@ class VmExecCommand :
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root)
         val output = Tart(session.context).exec(line.cloneName, script)
         return buildJsonObject {
             put("vm", line.cloneName)

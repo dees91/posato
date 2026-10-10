@@ -1,5 +1,6 @@
 import app.posato.buildlogic.IosSwiftTestTrigger
 import app.posato.buildlogic.VerifyApprovedQualityExceptions
+import app.posato.buildlogic.VerifyEnglishText
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import dev.detekt.gradle.extensions.FailOnSeverity
@@ -94,6 +95,24 @@ subprojects {
             sarif.required.set(true)
         }
     }
+}
+
+val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
+    group = "verification"
+    description = "Rejects Polish letters in the repository's documentation, skills, site, and sources."
+    textFiles.from(
+        fileTree(rootDir) {
+            include("README.md", "DESIGN.md", "AGENTS.md", "CONTRIBUTING.md", "PRIVACY.md", "SECURITY.md")
+            include("docs/**", ".agents/**", "website/src/**", "video/**")
+            include("shared/src/**", "desktopApp/src/**", "iosApp/**", "macosHelper/**", "macosSyncCompanion/**")
+            include("tools/**", "buildSrc/src/**", "quality-rules/**", "prototypes/**")
+            exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
+            exclude("**/*.png", "**/*.jpg", "**/*.gif", "**/*.mp4", "**/*.webm", "**/*.icns", "**/*.ttf", "**/*.otf", "**/*.jar")
+            exclude("**/*.car", "**/*.mov", "**/*.pdf", "**/*.zip", "**/*.xcresult/**")
+        },
+    )
+    exceptions.set(emptyMap<String, String>())
+    repositoryDirectory.set(layout.projectDirectory)
 }
 
 val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityExceptions::class) {
@@ -200,6 +219,7 @@ tasks.register("qualityLint") {
         ":posato-provisioning:ktlintCheck",
         ":posato-control:swiftFormatCheck",
         verifyApprovedQualityExceptions,
+        verifyEnglishText,
     )
 }
 
@@ -251,5 +271,6 @@ tasks.register("quality") {
         ":posato-provisioning:ktlintCheck",
         ":posato-provisioning:test",
         verifyApprovedQualityExceptions,
+        verifyEnglishText,
     )
 }

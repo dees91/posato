@@ -30,6 +30,7 @@ class GuestOnboarding(
     fun run(
         line: VmLine,
         timeoutMs: Long,
+        allowSchedules: Boolean = false,
     ): JsonObject {
         val recipe = recipe()
         val split = recipe.steps.indexOfFirst { it.name == SETUP_READY }
@@ -64,12 +65,25 @@ class GuestOnboarding(
         // Onboarding passes without iCloud, so an account that needs attention is reported rather than refused. Later
         // took the alert off the screen, so the marker is what the iCloud commands refuse on until a new clone.
         if (accountAlert) Files.writeString(accountAttentionMarker(line), "connect alert during vm onboard\n")
+        if (allowSchedules && !scheduleConsent(line)) {
+            guest(line, listOf("tap", "-t", "desktop", "--text", SCHEDULES, "--role", "button"))
+            guest(line, listOf("tap", "-t", "desktop", "--text", ALLOW_SCHEDULES, "--role", "button"))
+            guest(line, listOf("tap", "-t", "desktop", "--text", SESSION, "--role", "button"), failOnError = false)
+        }
         return buildJsonObject {
             put("line", line.id)
             put("ready", true)
             put("goldenAccountNeedsAttention", accountAlert)
+            put("scheduleConsent", scheduleConsent(line))
         }
     }
+
+    /**
+     * Whether Posato in the guest holds the consent to start schedules on its own. Setup does not give it: the
+     * Schedules card asks separately, and a clone without it made a release's update check fail although the updated
+     * version kept every consent it had (`RELEASE-006`, 2026-10-10).
+     */
+    private fun scheduleConsent(line: VmLine): Boolean = scheduleConsentGiven(Tart(context).exec(line.cloneName, SCHEDULE_CONSENT_QUERY).stdout)
 
     /** Answers setup's prompts until the window is ready; true when the iCloud connect alert showed meanwhile. */
     private fun answerUntilReady(
@@ -161,6 +175,9 @@ class GuestOnboarding(
         const val SETUP_DONE = "setup-done"
         const val NO_FINISH_SETUP = "no-finish-setup"
         const val SET_UP = "Set up Posato"
+        const val SCHEDULES = "Schedules"
+        const val SESSION = "Session"
+        const val ALLOW_SCHEDULES = "Allow schedules to start on this Mac"
         const val READY = "This Mac is ready."
         const val TRY_AGAIN = "Try again"
         const val FINISH_SETUP = "Finish setup"
@@ -174,3 +191,8 @@ class GuestOnboarding(
         const val GUEST_TIMEOUT_MINUTES = 10L
     }
 }
+
+/** Reads the consent to automatic starts from Posato's user defaults; prints `1` when it is given. */
+internal const val SCHEDULE_CONSENT_QUERY = "/usr/bin/defaults read app.posato.macos automaticStartConsentV1 2>/dev/null || true"
+
+internal fun scheduleConsentGiven(output: String): Boolean = output.trim() == "1"

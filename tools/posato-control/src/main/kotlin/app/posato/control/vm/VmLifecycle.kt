@@ -50,11 +50,13 @@ class VmLifecycle(
 
     fun create(
         line: VmLine,
-        allowLowDisk: Boolean = false
+        allowLowDisk: Boolean = false,
+        waitMinutes: Long = 0,
     ): JsonObject {
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
         val diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
         diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
+        val waitedMs = awaitLine(tart, context, golden, line.cloneName, waitMinutes)
         refuseClone(tart.list(), golden, line.cloneName) { name -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
         val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
@@ -72,6 +74,7 @@ class VmLifecycle(
             "golden" to JsonPrimitive(golden),
             "readyMs" to JsonPrimitive(System.currentTimeMillis() - started),
             "vncHold" to JsonPrimitive(vncHold),
+            "waitedMs" to JsonPrimitive(waitedMs),
         )
         return JsonObject(if (diskWarning == null) created else created + ("diskSpaceWarning" to JsonPrimitive(diskWarning)))
     }

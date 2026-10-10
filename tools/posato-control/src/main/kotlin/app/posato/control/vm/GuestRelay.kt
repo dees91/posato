@@ -43,8 +43,7 @@ object GuestRelay {
             removeAt(index)
             removeAt(index)
         }
-        val runId = forwarded.getOrNull(forwarded.indexOf("--run-id") + 1)?.takeIf { "--run-id" in forwarded }
-            ?: RunContext.newRunId().also { forwarded.addAll(listOf("--run-id", it)) }
+        val runId = relayRunId(forwarded) ?: RunContext.newRunId().also { forwarded.addAll(listOf(RUN_ID_OPTION, it)) }
         val context = RunContext(layout, LocalConfiguration.load(layout), runId, layout.runsDirectory, verbose = false, timeout = Tart.EXEC_TIMEOUT)
         return try {
             relay(context, line, forwarded, runId)
@@ -77,6 +76,7 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
+        requireGuestRoom(context.layout.root)
         requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
@@ -170,3 +170,26 @@ private fun skipsLaunch(scenario: String): Boolean = try {
 } catch (_: SerializationException) {
     false
 }
+
+/**
+ * The run id a relayed command names, as `--run-id <id>` or `--run-id=<id>`, or null when the relay chooses one. A
+ * second `--run-id` is refused: the guest would keep only one of them and the evidence would land under the other.
+ */
+internal fun relayRunId(args: List<String>): String? {
+    val ids = args.withIndex().mapNotNull { (index, word) ->
+        when {
+            word == RUN_ID_OPTION -> args.getOrNull(index + 1)
+                ?: throw ControlException(ErrorCode.USAGE, "$RUN_ID_OPTION needs a value.")
+
+            word.startsWith("$RUN_ID_OPTION=") -> word.removePrefix("$RUN_ID_OPTION=")
+
+            else -> null
+        }
+    }
+    if (ids.size > 1) {
+        throw ControlException(ErrorCode.USAGE, "$RUN_ID_OPTION is given ${ids.size} times: ${ids.joinToString()}.", "Pass one run id.")
+    }
+    return ids.singleOrNull()
+}
+
+private const val RUN_ID_OPTION = "--run-id"

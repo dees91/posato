@@ -16,6 +16,15 @@ import kotlin.io.path.exists
  */
 internal const val MIN_FREE_DISK_BYTES = 20_000_000_000L
 
+/**
+ * The minimum in force: [MIN_FREE_DISK_BYTES], or `POSATO_CONTROL_MIN_FREE_DISK_GB` when set, which only verifies the
+ * guards themselves without filling a disk.
+ */
+internal fun minFreeDiskBytes(): Long = System.getenv(MIN_FREE_DISK_ENV)?.toLongOrNull()?.let { it * BYTES_PER_GB.toLong() }
+    ?: MIN_FREE_DISK_BYTES
+
+private const val MIN_FREE_DISK_ENV = "POSATO_CONTROL_MIN_FREE_DISK_GB"
+
 /** What may be deleted to free space because a later run regenerates it. */
 internal const val DISK_SPACE_HINT = "Free space by deleting what regenerates: old runs under build/verification/runs, the build " +
     "directories of worktrees you no longer use (`./gradlew clean`), Xcode's DerivedData, ~/.gradle/caches, and Tart's image " +
@@ -46,14 +55,31 @@ internal fun lowDiskWarning(
     free: FreeSpace,
     allowLowDisk: Boolean
 ): String? {
-    if (free.bytes >= MIN_FREE_DISK_BYTES) return null
+    if (free.bytes >= minFreeDiskBytes()) return null
     val shortage = "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; a run with a clone needs at " +
-        "least ${gigabytes(MIN_FREE_DISK_BYTES)}."
+        "least ${gigabytes(minFreeDiskBytes())}."
     if (allowLowDisk) return shortage
     throw ControlException(
         ErrorCode.DISK_SPACE_LOW,
         shortage,
         "$DISK_SPACE_HINT Pass --allow-low-disk to create the clone anyway.",
+    )
+}
+
+/**
+ * Stops a command that works inside a running guest while the host is below the minimum. A guest's copy-on-write disk
+ * grows with what it writes, so a load test inside one clone once filled the host to 100%; then every tool call of
+ * every session failed with "No space left on device" until a person freed space (release 1.4 retro). Commands that
+ * free space or only read state (`vm destroy`, `vm shutdown`, `vm leases`, `doctor`) stay available.
+ */
+internal fun requireGuestRoom(repository: Path) {
+    val free = lowestFreeSpace(repository)
+    if (free.bytes >= minFreeDiskBytes()) return
+    throw ControlException(
+        ErrorCode.DISK_SPACE_LOW,
+        "Only ${gigabytes(free.bytes)} is free on the volume holding ${free.path}; guest commands stop below " +
+            "${gigabytes(minFreeDiskBytes())} so a growing clone cannot fill the host.",
+        "Destroy the clones you own (`posato-control vm destroy --line <line>`), then: $DISK_SPACE_HINT",
     )
 }
 

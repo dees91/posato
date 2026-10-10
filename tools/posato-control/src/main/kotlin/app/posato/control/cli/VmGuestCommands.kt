@@ -4,6 +4,7 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
+import app.posato.control.vm.requireGuestRoom
 import app.posato.control.vm.shellQuote
 import app.posato.control.vm.vmAdminPassword
 import com.github.ajalt.clikt.parameters.options.default
@@ -32,6 +33,7 @@ class VmPushCommand :
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
+        requireGuestRoom(session.layout.root)
         val source = pushSource(from)
         val segments = guestSegments(to)
         val digest = MessageDigest.getInstance("SHA-256").digest(source.readBytes()).joinToString("") { "%02x".format(it) }

@@ -24,6 +24,7 @@ import app.posato.control.cli.LogsCommand
 import app.posato.control.cli.MenuCommand
 import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
+import app.posato.control.cli.PrEvidenceCommand
 import app.posato.control.cli.PressCommand
 import app.posato.control.cli.ResetCommand
 import app.posato.control.cli.ResourcesCommand
@@ -48,6 +49,7 @@ import app.posato.control.cli.VmExecCommand
 import app.posato.control.cli.VmICloudCommand
 import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmKillCommand
+import app.posato.control.cli.VmLeasesCommand
 import app.posato.control.cli.VmNetworkCommand
 import app.posato.control.cli.VmOnboardCommand
 import app.posato.control.cli.VmPressCommand
@@ -116,6 +118,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ResetCommand(),
     CleanupCommand(),
     ArtifactsCommand(),
+    PrEvidenceCommand(),
     ObserveCommand(),
     MenuCommand(),
     CloseWindowCommand(),
@@ -131,6 +134,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
         VmTypeCommand(),
         VmInstallCommand(),
         VmDestroyCommand(),
+        VmLeasesCommand(),
         VmPromptCommand(),
         VmClickCommand(),
         VmDragCommand(),

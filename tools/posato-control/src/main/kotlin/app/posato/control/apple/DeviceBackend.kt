@@ -21,6 +21,8 @@ import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
 import app.posato.control.core.TrackedProcess
 import app.posato.control.model.DoctorCheck
+import app.posato.control.model.LaunchConfiguration
+import app.posato.control.model.Scenario
 import app.posato.control.model.Severity
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -91,6 +93,38 @@ class DeviceLifecycle(
     private val evidence: Evidence,
 ) : Lifecycle {
     override fun doctor(): List<DoctorCheck> = DeviceDoctor(context, session).checks(driverCheck())
+
+    /**
+     * Runs the driver once without touching Posato, which makes iOS enable UI automation. A locked iPhone, or one
+     * waiting for its XCTest passcode after a restart, then shows here at the start of a session instead of failing
+     * the first interaction an hour later (release 1.4 retro). It takes the driver's start-up time, about 6 to 12 s.
+     */
+    override fun automationProbe(): DoctorCheck {
+        if (xcodeBuild.driverState(Target.DEVICE) != XcodeBuild.DriverState.FRESH) {
+            return DoctorCheck.unknown(
+                "device.automation",
+                "Not probed: the device driver is not built from its current sources.",
+                "Run `build -t device --driver`, then `doctor -t device` again.",
+            )
+        }
+        return try {
+            val probe = Scenario(launch = LaunchConfiguration(skip = true))
+            IosDriverRunner(context, xcodeBuild, Target.DEVICE).run(probe, session.udid(), IOS_BUNDLE_ID)
+            DoctorCheck.pass("device.automation", "The test iPhone accepts UI automation.")
+        } catch (exception: ControlException) {
+            val locked = exception.code == ErrorCode.DEVICE_AUTOMATION_LOCKED
+            DoctorCheck.fail(
+                "device.automation",
+                if (locked) {
+                    "DEVICE_AUTOMATION_LOCKED: the test iPhone is locked or waits for its XCTest passcode."
+                } else {
+                    exception.message ?: exception.code.name
+                },
+                if (locked) "Unlock the iPhone, enter its passcode if it asks, and run `doctor -t device` again." else exception.hint,
+                Severity.WARN,
+            )
+        }
+    }
 
     private fun driverCheck(): DoctorCheck = when (xcodeBuild.driverState(Target.DEVICE)) {
         XcodeBuild.DriverState.FRESH -> DoctorCheck.pass("device.driver", "The device driver is built and up to date.")
