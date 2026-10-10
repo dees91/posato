@@ -2780,3 +2780,10 @@ first removal attempt that does not finish, not to a paused keychain.
   the iOS reflow are `user-confirmed` (2026-10-10) in `DESIGN.md`.
 - `observed`: the Mac exposes the quick lengths as "1 h" … "8 h"; what
   VoiceOver speaks is idea 36, owned by backlog row `SESSION-008`.
+
+## [2026-10-10] idea | Stale app summary in the Pause sets list
+
+- `observed`: on the Mac the Pause sets list keeps "Apps on this Mac: none
+  chosen" after applications are chosen, until the next policy change, in
+  both `main` `27c593d` and published 1.3.0. Idea 37 and backlog row
+  `TARGETS-010` own the fix; release 1.4 ships with the known limit.

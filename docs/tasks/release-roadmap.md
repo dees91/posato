@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped; amended 2026-10-09: backlog additions `IOS-008` and `SYNC-022`; amended 2026-10-10: backlog addition `SESSION-008`)
+- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped; amended 2026-10-09: backlog additions `IOS-008` and `SYNC-022`; amended 2026-10-10: backlog additions `SESSION-008` and `TARGETS-010`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-10
@@ -157,6 +157,9 @@
   maintainer's order to keep VM and iPhone verification to a minimum.
   The 2026-10-10 backlog addition `SESSION-008` (idea 36, an agent proposal
   under the same delegation, from `DOCS-005`) changes no release either.
+  The 2026-10-10 backlog addition `TARGETS-010` (idea 37, an agent
+  proposal under the maintainer's delegation of 2026-10-09) changes no
+  release: the stale summary already exists in 1.3.0, so 1.4 ships with it.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -441,6 +444,7 @@ The idea numbers refer to the wiki idea queue.
 | `IOS-008` | Let one **Remove workspace** press on the iPhone finish a removal when the zone has a long history: `IosCloudKitMailboxProvider` caps a press at `MAX_REMOVAL_CALLS` (10), as the Mac did before `SYNC-021`. Reproduce it on the test iPhone with the `SYNC-021` fixture and apply the same progress-bounded continuation and progress state. | Sessions and enforcement | Idea 34; `SYNC-021` plan review | A reproduction on the test iPhone; release composition |
 | `SYNC-022` | Finish what `SYNC-021` deferred: build the verification-only seeding operation; rebuild the long-history fixture and show a pre-fix failure on it; one press in 3 fresh Tart clones, after a settled link, and across a window close and reopen; then clean the test Apple Account's zone with the `SYNC-021` controls and waits, and run the iPhone check of `AC-05`. The zone is cleaned only after seeding exists or after `IOS-008` has reproduced on the current history. Also decide whether the first sync after a link should page a long history in larger passes (idea 35). | Sessions and enforcement | Idea 35; `SYNC-021` deferrals | A release composition; the test account keeps its history until then |
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
+| `TARGETS-010` | Refresh a pause set's "Apps on this Mac" or apps summary in the Pause sets list as soon as applications are chosen, removed, or cleared, without waiting for a policy change: emit the device-local application mappings' invalidations after every successful change on the Mac and on iOS, and check the other readers of those invalidations (Schedules set source, session recompose, Mac presence). Not a 1.4 regression: published 1.3.0 behaves the same. | Target management | Idea 37; `DOCS-005` review | A release composition; first candidate for 1.5 |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |

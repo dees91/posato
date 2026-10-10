@@ -1223,6 +1223,18 @@ below. This queue retains idea provenance without expanding the original MVP.
     `open`: what VoiceOver actually speaks, and whether the Mac buttons need
     the full words. Filed as an agent proposal under the maintainer's
     delegation of 2026-10-09. Owner: backlog row `SESSION-008`.
+37. **A pause set's app summary stays stale after choosing apps.**
+    `observed` (2026-10-10, Tart clones, Posato from `main` `27c593d` and
+    the published notarized 1.3.0): after choosing an application for a set
+    on the Mac, **Back to pause sets** still shows "Apps on this Mac: none
+    chosen", also after 20 s and after switching destinations; the list
+    updates only on the next policy change, such as saving a website. So it
+    is not a 1.4 regression. `inferred` from the code: `PauseSetsViewModel`
+    reloads on `applicationMappings.invalidations`, but the Mac mappings
+    never emit it and the iOS mappings emit it only when Screen Time
+    authorization changes, so iOS is most likely affected too (`open`: a
+    test-iPhone run). Filed as an agent proposal under the maintainer's
+    delegation of 2026-10-09. Owner: backlog row `TARGETS-010`.
 
 ## Later platform questions
 
