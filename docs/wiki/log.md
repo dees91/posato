@@ -2811,3 +2811,12 @@ first removal attempt that does not finish, not to a paused keychain.
 - `docs/development/build-variants.md` maps the Mac package variants; the
   `agent-delegated` provenance label joins `AGENTS.md`; `qualityLint` rejects
   Polish letters in repository text.
+
+## [2026-10-10] idea | A stale Resume restrictions notice after a pause ends
+
+- `observed`: on the maintainer's Mac with 1.4.0, an ended pause left
+  "Restrictions not active on this Mac." with a flickering "Resume
+  restrictions" button until a relaunch. An isolated probe traced it to an
+  early return in `clearAfterEnd` that leaves the view stale, so the session
+  owner loops. Present since 1.1.0; idea 38 and backlog row `SESSION-009`
+  own the fix.
