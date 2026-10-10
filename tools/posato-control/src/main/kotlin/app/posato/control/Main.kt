@@ -14,6 +14,7 @@ import app.posato.control.cli.DevicesShutdownCommand
 import app.posato.control.cli.DoctorCommand
 import app.posato.control.cli.FindCommand
 import app.posato.control.cli.FlowCommand
+import app.posato.control.cli.FlowFolderCommand
 import app.posato.control.cli.FlowICloudCommand
 import app.posato.control.cli.FlowScheduleAddCommand
 import app.posato.control.cli.FlowSessionCommand
@@ -125,7 +126,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
-    FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand()),
+    FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand(), FlowFolderCommand()),
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),
