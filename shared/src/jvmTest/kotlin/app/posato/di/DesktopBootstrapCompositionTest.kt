@@ -4,6 +4,8 @@ import app.posato.feature.notifications.UnavailableSessionNotifications
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
+import app.posato.feature.onboarding.OnboardingPermissionPlatform
+import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.session.ui.FakeEnforcementPort
 import app.posato.feature.session.ui.FakeSessionMappings
 import app.posato.feature.sync.bootstrap.BootstrapResult
@@ -35,6 +37,8 @@ class DesktopBootstrapCompositionTest {
             databasePath,
             FakeMacHelperPort(),
             UnavailableSessionNotifications,
+            OnboardingPermissionPlatform.MAC,
+            UnavailableApplicationAccess,
         )
 
         assertSame(graph.appleBootstrap, graph.appleBootstrap)
@@ -49,6 +53,8 @@ class DesktopBootstrapCompositionTest {
             databasePath,
             FakeMacHelperPort(),
             UnavailableSessionNotifications,
+            OnboardingPermissionPlatform.MAC,
+            UnavailableApplicationAccess,
         )
 
         val result = runBlocking { graph.appleBootstrap.syncWithIcloud() }
@@ -65,6 +71,8 @@ class DesktopBootstrapCompositionTest {
             databasePath,
             FakeMacHelperPort(),
             UnavailableSessionNotifications,
+            OnboardingPermissionPlatform.MAC,
+            UnavailableApplicationAccess,
         )
 
         assertSame(Dispatchers.IO, graph.appleBootstrap.backgroundDispatcher)

@@ -560,6 +560,42 @@ not claim that every other device has received the update.
   keeps the zone, or the settle rule as the MVP limit) is `open` for a later
   roadmap revision; until then the recipe's settle rule applies.
 
+## Folder workspace (release 1.5, ADR 0010)
+
+[ADR 0010](../../decisions/0010-linux-android-and-folder-workspace.md) is
+`Proposed`; the direction is `user-confirmed` (2026-10-10) and the
+mechanisms `agent-delegated`.
+
+- `observed` (2026-10-10): the folder transport implements the existing
+  bootstrap and mailbox ports, so the bootstrap coordinator, the Apple
+  exchange loop, and the ADR 0006 reducer run unchanged on a folder. The
+  `workspace` file stands in for the CloudKit zone, one `.pbundle` file per
+  bundle for the mailbox records, and a local key file for the synchronizable
+  Keychain item; a missing key is the existing waiting-for-key state, which a
+  pairing code resolves.
+- `observed`: a reader keeps the names of the bundles it committed; the
+  cursor that the writer persists marks the previous name seen only on the
+  next fetch, so a crash before the commit delivers the bundle again.
+- `observed`: a file whose header, size, or name does not check is skipped
+  and never accepted. A relay defect that wrote one bundle's bytes under
+  another bundle's name left the receiving device without that change while
+  it reported a completed sync; the product's refusal was right, and folder
+  corruption by a writer stays the documented denial of service.
+- `observed`: two macOS guests reading one host directory through the
+  virtualization file share saw stale contents (a listed file that could not
+  be opened). The product treats a vanished file as missing; verification
+  gives each device its own folder and copies between them with
+  `posato-control relay`.
+- `observed`: a leftover bootstrap candidate from an earlier folder blocked
+  linking a new one; choosing or clearing a folder now discards a candidate
+  that never became a workspace.
+- `observed`: on Android, Conscrypt's Ed25519 public key is not a JDK
+  `EdECPublicKey`; the shared JVM crypto provider converts raw keys through
+  their X.509 encoding on both the JVM and Android.
+- Delivery takes about a minute plus the sync service's own delay, because
+  each device polls the folder once a minute while it runs (`observed`: 58 s
+  from a pause on Android to the Linux hosts block through the relay).
+
 ## Open production questions
 
 - `observed` (2026-09-16, `SYNC-017`): the Apple MVP promotes its schema by
@@ -598,7 +634,10 @@ not claim that every other device has received the update.
   distinguish rollback or deletion from incomplete first synchronization?
 - How are portable enrollment, recovery, revocation, export, import, deletion,
   and transport migration presented and tested?
-- When should portable-folder provider experiments begin?
+- `superseded` by ADR 0010 for release 1.5: when should portable-folder
+  provider experiments begin? Real providers (Dropbox, OneDrive, iCloud
+  Drive through the iOS Files picker, Syncthing) remain unverified; the
+  relay stands in for them.
 
 ### Session integration and recoverable terminal facts (`SYNC-012`)
 

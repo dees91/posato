@@ -69,6 +69,7 @@ import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
@@ -97,6 +98,7 @@ class PosatoApplication internal constructor(
     private val schedules: ScheduleDependencies,
     private val scheduledPauses: ScheduledPauses,
     private val sessionComposition: SessionComposition,
+    private val folderSync: FolderSyncControls,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -130,7 +132,7 @@ class PosatoApplication internal constructor(
         navigation: ApplicationNavigation = remember { ApplicationNavigation() },
     ) {
         var setupDone by remember { mutableStateOf(false) }
-        val syncState = rememberSyncBootstrapUiState(bootstrap)
+        val syncState = rememberSyncBootstrapUiState(bootstrap, folderSync)
         val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper) {
             sessionOwner.status.value is LocalSessionStatus.Active || sessionOwner.view.value.busy
         }
@@ -139,6 +141,7 @@ class PosatoApplication internal constructor(
             store,
             onboardingDependencies.applicationAccess,
             helperSetup,
+            folderSync.icloudSupported,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         LaunchedEffect(helperSetup) {
@@ -146,16 +149,7 @@ class PosatoApplication internal constructor(
             combine(sessionOwner.blockingSetup(), scheduledPauses.pause) { blocked, pause -> blocked || pause?.restricts == true }
                 .collect { helperSetup.sessionBlocked = it }
         }
-        if (hostsSession) {
-            LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
-            // An edit to a set a running session uses pauses its additions at once.
-            LaunchedEffect(sessionOwner) {
-                merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
-            }
-            LaunchedEffect(notifier) { notifier.run() }
-            // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
-            LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
-        }
+        if (hostsSession) HostedSessionEffects()
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
             ForegroundEffects(helperSetup)
@@ -190,6 +184,19 @@ class PosatoApplication internal constructor(
                 )
             }
         }
+    }
+
+    /** The session timer, recomposition, notices, and schedules of a process that hosts sessions. */
+    @Composable
+    private fun HostedSessionEffects() {
+        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+        // An edit to a set a running session uses pauses its additions at once.
+        LaunchedEffect(sessionOwner) {
+            merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
+        }
+        LaunchedEffect(notifier) { notifier.run() }
+        // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
+        LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
     }
 
     @Composable

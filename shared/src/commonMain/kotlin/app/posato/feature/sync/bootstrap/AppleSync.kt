@@ -78,11 +78,12 @@ internal class AppleSync(
     private val reconciler = PolicyReconciler(policySync, onSetsRemoved)
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
-    private val writers = AppleSyncWriter(coordinator, core, ::publish)
-    private val authoring = AppleSyncAuthoring(store, policySync, ::publish)
+    private val mutableState = MutableStateFlow(AppleSyncState())
+    private val publish: (SyncStatus) -> Unit = { status -> mutableState.update { it.copy(status = status, reason = null) } }
+    private val writers = AppleSyncWriter(coordinator, core, publish)
+    private val authoring = AppleSyncAuthoring(store, policySync, publish)
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
-    private val mutableState = MutableStateFlow(AppleSyncState())
     internal val sessionTriggers: SessionSyncTriggers = object : SessionSyncTriggers {
         override suspend fun captureWorkspace(): SessionWorkspaceCapture {
             return when (val captured = this@AppleSync.captureWorkspace()) {
@@ -239,6 +240,15 @@ internal class AppleSync(
         }.await()
     }
 
+    /** A folder choice changes the transport's binding, so an unfinished link attempt for the old one is dropped. */
+    suspend fun discardCandidate() {
+        guarded {
+            coordinator.discardCandidate()
+            mutableState.refreshLinked(coordinator)
+            if (!state.value.linked) publish(SyncStatus.LOCAL_ONLY)
+        }
+    }
+
     suspend fun captureWorkspace(): BootstrapStoreResult<EstablishedWorkspace?> {
         return authoring.captureWorkspace()
     }
@@ -265,8 +275,8 @@ internal class AppleSync(
         // A policy-capacity failure later in this pass must not suppress an accepted
         // session end, which is committed and cleared inside the session phase.
         val workspace = checkNotNull(check.workspace)
-        val read = if (enablePauseSetsOrHalt(policySync, workspace, active, ::publish)) readBaseOrHalt(policySync, ::publish) else BaseRead.Halted
-        if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish) {
+        val read = if (enablePauseSetsOrHalt(policySync, workspace, active, publish)) readBaseOrHalt(policySync, publish) else BaseRead.Halted
+        if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, publish) {
                 sessionObserver?.onReplicaSnapshot(active.sessionSnapshot)
             }
         ) {
@@ -294,7 +304,7 @@ internal class AppleSync(
         writer: SyncWriter,
         base: PolicySyncBase?,
     ) {
-        if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, ::publish)) {
+        if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, publish)) {
             return
         }
         // Schedules left a removed set in the schedule phase, so the removal follows their moves.
@@ -311,10 +321,6 @@ internal class AppleSync(
         val projection = writer.projection()
         mutableState.update { state -> state.copy(removedPauseSets = projection.removedPauseSetIds) }
         mutableState.publishOutcome(reconciler.apply(projection, base))
-    }
-
-    private fun publish(status: SyncStatus) {
-        mutableState.update { it.copy(status = status, reason = null) }
     }
 
     private suspend fun guarded(action: suspend () -> Unit) {
