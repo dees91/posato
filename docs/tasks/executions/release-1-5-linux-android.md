@@ -163,16 +163,20 @@
 | `AC-05` mistyped code refused on a Mac, workspace intact, right code joins; expiry, tampering, other workspace by contract tests | Passed | `build/verification/e2e/ac05-pass-20261011.txt` |
 | `AC-06` removal on Linux: folder emptied, Android needs attention, nothing re-created | Passed | `build/verification/e2e/ac06-multi-pass-20261011.txt` |
 | Mac at the final revision: folder remove, create, code, remove; Use another folder returns to iCloud; iCloud links (the first sync on the test account did not finish and stays retryable) and its removal works | Passed | `build/verification/e2e/mac-final.log` |
-| `AC-07` test iPhone in folder mode | Blocked | see Blockers |
+| `AC-07` test iPhone (cable) at `4c1f2db` plus the listing fix: Files picker to iCloud Drive `PosatoSync` (the folder of a Tart Mac), join with the Mac's code, sets from the Mac, a pause started on the Mac shown active 47 s after its start when Posato came to the front, early end from the Mac released on a later foreground | Passed after one fix (see below) | `build/verification/runs/20261011-084100-205c/` and the session's AC-07 runs |
 
 ## Blockers and accepted risks
 
-- **`AC-07` is blocked.** `posato-control install -t device` fails with
-  `NO_CONNECTED_DEVICE`: the test iPhone is paired over the network only and
-  the driver needs it on a cable. The iOS folder mode compiles and passes the
-  iOS host build check, but it has not run on the iPhone. Next action for the
-  maintainer: connect the test iPhone by cable; the run then needs a Tart Mac
-  whose folder is in iCloud Drive, as prepared for `AC-05`.
+- **`AC-07` found one defect, fixed:** on the iPhone, a plain listing of an
+  iCloud Drive folder kept showing only the items present when the folder
+  was first listed, so bundles the Mac added later were never read while the
+  Mac read the iPhone's. Listing now asks the provider to download the folder
+  and reads it under file coordination; the next foreground delivered the
+  Mac's set and session. No isolated test can reproduce a File Provider, so
+  the failing and passing device runs are the regression evidence.
+- `open` (iPhone, iCloud Drive): after the Mac removed the workspace, the
+  iPhone still reported a completed sync six minutes later; deletion by
+  another device had not reached its view of the folder in that time.
 - The x86-64 Linux package needs an x86-64 build machine (`RELEASE-007`).
 - `SESSION-010` (idea 39): a device that links while a pause runs enforces it
   only from the next pause; the order predates folder sync.

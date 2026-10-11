@@ -23,8 +23,7 @@ attention instead of creating it again.
 - `folder-removal`: removing the workspace empties the folder; other devices
   show "Sync needs attention" and never re-create it.
 - `folder-ios`: the iPhone chooses its folder in the Files picker and syncs
-  when Posato comes to the front (not verified unattended yet: the driver
-  needs the test iPhone on a cable).
+  when Posato comes to the front.
 
 ## How to get to it (user POV)
 
@@ -58,6 +57,15 @@ outlives the command that started it, and never start a second one.
 - **Exchange:** create a set with `flow set` on a Mac or start a pause on
   Android; proof is the other device's enforcement (`/etc/hosts` on Linux,
   the DNS answer on Android, `observe` on a Mac) within two minutes.
+- **iPhone joins through iCloud Drive:** link a Mac clone to
+  `~/Library/Mobile Documents/com~apple~CloudDocs/PosatoSync` (answer each
+  "wants to access files managed by iCloud Drive" alert with
+  `vm click --text Allow --exact`; a `vm exec` into that folder waits on
+  the alert). On the iPhone tap **Choose folder…**, then the picker's back
+  button (`id: BackButton`), `id: DOC.sidebar.item.iCloud Drive`,
+  `id: PosatoSync, Folder`, and **Open**; **Sync with this folder**; type the
+  Mac's code and press `return` (the keyboard hides **Join**). Proof: the
+  Mac's set appears after the next `terminate` and `launch`.
 - **Removal:** `flow folder remove` on one device. Proof: the folder is empty
   and the other device shows "Sync needs attention" within two minutes and
   the folder stays empty.
