@@ -77,3 +77,7 @@ outlives the command that started it, and never start a second one.
 - A file the product rejects (wrong name, size, or content) is skipped and
   never accepted; when one device misses a change, compare the bundle files'
   checksums across folders before suspecting the product.
+- A clone booted again with `vm boot` opens Posato at login from the package
+  it had before `vm sync`. Adopt and terminate that process, then `launch`;
+  the old process fails iCloud sync with a code-signature (`cdhash`)
+  mismatch in the sync companion and tests the old build.

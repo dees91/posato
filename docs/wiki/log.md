@@ -2828,3 +2828,20 @@ first removal attempt that does not finish, not to a paused keychain.
   releases it. A claim refused below the ledger's reserve stops the clone
   with `DISK_SPACE_LOW`; `--allow-low-disk` claims below the reserve. A host
   without the ledger, or a failed call, only logs a line.
+## [2026-10-11] delivery | Linux, Android, and folder sync for release 1.5
+
+- `observed`: the folder transport implements the existing bootstrap and
+  mailbox ports, so the exchange, reducer, and removal run unchanged on a
+  folder; a pairing code delivers the workspace key. Two Tart Macs, a Tart
+  Ubuntu guest, and an Android emulator shared pauses, sets, and schedules
+  through `posato-control relay`; a schedule made on a Mac started on
+  Android in the background and after a reboot.
+- `observed`: Linux blocks through a marked `/etc/hosts` block written by a
+  root service that clears itself at the end; Android through a DNS-only
+  `VpnService` and a usage-access block screen.
+- New verification commands: `posato-control linux`, `android`, `relay`,
+  and `flow folder`; the Linux golden VM and the Android emulator are set up
+  as described in the unattended verification guide.
+- `open`: the test iPhone in folder mode (needs a cable), real folder
+  services, and `SESSION-010` (idea 39), a running pause adopted at link time
+  without the set's websites.
