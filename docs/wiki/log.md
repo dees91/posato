@@ -2835,6 +2835,10 @@ first removal attempt that does not finish, not to a paused keychain.
 - New verification commands: `posato-control linux`, `android`, `relay`,
   and `flow folder`; the Linux golden VM and the Android emulator are set up
   as described in the unattended verification guide.
-- `open`: the test iPhone in folder mode (needs a cable), real folder
-  services, and `SESSION-010` (idea 39), a running pause adopted at link time
-  without the set's websites.
+- `observed`: the test iPhone joined a Tart Mac's workspace in iCloud Drive
+  through the Files picker and showed the Mac's pause on its next foreground,
+  after listing was changed to download the folder under file coordination.
+- `open`: a removal by another device not reaching the iPhone's view of an
+  iCloud Drive folder within six minutes, other folder services, and
+  `SESSION-010` (idea 39), a running pause adopted at link time without the
+  set's websites.

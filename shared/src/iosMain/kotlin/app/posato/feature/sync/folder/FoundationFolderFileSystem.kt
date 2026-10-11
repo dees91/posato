@@ -66,13 +66,23 @@ private object FoundationFolderReads : FolderReads {
         return result
     }
 
+    /**
+     * Lists through a coordinated read of the directory, so a File Provider folder enumerates items that another
+     * device added; a plain listing shows only what this device has already materialized.
+     */
     override fun names(directory: String): List<String>? {
         if (!isDirectory(directory)) return emptyList()
-        val entries = manager.contentsOfDirectoryAtPath(directory, null) ?: return null
-        return entries.filterIsInstance<String>().map { name ->
+        // Asks the provider to bring the folder's contents down, including items another device added since.
+        manager.startDownloadingUbiquitousItemAtURL(NSURL.fileURLWithPath(directory), null)
+        var entries: List<*>? = null
+        NSFileCoordinator(filePresenter = null).coordinateReadingItemAtURL(NSURL.fileURLWithPath(directory), 0u, null) { url ->
+            entries = url?.path?.let { manager.contentsOfDirectoryAtPath(it, null) }
+        }
+        return entries?.filterIsInstance<String>()?.map { name ->
             if (name.startsWith(".") && name.endsWith(".icloud")) {
-                manager.startDownloadingUbiquitousItemAtURL(NSURL.fileURLWithPath(directory.child(name)), null)
-                name.removePrefix(".").removeSuffix(".icloud")
+                val real = name.removePrefix(".").removeSuffix(".icloud")
+                manager.startDownloadingUbiquitousItemAtURL(NSURL.fileURLWithPath(directory.child(real)), null)
+                real
             } else {
                 name
             }
