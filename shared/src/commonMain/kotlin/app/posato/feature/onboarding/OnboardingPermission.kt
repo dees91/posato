@@ -21,12 +21,20 @@ import app.posato.generated.resources.mac_unified_defer
 import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
+import app.posato.generated.resources.onboarding_permission_android_action
+import app.posato.generated.resources.onboarding_permission_android_body
+import app.posato.generated.resources.onboarding_permission_android_denied
+import app.posato.generated.resources.onboarding_permission_android_required
 import app.posato.generated.resources.onboarding_permission_check_failed
 import app.posato.generated.resources.onboarding_permission_control
 import app.posato.generated.resources.onboarding_permission_defer
 import app.posato.generated.resources.onboarding_permission_denied
 import app.posato.generated.resources.onboarding_permission_ios_action
 import app.posato.generated.resources.onboarding_permission_ios_body
+import app.posato.generated.resources.onboarding_permission_linux_action
+import app.posato.generated.resources.onboarding_permission_linux_body
+import app.posato.generated.resources.onboarding_permission_linux_denied
+import app.posato.generated.resources.onboarding_permission_linux_required
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_approval
 import app.posato.generated.resources.onboarding_permission_mac_check_again
@@ -38,26 +46,32 @@ import app.posato.generated.resources.onboarding_permission_unavailable
 import app.posato.generated.resources.onboarding_summary_access_off
 import app.posato.generated.resources.onboarding_summary_access_on
 import app.posato.generated.resources.onboarding_summary_access_unchecked
+import app.posato.generated.resources.onboarding_summary_android_off
+import app.posato.generated.resources.onboarding_summary_android_on
+import app.posato.generated.resources.onboarding_summary_android_unchecked
 import app.posato.generated.resources.onboarding_summary_helper_off
 import app.posato.generated.resources.onboarding_summary_helper_on
+import app.posato.generated.resources.onboarding_summary_linux_off
+import app.posato.generated.resources.onboarding_summary_linux_on
+import app.posato.generated.resources.onboarding_summary_linux_unchecked
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun ApplicationAccessResult.accessMessage(): String {
+internal fun ApplicationAccessResult.accessMessage(platform: OnboardingPermissionPlatform = OnboardingPermissionPlatform.IOS): String {
     return when (this) {
         is ApplicationAccessResult.Determined -> {
             when (access) {
                 LocalApplicationMappingsAccess.READY -> {
-                    stringResource(Res.string.onboarding_summary_access_on)
+                    stringResource(platform.accessCopy().on)
                 }
 
                 LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED -> {
-                    stringResource(Res.string.onboarding_permission_required)
+                    stringResource(platform.accessCopy().required)
                 }
 
                 LocalApplicationMappingsAccess.AUTHORIZATION_DENIED -> {
-                    stringResource(Res.string.onboarding_permission_denied)
+                    stringResource(platform.accessCopy().denied)
                 }
 
                 LocalApplicationMappingsAccess.RESTRICTED -> {
@@ -78,14 +92,15 @@ internal fun ApplicationAccessResult.accessMessage(): String {
 
 @Composable
 internal fun OnboardingViewState.permissionSummary(permissionPlatform: OnboardingPermissionPlatform): String {
+    val copy = permissionPlatform.accessCopy()
     return when (permissionPlatform) {
-        OnboardingPermissionPlatform.IOS -> {
+        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
             when (val result = accessResult) {
                 is ApplicationAccessResult.Determined -> {
                     if (result.access == LocalApplicationMappingsAccess.READY) {
-                        stringResource(Res.string.onboarding_summary_access_on)
+                        stringResource(copy.on)
                     } else {
-                        stringResource(Res.string.onboarding_summary_access_off)
+                        stringResource(copy.off)
                     }
                 }
 
@@ -94,11 +109,11 @@ internal fun OnboardingViewState.permissionSummary(permissionPlatform: Onboardin
                 }
 
                 ApplicationAccessResult.Failed -> {
-                    stringResource(Res.string.onboarding_summary_access_unchecked)
+                    stringResource(copy.unchecked)
                 }
 
                 null -> {
-                    stringResource(Res.string.onboarding_summary_access_off)
+                    stringResource(copy.off)
                 }
             }
         }
@@ -142,10 +157,10 @@ internal fun PermissionStep(
             } else {
                 OnboardingActions(layout) {
                     when (platform) {
-                        OnboardingPermissionPlatform.IOS -> {
+                        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
                             if (state.accessResult != ApplicationAccessResult.Unavailable) {
                                 OnboardingPrimaryAction(
-                                    stringResource(Res.string.onboarding_permission_ios_action),
+                                    stringResource(platform.accessCopy().action),
                                     layout,
                                     onRequestAccess,
                                     enabled = !state.permissionRunning,
@@ -195,8 +210,8 @@ internal fun PermissionStatus(
     platform: OnboardingPermissionPlatform,
 ) {
     when (platform) {
-        OnboardingPermissionPlatform.IOS -> {
-            val message = state.accessResult?.accessMessage()
+        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
+            val message = state.accessResult?.accessMessage(platform)
             if (message != null) {
                 PosatoNotice(
                     tone = if (state.hasDeviceAccess(platform)) PosatoTone.Positive else PosatoTone.Caution,
@@ -268,7 +283,7 @@ private fun MacHelperApprovalActions(
 
 internal fun OnboardingViewState.hasDeviceAccess(platform: OnboardingPermissionPlatform): Boolean {
     return when (platform) {
-        OnboardingPermissionPlatform.IOS -> {
+        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
             (accessResult as? ApplicationAccessResult.Determined)?.access == LocalApplicationMappingsAccess.READY
         }
 
@@ -280,7 +295,7 @@ internal fun OnboardingViewState.hasDeviceAccess(platform: OnboardingPermissionP
 
 internal fun OnboardingViewState.canDeferPermission(platform: OnboardingPermissionPlatform): Boolean {
     return when (platform) {
-        OnboardingPermissionPlatform.IOS -> !permissionRunning
+        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> !permissionRunning
         OnboardingPermissionPlatform.MAC -> true
     }
 }
@@ -332,10 +347,10 @@ private fun PermissionHeading(
         } else {
             stringResource(Res.string.onboarding_permission_title)
         },
-        description = if (platform == OnboardingPermissionPlatform.IOS) {
-            stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
-        } else {
+        description = if (platform == OnboardingPermissionPlatform.MAC) {
             stringResource(Res.string.mac_unified_body)
+        } else {
+            stringResource(platform.accessCopy().body, deviceNoun)
         },
         layout = layout,
     )

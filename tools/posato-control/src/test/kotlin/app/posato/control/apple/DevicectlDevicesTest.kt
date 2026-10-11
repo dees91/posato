@@ -36,6 +36,21 @@ class DevicectlDevicesTest {
     }
 
     @Test
+    fun `a booted simulator that Xcode 27 lists among the devices is not a device`() {
+        val simulator =
+            """
+            {"identifier":"SIM",
+             "deviceProperties":{"name":"iPhone 17","osVersionNumber":"27.0"},
+             "hardwareProperties":{"marketingName":"iPhone 17","reality":"simulated"},
+             "connectionProperties":{"pairingState":"paired","transportType":"sameMachine","tunnelState":"connected"}}
+            """.trimIndent()
+
+        val devices = parseDevices(result(simulator, device("PHONE", "paired", "localNetwork", "disconnected")))
+
+        assertEquals(listOf("PHONE"), devices.map { it.udid })
+    }
+
+    @Test
     fun `a connected device needs no wake`() {
         val devices = parseDevices(result(device("A", "paired", "wired", "connected")))
 

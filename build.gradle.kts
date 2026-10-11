@@ -8,6 +8,7 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
+    alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.multiplatform) apply false
@@ -111,6 +112,9 @@ val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
                 "video",
                 "shared/src",
                 "desktopApp/src",
+                "desktopApp/linux",
+                "androidApp/src",
+                "linuxHelper/src",
                 "iosApp",
                 "macosHelper",
                 "macosSyncCompanion",
@@ -208,8 +212,12 @@ tasks.register("qualityLint") {
     description = "Runs only Posato's formatting and static analysis, in about a minute, before a commit; quality still gates the push."
     dependsOn(
         "ktlintCheck",
+        ":androidApp:detekt",
+        ":androidApp:ktlintCheck",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
+        ":linuxHelper:detekt",
+        ":linuxHelper:ktlintCheck",
         ":quality-rules:detekt",
         ":quality-rules:ktlintCheck",
         ":shared:detekt",
@@ -261,6 +269,12 @@ tasks.register("quality") {
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",
         ":desktopApp:verifySqlDelightMigration",
+        ":androidApp:detekt",
+        ":androidApp:ktlintCheck",
+        ":androidApp:testDebugUnitTest",
+        ":linuxHelper:detekt",
+        ":linuxHelper:ktlintCheck",
+        ":linuxHelper:test",
         ":quality-rules:detekt",
         ":quality-rules:ktlintCheck",
         ":quality-rules:test",

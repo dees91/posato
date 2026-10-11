@@ -34,7 +34,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "Posato"
 
+include(":androidApp")
 include(":desktopApp")
+include(":linuxHelper")
 include(":macosHelper")
 include(":macosSyncCompanion")
 include(":posato-control")

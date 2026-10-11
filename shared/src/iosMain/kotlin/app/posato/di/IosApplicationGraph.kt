@@ -45,6 +45,12 @@ import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.folder.AppleSyncPorts
+import app.posato.feature.sync.folder.BookmarkFolderAccess
+import app.posato.feature.sync.folder.FolderSync
+import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.FoundationFolderFileSystem
+import app.posato.feature.sync.folder.IosFolderPicker
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -63,13 +69,18 @@ import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import platform.Foundation.NSHomeDirectory
 import platform.Foundation.NSRecursiveLock
 import platform.posix.time
+import kotlin.coroutines.resume
 
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph :
     ApplicationGraph,
-    IosScheduleBindings {
+    IosScheduleBindings,
+    IosFolderSyncBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val pauseSetPreparation: PauseSetPreparation
     val appleSync: AppleSync
@@ -89,6 +100,7 @@ internal interface IosApplicationGraph :
             @Provides applicationAccess: ApplicationAccessPort,
             @Provides notifications: SessionNotificationPlatform,
             @Provides schedules: IosScheduleBridge,
+            @Provides folderPicker: IosFolderPicker,
         ): IosApplicationGraph
     }
 
@@ -196,9 +208,8 @@ internal interface IosApplicationGraph :
     @Provides
     @SingleIn(AppScope::class)
     fun provideAppleSync(
-        keychainProvider: IosKeychainProvider,
-        mailboxProvider: IosCloudKitMailboxProvider,
         cryptoProvider: IosCryptoProvider,
+        folderSync: FolderSync,
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
@@ -208,18 +219,17 @@ internal interface IosApplicationGraph :
         clock: SessionClock,
         applicationMappings: LocalApplicationMappings,
     ): AppleSync {
-        val keys = IosBootstrapKeychainAdapter(keychainProvider)
+        val ports = folderSync.ports
         val crypto = IosSyncCryptoProvider(cryptoProvider)
         val store = SqlBootstrapStore(database, databaseDispatcher)
-        val mailbox = IosMailboxAdapter(mailboxProvider)
-        val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto, mailbox)
+        val coordinator = BootstrapCoordinator(ports, ports, ports, store, crypto, ports)
         val replica = SqlSyncReplicaStore(database, databaseDispatcher)
         val core = SyncOperationCore(replica, crypto, SyncWallClock { time(null) * MILLIS_PER_SECOND })
         return AppleSync(
             coordinator,
             core,
-            IosMailboxAdapter(mailboxProvider),
-            keys,
+            ports,
+            ports,
             store,
             policySync,
             crypto,
@@ -253,6 +263,7 @@ internal fun createIosApplicationRuntime(
     mailboxProvider: IosCloudKitMailboxProvider,
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
+    folderPicker: IosFolderPicker = NoFolderPicker,
 ): IosApplicationRuntime {
     runtimeLock.lock()
     try {
@@ -266,6 +277,7 @@ internal fun createIosApplicationRuntime(
             mailboxProvider,
             notifications,
             schedules,
+            folderPicker,
         ).also { processRuntime = it }
     } finally {
         runtimeLock.unlock()
@@ -281,6 +293,7 @@ private fun buildIosApplicationRuntime(
     mailboxProvider: IosCloudKitMailboxProvider,
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
+    folderPicker: IosFolderPicker,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
     val enforcement = IosSessionEnforcement(
@@ -296,11 +309,22 @@ private fun buildIosApplicationRuntime(
         IosApplicationAccess(applicationMappings),
         notifications,
         schedules,
+        folderPicker,
     )
     return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }
 
-private const val MILLIS_PER_SECOND = 1_000
+internal const val MILLIS_PER_SECOND = 1_000
 
 private val runtimeLock = NSRecursiveLock()
 private var processRuntime: IosApplicationRuntime? = null
+
+private object NoFolderPicker : IosFolderPicker {
+    override fun pickFolder(completion: (String?) -> Unit) {
+        completion(null)
+    }
+}
+
+internal fun iosApplicationSupportDirectory(): String {
+    return "${NSHomeDirectory().trimEnd('/')}/Library/Application Support/Posato"
+}

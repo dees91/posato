@@ -6,6 +6,7 @@ import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.notifications.UnavailableSessionNotifications
+import app.posato.feature.onboarding.ApplicationAccessPort
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -34,6 +35,10 @@ import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.folder.AppleSyncPorts
+import app.posato.feature.sync.folder.FolderSync
+import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.NioFolderFileSystem
 import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
 import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
@@ -57,12 +62,14 @@ import dev.zacsweers.metro.createGraph
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import java.nio.file.Paths
 
 @DependencyGraph(AppScope::class)
 internal interface DesktopApplicationGraph :
     DesktopApplicationComponents,
     DesktopUpdateBindings,
     DesktopScheduleBindings,
+    DesktopFolderSyncBindings,
     DesktopVerificationBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
@@ -79,6 +86,8 @@ internal interface DesktopApplicationGraph :
             @Provides databasePath: String,
             @Provides macHelper: MacHelperPort,
             @Provides notifications: SessionNotificationPlatform,
+            @Provides platform: OnboardingPermissionPlatform,
+            @Provides applicationAccess: ApplicationAccessPort,
         ): DesktopApplicationGraph
     }
 
@@ -156,12 +165,14 @@ internal interface DesktopApplicationGraph :
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         macHelper: MacHelperPort,
+        platform: OnboardingPermissionPlatform,
+        applicationAccess: ApplicationAccessPort,
     ): OnboardingDependencies {
         return OnboardingDependencies(
             setupStore = SqlLocalSetupStore(database, databaseDispatcher),
-            applicationAccess = UnavailableApplicationAccess,
+            applicationAccess = applicationAccess,
             macHelper = macHelper,
-            permissionPlatform = OnboardingPermissionPlatform.MAC,
+            permissionPlatform = platform,
         )
     }
 
@@ -190,24 +201,22 @@ internal interface DesktopApplicationGraph :
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
         sessions: LocalSessionSyncStore,
-        companion: MaintenanceCompanionTransport,
+        folderSync: FolderSync,
         schedules: ScheduleSyncStore,
         zone: ScheduleZone,
         clock: SessionClock,
         applicationMappings: LocalApplicationMappings,
     ): AppleSync {
-        val transport: SyncCompanionTransport = companion
-        val keys = MacOsBootstrapKeychainAdapter(transport)
+        val ports = folderSync.ports
         val crypto = JdkSyncCryptoProvider()
         val store = SqlBootstrapStore(database, databaseDispatcher)
-        val mailbox = MacOsMailboxAdapter(transport)
-        val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto, mailbox)
+        val coordinator = BootstrapCoordinator(ports, ports, ports, store, crypto, ports)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
         return AppleSync(
             coordinator,
             core,
-            MacOsMailboxAdapter(transport),
-            keys,
+            ports,
+            ports,
             store,
             policySync,
             crypto,
@@ -221,7 +230,7 @@ internal interface DesktopApplicationGraph :
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             onSetsRemoved = applicationMappings::retainSets,
-        )
+        ).also(folderSync::startPolling)
     }
 }
 
@@ -231,6 +240,8 @@ fun createDesktopApplicationGraph(
     macHelper: MacHelperPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
     notifications: SessionNotificationPlatform = UnavailableSessionNotifications,
+    platform: OnboardingPermissionPlatform = OnboardingPermissionPlatform.MAC,
+    applicationAccess: ApplicationAccessPort = UnavailableApplicationAccess,
 ): DesktopApplicationComponents {
     return synchronized(desktopGraphLock) {
         val existing = processDesktopGraph
@@ -244,6 +255,8 @@ fun createDesktopApplicationGraph(
                 databasePath,
                 macHelper,
                 notifications,
+                platform,
+                applicationAccess,
             ).also {
                 processDatabasePath = databasePath
                 processDesktopGraph = it

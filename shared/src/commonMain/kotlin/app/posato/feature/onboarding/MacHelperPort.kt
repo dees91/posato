@@ -140,3 +140,8 @@ internal fun macReadyForSchedules(
 ): Boolean {
     return setupComplete && grant == MacStandingGrantState.ON && consent
 }
+
+/** The Mac helper on a host that has none, such as Linux, whose own service is reached through its enforcement port. */
+public fun unavailableMacHelper(): MacHelperPort {
+    return UnavailableMacHelper
+}

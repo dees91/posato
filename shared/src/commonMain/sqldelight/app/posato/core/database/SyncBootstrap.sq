@@ -96,6 +96,9 @@ INSERT OR REPLACE INTO sync_bootstrap_state(
 clearEstablishedWorkspace:
 DELETE FROM sync_bootstrap_state;
 
+discardBootstrapCandidate:
+DELETE FROM sync_bootstrap_state WHERE established_workspace_id IS NULL;
+
 insertRemovedWorkspace:
 INSERT OR REPLACE INTO sync_removed_workspace(
   workspace_id,
