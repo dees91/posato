@@ -87,9 +87,27 @@ public class CatalogApplicationMappings(
         return change(ApplicationChoiceSet.FIRST) { records -> records.filter { it.set in kept } }
     }
 
-    /** The targets of the given mapping identifiers, from whichever set chose them. */
+    /**
+     * The targets running parts kept for apps by identifier, set once the shared graph exists; it answers for apps
+     * removed from every set while a pause still holds them.
+     */
+    public var keptTargets: suspend (Set<String>) -> Map<String, ByteArray> = { emptyMap() }
+
+    /** Each chosen app with its target in place of a designated requirement, so a running part keeps pausing it. */
+    override suspend fun keptApplications(mappingIds: Set<String>): List<KeptApplication> {
+        return locked {
+            read().orEmpty().filter { it.id in mappingIds }.distinctBy { it.id }.map { record ->
+                KeptApplication(record.id.hexBytes(), record.name.encodeToByteArray(), record.target.encodeToByteArray())
+            }
+        }
+    }
+
+    /** The targets of the given mapping identifiers, from whichever set chose them or else from a running part. */
     public suspend fun targets(mappingIds: Collection<String>): List<String> {
-        return locked { read().orEmpty().filter { it.id in mappingIds }.map { it.target }.distinct() }
+        val records = locked { read().orEmpty().filter { it.id in mappingIds } }
+        val missing = mappingIds.toSet() - records.map { it.id }.toSet()
+        val kept = if (missing.isEmpty()) emptyList() else keptTargets(missing).values.map { it.decodeToString() }
+        return (records.map { it.target } + kept).distinct()
     }
 
     private suspend fun change(
@@ -103,16 +121,6 @@ public class CatalogApplicationMappings(
             changes.tryEmit(Unit)
             LocalApplicationRemovalResult.Success(snapshot(next, set) ?: LocalApplicationMappingsSnapshot.empty())
         }
-    }
-
-    private fun snapshot(
-        records: List<Record>,
-        set: ApplicationChoiceSet,
-    ): LocalApplicationMappingsSnapshot? {
-        val mappings = records.filter { it.set == set.hex }.mapNotNull { record ->
-            LocalApplicationMappingId.restore(record.id)?.let { id -> LocalApplicationMapping.restore(id, record.name) }
-        }
-        return LocalApplicationMappingsSnapshot.restore(mappings)
     }
 
     private fun read(): List<Record>? {
@@ -145,19 +153,35 @@ public class CatalogApplicationMappings(
         return withContext(ioDispatcher) { mutex.withLock { block() } }
     }
 
-    private class Record(
-        val set: String,
-        val key: String,
-        val name: String,
-        val target: String,
-    ) {
-        val id: String = MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
-    }
-
     private companion object {
         const val FIELDS = 4
     }
 }
+
+private class Record(
+    val set: String,
+    val key: String,
+    val name: String,
+    val target: String,
+) {
+    val id: String = MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
+}
+
+private fun snapshot(
+    records: List<Record>,
+    set: ApplicationChoiceSet,
+): LocalApplicationMappingsSnapshot? {
+    val mappings = records.filter { it.set == set.hex }.mapNotNull { record ->
+        LocalApplicationMappingId.restore(record.id)?.let { id -> LocalApplicationMapping.restore(id, record.name) }
+    }
+    return LocalApplicationMappingsSnapshot.restore(mappings)
+}
+
+private fun String.hexBytes(): ByteArray {
+    return chunked(2).map { it.toInt(HEX_RADIX).toByte() }.toByteArray()
+}
+
+private const val HEX_RADIX = 16
 
 private fun String.clean(): String {
     return filterNot { it == '\t' || it == '\n' || it == '\r' }

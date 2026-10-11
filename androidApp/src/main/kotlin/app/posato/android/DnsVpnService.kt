@@ -11,6 +11,7 @@ import android.net.VpnService
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.system.OsConstants
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
@@ -82,13 +83,17 @@ class DnsVpnService : VpnService() {
             .addAddress(TUNNEL_ADDRESS, PREFIX_32)
             .addDnsServer(DNS_ADDRESS)
             .addRoute(DNS_ADDRESS, PREFIX_32)
+            // IPv6 has no address here, so without this Android would drop it instead of using the network underneath.
+            .allowFamily(OsConstants.AF_INET6)
             .setBlocking(true)
             .establish() ?: return
         tunnel = established
+        live = true
         reader = Thread({ serve(established) }, "posato-dns").also { it.start() }
     }
 
     private fun stopTunnel() {
+        live = false
         runCatching { connectivity().unregisterNetworkCallback(networkCallback) }
         underlying = null
         reader?.interrupt()
@@ -164,6 +169,11 @@ class DnsVpnService : VpnService() {
         private const val FORWARD_TIMEOUT_MILLIS = 5_000
         private const val IPV4_BYTES = 4
         private const val WWW = "www."
+
+        /** Whether the tunnel is up in this process; after a reboot it is not until the service starts it again. */
+        @Volatile
+        var live: Boolean = false
+            private set
 
         /** Starts, updates, or stops the tunnel to match the pause that is applied now. */
         fun refresh(context: Context) {

@@ -23,6 +23,7 @@ import app.posato.feature.schedules.host.ScheduleStartGate
 import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.schedules.host.StartGate
 import app.posato.feature.session.JvmSessionTimeFormat
+import app.posato.feature.session.data.KeptApplicationRequirements
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.data.SqlPartRetentionStore
@@ -45,6 +46,7 @@ import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.KeystoreKeyItemProtection
+import app.posato.feature.targets.data.CatalogApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -78,6 +80,7 @@ internal interface AndroidApplicationGraph :
     val applicationMappings: LocalApplicationMappings
     val sessionComposition: SessionComposition
     val sessionNotifier: SessionNotifier
+    val keptApplicationRequirements: KeptApplicationRequirements
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -269,5 +272,6 @@ public fun createAndroidApplicationRuntime(
         applicationAccess,
         folderSync,
     )
+    (applicationMappings as? CatalogApplicationMappings)?.keptTargets = graph.keptApplicationRequirements::of
     return AndroidApplicationRuntime(graph.application, graph)
 }

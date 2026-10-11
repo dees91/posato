@@ -47,6 +47,12 @@ internal class PauseLimits(
 /** This device's limits: the Mac's on the desktop, the iPhone's and iPad's on iOS. */
 internal expect val devicePauseLimits: PauseLimits
 
+/**
+ * Whether a running part records what it paused so items removed while it runs stay paused until it ends. iOS
+ * does not: its monitor keeps what it applied by itself.
+ */
+internal expect val deviceRetainsPausedItems: Boolean
+
 /** What to apply for the running parts, what each part now holds, and how many of its items wait for room. */
 internal data class PausePlan(
     val items: PauseItems,

@@ -25,6 +25,7 @@ internal class AndroidAccess(
             !Permissions.notifications(app) -> activity.requestNotifications()
             !Permissions.exactAlarms(app) -> activity.openGrant(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, packageUri))
             !Permissions.allFiles() -> activity.openGrant(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, packageUri))
+            !Permissions.batteryExempt(app) -> activity.openGrant(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri))
         }
         val access = if (Permissions.all(app)) LocalApplicationMappingsAccess.READY else LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
         return ApplicationAccessResult.Determined(access)

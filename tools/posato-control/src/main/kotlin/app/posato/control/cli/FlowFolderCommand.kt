@@ -21,7 +21,7 @@ import kotlinx.serialization.json.put
  */
 class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, show or enter a pairing code, or remove the workspace.") {
     private val action by argument(help = "link | offer | done | join | remove").choice(LINK, OFFER, DONE_ACTION, JOIN, REMOVE)
-    private val path by option("--path", help = "The folder to link, as the device sees it (link).")
+    private val path by option("--path", help = "The folder to type and link (link); omit it to keep a picker's folder.")
     private val code by option("--code", help = "The pairing code from another device (join).")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(DEFAULT_TIMEOUT_SECONDS)
 
@@ -34,7 +34,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         }
         expand(backend)
         return when (action) {
-            LINK -> link(backend, requireOption(path, "--path"), deadline)
+            LINK -> link(backend, path, deadline)
             OFFER -> offer(backend)
             JOIN -> join(backend, requireOption(code, "--code"), deadline)
             else -> remove(backend, deadline)
@@ -43,14 +43,15 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
 
     private fun link(
         backend: Backend,
-        folder: String,
+        folder: String?,
         deadline: Long,
     ): JsonElement {
-        // An unlinked device chooses its folder again, as a person would, so no earlier choice carries over.
-        if (USE_ANOTHER in FlowSteps.labels(backend)) {
+        // With --path an unlinked device types its folder again, as a person would, so no earlier choice carries over.
+        // Without it (iPhone, where the folder comes from the Files picker) the folder already chosen is kept.
+        if (folder != null && USE_ANOTHER in FlowSteps.labels(backend)) {
             FlowSteps.run(backend, listOf(FlowSteps.reveal(button(USE_ANOTHER)), FlowSteps.tap(button(USE_ANOTHER))))
         }
-        if (USE_FOLDER in FlowSteps.labels(backend)) {
+        if (folder != null && USE_FOLDER in FlowSteps.labels(backend)) {
             FlowSteps.run(
                 backend,
                 listOf(FlowSteps.reveal(button(USE_FOLDER)), FlowSteps.typeInto(folder, submit = false), FlowSteps.tap(button(USE_FOLDER))),

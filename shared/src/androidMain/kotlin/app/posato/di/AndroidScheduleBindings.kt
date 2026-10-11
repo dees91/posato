@@ -101,6 +101,7 @@ internal interface AndroidScheduleBindings : ScheduleBindings {
             limits = PauseLimits.MAC,
             occupied = claims::manualItems,
             retention = retention,
+            keptApplications = applicationMappings::keptApplications,
         )
         return ScheduleHost(schedules.store, schedules.zone, clock, ports)
     }

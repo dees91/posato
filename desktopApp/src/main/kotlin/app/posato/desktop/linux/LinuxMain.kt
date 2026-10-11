@@ -31,6 +31,7 @@ fun main() {
         platform = OnboardingPermissionPlatform.LINUX,
         applicationAccess = LinuxApplicationAccess(installer),
     )
+    mappings.keptTargets = graph.keptApplicationRequirements::of
     application {
         Window(
             onCloseRequest = ::exitApplication,

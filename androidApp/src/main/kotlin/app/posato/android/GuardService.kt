@@ -41,6 +41,8 @@ class GuardService : Service() {
     override fun onCreate() {
         super.onCreate()
         startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        // After a reboot a running website pause is only saved; start its tunnel again.
+        DnsVpnService.refresh(this)
         val runtime = (application as PosatoAndroidApp).runtime
         scope.launch { runtime.host() }
         scope.launch { watch() }

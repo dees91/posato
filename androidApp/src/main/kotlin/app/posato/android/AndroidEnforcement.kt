@@ -36,7 +36,10 @@ internal class AndroidEnforcement(
 
     override suspend fun status(): EnforcementOutcome {
         if (!Permissions.blockingReady(context)) return EnforcementOutcome.UNAVAILABLE
-        return if (state.applied() != null) EnforcementOutcome.APPLIED else EnforcementOutcome.CLEARED
+        val applied = state.applied() ?: return EnforcementOutcome.CLEARED
+        // A saved pause outlives the tunnel across a reboot; bring the tunnel back before it counts as applied.
+        if (applied.domains.isNotEmpty() && !DnsVpnService.live) DnsVpnService.refresh(context)
+        return EnforcementOutcome.APPLIED
     }
 
     override suspend fun holdsSession(sessionId: String): Boolean {
