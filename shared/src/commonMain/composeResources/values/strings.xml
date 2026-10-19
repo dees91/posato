@@ -331,6 +331,7 @@ For what matters.</string>
     <string name="sync_folder_share_link">Share link</string>
     <string name="sync_folder_copy_link">Copy link</string>
     <string name="sync_folder_link_copied">Link copied. Paste it into the pairing code field on the other device.</string>
+    <string name="sync_folder_link_received">Pairing code received. Choose the same folder as on the other device, then sync with it to join.</string>
     <string name="sync_folder_qr_description">QR code that opens Posato on the other device with this pairing code</string>
     <string name="sync_folder_code_done">Done</string>
     <string name="sync_folder_code_failed">A pairing code could not be created. Check that the folder is available and try again.</string>

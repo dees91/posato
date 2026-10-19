@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoActivityIndicator
@@ -64,6 +65,7 @@ import app.posato.generated.resources.sync_folder_join_refused
 import app.posato.generated.resources.sync_folder_join_unavailable
 import app.posato.generated.resources.sync_folder_join_wrong_workspace
 import app.posato.generated.resources.sync_folder_link_copied
+import app.posato.generated.resources.sync_folder_link_received
 import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
@@ -100,6 +102,7 @@ internal fun FolderOptions(
     }
     PosatoCaption(stringResource(Res.string.sync_folder_chosen, folder))
     if (!snapshot.linked && !snapshot.joinPending) {
+        LinkCodeNote(state)
         PosatoCaption(stringResource(Res.string.sync_folder_linking))
     }
     if (snapshot.joinPending && !snapshot.linked) {
@@ -162,6 +165,18 @@ private fun FolderActions(
     }
 }
 
+/** Tells the person that a join link arrived, while this device still needs its folder before it can join. */
+@Composable
+private fun LinkCodeNote(state: SyncBootstrapUiState) {
+    val linkCode by state.linkCode.collectAsState()
+    if (linkCode != null) {
+        PosatoCaption(
+            stringResource(Res.string.sync_folder_link_received),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+}
+
 @Composable
 internal fun FolderChooser(
     state: SyncBootstrapUiState,
@@ -169,6 +184,7 @@ internal fun FolderChooser(
 ) {
     val path = rememberTextFieldState()
     val typed = state.folderControls.acceptsTypedPath
+    LinkCodeNote(state)
     if (typed) {
         PosatoTextField(
             state = path,
@@ -245,7 +261,11 @@ internal fun PairingCodeDialog(
                     modifier = Modifier.size(QR_SIZE).background(Color.White).padding(PosatoSpace.Small),
                 )
                 SelectionContainer {
-                    Text(code.chunked(CODE_GROUP_CHARACTERS).joinToString(" "), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        code.chunked(CODE_GROUP_CHARACTERS).joinToString(" "),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
                 }
                 if (copied) {
                     PosatoCaption(
