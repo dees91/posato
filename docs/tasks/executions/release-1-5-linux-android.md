@@ -109,6 +109,16 @@
   (`folder-sync.md`, `linux-and-android.md`), the unattended verification
   guide (Linux golden VM and Android emulator), and the wiki topics.
 
+- **Pairing by QR code and link** (`user-confirmed` 2026-10-19, added to this
+  pull request by the maintainer's choice). The code dialog is drawn on every
+  host and shows a QR code of `posato://join?code=<code>`, the code, and
+  **Share link** (share sheet on iOS and Android) or **Copy link**
+  (clipboard on the Mac and Linux). iOS, Android, and the Mac register the
+  `posato` scheme; an opened link fills the code, opens the folder section,
+  says "Pairing code received" until a folder is chosen, and joins once the
+  device waits for a code. The code field also takes a pasted link (Linux).
+  QRose 1.1.2 draws the QR code; 1.2 and later need Android SDK 37.
+
 ## Completed-change review
 
 - **Verdict:** changes-required (2026-10-11, independent agent, head
@@ -163,6 +173,7 @@
 | `AC-05` mistyped code refused on a Mac, workspace intact, right code joins; expiry, tampering, other workspace by contract tests | Passed | `build/verification/e2e/ac05-pass-20261011.txt` |
 | `AC-06` removal on Linux: folder emptied, Android needs attention, nothing re-created | Passed | `build/verification/e2e/ac06-multi-pass-20261011.txt` |
 | Mac at the final revision: folder remove, create, code, remove; Use another folder returns to iCloud; iCloud links (the first sync on the test account did not finish and stays retryable) and its removal works | Passed | `build/verification/e2e/mac-final.log` |
+| Pairing by QR code and link at `ff8d7f68` (the Mac and Android runs one commit earlier, which differs only in centering the code text): the Mac's QR code decodes to the join link and **Copy link** puts it on the guest clipboard; Android joins by a link opened before its folder was chosen; Android's own QR code decodes and **Share link** opens the share sheet; on the iPhone Simulator a link fills the code and the QR dialog and share sheet show; a link opened on the Mac guest fills the code. The test iPhone on a cable was not available for this addition | Passed | `build/verification/e2e/qr-e2e.log`, runs `20261019-223516-5f97`, `20261019-223350-2eff`, `20261019-223626-2a97` |
 | `AC-07` test iPhone (cable) at `4c1f2db` plus the listing fix: Files picker to iCloud Drive `PosatoSync` (the folder of a Tart Mac), join with the Mac's code, sets from the Mac, a pause started on the Mac shown active 47 s after its start when Posato came to the front, early end from the Mac released on a later foreground | Passed after one fix (see below) | `build/verification/runs/20261011-084100-205c/` and the session's AC-07 runs |
 
 ## Blockers and accepted risks
