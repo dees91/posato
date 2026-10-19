@@ -327,7 +327,11 @@ For what matters.</string>
     <string name="sync_folder_join">Join</string>
     <string name="sync_folder_add_device">Add a device</string>
     <string name="sync_folder_code_title">Pairing code</string>
-    <string name="sync_folder_code_message">On the other device, choose the same folder and enter this code within 10 minutes:</string>
+    <string name="sync_folder_code_message">Scan this QR code with the other device's camera, or share the link. On a computer, choose the same folder there and enter the code. It works for 10 minutes.</string>
+    <string name="sync_folder_share_link">Share link</string>
+    <string name="sync_folder_copy_link">Copy link</string>
+    <string name="sync_folder_link_copied">Link copied. Paste it into the pairing code field on the other device.</string>
+    <string name="sync_folder_qr_description">QR code that opens Posato on the other device with this pairing code</string>
     <string name="sync_folder_code_done">Done</string>
     <string name="sync_folder_code_failed">A pairing code could not be created. Check that the folder is available and try again.</string>
     <string name="sync_folder_join_invalid">This code is not valid. Check it for typing errors.</string>

@@ -13,6 +13,10 @@ attention instead of creating it again.
 
 - `folder-link`: choosing a folder without a workspace creates one; choosing
   one with a workspace waits for a pairing code.
+- `folder-pairing-link`: the code dialog shows a QR code of
+  `posato://join?code=<code>` and **Share link** (phones) or **Copy link**
+  (computers); opening the link fills the code, opens the folder section, and
+  joins once the device waits for a code.
 - `folder-pairing`: a member shows a 27-character code for 10 minutes; a
   device that enters it joins; a wrong, expired, or mistyped code is refused
   with its own message.
@@ -66,6 +70,14 @@ outlives the command that started it, and never start a second one.
   `id: PosatoSync, Folder`, and **Open**; **Sync with this folder**; type the
   Mac's code and press `return` (the keyboard hides **Join**). Proof: the
   Mac's set appears after the next `terminate` and `launch`.
+- **Join by link:** open the member's link on the joining device instead of
+  typing: Android `$PC android shell --script 'am start -a
+  android.intent.action.VIEW -d "posato://join?code=<code>"'`, the iPhone
+  `xcrun devicectl device process launch --device <udid> --payload-url
+  "posato://join?code=<code>" app.posato.ios` (what a camera scan does), a
+  Mac guest `$PC vm exec --line <line> --script 'open
+  "posato://join?code=<code>"'`. Proof: the code field holds the code, and
+  the device joins once it waits for a code.
 - **Removal:** `flow folder remove` on one device. Proof: the folder is empty
   and the other device shows "Sync needs attention" within two minutes and
   the folder stays empty.

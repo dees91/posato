@@ -35,9 +35,32 @@ internal enum class FolderChoiceResult {
     NOT_A_FOLDER,
 }
 
+/**
+ * How this host passes a pairing link on: the system share sheet on a phone, the clipboard on a computer. [share]
+ * returns whether the link left Posato.
+ */
+interface LinkSharing {
+    val usesShareSheet: Boolean
+
+    suspend fun share(link: String): Boolean
+
+    object None : LinkSharing {
+        override val usesShareSheet: Boolean = false
+
+        override suspend fun share(link: String): Boolean {
+            return false
+        }
+    }
+}
+
 /** What the sync section can do with the folder transport of ADR 0010 on this device. */
 internal interface FolderSyncControls {
     val supported: Boolean
+
+    val linkSharing: LinkSharing
+        get() {
+            return LinkSharing.None
+        }
 
     val icloudSupported: Boolean
 

@@ -2,6 +2,7 @@ package app.posato.di
 
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.sync.folder.AppleSyncPorts
+import app.posato.feature.sync.folder.ClipboardLinkSharing
 import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.NioFolderFileSystem
@@ -37,6 +38,7 @@ internal interface DesktopFolderSyncBindings {
             NioFolderFileSystem,
             Dispatchers.IO,
             System::currentTimeMillis,
+            linkSharing = ClipboardLinkSharing,
         )
     }
 

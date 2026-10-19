@@ -7,10 +7,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -91,6 +93,7 @@ internal fun SyncBootstrapSection(
     val checking = state.checking
     val controls = state.folderControls
     val folderMode = controls.supported && (folder != null || !controls.icloudSupported)
+    LinkCodeEffects(state, snapshot) { expanded = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         SyncRow(expanded, folderMode, rowSummary(snapshot, checking, removingHere, state.running)) { expanded = !expanded }
         if (expanded && folderMode) {
@@ -99,13 +102,28 @@ internal fun SyncBootstrapSection(
             IcloudAndFolderOptions(state, snapshot, running, removingHere) { confirmingRemoval = true }
         }
     }
-    state.offer?.let { offer -> PairingCodeAlert(offer.code, state::closeCode) }
+    state.offer?.let { offer ->
+        PairingCodeDialog(offer.code, state.folderControls.linkSharing, state.linkCopied, state::shareLink, state::closeCode)
+    }
     if (confirmingRemoval) {
         RemoveWorkspaceAlert(folderMode, onDismiss = { confirmingRemoval = false }) {
             confirmingRemoval = false
             state.removeWorkspace()
         }
     }
+}
+
+/** A join link the system opened Posato with opens the section and joins as soon as this device waits for a code. */
+@Composable
+private fun LinkCodeEffects(
+    state: SyncBootstrapUiState,
+    snapshot: AppleSyncState,
+    onExpand: () -> Unit,
+) {
+    val linkCode by state.linkCode.collectAsState()
+    val expand by rememberUpdatedState(onExpand)
+    LaunchedEffect(linkCode) { if (linkCode != null) expand() }
+    LaunchedEffect(linkCode, snapshot.joinPending, snapshot.linked) { linkCode?.let(state::useLinkCode) }
 }
 
 @Composable

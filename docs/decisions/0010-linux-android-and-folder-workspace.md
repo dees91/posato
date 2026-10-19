@@ -133,6 +133,16 @@ Posato/
   keeps file history keeps the offer, so a leaked code plus access to the
   folder or its history opens the workspace key. The code is never written
   to disk, logged, or put in diagnostics.
+- **Scanning and sharing the code** (`user-confirmed` 2026-10-19: QR code
+  and link instead of typing). The member also shows the code as a QR code of
+  the link `posato://join?code=<code>` and offers it as that link: the share
+  sheet on iOS and Android, the clipboard on the Mac and Linux. A phone's
+  camera opens the link in Posato; iOS, Android, and the Mac register the
+  `posato` scheme, and on Linux the link is pasted into the code field.
+  Opening a link only fills the code: Posato reads the exact join link and a
+  code whose check character matches, opens the folder section, and joins
+  once this device waits for a code, so the person still chooses the same
+  folder first. The link is the same secret as the code, with the same limits.
 - **Key storage.** Android wraps the workspace key with a non-exportable
   AES key in Android Keystore. Desktop hosts keep it in a file readable
   only by the user (`0600`, directory `0700`) in the application data
@@ -189,8 +199,10 @@ accepts this ADR, and `RELEASE-007` publishes it with release 1.5.
   service delivers them, and anyone who can delete files in the folder can
   stop your devices from syncing.
 - A device joins a folder workspace with a one-time pairing code that is
-  valid for 10 minutes. Someone with the code and access to the folder, or to
-  its file history, can open the workspace. There is no way to remove a single
+  valid for 10 minutes, scanned as a QR code, opened as a link, or typed.
+  Someone with the code or the link and access to the folder, or to its file
+  history, can open the workspace, so share the link only with your own
+  devices. There is no way to remove a single
   device: to stop sharing with one, remove the workspace and create a new one
   in another folder.
 - In folder mode, each device keeps the workspace key in a file that only

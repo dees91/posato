@@ -30,6 +30,7 @@ class PosatoAndroidApp : Application() {
             applicationAccess = AndroidAccess(this),
             localDirectory = filesDir.resolve("sync").absolutePath,
             browseFolder = { activity?.browseFolder() },
+            linkSharing = ShareSheetLinkSharing(this),
         )
     }
 

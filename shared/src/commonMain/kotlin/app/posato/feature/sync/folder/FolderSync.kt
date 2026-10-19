@@ -238,6 +238,7 @@ internal class FolderSync(
     private val browser: (suspend () -> String?)? = null,
     private val pollsWhileRunning: Boolean = true,
     override val acceptsTypedPath: Boolean = true,
+    override val linkSharing: LinkSharing = LinkSharing.None,
 ) : FolderSyncControls {
     private val choice = FolderChoice(localDirectory, files, access)
     private val folderPorts = FolderSyncPorts(choice::root, localDirectory, crypto, files, ioDispatcher, protection)
@@ -276,7 +277,7 @@ internal class FolderSync(
     }
 
     override suspend fun accept(code: String): PairingAcceptResult {
-        return pairing.accept(code)
+        return pairing.accept(pairingCodeFrom(code) ?: code)
     }
 
     /** A folder gives no change events, so a linked folder workspace is read once a minute (ADR 0010). */

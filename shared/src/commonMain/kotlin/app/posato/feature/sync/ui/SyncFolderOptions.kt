@@ -1,13 +1,28 @@
 package app.posato.feature.sync.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoAlert
@@ -16,10 +31,13 @@ import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.feature.sync.bootstrap.AppleSyncState
 import app.posato.feature.sync.bootstrap.SyncStatus
+import app.posato.feature.sync.folder.LinkSharing
 import app.posato.feature.sync.folder.PairingAcceptResult
+import app.posato.feature.sync.folder.pairingLink
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
@@ -35,6 +53,7 @@ import app.posato.generated.resources.sync_folder_code_failed
 import app.posato.generated.resources.sync_folder_code_label
 import app.posato.generated.resources.sync_folder_code_message
 import app.posato.generated.resources.sync_folder_code_title
+import app.posato.generated.resources.sync_folder_copy_link
 import app.posato.generated.resources.sync_folder_description
 import app.posato.generated.resources.sync_folder_invalid
 import app.posato.generated.resources.sync_folder_join
@@ -44,13 +63,17 @@ import app.posato.generated.resources.sync_folder_join_not_found
 import app.posato.generated.resources.sync_folder_join_refused
 import app.posato.generated.resources.sync_folder_join_unavailable
 import app.posato.generated.resources.sync_folder_join_wrong_workspace
+import app.posato.generated.resources.sync_folder_link_copied
 import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_path_label
+import app.posato.generated.resources.sync_folder_qr_description
+import app.posato.generated.resources.sync_folder_share_link
 import app.posato.generated.resources.sync_folder_use
 import app.posato.generated.resources.sync_folder_waiting_for_key
 import app.posato.generated.resources.sync_remove_workspace
 import app.posato.generated.resources.sync_removing_note
 import app.posato.generated.resources.sync_removing_workspace
+import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -181,6 +204,8 @@ private fun JoinWithCode(
     running: Boolean,
 ) {
     val code = rememberTextFieldState()
+    val linkCode by state.linkCode.collectAsState()
+    LaunchedEffect(linkCode) { linkCode?.let(code::setTextAndPlaceCursorAtEnd) }
     PosatoTextField(
         state = code,
         label = stringResource(Res.string.sync_folder_code_label),
@@ -195,16 +220,51 @@ private fun JoinWithCode(
     }
 }
 
+/**
+ * The member's pairing code: a QR code that a phone's camera opens in Posato, the code as text for a computer, and
+ * the link to share. The code is the same 128-bit secret in every form (ADR 0010).
+ */
 @Composable
-internal fun PairingCodeAlert(
+internal fun PairingCodeDialog(
     code: String,
+    sharing: LinkSharing,
+    copied: Boolean,
+    onShare: () -> Unit,
     onDone: () -> Unit,
 ) {
-    PosatoAlert(
-        title = stringResource(Res.string.sync_folder_code_title),
-        message = stringResource(Res.string.sync_folder_code_message) + "\n\n" + code.chunked(CODE_GROUP_CHARACTERS).joinToString(" "),
-        onDismiss = onDone,
-        actions = listOf(PosatoAlertAction(stringResource(Res.string.sync_folder_code_done), { onDone() }, PosatoAlertRole.Cancel)),
+    val qrDescription = stringResource(Res.string.sync_folder_qr_description)
+    AlertDialog(
+        onDismissRequest = onDone,
+        title = { Text(stringResource(Res.string.sync_folder_code_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(Res.string.sync_folder_code_message))
+                Image(
+                    painter = rememberQrCodePainter(pairingLink(code)),
+                    contentDescription = qrDescription,
+                    modifier = Modifier.size(QR_SIZE).background(Color.White).padding(PosatoSpace.Small),
+                )
+                SelectionContainer {
+                    Text(code.chunked(CODE_GROUP_CHARACTERS).joinToString(" "), style = MaterialTheme.typography.titleMedium)
+                }
+                if (copied) {
+                    PosatoCaption(
+                        stringResource(Res.string.sync_folder_link_copied),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            PosatoActionRow {
+                PosatoButton(onClick = onShare, style = PosatoButtonStyle.Secondary) {
+                    Text(stringResource(if (sharing.usesShareSheet) Res.string.sync_folder_share_link else Res.string.sync_folder_copy_link))
+                }
+                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Primary) {
+                    Text(stringResource(Res.string.sync_folder_code_done))
+                }
+            }
+        },
     )
 }
 
@@ -222,3 +282,5 @@ private fun PairingAcceptResult.message(): StringResource? {
 
 /** The code is shown in groups of three characters, so it is easier to read out and type. */
 private const val CODE_GROUP_CHARACTERS = 3
+
+private val QR_SIZE = 200.dp

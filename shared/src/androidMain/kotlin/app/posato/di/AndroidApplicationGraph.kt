@@ -46,6 +46,7 @@ import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.KeystoreKeyItemProtection
+import app.posato.feature.sync.folder.LinkSharing
 import app.posato.feature.targets.data.CatalogApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
@@ -253,6 +254,7 @@ public fun createAndroidApplicationRuntime(
     applicationAccess: ApplicationAccessPort,
     localDirectory: String,
     browseFolder: suspend () -> String?,
+    linkSharing: LinkSharing,
 ): AndroidApplicationRuntime {
     val folderSync = FolderSync(
         localDirectory = localDirectory,
@@ -263,6 +265,7 @@ public fun createAndroidApplicationRuntime(
         now = System::currentTimeMillis,
         protection = KeystoreKeyItemProtection(),
         browser = browseFolder,
+        linkSharing = linkSharing,
     )
     val graph = createGraphFactory<AndroidApplicationGraph.Factory>().create(
         applicationMappings,

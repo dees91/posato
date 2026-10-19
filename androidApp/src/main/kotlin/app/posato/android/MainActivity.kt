@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import app.posato.openPosatoLink
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 
@@ -34,7 +35,13 @@ class MainActivity : ComponentActivity() {
         val app = application as PosatoAndroidApp
         GuardService.start(this)
         lifecycleScope.launch { runCatching { app.runtime.preparePauseSets() } }
+        if (savedInstanceState == null) intent?.dataString?.let(::openPosatoLink)
         setContent { app.runtime.application.Content(hostsSession = false) }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.dataString?.let(::openPosatoLink)
     }
 
     /** The folder the person picks, as a file system path; only a folder on this phone's shared storage can be used. */

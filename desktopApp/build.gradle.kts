@@ -1695,6 +1695,15 @@ compose.desktop {
                         """
                         <key>NSAppleEventsUsageDescription</key>
                         <string>Posato replaces a blocked Safari or Chrome tab with a paused-site page.</string>
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                          <dict>
+                            <key>CFBundleURLName</key>
+                            <string>app.posato.join</string>
+                            <key>CFBundleURLSchemes</key>
+                            <array><string>posato</string></array>
+                          </dict>
+                        </array>
                         """.trimIndent()
                 }
             }

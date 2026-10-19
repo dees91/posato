@@ -15,8 +15,10 @@ import app.posato.feature.sync.folder.AppleOnlySync
 import app.posato.feature.sync.folder.FolderChoiceResult
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.PairingAcceptResult
+import app.posato.feature.sync.folder.PairingLinks
 import app.posato.feature.sync.folder.PairingOffer
 import app.posato.feature.sync.folder.PairingOfferResult
+import app.posato.feature.sync.folder.pairingLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -29,9 +31,14 @@ internal class SyncBootstrapUiState(
     val syncState = sync.state
     val folder = folderControls.folder
 
+    /** A code from a join link the system opened Posato with, until it is used. */
+    val linkCode = PairingLinks.code
+
     var offer by mutableStateOf<PairingOffer?>(null)
         private set
     var offerFailed by mutableStateOf(false)
+        private set
+    var linkCopied by mutableStateOf(false)
         private set
     var joinResult by mutableStateOf<PairingAcceptResult?>(null)
         private set
@@ -107,9 +114,30 @@ internal class SyncBootstrapUiState(
         }
     }
 
+    /** Passes the shown code on as a link: the share sheet on a phone, the clipboard on a computer. */
+    fun shareLink() {
+        val code = offer?.code ?: return
+        scope.launch {
+            val sharing = folderControls.linkSharing
+            linkCopied = sharing.share(pairingLink(code)) && !sharing.usesShareSheet
+        }
+    }
+
+    /** Uses a link's code once: joins at once while this device waits for one, and drops it once linked. */
+    fun useLinkCode(code: String) {
+        val snapshot = syncState.value
+        if (snapshot.linked) {
+            PairingLinks.consume(code)
+        } else if (snapshot.joinPending && !running) {
+            join(code)
+            PairingLinks.consume(code)
+        }
+    }
+
     fun closeCode() {
         offer = null
         offerFailed = false
+        linkCopied = false
         scope.launch { folderControls.dismissOffer() }
     }
 

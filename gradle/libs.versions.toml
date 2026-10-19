@@ -1,4 +1,5 @@
 [versions]
+qrose = "1.3.1"
 agp = "9.0.1"
 androidCompileSdk = "36"
 androidMinSdk = "33"
@@ -23,6 +24,7 @@ sqldelight = "2.3.2"
 slf4j = "2.0.17"
 
 [libraries]
+qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version = "1.10.1" }
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }

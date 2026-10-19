@@ -8,6 +8,8 @@ struct PosatoApp: App {
         WindowGroup {
             ComposeRoot()
                 .ignoresSafeArea(.all)
+                // A scanned or shared pairing link fills the code in the folder sync section (ADR 0010).
+                .onOpenURL { url in _ = PosatoLinksKt.openPosatoLink(url: url.absoluteString) }
         }
     }
 }

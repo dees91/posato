@@ -13,6 +13,7 @@ import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.FoundationFolderFileSystem
 import app.posato.feature.sync.folder.IosFolderPicker
+import app.posato.feature.sync.folder.ShareSheetLinkSharing
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -46,6 +47,7 @@ internal interface IosFolderSyncBindings {
             browser = { pickFolder(folderPicker) },
             pollsWhileRunning = false,
             acceptsTypedPath = false,
+            linkSharing = ShareSheetLinkSharing,
         )
     }
 

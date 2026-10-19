@@ -41,6 +41,7 @@ fun main(args: Array<String>) {
     if (!instanceLock.acquireShared()) {
         exitProcess(0)
     }
+    MacLinks.install()
     // A verification seam needs the only running instance before anything else starts.
     if (args.firstOrNull() == VERIFICATION_ARGUMENT && !instanceLock.tryUpgradeForAdmission()) {
         println("{\"outcome\":\"another-instance\"}")
