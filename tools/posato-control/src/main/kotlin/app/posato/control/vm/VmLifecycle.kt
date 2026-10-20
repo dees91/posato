@@ -47,6 +47,7 @@ class VmLifecycle(
     private val context: RunContext
 ) {
     private val tart = Tart(context)
+    private val ledger = MachineLedger.of(context)
 
     fun create(
         line: VmLine,
@@ -58,7 +59,7 @@ class VmLifecycle(
         lowDiskWarning(lowestFreeSpace(context.layout.root), allowLowDisk)
         val jdk = hostJdk(context)
         val started = System.currentTimeMillis()
-        val (waitedMs, diskWarning) = createUnderLock(context, tart, CloneRequest(line, golden, jdk, allowLowDisk, waitMinutes))
+        val (waitedMs, diskWarning) = createUnderLock(context, tart, ledger, CloneRequest(line, golden, jdk, allowLowDisk, waitMinutes))
         val vncHold = VncHold(context, line).start()
         waitForAgent(line)
         sync(line)
@@ -151,7 +152,12 @@ class VmLifecycle(
         line: VmLine,
         keepWorkspace: Boolean = false
     ) {
-        if (tart.list().none { it.name == line.cloneName }) return
+        // A clone deleted outside posato-control would otherwise keep its lease counting against the reserve. The
+        // check and the release share the create lock, so a replacement clone's new lease is never released.
+        val absent = withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
+            tart.list().none { it.name == line.cloneName }.also { gone -> if (gone) ledger.release(line.cloneName) }
+        }
+        if (absent) return
         if (running(line) && !keepWorkspace) {
             val linked = tart.exec(line.cloneName, LINKED_WORKSPACE_QUERY)
             refuseLinkedWorkspace(line, linkedWorkspaces(linked.stdout))
@@ -160,8 +166,12 @@ class VmLifecycle(
             tart.exec(line.cloneName, "sudo -S -p '' /bin/sh -c 'sync; /sbin/shutdown -h +0'", stdin = vmAdminPassword(context) + "\n")
             awaitStopped(line)
         }
-        tart.delete(line.cloneName)
-        vmDirectory(line).toFile().deleteRecursively()
+        // Under the create lock, so a waiting create cannot claim the clone's lease before this release ends it.
+        withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
+            tart.delete(line.cloneName)
+            vmDirectory(line).toFile().deleteRecursively()
+            ledger.release(line.cloneName)
+        }
     }
 
     fun running(line: VmLine): Boolean = tart.list().any { it.name == line.cloneName && it.running }
@@ -234,12 +244,14 @@ private data class CloneRequest(
  * it too. With [waitMinutes] it waits, lock released, while what blocks is still in use: a running guest or a
  * clone whose creating process lives. A stopped clone left by an exited creator never frees itself, so it is
  * refused at once. Free space is measured again right before the clone, since other sessions may have used it while
- * this one waited. Returns the milliseconds spent waiting and the low-disk warning, if any; a refusal carries the
- * milliseconds as `waitedMs`.
+ * this one waited, and the clone is then claimed from the host's [MachineLedger], which may refuse it below the reserve
+ * it keeps for every project. Returns the milliseconds spent waiting and the low-disk warning, if any; a refusal carries
+ * the milliseconds as `waitedMs`.
  */
 private fun createUnderLock(
     context: RunContext,
     tart: Tart,
+    ledger: MachineLedger,
     request: CloneRequest,
 ): Pair<Long, String?> {
     val line = request.line
@@ -259,7 +271,14 @@ private fun createUnderLock(
                 refuseClone(vms, request.golden, line.cloneName, owner)
                 diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), request.allowLowDisk)
                 diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
-                tart.clone(request.golden, line.cloneName)
+                ledger.claim(line.cloneName, tartHome().resolve("vms").resolve(line.cloneName), context.layout.root, request.allowLowDisk)
+                try {
+                    tart.clone(request.golden, line.cloneName)
+                } catch (failure: ControlException) {
+                    // No clone, so its lease would only hold back the reserve until it expires.
+                    ledger.release(line.cloneName)
+                    throw failure
+                }
                 recordCloneOwner(context, line.cloneName)
                 // A golden VM once used as a clone could carry the marker; only this creation decides it.
                 clearLowDiskAllowance(line.cloneName)

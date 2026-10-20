@@ -23,6 +23,8 @@ login Keychain.
   refuse below it. A clone created with `--allow-low-disk` keeps working down
   to a hard floor of 5 GB. Purgeable space, such as Time Machine local
   snapshots, does not count as free.
+  On a host with `machine-ledger`, `vm create` also claims a 5 GB lease for
+  the clone and stops when the ledger refuses it below its own reserve.
 - An Apple Developer Program membership, and the App Store Connect team key
   described in [Apple development provisioning](apple-provisioning.md).
 - A dedicated test Apple Account with two-factor authentication. Use an
