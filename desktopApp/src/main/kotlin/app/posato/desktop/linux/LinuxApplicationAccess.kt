@@ -15,4 +15,10 @@ internal class LinuxApplicationAccess(
         val access = if (installed) LocalApplicationMappingsAccess.READY else LocalApplicationMappingsAccess.AUTHORIZATION_DENIED
         return ApplicationAccessResult.Determined(access)
     }
+
+    /** A service that already answers reads as allowed, so reinstalling Posato does not ask for the password again. */
+    override suspend fun currentAccess(): ApplicationAccessResult? {
+        val installed = withContext(Dispatchers.IO) { installer.installed() }
+        return ApplicationAccessResult.Determined(LocalApplicationMappingsAccess.READY).takeIf { installed }
+    }
 }

@@ -113,6 +113,9 @@ internal class OnboardingUiState(
             OnboardingStep.PERMISSION -> OnboardingStep.WEBSITE
             OnboardingStep.WEBSITE, OnboardingStep.SUMMARY -> OnboardingStep.SUMMARY
         }
+        if (step == OnboardingStep.PERMISSION && accessResult == null) {
+            scope.launch { applicationAccess.currentAccess()?.let { current -> if (accessResult == null) accessResult = current } }
+        }
     }
 
     fun requestAccess() {

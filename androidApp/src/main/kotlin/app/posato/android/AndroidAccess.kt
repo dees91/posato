@@ -30,4 +30,9 @@ internal class AndroidAccess(
         val access = if (Permissions.all(app)) LocalApplicationMappingsAccess.READY else LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
         return ApplicationAccessResult.Determined(access)
     }
+
+    /** Every grant already given reads as allowed; a missing one is left to the person's press, which asks for it. */
+    override suspend fun currentAccess(): ApplicationAccessResult? {
+        return ApplicationAccessResult.Determined(LocalApplicationMappingsAccess.READY).takeIf { Permissions.all(app) }
+    }
 }

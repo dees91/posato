@@ -347,7 +347,7 @@ For what matters.</string>
     <string name="onboarding_summary_linux_on">Pausing service installed</string>
     <string name="onboarding_summary_linux_off">Pausing service still needed</string>
     <string name="onboarding_summary_linux_unchecked">Pausing service not checked</string>
-    <string name="onboarding_permission_android_body">Posato needs a few permissions to pause the websites and apps you choose on this %1$s: usage access, display over other apps, a local VPN that only answers website names, notifications, and exact alarms for schedules.</string>
+    <string name="onboarding_permission_android_body">Posato needs a few permissions to pause the websites and apps you choose on this %1$s: usage access, display over other apps, a local VPN that only answers website names, notifications, exact alarms for schedules, access to files for a sync folder, and running in the background without battery limits.</string>
     <string name="onboarding_permission_android_action">Allow access</string>
     <string name="onboarding_summary_android_on">Access allowed</string>
     <string name="onboarding_summary_android_off">Access still needed</string>

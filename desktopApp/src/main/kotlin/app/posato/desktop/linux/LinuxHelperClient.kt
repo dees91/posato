@@ -72,6 +72,9 @@ internal class LinuxHelperClient(
 internal class LinuxHelperInstaller(
     private val client: LinuxHelperClient,
 ) {
+    /** Whether the service is installed and answers. */
+    fun installed(): Boolean = client.installed()
+
     fun install(): Boolean {
         if (client.installed()) return true
         val setup = setupScript() ?: return false

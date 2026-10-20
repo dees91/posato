@@ -97,13 +97,14 @@ internal fun DrawnItemMenu(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val openMenu = rememberMenuOpening { expanded = true }
     Box(modifier = modifier) {
         val interaction = remember { MutableInteractionSource() }
         val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
         IconButton(
             modifier = Modifier.size(PosatoSize.Control)
                 .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, CircleShape),
-            onClick = { expanded = true },
+            onClick = openMenu,
             interactionSource = interaction,
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = if (expanded) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
