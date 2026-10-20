@@ -64,7 +64,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             )
         }
         FlowSteps.run(backend, listOf(FlowSteps.reveal(button(SYNC_WITH_FOLDER)), FlowSteps.tap(button(SYNC_WITH_FOLDER))))
-        val outcome = waitFor(backend, deadline, "link") { labels ->
+        val outcome = waitFor(backend, deadline, "link", listOf(ADD_DEVICE, JOIN_LABEL)) { labels ->
             when {
                 ADD_DEVICE in labels -> "linked"
                 JOIN_LABEL in labels -> "waitingForCode"
@@ -104,7 +104,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         )
         // An offer that has not reached this device's folder yet reads "No offer for this code"; a person presses Join again.
         // A refusal is the outcome, so a run can prove that a wrong code joins nothing.
-        val outcome = waitFor(backend, deadline, "join") { labels ->
+        val outcome = waitFor(backend, deadline, "join", listOf(ADD_DEVICE, JOIN_LABEL)) { labels ->
             val refusal = REFUSALS.entries.firstOrNull { (message, _) -> labels.any { it.startsWith(message) } }?.value
             when {
                 ADD_DEVICE in labels -> "linked"
@@ -129,7 +129,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         deadline: Long,
     ): JsonElement {
         var presses = 0
-        waitFor(backend, deadline, "removal") { labels ->
+        waitFor(backend, deadline, "removal", listOf(REMOVE_WORKSPACE, USE_ANOTHER, USE_FOLDER)) { labels ->
             when {
                 USE_ANOTHER in labels || USE_FOLDER in labels -> "removed"
 
@@ -165,13 +165,14 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         backend: Backend,
         deadline: Long,
         what: String,
+        reveal: List<String>,
         outcome: (List<String>) -> String?,
     ): String {
-        var labels = FolderSection(backend).outcomeLabels()
+        var labels = FolderSection(backend).outcomeLabels(reveal)
         while (System.currentTimeMillis() < deadline) {
             outcome(labels)?.let { return it }
             Thread.sleep(POLL_MILLIS)
-            labels = FolderSection(backend).outcomeLabels()
+            labels = FolderSection(backend).outcomeLabels(reveal)
         }
         val row = labels.firstOrNull { it.startsWith(FOLDER_ROW) || it.startsWith(ICLOUD_ROW) }
         throw ControlException(ErrorCode.WAIT_TIMEOUT, "The folder $what did not finish within $timeoutSeconds s; the row reads ${row ?: "unknown"}.")
