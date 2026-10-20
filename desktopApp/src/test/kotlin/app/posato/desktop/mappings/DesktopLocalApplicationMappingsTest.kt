@@ -331,6 +331,7 @@ class DesktopLocalApplicationMappingsTest {
         val watcher = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
         var announced = 0
         try {
+            // Unconfined runs the collector inline when the store emits, so each count is settled once a call returns.
             watcher.launch { store.invalidations.collect { announced++ } }
 
             val chosen = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
