@@ -12,6 +12,8 @@ import app.posato.feature.targets.data.LocalApplicationRemovalResult
 import app.posato.feature.targets.data.LocalApplicationSelectionRejection
 import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
@@ -318,6 +320,38 @@ class DesktopLocalApplicationMappingsTest {
             val requirements = ApplicationRequirements(store) { emptyMap() }
 
             assertFailsWith<IllegalArgumentException> { runBlocking { requirements.resolve(listOf(unknown)) } }
+        }
+    }
+
+    @Test
+    fun `every successful change is announced and a cancelled or refused choice is not`() {
+        var next: MacOsApplicationPickerResult = MacOsApplicationPickerResult.Success(listOf(application("Browser", 1)))
+        val root = createTempDirectory("posato-mappings")
+        val store = createStore(root.resolve("data/mappings.db"), MacOsApplicationPicker { next }, kotlinx.coroutines.Dispatchers.IO)
+        val watcher = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        var announced = 0
+        try {
+            // Unconfined runs the collector inline when the store emits, so each count is settled once a call returns.
+            watcher.launch { store.invalidations.collect { announced++ } }
+
+            val chosen = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
+            assertEquals(1, announced)
+            next = MacOsApplicationPickerResult.Cancelled
+            assertIs<LocalApplicationSelectionResult.Cancelled>(runBlocking { store.chooseApplications() })
+            next = MacOsApplicationPickerResult.CapacityExceeded
+            assertIs<LocalApplicationSelectionResult.Rejected>(runBlocking { store.chooseApplications() })
+            assertEquals(1, announced)
+
+            assertIs<LocalApplicationRemovalResult.Success>(runBlocking { store.remove(chosen.snapshot.mappings.single().id) })
+            assertEquals(2, announced)
+            assertIs<LocalApplicationRemovalResult.Success>(runBlocking { store.clear(ApplicationChoiceSet.FIRST) })
+            assertEquals(3, announced)
+            assertIs<LocalApplicationRemovalResult.Success>(runBlocking { store.retainOnly(emptySet()) })
+            assertEquals(4, announced)
+        } finally {
+            watcher.cancel()
+            store.close()
+            root.toFile().deleteRecursively()
         }
     }
 

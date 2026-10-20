@@ -3,6 +3,7 @@ package app.posato.feature.targets.data
 import app.posato.feature.onboarding.ApplicationAccessResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -185,6 +186,44 @@ class IosLocalApplicationMappingsTest {
 
         collection.await()
         assertTrue(provider.observationCancelled)
+    }
+
+    @Test
+    fun `given successful changes when made then each is announced to collectors`() = runTest {
+        val mappings = IosLocalApplicationMappings(FakeIosApplicationMappingsProvider())
+        var announced = 0
+        backgroundScope.launch { mappings.invalidations.collect { announced++ } }
+        runCurrent()
+
+        assertIs<LocalApplicationSelectionResult.Success>(mappings.chooseApplications())
+        runCurrent()
+        assertEquals(1, announced)
+        assertIs<LocalApplicationRemovalResult.Success>(mappings.remove(checkNotNull(LocalApplicationMappingId.restore(identifier()))))
+        runCurrent()
+        assertIs<LocalApplicationRemovalResult.Success>(mappings.clear())
+        runCurrent()
+        assertIs<LocalApplicationRemovalResult.Success>(mappings.retainOnly(emptySet()))
+        runCurrent()
+        assertEquals(4, announced)
+    }
+
+    @Test
+    fun `given a cancelled or failed change when made then nothing is announced`() = runTest {
+        val failed = response(outcome = IosApplicationMappingsOutcome.STORAGE_FAILURE)
+        val mappings = IosLocalApplicationMappings(
+            FakeIosApplicationMappingsProvider(
+                loadResponse = failed,
+                selectionResponse = response(outcome = IosApplicationMappingsOutcome.CANCELLED),
+            ),
+        )
+        var announced = 0
+        backgroundScope.launch { mappings.invalidations.collect { announced++ } }
+        runCurrent()
+
+        assertIs<LocalApplicationSelectionResult.Cancelled>(mappings.chooseApplications())
+        assertIs<LocalApplicationRemovalResult.Failure>(mappings.clear())
+        runCurrent()
+        assertEquals(0, announced)
     }
 
     private fun response(
