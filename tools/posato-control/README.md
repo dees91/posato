@@ -459,6 +459,15 @@ test Apple Account, and Keychain items is in
   no VM is running. A VM started by a driver from before this layout keeps its
   address in that checkout's `build/verification/vm/<line>/`: shut it down and
   boot it again, or destroy and create a clone, and delete those old files.
+- On a host with `machine-ledger`, the maintainer's optional ledger of
+  large artifacts, on `PATH` or in `~/.local/bin`, `vm create` claims a lease
+  `tart:<clone>` for the clone's Tart directory right before `tart clone`:
+  5 GB, the expected growth of a copy-on-write clone (the 20 GB minimum
+  already covers the rest of a run), for 24 hours. A claim the ledger refuses below its reserve stops the clone
+  with `DISK_SPACE_LOW` and the ledger's reason; `--allow-low-disk` claims
+  below the reserve instead. `vm destroy` releases the lease once the clone
+  is gone. Without the ledger, or when a call fails or times out, the driver
+  logs one line and goes on.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
   secrets from the login Keychain; labels assume an English guest. The first
   click on a dialog that is not frontmost only activates it; the prompts click

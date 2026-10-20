@@ -2820,3 +2820,11 @@ first removal attempt that does not finish, not to a paused keychain.
   early return in `clearAfterEnd` that leaves the view stale, so the session
   owner loops. Present since at least 1.0.0; idea 38 and backlog row `SESSION-009`
   own the fix.
+
+## [2026-10-20] tooling | vm create claims a machine-ledger lease
+
+- `posato-control vm create` claims a 5 GB, 24-hour lease for its clone from
+  the host's `machine-ledger` right before `tart clone`, and `vm destroy`
+  releases it. A claim refused below the ledger's reserve stops the clone
+  with `DISK_SPACE_LOW`; `--allow-low-disk` claims below the reserve. A host
+  without the ledger, or a failed call, only logs a line.
