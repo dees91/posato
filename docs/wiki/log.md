@@ -2884,3 +2884,11 @@ first removal attempt that does not finish, not to a paused keychain.
   `SYNC-023`, `TARGETS-012`); four that change enforcement, schedules, the
   synchronized model, or the brand rule are backlog candidates for 1.6
   (`MACOS-029`, `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001`).
+
+## [2026-10-20] design | TARGETS-011: a pause set without apps is complete
+
+- `user-confirmed` (idea 40): session Review and schedule rows no longer
+  warn when a set has websites but no apps chosen on a device, with or
+  without app access; **Choose apps** stays in the set's Apps tab. A set
+  with neither still offers **Add websites or apps** (`DESIGN.md`
+  Readiness).

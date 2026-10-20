@@ -12,6 +12,7 @@ import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /** A schedule whose set this device lacks says whether to wait for it or to choose another set. */
 class ScheduleRowsTest {
@@ -43,5 +44,19 @@ class ScheduleRowsTest {
         )
 
         assertEquals("Waiting for this set from your other devices.", rows.single().setProblem)
+    }
+
+    @Test
+    fun `given a set with websites and no apps chosen here then the row reports no problem`() {
+        val websitesOnly = PauseSetRow(work, "Work", false, 2, 0, persistentListOf(), refused = false, inUse = false)
+        val rows = buildScheduleRows(
+            ScheduleSnapshot(schedules = listOf(StoredSchedule(plan))),
+            0L,
+            CentralEuropeanZone,
+            FakeSessionTimeFormat(),
+            ScheduleSetContext(listOf(first, websitesOnly)),
+        )
+
+        assertNull(rows.single().setProblem)
     }
 }

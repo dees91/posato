@@ -3,9 +3,7 @@ package app.posato.feature.session.ui
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.generated.resources.Res
-import app.posato.generated.resources.session_action_access_required
 import app.posato.generated.resources.session_action_mappings_failed
-import app.posato.generated.resources.session_action_mappings_required
 import app.posato.generated.resources.session_action_no_items
 import app.posato.generated.resources.session_end_failed
 import app.posato.generated.resources.session_error_corruption
@@ -30,8 +28,6 @@ internal fun SessionSetupFailure?.setupMessage(): StringResource {
 internal fun SessionActionRequired?.actionMessage(): StringResource {
     return when (this) {
         SessionActionRequired.NO_EFFECTIVE_ITEMS -> Res.string.session_action_no_items
-        SessionActionRequired.MAPPINGS_NOT_CHOSEN -> Res.string.session_action_mappings_required
-        SessionActionRequired.ACCESS_REQUIRED -> Res.string.session_action_access_required
         SessionActionRequired.MAPPINGS_LOAD_FAILED -> Res.string.session_action_mappings_failed
         null -> Res.string.session_review_description
     }

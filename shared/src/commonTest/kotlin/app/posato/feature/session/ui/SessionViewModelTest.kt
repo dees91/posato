@@ -127,7 +127,7 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given unchosen mappings with domains when entering review then starting stays allowed`() = runTest(dispatcher) {
+    fun `given unchosen mappings with domains when entering review then nothing is required and starting stays allowed`() = runTest(dispatcher) {
         val mappings = FakeSessionMappings(
             LocalApplicationMappingsLoadResult.Success(
                 LocalApplicationMappingsSnapshot.empty(),
@@ -142,7 +142,7 @@ class SessionViewModelTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(SessionActionRequired.MAPPINGS_NOT_CHOSEN, state.review.actionRequired)
+        assertNull(state.review.actionRequired)
         assertTrue(state.canStart())
     }
 
@@ -162,7 +162,7 @@ class SessionViewModelTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(SessionActionRequired.ACCESS_REQUIRED, state.review.actionRequired)
+        assertNull(state.review.actionRequired)
         assertTrue(state.canStart())
     }
 
