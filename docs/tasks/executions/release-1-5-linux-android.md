@@ -1,201 +1,118 @@
 # Execution: `PLATFORM-001`, `SYNC-018`, `LINUX-001`, `ANDROID-001`
 
 - **Brief:** [release-1-5-linux-android.md](../specifications/release-1-5-linux-android.md)
-- **Status:** `active`
-- **Review tier:** high-risk
-- **Implementer:** Claude Code agent
-- **Reviewer:** independent agent (completed-change review)
+- **Status:** `active`; **review tier:** high-risk
+- **Implementer:** Claude Code agent; **reviewer:** independent agent
 - **Branch:** `platform-linux-android` (one branch; see Result)
-- **Updated:** 2026-10-11
+- **Updated:** 2026-10-20
 
 ## Plan
 
-1. **M1 seams.** No new sync interface: the folder supplies the existing
-   ports, and the Mac graph delegates them to iCloud or the folder by the
-   stored choice. `SyncOperationCore`, `SyncWriter`, the reducer, the codecs,
-   and the replica store stay unchanged.
-2. **M1 folder.** `FolderSyncPorts` implements the existing bootstrap
-   account, cloud, key, and mailbox ports over `java.nio` (desktop and
-   Android with all-files access), so `BootstrapCoordinator`, `AppleSync`,
-   the join wait, and removal work unchanged: the `Posato` directory is the
-   zone, the `workspace` file the anchor, a local key file the key item,
-   and a missing key is the existing "waiting for the workspace key" state
-   that a pairing code ends. The fetch cursor names the last delivered
-   bundle; the next fetch marks it committed in a local seen file, so a
-   crash re-delivers instead of losing a bundle. `FolderPairing` creates and
-   accepts offers. A one-minute poll is the change trigger.
-3. **M1 UI and Mac.** The sync section offers **Sync with iCloud** (Apple
-   hosts only) and **Sync with a folder**: choose a folder, create or join
-   with a code, show a code, remove. The Mac graph chooses the transport
-   from the stored mode. `posato-control` gains a shared host folder for
-   Tart guests (`--dir`) and flow steps for the folder path.
-4. **M2 Linux.** OS switch in `Main.kt` and `desktopApp/build.gradle.kts`
-   (macOS tasks guarded, Linux compose runtime, `.deb`); XDG paths;
-   `linuxHelper` module (systemd unit, Unix socket, hosts block, process
-   ending, self-clear at end); `LinuxLocalApplicationMappings` from desktop
-   entries; `JvmSessionEnforcement` with Linux links; no updater or menu bar
-   presence. Driver: `VmLine.LINUX`, guest JDK and package, Linux desktop
-   backend over AT-SPI (fallback: a verification-only seam), `xdotool`,
-   screenshots.
-5. **M3 Android.** `:androidApp`, `AndroidApplicationGraph`, SQLDelight
-   Android driver, `DnsVpnService`, `UsageBlockService` with `BlockActivity`,
-   package-based mappings, notifications, foreground service while a pause
-   or schedule is on, boot receiver. Driver: `Target.ANDROID` over `adb` and
-   UIAutomator dumps, `appops` grants, SAF folder picker, and a host-side
-   folder relay between the emulator and the shared host folder.
-6. Docs: limits page, availability, wiki topics, `verify-posato` feature
-   map, one wiki-log entry per pull request.
+1. The folder supplies the existing bootstrap, cloud, key, and mailbox ports;
+   `SyncOperationCore`, the reducer, codecs, and replica store stay unchanged.
+   The `Posato` directory is the zone, `workspace` the anchor, a pairing code
+   delivers the key, and a one-minute poll triggers fetches.
+2. The sync section offers iCloud (Apple hosts) or a folder: choose, create
+   or join with a code, show a code, remove.
+3. Linux: XDG paths, a root `linuxHelper` (hosts block, process ending,
+   self-clear), desktop-entry app choices, a `.deb`.
+4. Android: `:androidApp` with a DNS-only `VpnService`, a usage-access block
+   screen, exact alarms, boot wake-ups.
+5. `posato-control` support for each target, docs, one wiki-log entry.
 
-## High-risk plan review
+## Plan and change reviews
 
-- **Verdict:** changes-required (2026-10-10, independent agent), resolved
-  in the ADR, brief, and plan before implementation.
-- **Critical or Required findings:** (1) one bad file stops sync; (2)
-  pairing expiry overstated, labels and associated data; (3) remove
-  workspace undefined for other members; (4) no fetch trigger; (5) helper
-  protocol cannot answer `EnforcementPort`; (6) helper input, peer, hosts,
-  process, and package-removal rules; (7) Android exact alarms, service
-  type, Doze, protected packages; (8) missing acceptance criteria; (9)
-  `/etc/hosts` cannot make a name resolve to nothing.
-- **Resolution:** (1) skip unverifiable files unmarked, name order; (2)
-  check character, separate HKDF labels, expiry in associated data, stale
-  offers deleted at launch, limits text; (3) no write without the matching
-  `workspace` file, "Sync needs attention" and local removal, refuse create
-  over an existing file; (4) one-minute poll; (5) apply, clear, and status
-  with session ids; (6) as listed in ADR 0010; (7) exact alarms, `specialUse`,
-  battery exemption, protected packages never offered; (8) `AC-02`,
-  `AC-03`, `AC-04`, `AC-05`, `AC-06`; (9) `0.0.0.0` and `::`, connection
-  fails. Recommended: Keychain on the Mac declined (it needs a companion
-  protocol change, not less code); Android folder sources, listing cache,
-  check character, create refusal, VPN limits, x86-64 build owner, and
-  backup exclusion accepted.
+- **Plan review** (2026-10-10): changes-required, nine Critical or Required
+  findings (bad files, pairing expiry and labels, removal semantics, fetch
+  trigger, helper protocol and input rules, Android alarms and Doze, missing
+  criteria, unresolvable names), resolved in ADR 0010, the brief, and the
+  plan before implementation.
+- **Completed-change review** (2026-10-11, head `bc6b55c2`): changes-required,
+  ten Required findings (Linux service liveness and tick failures,
+  interpreter matching, Android DNS network and the app already in front,
+  `:androidApp` outside the quality gate, manifest lint suppressions,
+  agent-delegated limits in the product page, ADR claims, quality on the
+  head), all resolved; five Recommended accepted, the iOS stale-bookmark
+  renewal not taken.
+- **Pull request review** (2026-10-11, `4c1f2db1`): five P1 and two P2,
+  corrected in `a0f896e6` (tunnel restored after a reboot, IPv6 through the
+  tunnel, removed apps and websites kept paused on Android and Linux, the
+  battery request in onboarding, the iPhone picker's folder kept by `flow
+  folder link`, iPhone verification) and checked on devices (below).
 
 ## Result
 
-- **One branch instead of the planned stack.** The work landed as one branch
-  (`platform-linux-android`); the folder transport, Linux, and Android
-  share the onboarding, sync section, and `posato-control` changes, so a
-  split would have rebased every commit twice. The commits stay grouped by
-  row.
-- **Folder transport (`SYNC-018`).** `FolderSyncPorts` implements the
-  bootstrap account, cloud, key, and mailbox ports over a `FolderFileSystem`
-  port (`NioFolderFileSystem` for the desktop and Android,
-  `FoundationFolderFileSystem` with file coordination and security-scoped
-  bookmarks on iOS); `FolderPairing` creates and accepts pairing offers;
-  `SelectableSyncPorts` keeps iCloud on Apple hosts until a folder is
-  chosen. The bootstrap coordinator, exchange loop, and reducer are
-  unchanged. Android seals the workspace key with Android Keystore; the
-  desktop keeps it in a `0600` file; iOS with complete file protection.
-- **Linux (`LINUX-001`).** `:linuxHelper` is the root service (hosts block,
-  process ending, self-clear, request validation); `desktopApp` gains the
-  Linux entry point, enforcement, desktop-entry app choices, XDG paths, and
-  a `.deb` built by `jpackage` with `prerm` and `postinst` scripts.
-- **Android (`ANDROID-001`).** `:androidApp` with a DNS-only `VpnService`,
-  a usage-access guard service with the block screen, exact-alarm and boot
-  wake-ups, launcher app choices, and the shared Compose interface.
-- **Defects found by E2E and fixed test first:** a folder file listed by
-  stale metadata but gone reads as missing; sweep and removal tolerate it;
-  a leftover link attempt for another folder blocked linking; Ed25519 keys
-  failed on Android until converted through X.509; a new join attempt now
-  clears the previous refusal. Verification-tool defects: the relay raced
-  with itself (unique temporary names and a single-instance lock) and the
-  pairing-code field was matched inside a sentence.
-- **Found and moved to the backlog:** `SESSION-010` (idea 39): a device that
-  links while a pause runs adopts it before the policy phase writes the
-  set's websites, so it enforces nothing until the next pause. The order
-  predates folder sync and also applies to iCloud links.
-- **Documentation:** ADR 0010 (Proposed), the limits page's proposed 1.5
-  section, the `posato-control` README, the `verify-posato` feature map
-  (`folder-sync.md`, `linux-and-android.md`), the unattended verification
-  guide (Linux golden VM and Android emulator), and the wiki topics.
-
-- **Pairing by QR code and link** (`user-confirmed` 2026-10-19, added to this
-  pull request by the maintainer's choice). The code dialog is drawn on every
-  host and shows a QR code of `posato://join?code=<code>`, the code, and
-  **Share link** (share sheet on iOS and Android) or **Copy link**
-  (clipboard on the Mac and Linux). iOS, Android, and the Mac register the
-  `posato` scheme; an opened link fills the code, opens the folder section,
-  says "Pairing code received" until a folder is chosen, and joins once the
-  device waits for a code. The code field also takes a pasted link (Linux).
-  QRose 1.1.2 draws the QR code; 1.2 and later need Android SDK 37.
-
-## Completed-change review
-
-- **Verdict:** changes-required (2026-10-11, independent agent, head
-  `bc6b55c2`), resolved before the final verification.
-- **Required findings and resolution:**
-  1. The Linux service stopped answering after one failed connection:
-     every connection is answered on a worker with a five-second deadline,
-     and a failure ends only that connection; the client times out too, and
-     `clear` no longer reports success while a service is present but silent.
-  2. One failed tick stopped the self-clear for good: each tick catches its
-     failure and the next tick retries.
-  3. Choosing an app whose desktop entry starts an interpreter would end
-     every program of that interpreter: only native (ELF) programs that are
-     not interpreters or launchers, or a whole snap, can be chosen, and the
-     service refuses any directory matcher but one snap's
-     (regression test first).
-  4. Android DNS used the network of the tunnel start: the service follows
-     the best non-VPN network and binds each forwarded question to it.
-  5. An app already in front when a pause started stayed uncovered: the
-     guard follows the app in front across polls.
-  6. `:androidApp` was outside the quality gate: its Detekt, ktlint, and unit
-     tests now run in `quality` and `qualityLint` (and their findings are
-     fixed).
-  7. Three Android Lint suppressions in the manifest: removed;
-     `QUERY_ALL_PACKAGES` became a `<queries>` declaration for launcher,
-     home, and Settings activities.
-  8. Agent-delegated limits in the product limits page: moved to ADR 0010
-     ("Limits to publish") until the ADR is accepted.
-  9. ADR claims that did not match the code (socket mode, iOS background
-     refresh, the DNS answer): corrected.
-  10. Quality failed on the head: the folder transport, file systems, graphs,
-      and sync section were split to the Detekt limits; `quality` passes.
-- **Recommended, accepted:** the seen-file size limit is applied; exclusive
-  writes use a hard link where the file system has them; pairing reads the
-  offer with a coordinated read; Keystore I/O and provider failures read as a
-  damaged key; a package upgrade restarts a running service.
-- **Recommended, not taken:** the iOS bookmark's stale flag is not renewed
-  (no unattended iPhone run could exercise it, see Blockers).
+- **One branch instead of the planned stack:** the rows share onboarding,
+  the sync section, and `posato-control`; commits stay grouped by row.
+- **Folder transport (`SYNC-018`):** `FolderSyncPorts` over a file-system
+  port (`java.nio`; Foundation with file coordination and security-scoped
+  bookmarks on iOS), `FolderPairing`, `SelectableSyncPorts`. Android seals
+  the key with Keystore, the desktop keeps a `0600` file, iOS uses complete
+  file protection.
+- **Linux (`LINUX-001`)** and **Android (`ANDROID-001`)** as planned.
+- **Pairing by QR code and link** (`user-confirmed` 2026-10-19): the code
+  dialog shows a QR code of `posato://join?code=<code>` with **Share link** or
+  **Copy link**; iOS, Android, and the Mac open the link into the code field
+  and join once a folder is chosen. QRose 1.1.2 (later versions need SDK 37).
+- **Defects found by E2E and fixed test first:** stale folder listings,
+  a leftover link attempt, Ed25519 keys on Android, refusals not cleared;
+  relay races in the tool. On a Galaxy XCover7 (Android 14) **Allow access**
+  ended Posato on Android 13 to 15 (an API 36 overload; the Android 17
+  emulator hid it), fixed with the maintainer-approved deprecation exception
+  (`62d7d3b7`).
+- **`posato-control` parity for Android and Linux** (maintainer's request,
+  2026-10-20): `-t android` (UIAutomator; phones, emulators, system requests)
+  and `-t linux` (Posato's AT-SPI tree through `java-atk-wrapper`, presses by
+  accessibility action) take the shared commands and every flow; new `flow
+  onboard`, `observe`, `install --grants`, Android in `devices list`,
+  `openURL` on Android. Text recognition and Maestro were weighed and set
+  aside (`agent-delegated`): the first loses roles, the second adds a second
+  flow language over the same UIAutomator.
+- **Backlog:** `SESSION-010` (idea 39), a pause running at link time is
+  adopted without its websites.
+- **Docs:** ADR 0010 (Proposed), the limits page's proposed 1.5 section, the
+  driver README, the `verify-posato` skill and feature maps, the unattended
+  verification guide, the wiki topics.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` at `73f93653` | Passed (207 s) | gradle-run log of the workflow |
-| Contract tests written first: folder mailbox, pairing, stale folder, workspace, helper request, hosts block, process match, DNS packet | Passed in `quality` | `shared` jvmTest, `linuxHelper:test`, `androidApp:testDebugUnitTest` |
+| Contract tests written first (folder mailbox, pairing, stale folder, workspace, helper request, hosts block, process match, DNS packet, UIAutomator and AT-SPI trees, name answers) | Passed in `quality` | `shared` jvmTest, `linuxHelper:test`, `androidApp` and `posato-control` tests |
 | `AC-01` two Tart Macs, relay, code join, set and session, removal | Passed (2026-10-10) | `build/verification/e2e/m1-pass-20261010.txt` |
-| `AC-02` Linux clone at `73f93653`: install, service, hosts block, calculator ended, early end, malformed host refused, self-clear with the app closed, expiry after relaunch, removal | Passed | `build/verification/e2e/m2-final.log` |
-| `AC-03` Android emulator at `73f93653`: onboarding, DNS block, other names resolve, Clock covered, early end | Passed | `build/verification/e2e/m3-final.log` |
-| `AC-03` schedule from a Mac starting on Android in the background and after `adb reboot` | Passed | `build/verification/e2e/m5-b-pass-20261011.txt` |
-| `AC-04` Android and Linux: pause both ways (24 s, 36 s) | Passed | `build/verification/e2e/m5-a-pass-20261011.txt` |
-| `AC-04` new Linux device ended during its first exchange catches up the Mac's set and schedule | Passed | `build/verification/e2e/m5-c-pass-20261011.txt` |
-| `AC-05` mistyped code refused on a Mac, workspace intact, right code joins; expiry, tampering, other workspace by contract tests | Passed | `build/verification/e2e/ac05-pass-20261011.txt` |
+| `AC-02` Linux clone at `73f93653`: install, service, hosts block, calculator ended, early end, malformed host refused, self-clear, expiry after relaunch, removal | Passed | `build/verification/e2e/m2-final.log` |
+| `AC-03` Android emulator at `73f93653`: onboarding, DNS block, Clock covered, early end; a Mac's schedule starting in the background and after `adb reboot` | Passed | `build/verification/e2e/m3-final.log`, `m5-b-pass-20261011.txt` |
+| `AC-04` pauses both ways between Android and Linux; a new Linux device ended mid-exchange catches up | Passed | `build/verification/e2e/m5-a-pass-20261011.txt`, `m5-c-pass-20261011.txt` |
+| `AC-05` mistyped code refused, workspace intact, right code joins; expiry, tampering, other workspace by contract tests | Passed | `build/verification/e2e/ac05-pass-20261011.txt` |
 | `AC-06` removal on Linux: folder emptied, Android needs attention, nothing re-created | Passed | `build/verification/e2e/ac06-multi-pass-20261011.txt` |
-| Mac at the final revision: folder remove, create, code, remove; Use another folder returns to iCloud; iCloud links (the first sync on the test account did not finish and stays retryable) and its removal works | Passed | `build/verification/e2e/mac-final.log` |
-| Pairing by QR code and link at `ff8d7f68` (the Mac and Android runs one commit earlier, which differs only in centering the code text): the Mac's QR code decodes to the join link and **Copy link** puts it on the guest clipboard; Android joins by a link opened before its folder was chosen; Android's own QR code decodes and **Share link** opens the share sheet; on the iPhone Simulator a link fills the code and the QR dialog and share sheet show; a link opened on the Mac guest fills the code. The test iPhone on a cable was not available for this addition | Passed | `build/verification/e2e/qr-e2e.log`, runs `20261019-223516-5f97`, `20261019-223350-2eff`, `20261019-223626-2a97` |
-| `AC-07` test iPhone (cable) at `4c1f2db` plus the listing fix: Files picker to iCloud Drive `PosatoSync` (the folder of a Tart Mac), join with the Mac's code, sets from the Mac, a pause started on the Mac shown active 47 s after its start when Posato came to the front, early end from the Mac released on a later foreground | Passed after one fix (see below) | `build/verification/runs/20261011-084100-205c/` and the session's AC-07 runs |
+| Mac at the 2026-10-11 revision: folder and iCloud link and removal | Passed | `build/verification/e2e/mac-final.log` |
+| QR code and link at `ff8d7f68`: the Mac's QR decodes to the link, **Copy link**, Android joins by a link opened before its folder, Android's QR and share sheet, iPhone Simulator link and dialog | Passed | `build/verification/e2e/qr-e2e.log` |
+| `AC-07` test iPhone (cable) at `4c1f2db` plus the listing fix: Files picker to a Mac's iCloud Drive folder, code join, the Mac's sets and pause | Passed after one fix (Blockers) | run `20261011-084100-205c` |
+| Galaxy XCover7 (Android 14) at `87624b54`: `install --grants settings` and `flow onboard` answer the VPN, notification, and battery requests | Passed after the fix | runs `20261020-124131-88a9`, `20261020-123955-3baf` |
+| A website removed mid-pause (Android, and the linked Linux clone) stays paused until the end, then resolves | Passed | runs `20261020-134148-f513`, `-134154-9b2f`, `-134802-7fbe`, `-134803-409e` |
+| Linux: Calculator removed from a running pause with a website stays ended until the end, then runs | Passed | runs `20261020-134943-8a5f`, `20261020-135501-8b1a` |
+| Android `adb reboot` during a manual pause: resolves before the first unlock, paused again about 30 s after it, Clock covered | Passed; the unlock is a person's | runs `20261020-135843-416c`, `-140158-00c6`, `-140204-1640` |
+| Folder workspace between the Linux clone and the phone with `flow folder` on both | Passed | runs `20261020-131234-166f`, `-131756-3987`, `-132404-343e` |
+| Test iPhone (cable) at `87624b54`: picker, `flow folder link` without `--path` waits, the join link (`devicectl --payload-url`) joins, the Mac's set arrives; after the Mac's removal "Sync needs attention" and removal | Passed | `build/verification/e2e/ios-link3.log`, runs `20261020-141551-0eed`, `-142738-9aa9` |
+| `./gradlew quality` at `6d51afaa` | Passed | gradle run of the session |
 
 ## Blockers and accepted risks
 
-- **`AC-07` found one defect, fixed:** on the iPhone, a plain listing of an
-  iCloud Drive folder kept showing only the items present when the folder
-  was first listed, so bundles the Mac added later were never read while the
-  Mac read the iPhone's. Listing now asks the provider to download the folder
-  and reads it under file coordination; the next foreground delivered the
-  Mac's set and session. No isolated test can reproduce a File Provider, so
-  the failing and passing device runs are the regression evidence.
-- `open` (iPhone, iCloud Drive): after the Mac removed the workspace, the
-  iPhone still reported a completed sync six minutes later; deletion by
-  another device had not reached its view of the folder in that time.
+- **`AC-07` found one defect, fixed:** a plain listing of an iCloud Drive
+  folder on the iPhone kept the items of the first listing; listing now asks
+  the provider to download the folder and reads under file coordination. No
+  isolated test reproduces a File Provider; the device runs are the evidence.
+- `open` (iPhone, iCloud Drive): a removal by another device was not seen
+  within six minutes once, and about two minutes after it, on a relaunch,
+  another time.
+- IPv6 through the Android tunnel is checked by reading only (no IPv6 route
+  on the phone's network); Android 13 itself was not run.
+- After a reboot, Android enforces only after the first unlock: Posato's data
+  is credential-encrypted until then.
 - The x86-64 Linux package needs an x86-64 build machine (`RELEASE-007`).
-- `SESSION-010` (idea 39): a device that links while a pause runs enforces it
-  only from the next pause; the order predates folder sync.
-- The GitHub Projects mirror has no "1.5" option in its Release field; the
-  release 1.5 items have no Release value until the option is added in the
-  project settings.
+- The GitHub Projects mirror has no "1.5" Release option yet.
 - Real folder services (Dropbox, OneDrive, Syncthing) are not verified; the
-  relay stands in for them, and iCloud Drive was used on the Mac only.
+  relay stands in for them, and iCloud Drive was used on Apple hosts only.
 
 ## Final
 

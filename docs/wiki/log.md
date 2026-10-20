@@ -2848,7 +2848,17 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed` (2026-10-19): pairing also works by QR code and link,
   `posato://join?code=<code>`, with the same one-time code; a phone camera
   opens it in Posato.
-- `open`: a removal by another device not reaching the iPhone's view of an
-  iCloud Drive folder within six minutes, other folder services, and
+- `observed` (2026-10-20): on a Galaxy XCover7 (Android 14), **Allow
+  access** ended Posato because an API 36 overload was called on API 34;
+  the emulator (Android 17) hid it. The review corrections (tunnel after a
+  reboot, removed items kept paused, battery request) passed on the phone,
+  the Linux clone, and the test iPhone. After a reboot Android enforces only
+  after the first unlock.
+- `posato-control` drives Android (UIAutomator, phones and emulators) and
+  Linux (AT-SPI through `java-atk-wrapper`) with the shared commands and
+  flows, as it drives the Mac and iOS.
+- `open`: a removal by another device reaching the iPhone's view of an
+  iCloud Drive folder (six minutes without it once, about two minutes
+  another time), other folder services, IPv6 on a network that has it, and
   `SESSION-010` (idea 39), a running pause adopted at link time without the
   set's websites.
