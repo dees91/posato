@@ -539,8 +539,7 @@ always visible website filter.
 ### macOS
 
 Use a real resizable native window, initially 1060 × 780, with minimum width
-614, minimum height 480 so it never shrinks to its toolbar, and a 224
-sidebar. Main content is centered within its available pane,
+614 and a 224 sidebar. Main content is centered within its available pane,
 capped at 820 including inner horizontal padding of 48 in expanded layout
 (24 below the 600 breakpoint). Session uses that inset vertically; Paused items
 uses 12 vertically.

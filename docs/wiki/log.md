@@ -2890,7 +2890,8 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: the window had no minimum height, so it could be 53 points
   tall, only its toolbar, and the resident window kept that size when it
   was closed and opened again (reproduced in a Tart clone through System
-  Events). It now has a minimum height of 480 (`DESIGN.md`); a smaller
+  Events). It now has a minimum height of 480 (`agent-delegated`; enters
+  `DESIGN.md` once the maintainer confirms the value); a smaller
   request or a remembered smaller size opens at the minimum. Launch, a login
   launch, and reopening from the Dock opened at the normal size before and
   after; how a person's window got that small is `open`.
