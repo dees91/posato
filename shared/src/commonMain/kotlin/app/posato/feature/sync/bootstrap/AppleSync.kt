@@ -57,6 +57,8 @@ internal data class AppleSyncState(
     val removedPauseSets: Set<PauseSetId> = emptySet(),
     /** A **Remove workspace** press is running; a second press is ignored. */
     val removing: Boolean = false,
+    /** When this device last completed an exchange with the linked workspace; kept on the device, never synchronized. */
+    val lastSyncedEpochMillis: Long? = null,
 )
 
 internal class AppleSync(
@@ -73,6 +75,7 @@ internal class AppleSync(
     private val backgroundTime: SyncBackgroundTime = SyncBackgroundTime.None,
     /** Keeps this device's app choices to the surviving sets when a received change removed others. */
     onSetsRemoved: suspend (Set<PauseSetId>) -> Unit = {},
+    lastSyncStore: LastSyncStore = LastSyncStore.None,
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
     private val reconciler = PolicyReconciler(policySync, onSetsRemoved)
@@ -80,6 +83,7 @@ internal class AppleSync(
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
     private val mutableState = MutableStateFlow(AppleSyncState())
     private val publish: (SyncStatus) -> Unit = { status -> mutableState.update { it.copy(status = status, reason = null) } }
+    private val lastSync = LastSyncTracker(lastSyncStore, core.wallClock, mutableState)
     private val writers = AppleSyncWriter(coordinator, core, publish)
     private val authoring = AppleSyncAuthoring(store, policySync, publish)
     private val exchange = AppleMailboxExchange(mailbox, crypto)
@@ -122,7 +126,7 @@ internal class AppleSync(
         ExchangeLoop(opportunities, backgroundTime).run {
             var outcome = SyncStatus.RETRYABLE
             guarded {
-                mutableState.refreshLinked(coordinator)
+                mutableState.refreshLinked(coordinator, lastSync)
                 val writer = writers.open()
                 if (writer != null) {
                     sessionObserver?.onReplicaSnapshot(writer.sessionSnapshot)
@@ -145,7 +149,7 @@ internal class AppleSync(
                     } else {
                         val result = coordinator.bootstrap()
                         publish(result.toSyncStatus())
-                        mutableState.refreshLinked(coordinator)
+                        mutableState.refreshLinked(coordinator, lastSync)
                         if (result is BootstrapResult.Ready) syncNow()
                     }
                 }
@@ -163,7 +167,7 @@ internal class AppleSync(
                     if (coordinator.joins.hasPending()) {
                         continueJoin()
                     } else {
-                        mutableState.refreshLinked(coordinator)
+                        mutableState.refreshLinked(coordinator, lastSync)
                         if (state.value.linked) syncNow()
                     }
                 }
@@ -177,7 +181,7 @@ internal class AppleSync(
         mutableState.update { it.copy(checkingJoin = true) }
         try {
             val result = coordinator.joins.recheck()
-            mutableState.refreshLinked(coordinator)
+            mutableState.refreshLinked(coordinator, lastSync)
             when (result) {
                 JoinCheckResult.UNCHANGED -> {
                     return
@@ -230,7 +234,7 @@ internal class AppleSync(
                         sessionObserver?.onReplicaSnapshot(null)
                         onWorkspaceRemoved()
                     }
-                    mutableState.refreshLinked(coordinator)
+                    mutableState.refreshLinked(coordinator, lastSync)
                     mutableState.update { it.copy(reason = null) }
                     publish(result)
                 }
@@ -244,7 +248,7 @@ internal class AppleSync(
     suspend fun discardCandidate() {
         guarded {
             coordinator.discardCandidate()
-            mutableState.refreshLinked(coordinator)
+            mutableState.refreshLinked(coordinator, lastSync)
             if (!state.value.linked) publish(SyncStatus.LOCAL_ONLY)
         }
     }
@@ -264,8 +268,10 @@ internal class AppleSync(
         val check = coordinator.checkEstablished()
         if (check.status != EstablishedStatus.READY) {
             publish(check.status.toSyncStatus())
+            if (check.status == EstablishedStatus.LOCAL_ONLY) lastSync.show(null)
             return
         }
+        lastSync.show(checkNotNull(check.workspace).context.workspaceId)
         publish(SyncStatus.SYNCING)
         val active = writers.open()
         if (active == null) {
@@ -296,6 +302,7 @@ internal class AppleSync(
             if ((schedules as? ScheduleSyncResult.Done)?.refused == true && mutableState.value.status == SyncStatus.COMPLETED) {
                 mutableState.update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SCHEDULE_CAPACITY) }
             }
+            if (mutableState.value.status == SyncStatus.COMPLETED) lastSync.record(workspace)
         }
     }
 
@@ -470,8 +477,13 @@ private fun BootstrapResult.toSyncStatus(): SyncStatus {
     }
 }
 
-private suspend fun MutableStateFlow<AppleSyncState>.refreshLinked(coordinator: BootstrapCoordinator) {
-    val linked = coordinator.establishedContext() != null
+private suspend fun MutableStateFlow<AppleSyncState>.refreshLinked(
+    coordinator: BootstrapCoordinator,
+    lastSync: LastSyncTracker,
+) {
+    val context = coordinator.establishedContext()
     val joinPending = coordinator.joins.hasPending()
-    update { it.copy(linked = linked, joinPending = joinPending) }
+    update { it.copy(linked = context != null, joinPending = joinPending) }
+    // Read from this device, so a restart that cannot reach the workspace still shows the earlier time.
+    lastSync.show(context?.workspaceId)
 }

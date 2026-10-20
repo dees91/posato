@@ -63,7 +63,7 @@ class AppleSyncJoinTest {
             harness.waitForKey()
             harness.deliverJoinKey()
             store.writeFailure = BootstrapStoreFailure.STORAGE_FAILURE
-            val holder = SyncBootstrapUiState(harness.sync, this)
+            val holder = SyncBootstrapUiState(harness.sync, this, formatLastSync = Long::toString)
             holder.sync()
             advanceUntilIdle()
             assertEquals(SyncStatus.RETRYABLE, holder.syncState.value.status)

@@ -136,7 +136,9 @@ class PosatoApplication internal constructor(
         navigation: ApplicationNavigation = remember { ApplicationNavigation() },
     ) {
         var setupDone by remember { mutableStateOf(false) }
-        val syncState = rememberSyncBootstrapUiState(bootstrap, folderSync)
+        val syncState = rememberSyncBootstrapUiState(bootstrap, folderSync) { epochMillis ->
+            timeFormat.formatTime(epochMillis, clock.currentEpochMillis())
+        }
         val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper) {
             sessionOwner.status.value is LocalSessionStatus.Active || sessionOwner.view.value.busy
         }

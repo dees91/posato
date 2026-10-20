@@ -67,7 +67,7 @@ class SqlPauseSetMigrationTest {
             assertEquals(listOf("1"), driver.rows("SELECT singleton FROM local_pause_set_upgrade"))
             assertEquals(emptyList(), driver.rows("SELECT hex(workspace_id) FROM sync_pause_sets_enabled"))
             assertEquals(emptyList(), driver.rows("SELECT part_kind FROM local_retained_domain"))
-            assertEquals(listOf("14"), driver.rows("PRAGMA user_version"))
+            assertEquals(listOf("15"), driver.rows("PRAGMA user_version"))
         } finally {
             driver.close()
             testDatabase.delete()

@@ -193,6 +193,8 @@ For what matters.</string>
     <string name="session_icloud_pending">Changes waiting to sync</string>
     <string name="session_icloud_running">Syncing</string>
     <string name="session_icloud_completed">Latest sync attempt completed</string>
+    <string name="sync_last_synced">Last synced %1$s</string>
+    <string name="sync_not_synced_yet">Not synced yet on this device</string>
     <string name="session_icloud_retryable">Sync did not finish</string>
     <string name="session_icloud_waiting">Waiting for the workspace key</string>
     <string name="session_icloud_attention">Sync needs attention</string>

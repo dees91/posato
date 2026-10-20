@@ -107,6 +107,7 @@ internal class SqlBootstrapStore(
             database.syncBootstrapQueries.evictRemovedWorkspacesBeyond(
                 keep_count = REMOVED_WORKSPACE_LIMIT.toLong(),
             )
+            database.syncBootstrapQueries.clearLastExchanges()
             database.syncBootstrapQueries.clearEstablishedWorkspace()
         }
     }

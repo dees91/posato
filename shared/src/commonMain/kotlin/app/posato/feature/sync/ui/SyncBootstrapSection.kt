@@ -96,6 +96,9 @@ internal fun SyncBootstrapSection(
     LinkCodeEffects(state, snapshot) { expanded = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         SyncRow(expanded, folderMode, rowSummary(snapshot, checking, removingHere, state.running)) { expanded = !expanded }
+        if (expanded && snapshot.linked) {
+            LastSync(snapshot.lastSyncedEpochMillis, state.formatLastSync)
+        }
         if (expanded && folderMode) {
             FolderOptions(state, snapshot, folder, running, removingHere) { confirmingRemoval = true }
         } else if (expanded) {

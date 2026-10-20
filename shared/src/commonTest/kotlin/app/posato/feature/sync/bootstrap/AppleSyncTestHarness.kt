@@ -72,6 +72,7 @@ internal class AppleSyncTestHarness(
         crypto,
         dispatcher,
         scheduleSync = if (withSchedules) ScheduleSync(schedules) { ScheduleDate(2026, 9, 30) } else null,
+        lastSyncStore = SqlLastSyncStore(database, dispatcher),
     )
     val syncPolicy = SyncTargetPolicyStore(sqlPolicy, sync)
 
