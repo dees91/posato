@@ -1,5 +1,6 @@
 package app.posato.control.cli
 
+import app.posato.control.android.AndroidDevice
 import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
@@ -10,6 +11,7 @@ import app.posato.control.desktop.ApplicationObservation
 import app.posato.control.desktop.BlockingObserver
 import app.posato.control.desktop.PageOutcome
 import app.posato.control.desktop.WebsiteObservation
+import app.posato.control.linux.LinuxGuest
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
@@ -28,12 +30,21 @@ data class ObservationResult(
     val websites: List<WebsiteObservation> = emptyList(),
 )
 
-/** Desktop only: iOS observes blocking with the `observe-*-ios.json` scenarios through SpringBoard and Safari. */
+/** iOS observes blocking with the `observe-*-ios.json` scenarios through SpringBoard and Safari instead. */
 class ObserveCommand :
-    ControlCommand("observe", "Desktop in a VM: prove a website and an application are blocked or allowed, as a person would meet them.") {
-    private val websites by option("--website", help = "URL to request through the system proxy, such as http://example.com/; repeat for more.")
-        .multiple()
-    private val application by option("--application", help = "Application to open, such as Safari.")
+    ControlCommand(
+        "observe",
+        "Desktop in a VM, Android, or Linux: prove a website and an application are blocked or allowed, as a person would meet them.",
+    ) {
+    private val websites by option(
+        "--website",
+        help = "URL to open, such as http://example.com/ (desktop: through the system proxy; Android and Linux: " +
+            "the name's address); repeat for more.",
+    ).multiple()
+    private val application by option(
+        "--application",
+        help = "Application to open: a name such as Safari (desktop), a package (android), or a program path (linux).",
+    )
     private val expect by option("--expect", help = "blocked or allowed.").choice(BLOCKED, ALLOWED).required()
     private val seconds by option("--seconds", help = "How long an opened application must survive to count as running.")
         .int()
@@ -41,7 +52,11 @@ class ObserveCommand :
 
     override fun execute(session: Session): JsonElement {
         validate(session)
-        val observer = BlockingObserver(session.context)
+        val observer = when (session.target()) {
+            Target.ANDROID -> AndroidObserver(AndroidDevice(session.context, session.options.udid).also { it.requireReady() })
+            Target.LINUX -> LinuxObserver(LinuxGuest(session.context).also { it.requireRunning() })
+            else -> BlockingObserver(session.context)
+        }
         val observed = websites.map { url -> observer.website(url) }
         val result = ObservationResult(
             expect = expect,
@@ -56,10 +71,17 @@ class ObserveCommand :
 
     private fun validate(session: Session) {
         if (websites.isEmpty() && application == null) throw ControlException(ErrorCode.USAGE, "observe needs --website, --application, or both.")
-        if (session.target() != Target.DESKTOP) {
-            throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "observe drives the desktop target.", "On iOS run observe-blocking-ios.json.")
+        when (session.target()) {
+            Target.ANDROID, Target.LINUX -> Unit
+
+            Target.DESKTOP -> refuseHostDesktop(Target.DESKTOP, hostAllowed = false, inVirtualMachine = ::runsInVirtualMachine)
+
+            else -> throw ControlException(
+                ErrorCode.UNSUPPORTED_ON_TARGET,
+                "observe drives the desktop, android, and linux targets.",
+                "On iOS run observe-blocking-ios.json.",
+            )
         }
-        refuseHostDesktop(Target.DESKTOP, hostAllowed = false, inVirtualMachine = ::runsInVirtualMachine)
     }
 
     private fun met(result: ObservationResult): Boolean {

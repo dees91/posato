@@ -191,8 +191,13 @@ is an emulator of your own.
    sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
      xorg lightdm lightdm-gtk-greeter openbox openjdk-21-jdk fakeroot dpkg-dev binutils \
      xdotool imagemagick x11-utils dbus-x11 policykit-1 pkexec sqlite3 curl dnsutils \
-     fonts-dejavu-core gnome-calculator
+     fonts-dejavu-core gnome-calculator at-spi2-core libatk-wrapper-java \
+     libatk-wrapper-java-jni python3-pyatspi
    ```
+
+   The last four publish Posato's accessibility tree on AT-SPI, which
+   `posato-control -t linux` reads; `launch -t linux` turns it on for the
+   process it starts.
 
 3. Log the guest user in automatically to an Openbox session, and let that
    user approve `pkexec` so the pausing service installs without a password
@@ -225,6 +230,14 @@ emulator -avd <posato-avd> -port 5560 -no-window -no-audio -no-boot-anim -no-sna
 
 Set `posato.android.serial` to its serial (`emulator-5560` for that port).
 Never drive an emulator that someone else uses.
+
+A phone on USB works the same way: turn on Developer options and USB
+debugging, answer "Allow USB debugging?" once with Always allow, and pass its
+serial with `--udid` (`posato-control devices list` shows it). `doctor -t
+android` names what a phone adds: another app's VPN, which a website pause
+turns off, strict private DNS, which bypasses website pausing, and a screen
+lock, after which a reboot needs one unlock by a person. The emulator has
+none of these.
 
 ## Register the VMs for development signing
 

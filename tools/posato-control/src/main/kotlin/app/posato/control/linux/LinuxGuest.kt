@@ -5,10 +5,7 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.core.RunContext
-import app.posato.control.desktop.AxBridgeBinary
-import app.posato.control.vm.RecognizedLine
 import app.posato.control.vm.Tart
-import app.posato.control.vm.parseRecognizedLines
 import app.posato.control.vm.shellQuote
 import java.nio.file.Files
 import java.nio.file.Path
@@ -16,9 +13,8 @@ import java.time.Duration
 import java.util.Base64
 
 /**
- * The Linux clone of ADR 0010's verification: a Tart Ubuntu guest with an X11 session, driven by screenshots taken in
- * the guest, text recognition on the host, and `xdotool` in the guest. Its desktop shows only Posato, so recognized
- * text locates controls the way a person reads them.
+ * The Linux clone of ADR 0010's verification: a Tart Ubuntu guest with an X11 session. Posato's accessibility tree is
+ * read through AT-SPI in the guest, and keys are typed with `xdotool`.
  */
 class LinuxGuest(
     private val context: RunContext,
@@ -56,13 +52,31 @@ class LinuxGuest(
         tart.stop(CLONE)
     }
 
+    /** Whether the clone exists and runs; every command in the guest needs it. */
+    fun running(): Boolean = tart.list().any { it.name == CLONE && it.running }
+
+    fun goldenExists(): Boolean = tart.list().any { it.name == golden }
+
+    fun requireRunning() {
+        if (!running()) {
+            throw ControlException(
+                ErrorCode.VM_UNAVAILABLE,
+                "The Linux clone $CLONE is not running.",
+                "Run `linux create` (or `linux boot`).",
+            )
+        }
+    }
+
     fun destroy() {
         if (tart.list().none { it.name == CLONE }) return
         tart.stop(CLONE)
         tart.delete(CLONE)
     }
 
-    val screen: LinuxScreen = LinuxScreen(context, this)
+    val screen: LinuxScreen = LinuxScreen(this)
+
+    /** Posato started with its accessibility tree on AT-SPI, and the helper that reads and presses it. */
+    val accessibility: LinuxAccessibility = LinuxAccessibility(this)
 
     fun exec(
         script: String,
@@ -93,17 +107,15 @@ class LinuxGuest(
         return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Packaging and installing Posato in $CLONE").stdout.trim()
     }
 
-    fun launch() {
-        exec("pkill -x posato; sleep 1; nohup /opt/posato/bin/posato > /tmp/posato.log 2>&1 &")
-            .requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato in $CLONE")
-    }
-
     fun terminate() {
         exec("pkill -x posato; true")
     }
 
     companion object {
         const val CLONE = "posato-run-linux"
+
+        /** Where Posato keeps its databases and choices in the guest (XDG data home of the test user). */
+        const val DATA_DIRECTORY = "\$HOME/.local/share/Posato"
 
         /** The guest sees the host folder `build/verification/linux-sync` here; the relay serves it from the host. */
         const val GUEST_SHARE = "/mnt/shared"
@@ -125,9 +137,8 @@ class LinuxGuest(
     }
 }
 
-/** The clone's screen: captured in the guest, read by text recognition on the host, and driven with `xdotool`. */
+/** The clone's screen, captured in the guest, and its keyboard, driven with `xdotool`. */
 class LinuxScreen(
-    private val context: RunContext,
     private val guest: LinuxGuest,
 ) {
     fun screenshot(file: Path): Path {
@@ -138,39 +149,6 @@ class LinuxScreen(
         return file
     }
 
-    fun read(): List<RecognizedLine> {
-        val frame = Files.createTempFile("posato-linux-screen", ".png")
-        try {
-            screenshot(frame)
-            AxBridgeBinary(context).ensureBuilt()
-            val output = context.subprocess.run(listOf(context.layout.accessibilityBridgeBinary.toString(), "ocr", frame.toString()))
-                .requireSuccess(ErrorCode.COMMAND_FAILED, "Recognizing text on the Linux screen")
-            return parseRecognizedLines(output.stdout)
-        } finally {
-            Files.deleteIfExists(frame)
-        }
-    }
-
-    fun waitFor(
-        text: String,
-        exact: Boolean,
-        timeoutMillis: Long,
-    ): List<RecognizedLine> {
-        val deadline = System.currentTimeMillis() + timeoutMillis
-        while (true) {
-            val matches = read().filter { if (exact) it.text.trim() == text else it.text.contains(text, ignoreCase = true) }
-            if (matches.isNotEmpty()) return matches
-            if (System.currentTimeMillis() >= deadline) {
-                throw ControlException(ErrorCode.WAIT_TIMEOUT, "\"$text\" did not appear on the Linux screen within ${timeoutMillis / MILLIS} s.")
-            }
-            Thread.sleep(POLL_MILLIS)
-        }
-    }
-
-    fun click(line: RecognizedLine,) {
-        guest.exec("xdotool mousemove ${line.centerX} ${line.centerY} click 1").requireSuccess(ErrorCode.COMMAND_FAILED, "Clicking in $CLONE")
-    }
-
     fun type(text: String) {
         guest.exec("xdotool type --delay 30 -- ${shellQuote(text)}").requireSuccess(ErrorCode.COMMAND_FAILED, "Typing in $CLONE")
     }
@@ -179,19 +157,7 @@ class LinuxScreen(
         guest.exec("xdotool key ${shellQuote(name)}").requireSuccess(ErrorCode.COMMAND_FAILED, "Pressing $name in $CLONE")
     }
 
-    fun scroll(
-        down: Boolean,
-        clicks: Int,
-    ) {
-        val button = if (down) SCROLL_DOWN else SCROLL_UP
-        guest.exec("xdotool mousemove 700 450 click --repeat $clicks $button").requireSuccess(ErrorCode.COMMAND_FAILED, "Scrolling in $CLONE")
-    }
-
     private companion object {
-        const val POLL_MILLIS = 2_000L
-        const val MILLIS = 1_000
-        const val SCROLL_DOWN = 5
-        const val SCROLL_UP = 4
         const val CLONE = LinuxGuest.CLONE
     }
 }

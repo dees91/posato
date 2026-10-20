@@ -1,6 +1,6 @@
 ---
 name: verify-posato
-description: "Drive the real Posato macOS desktop app, iOS app (Simulator or connected iPhone), Linux app (Tart Ubuntu clone), and Android app (own emulator) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, androidApp/, linuxHelper/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
+description: "Drive the real Posato macOS desktop app, iOS app (Simulator or connected iPhone), Linux app (Tart Ubuntu clone), and Android app (phone or own emulator) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, androidApp/, linuxHelper/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
 ---
 
 # Verify Posato
@@ -83,14 +83,18 @@ never from the Apple Developer portal. With the one-time setup in
   own clone, but a later clone can pause it again: run `vm icloud --resume`
   on every clone once all have booted. The in-app update recipe is
   `features/updates.md`; see also the driver README, "Notarized candidates".
-- **Linux in a Tart Ubuntu clone.** `$PC linux create`, `linux install`,
-  and `linux launch`, then `linux click|wait|type|exec`; the guest's polkit
-  rule approves the service installation. Never run it together with a
-  macOS clone. Finish with `$PC linux destroy`. Recipes:
-  [Linux and Android](./features/linux-and-android.md).
-- **Android on Posato's own emulator.** The one named by
-  `posato.android.serial`; another person's emulator is never used. `$PC
-  android install` gives the Settings grants, so no step is attended.
+- **Linux in a Tart Ubuntu clone.** `$PC linux create`, then the shared
+  commands and flows with `-t linux` (`build`, `install`, `launch`, `flow
+  onboard`, `snapshot`, `tap`, `run`, `observe`); the tree is Posato's own
+  accessibility tree on AT-SPI. The guest's polkit rule approves the service
+  installation. Never run it together with a macOS clone. Finish with `$PC
+  linux destroy`. Recipes: [Linux and Android](./features/linux-and-android.md).
+- **Android on a phone or Posato's own emulator.** `-t android` with
+  `--udid <adb serial>` or `posato.android.serial`; another person's emulator
+  is never used. `install -t android` gives every grant, so no step is
+  attended; `--grants settings` with `flow onboard -t android` meets the VPN,
+  notification, and battery requests as a person does. A phone's screen lock
+  after a reboot is the one step that needs a person.
 - **Folder sync between any of them.** Each device keeps its own folder and
   `$PC relay` copies between them; see
   [Folder sync](./features/folder-sync.md).

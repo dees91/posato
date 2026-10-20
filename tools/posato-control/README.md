@@ -86,8 +86,9 @@ stages its ad-hoc package in `development-package`, apart from the driver's
 
 ## Targets and the JSON envelope
 
-Every command takes `--target/-t desktop|simulator|device` (`sim` is an
-alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
+Every command takes `--target/-t desktop|simulator|device|android|linux`
+(`sim` is an alias; see [Linux and Android](#linux-and-android)) plus the
+common options `--udid` (on Android, the adb serial), `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
 `posato-control launch -t desktop --vm primary`. `--human` prints plain text
 instead of the envelope and ends with the outcome, `ok (<ms> ms)` or
@@ -523,8 +524,45 @@ tracks the new process.
 
 ## Linux and Android
 
-`linux` and `android` drive Posato outside Apple's platforms. They do not use
-`-t`; the result is the same JSON envelope.
+`-t android` and `-t linux` are targets like the others: `doctor`, `build`,
+`install`, `launch`, `terminate`, `status`, `snapshot`, `find`, `tap`, `type`,
+`press`, `wait`, `run`, `screenshot`, `logs`, `db`, `reset`, `cleanup`,
+`observe`, and every `flow` take them. Both read the same element tree as the
+Mac and iOS (roles, labels, paths), so a query or a scenario step means the
+same thing on each target. Posato's shared Compose screens draw the same
+controls on the Mac, Android, and Linux; flows branch only for iOS.
+
+**Android** runs on a phone or an emulator: `--udid <adb serial>`, or the
+serial in `posato.android.serial`. `devices list` shows what adb lists. Never
+use an emulator another person works on.
+
+- The tree is read with UIAutomator (`uiautomator dump`), the framework under
+  Appium and Maestro; it covers the whole screen, so the VPN, permission, and
+  battery requests are addressed like Posato's own controls. A Compose control
+  (a clickable view with its texts and role marker as children) reads as one
+  button labelled by its texts. Taps, text, keys, and swipes use `input`; text
+  is printable ASCII without `%`.
+- `build -t android` builds the debug APK. `install -t android --grants
+  all|settings|none` installs it: `all` (the default) also gives the VPN
+  consent, notifications, and the battery exemption, so no request appears;
+  `settings` gives only what a person switches on in Settings (usage access,
+  display over other apps, exact alarms, all-files access) and leaves the
+  requests to onboarding, as a person meets them; `none` gives nothing.
+- `flow onboard -t android [--website W]` walks first-run onboarding from
+  whatever step it shows, answering each system request with its allow
+  button. `reset -t android --yes` uninstalls (`--keep-install` clears data).
+- `doctor -t android` reports the device and its Android version, the APK,
+  the installation, another app's active VPN (a website pause turns it off),
+  strict private DNS (which bypasses website pausing), and a screen lock
+  (after a reboot Posato runs only once a person unlocks the phone).
+- `observe -t android --website URL --application PACKAGE --expect
+  blocked|allowed` reads the address the name resolves to (a pause answers
+  `0.0.0.0` or `127.0.0.1`) and opens the package to see whether "Paused by
+  Posato" covers it.
+- `db -t android` and `logs -t android` copy the databases through `run-as`
+  and read logcat. A scenario's `openURL` step opens a link, such as
+  `posato://join?code=...`, as a camera scan or a message would.
+- `android shell --script S` runs an `adb shell` script on the device.
 
 **Linux** runs in a Tart Ubuntu clone, `posato-run-linux`, of the golden VM
 that `posato.vm.linuxGolden` names (its one-time setup is in
@@ -532,40 +570,29 @@ that `posato.vm.linuxGolden` names (its one-time setup is in
 
 - `linux create` clones the golden VM, boots it with the host directory
   `build/verification/linux-share/posato-sync` mounted at `/mnt/shared`, and
-  waits for the X11 session; `boot`, `stop`, and `destroy` manage the clone.
-  Do not run the Linux clone and a macOS clone at the same time: two
-  virtualization guests under load have crashed the Linux guest.
-- `linux install` builds a `.deb` with `jpackage` inside the clone from
-  `build/linux/package` (`./gradlew :desktopApp:linuxPackageInputs` on the
-  host) and installs it with `apt`. `launch` and `terminate` start and end
-  `posato` in the session.
-- The screen is read by capturing it in the guest and recognizing text on the
-  host: `text`, `wait --text T`, and `click --text T [--exact] [--index n]`.
-  `type`, `key`, and `scroll` send input through `xdotool`. The guest's
-  polkit rule lets the session user approve `pkexec`, so the helper
-  installation needs no password.
-- `linux exec --script S` runs a shell script as the session user, for example
-  to read `/etc/hosts` or move the guest clock (`sudo -n date -s`).
-
-**Android** runs on the emulator that `posato.android.serial` names.
-
-- `android install` installs
-  `androidApp/build/outputs/apk/debug/androidApp-debug.apk`
-  (`./gradlew :androidApp:assembleDebug`) and gives it, through `appops` and
-  `pm grant`, the grants a person gives in Settings: usage access, display
-  over other apps, exact alarms, all-files access, notifications, the
-  battery-optimization exemption, and the VPN consent (`ACTIVATE_VPN`), so
-  onboarding shows no system dialog.
-- `text`, `wait`, and `tap --text T [--exact] [--index n]` read a UIAutomator
-  dump and scroll to find text that is not on screen yet; `type`, `key`, and
-  `swipe` use `input`. `shell --script S` runs an `adb shell` script, for
-  example `ping -c 1 example.org` to read the DNS answer.
-- `reset` clears Posato's data; `terminate` force-stops it.
+  waits for the X11 session; `boot`, `stop`, and `destroy` manage the clone,
+  and `linux exec --script S` runs a shell script as the session user. Do not
+  run the Linux clone and a macOS clone at the same time: two virtualization
+  guests under load have crashed the Linux guest.
+- `build -t linux` builds the package inputs on the host; `install -t linux`
+  packages a `.deb` with `jpackage` in the clone and installs it with `apt`.
+- The tree is Posato's accessibility tree on AT-SPI, read in the guest with
+  `pyatspi` (the helper `src/main/resources/linux/posato-atspi.py`). `launch
+  -t linux` starts Posato with the guest's `java-atk-wrapper`, on a session
+  bus kept in `/tmp/posato-dbus`, so Compose publishes its semantics there.
+  Compose reports bounds on Linux with offsets that do not match the screen,
+  so `tap` performs the element's accessibility action, as the Mac presses,
+  and `type` focuses the field through AT-SPI before `xdotool` types.
+- `flow onboard -t linux` installs the pausing service; the guest's polkit
+  rule lets the session user approve `pkexec` without a password.
+- `observe -t linux --website URL --application PATH` reads `getent ahosts`
+  (a pause answers `0.0.0.0` or `::`) and starts the program on Posato's
+  session bus, then checks whether a process still runs that file.
 
 The folder workspace runs between any of these devices and Mac guests with
-`flow folder` on the Mac and `relay` between their folders. Each device keeps
-its own local folder: macOS guests `$HOME/PosatoSync`, the Linux clone
-`/mnt/shared/posato-sync`, and the emulator `/sdcard/PosatoSync`.
+`flow folder` and `relay` between their folders. Each device keeps its own
+local folder: macOS guests `$HOME/PosatoSync`, the Linux clone
+`/mnt/shared/posato-sync`, and Android `/sdcard/PosatoSync`.
 
 ## Evidence and state
 

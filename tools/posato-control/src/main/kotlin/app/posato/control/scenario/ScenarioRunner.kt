@@ -23,8 +23,9 @@ interface NativeActions {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This native driver does not implement scrolling.")
     }
 
-    fun orient(orientation: String) {
-        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "orient rotates an iOS device; this target has no orientation.")
+    /** Opens a URL through the system, as a link from a message or a camera scan arrives. */
+    fun openUrl(url: String) {
+        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This target opens no URLs in a scenario; on Linux Posato takes a pasted link.")
     }
 
     fun snapshot(maxDepth: Int?): SnapshotNode
@@ -128,7 +129,7 @@ class ScenarioRunner(
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
             Actions.ASSERT -> assertState(step)
             Actions.SCROLL_TO -> actions.scrollTo(step.query ?: throw invalid("scrollTo needs a query"), timeoutMs)
-            Actions.ORIENT -> actions.orient(requireField(step.orientation, "orient needs an orientation"))
+            Actions.OPEN_URL -> actions.openUrl(requireField(step.url, "openURL needs a url"))
             else -> throw invalid("Unknown action '${step.action}'.")
         }
     }
@@ -269,9 +270,12 @@ private fun missed(
 
 private fun invalid(message: String): ControlException = ControlException(ErrorCode.SCENARIO_INVALID, message)
 
-/** SpringBoard queries, app switching, URLs, and typed secrets exist only in the XCUITest driver. */
+/**
+ * SpringBoard queries, app switching, rotation, and typed secrets exist only in the XCUITest driver; other targets open
+ * URLs themselves.
+ */
 private fun refuseIosSystemStep(step: Step) {
-    if (step.query?.isSystemScope == true || step.action in Actions.iosOnly - Actions.ORIENT) {
+    if (step.query?.isSystemScope == true || step.action in Actions.iosOnly - Actions.OPEN_URL) {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "${step.action} with iOS system surfaces runs only in the iOS driver.")
     }
 }

@@ -54,10 +54,10 @@ outlives the command that started it, and never start a second one.
   on the peer `flow folder link --path ...` returns `waitingForCode`, then
   `flow folder join --code <code>` returns `linked`; `flow folder done` on the
   first closes the code.
-- **Linux or Android joins:** after choosing the folder (Linux
-  `/mnt/shared/posato-sync`, Android `/sdcard/PosatoSync`), click
-  **Pairing code**, type the code in lower case, and press **Join**. Proof:
-  `Add a device` appears.
+- **Linux or Android joins:** the same flows with `-t linux` or `-t
+  android`: `flow folder link --path /mnt/shared/posato-sync` (Linux) or
+  `--path /sdcard/PosatoSync` (Android) returns `waitingForCode`, then `flow
+  folder join --code <code>` returns `linked`.
 - **Exchange:** create a set with `flow set` on a Mac or start a pause on
   Android; proof is the other device's enforcement (`/etc/hosts` on Linux,
   the DNS answer on Android, `observe` on a Mac) within two minutes.

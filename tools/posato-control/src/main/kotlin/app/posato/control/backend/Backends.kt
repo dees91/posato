@@ -1,5 +1,6 @@
 package app.posato.control.backend
 
+import app.posato.control.android.AndroidBackend
 import app.posato.control.apple.DeviceBackend
 import app.posato.control.apple.SimulatorBackend
 import app.posato.control.core.ControlException
@@ -7,6 +8,7 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
 import app.posato.control.core.Target
 import app.posato.control.desktop.DesktopBackend
+import app.posato.control.linux.LinuxBackend
 
 object Backends {
     fun create(
@@ -20,6 +22,8 @@ object Backends {
             Target.DESKTOP -> DesktopBackend.create(context, processSelector)
             Target.SIMULATOR -> SimulatorBackend.create(context, udid)
             Target.DEVICE -> DeviceBackend.create(context, udid)
+            Target.ANDROID -> AndroidBackend.create(context, udid)
+            Target.LINUX -> LinuxBackend.create(context)
         }
     }
 

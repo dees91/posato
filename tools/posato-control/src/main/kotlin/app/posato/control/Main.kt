@@ -16,6 +16,7 @@ import app.posato.control.cli.FindCommand
 import app.posato.control.cli.FlowCommand
 import app.posato.control.cli.FlowFolderCommand
 import app.posato.control.cli.FlowICloudCommand
+import app.posato.control.cli.FlowOnboardCommand
 import app.posato.control.cli.FlowScheduleAddCommand
 import app.posato.control.cli.FlowSessionCommand
 import app.posato.control.cli.FlowSetCommand
@@ -95,7 +96,7 @@ private val englishLocalization = object : Localization {}
 class PosatoControl : CliktCommand(name = "posato-control") {
     override fun help(context: Context): String =
         "Agent-facing driver for the Posato macOS and iOS applications: build, launch, drive, inspect, screenshot, and reset. " +
-            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device."
+            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device|android|linux."
 
     override fun run() = Unit
 }
@@ -132,7 +133,14 @@ private fun vmCommand(): VmCommand {
 }
 
 private fun flowCommand(): FlowCommand {
-    return FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand(), FlowFolderCommand())
+    return FlowCommand().subcommands(
+        FlowOnboardCommand(),
+        FlowScheduleAddCommand(),
+        FlowSetCommand(),
+        FlowSessionCommand(),
+        FlowICloudCommand(),
+        FlowFolderCommand(),
+    )
 }
 
 fun buildCommand(): PosatoControl = PosatoControl().subcommands(

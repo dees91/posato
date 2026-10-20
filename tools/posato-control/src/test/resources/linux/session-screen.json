@@ -1,0 +1,19 @@
+{"role": "application", "name": "Posato", "description": null, "text": null, "enabled": false, "focused": false, "frame": [0, 0, 0, 0], "path": "", "children": [
+ {"role": "frame", "name": "Posato", "description": null, "text": null, "enabled": true, "focused": false, "frame": [-1, -1, -1, -1], "path": "0", "children": [
+  {"role": "root pane", "name": null, "description": null, "text": null, "enabled": true, "focused": false, "frame": [0, 19, 1280, 881], "path": "0/0", "children": [
+   {"role": "unknown", "name": null, "description": null, "text": null, "enabled": true, "focused": false, "frame": [0, 19, 1280, 881], "path": "0/0/0", "children": [
+    {"role": "page tab", "name": "Session", "description": null, "text": null, "enabled": true, "focused": false, "frame": [24, 219, 200, 47], "path": "0/0/0/0", "children": []},
+    {"role": "page tab", "name": "Pause sets", "description": null, "text": null, "enabled": true, "focused": false, "frame": [24, 274, 200, 47], "path": "0/0/0/1", "children": []},
+    {"role": "unknown", "name": null, "description": null, "text": null, "enabled": true, "focused": false, "frame": [390, 19, 890, 881], "path": "0/0/0/2", "children": [
+     {"role": "label", "name": "NO SESSION ACTIVE", "description": null, "text": null, "enabled": true, "focused": false, "frame": [732, 79, 145, 13], "path": "0/0/0/2/0", "children": []},
+     {"role": "push button", "name": "Start a session", "description": null, "text": null, "enabled": true, "focused": false, "frame": [732, 235, 133, 44], "path": "0/0/0/2/1", "children": []},
+     {"role": "push button", "name": "1 website, Selected websites · view all", "description": null, "text": null, "enabled": true, "focused": false, "frame": [732, 340, 724, 67], "path": "0/0/0/2/2", "children": []},
+     {"role": "push button", "name": null, "description": "Increase Minutes", "text": null, "enabled": true, "focused": false, "frame": [1009, 388, 44, 44], "path": "0/0/0/2/6", "children": []},
+     {"role": "push button", "name": "Add", "description": null, "text": null, "enabled": false, "focused": false, "frame": [900, 500, 60, 44], "path": "0/0/0/2/3", "children": []},
+     {"role": "text", "name": null, "description": "Add websites", "text": "", "enabled": true, "focused": false, "frame": [732, 500, 160, 44], "path": "0/0/0/2/4", "children": []},
+     {"role": "text", "name": "Name", "description": null, "text": "Deep work", "enabled": true, "focused": true, "frame": [732, 560, 160, 44], "path": "0/0/0/2/5", "children": []}
+    ]}
+   ]}
+  ]}
+ ]}
+]}

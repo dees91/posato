@@ -32,7 +32,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             FlowSteps.run(backend, listOf(FlowSteps.button(DONE, optional = true, timeoutSeconds = 2.0)))
             return buildJsonObject { put("action", action) }
         }
-        expand(backend)
+        FolderSection(backend).expand()
         return when (action) {
             LINK -> link(backend, path, deadline)
             OFFER -> offer(backend)
@@ -48,13 +48,19 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
     ): JsonElement {
         // With --path an unlinked device types its folder again, as a person would, so no earlier choice carries over.
         // Without it (iPhone, where the folder comes from the Files picker) the folder already chosen is kept.
-        if (folder != null && USE_ANOTHER in FlowSteps.labels(backend)) {
+        if (folder != null && FolderSection(backend).shows(USE_ANOTHER)) {
             FlowSteps.run(backend, listOf(FlowSteps.reveal(button(USE_ANOTHER)), FlowSteps.tap(button(USE_ANOTHER))))
         }
-        if (folder != null && USE_FOLDER in FlowSteps.labels(backend)) {
+        if (folder != null && FolderSection(backend).shows(USE_FOLDER)) {
             FlowSteps.run(
                 backend,
-                listOf(FlowSteps.reveal(button(USE_FOLDER)), FlowSteps.typeInto(folder, submit = false), FlowSteps.tap(button(USE_FOLDER))),
+                // The keyboard that typing raises can cover the button, so it is revealed again before the tap.
+                listOf(
+                    FlowSteps.reveal(button(USE_FOLDER)),
+                    FlowSteps.typeInto(folder, submit = false),
+                    FlowSteps.reveal(button(USE_FOLDER)),
+                    FlowSteps.tap(button(USE_FOLDER)),
+                ),
             )
         }
         FlowSteps.run(backend, listOf(FlowSteps.reveal(button(SYNC_WITH_FOLDER)), FlowSteps.tap(button(SYNC_WITH_FOLDER))))
@@ -89,7 +95,12 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
     ): JsonElement {
         FlowSteps.run(
             backend,
-            listOf(FlowSteps.reveal(button(JOIN_LABEL)), FlowSteps.typeInto(pairingCode, submit = false), FlowSteps.tap(button(JOIN_LABEL))),
+            listOf(
+                FlowSteps.reveal(button(JOIN_LABEL)),
+                FlowSteps.typeInto(pairingCode, submit = false),
+                FlowSteps.reveal(button(JOIN_LABEL)),
+                FlowSteps.tap(button(JOIN_LABEL)),
+            ),
         )
         // An offer that has not reached this device's folder yet reads "No offer for this code"; a person presses Join again.
         // A refusal is the outcome, so a run can prove that a wrong code joins nothing.
@@ -150,27 +161,17 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         FlowSteps.run(backend, listOf(FlowSteps.tap(if (confirm != null) Query(path = confirm) else button(REMOVE_WORKSPACE))))
     }
 
-    /** The sync row starts collapsed; it reads "iCloud" on an Apple host before a folder is chosen and "Folder sync" after. */
-    private fun expand(backend: Backend) {
-        FlowSteps.run(backend, listOf(FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = 2.0), FlowSteps.button("Session")))
-        if (FlowSteps.labels(backend).none { it in ACTIONS }) {
-            val title = if (FlowSteps.labels(backend).any { it.startsWith(FOLDER_ROW) }) FOLDER_ROW else ICLOUD_ROW
-            val row = Query(textContains = title, role = FlowSteps.ROLE_BUTTON)
-            FlowSteps.run(backend, listOf(FlowSteps.reveal(row), FlowSteps.tap(row), FlowSteps.sleep(DIALOG_SECONDS)))
-        }
-    }
-
     private fun waitFor(
         backend: Backend,
         deadline: Long,
         what: String,
         outcome: (List<String>) -> String?,
     ): String {
-        var labels = FlowSteps.labels(backend)
+        var labels = FolderSection(backend).outcomeLabels()
         while (System.currentTimeMillis() < deadline) {
             outcome(labels)?.let { return it }
             Thread.sleep(POLL_MILLIS)
-            labels = FlowSteps.labels(backend)
+            labels = FolderSection(backend).outcomeLabels()
         }
         val row = labels.firstOrNull { it.startsWith(FOLDER_ROW) || it.startsWith(ICLOUD_ROW) }
         throw ControlException(ErrorCode.WAIT_TIMEOUT, "The folder $what did not finish within $timeoutSeconds s; the row reads ${row ?: "unknown"}.")
@@ -185,7 +186,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
 
     private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
 
-    private companion object {
+    internal companion object {
         const val LINK = "link"
         const val OFFER = "offer"
         const val JOIN = "join"

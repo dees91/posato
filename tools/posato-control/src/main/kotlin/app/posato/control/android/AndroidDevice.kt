@@ -5,156 +5,211 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.core.RunContext
-import org.w3c.dom.Element
+import app.posato.control.model.SnapshotNode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import javax.xml.parsers.DocumentBuilderFactory
-
-/** One element of a UIAutomator dump: its text or content description and the center of its bounds. */
-data class AndroidNode(
-    val text: String,
-    val x: Int,
-    val y: Int,
-    val clickable: Boolean,
-)
 
 /**
- * Posato on an Android emulator or phone (ADR 0010), reached with `adb`: installed from the debug APK, granted its
- * permissions with `appops` and `pm grant`, and driven through UIAutomator dumps and `input` events.
+ * Which grants `install` gives the way the shell user can. A person gives the Settings-page grants (usage access,
+ * display over other apps, exact alarms, all-files access) by switching them on, and answers the VPN, notification,
+ * and battery requests in dialogs that onboarding raises; `SETTINGS` leaves those dialogs to onboarding.
+ */
+enum class AndroidGrants(
+    val id: String,
+) {
+    ALL("all"),
+    SETTINGS("settings"),
+    NONE("none"),
+    ;
+
+    companion object {
+        val choices: Map<String, AndroidGrants> = entries.associateBy { it.id }
+    }
+}
+
+/**
+ * An Android phone or emulator (ADR 0010), reached with `adb`: its screen read through UIAutomator, Posato on it as
+ * [app], and touches, text, and keys through [input].
  */
 class AndroidDevice(
     private val context: RunContext,
     serialOverride: String? = null,
 ) {
     val serial: String = serialOverride ?: context.configuration.value(ConfigurationKey.ANDROID_SERIAL) ?: DEFAULT_SERIAL
-    private val adb: String = Paths.get(System.getProperty("user.home"), "Library/Android/sdk/platform-tools/adb").toString()
 
-    val screen: AndroidScreen = AndroidScreen(this)
+    val apk: Path = context.layout.root.resolve("androidApp/build/outputs/apk/debug/androidApp-debug.apk")
 
-    fun adb(vararg arguments: String): ProcessOutput {
-        return context.subprocess.run(listOf(adb, "-s", serial) + arguments)
+    val app: AndroidApp = AndroidApp(this, apk, context)
+
+    val input: AndroidInput = AndroidInput(this)
+
+    fun adb(vararg arguments: String): ProcessOutput = context.subprocess.run(listOf(ADB, "-s", serial) + arguments)
+
+    fun shell(script: String): ProcessOutput = adb("shell", script)
+
+    /** `device`, `unauthorized`, `offline`, or null when adb does not list the serial. */
+    fun state(): String? {
+        val listed = context.subprocess.run(listOf(ADB, "devices")).stdout.lines()
+        return listed.drop(1).map { it.trim().split(Regex("\\s+")) }.firstOrNull { it.firstOrNull() == serial }?.getOrNull(1)
     }
 
-    fun shell(script: String): ProcessOutput {
-        return adb("shell", script)
-    }
+    fun requireReady() {
+        when (state()) {
+            "device" -> Unit
 
-    fun install(apk: Path) {
-        if (!Files.isRegularFile(apk)) throw ControlException(ErrorCode.APP_NOT_STAGED, "No APK at $apk; run ./gradlew :androidApp:assembleDebug.")
-        adb("install", "-r", "-g", apk.toString()).requireSuccess(ErrorCode.INSTALL_FAILED, "Installing Posato on $serial")
-    }
+            "unauthorized" -> throw ControlException(
+                ErrorCode.NO_CONNECTED_DEVICE,
+                "$serial has not allowed USB debugging from this computer.",
+                "Unlock the phone and answer \"Allow USB debugging?\" with Always allow.",
+            )
 
-    /** The grants a person gives in Settings, given the way the shell user can. */
-    fun grant() {
-        listOf("GET_USAGE_STATS", "SYSTEM_ALERT_WINDOW", "ACTIVATE_VPN", "SCHEDULE_EXACT_ALARM", "MANAGE_EXTERNAL_STORAGE").forEach { op ->
-            shell("appops set $PACKAGE $op allow").requireSuccess(ErrorCode.COMMAND_FAILED, "Granting $op")
+            else -> throw ControlException(
+                ErrorCode.NO_CONNECTED_DEVICE,
+                "adb lists no device $serial.",
+                "Connect the phone, or start Posato's emulator; pass --udid <serial> or set posato.android.serial.",
+            )
         }
-        shell("pm grant $PACKAGE android.permission.POST_NOTIFICATIONS; dumpsys deviceidle whitelist +$PACKAGE")
     }
 
-    fun launch() {
-        shell("am start -W -n $PACKAGE/.MainActivity").requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato on $serial")
-    }
-
-    fun terminate() {
-        shell("am force-stop $PACKAGE")
-    }
-
-    fun reset() {
-        shell("pm clear $PACKAGE")
-    }
+    fun property(name: String): String = shell("getprop $name").stdout.trim()
 
     fun screenshot(file: Path): Path {
         Files.createDirectories(file.parent)
-        val process = ProcessBuilder(adb, "-s", serial, "exec-out", "screencap", "-p").redirectOutput(file.toFile()).start()
+        val process = ProcessBuilder(ADB, "-s", serial, "exec-out", "screencap", "-p").redirectOutput(file.toFile()).start()
         process.waitFor()
         return file
     }
 
+    /** The whole screen, system dialogs included; a dump taken mid-animation can fail once, so it is read again. */
+    fun snapshot(): SnapshotNode {
+        repeat(DUMP_ATTEMPTS - 1) {
+            val output = shell(DUMP)
+            if (output.succeeded && "<hierarchy" in output.stdout) return parseUiAutomatorDump(xmlOf(output.stdout))
+            Thread.sleep(DUMP_RETRY_MILLIS)
+        }
+        val output = shell(DUMP).requireSuccess(ErrorCode.COMMAND_FAILED, "Reading the screen of $serial")
+        return parseUiAutomatorDump(xmlOf(output.stdout))
+    }
+
+    private fun xmlOf(stdout: String): String = stdout.substring(stdout.indexOf("<?xml").coerceAtLeast(0))
+
     companion object {
         const val PACKAGE = "app.posato.android"
         const val DEFAULT_SERIAL = "emulator-5560"
+        val ADB: String = (System.getenv("ANDROID_HOME") ?: Paths.get(System.getProperty("user.home"), "Library/Android/sdk").toString()) +
+            "/platform-tools/adb"
+        private const val DUMP = "uiautomator dump /sdcard/posato-ui.xml >/dev/null && cat /sdcard/posato-ui.xml"
+        private const val DUMP_ATTEMPTS = 3
+        private const val DUMP_RETRY_MILLIS = 500L
     }
 }
 
-/** What is on the device's screen, read from UIAutomator dumps, and the touches and keys that drive it. */
-class AndroidScreen(
+/** Posato's package on the device: installed from the debug APK, granted, started, and stopped. */
+class AndroidApp(
     private val device: AndroidDevice,
+    private val apk: Path,
+    private val context: RunContext,
 ) {
-    fun nodes(): List<AndroidNode> {
-        val dump = device.shell("uiautomator dump /sdcard/posato-ui.xml >/dev/null && cat /sdcard/posato-ui.xml")
-            .requireSuccess(ErrorCode.COMMAND_FAILED, "Reading the screen of ${device.serial}").stdout
-        val xml = dump.substring(dump.indexOf("<?xml").coerceAtLeast(0))
-        if (xml.isBlank()) return emptyList()
-        val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xml.byteInputStream())
-        val elements = document.getElementsByTagName("node")
-        return (0 until elements.length).mapNotNull { index ->
-            val element = elements.item(index) as Element
-            val text = element.getAttribute("text").ifEmpty { element.getAttribute("content-desc") }
-            val bounds = BOUNDS.find(element.getAttribute("bounds"))?.groupValues?.drop(1)?.map(String::toInt) ?: return@mapNotNull null
-            text.takeIf { it.isNotBlank() }?.let {
-                AndroidNode(it, (bounds[LEFT] + bounds[RIGHT]) / 2, (bounds[TOP] + bounds[BOTTOM]) / 2, element.getAttribute("clickable") == "true")
-            }
+    fun installed(): Boolean = device.shell("pm path ${AndroidDevice.PACKAGE}").stdout.contains("package:")
+
+    fun pid(): Long? = device.shell("pidof ${AndroidDevice.PACKAGE}").stdout.trim().split(' ').firstOrNull()?.toLongOrNull()
+
+    fun install(grants: AndroidGrants) {
+        if (!Files.isRegularFile(apk)) {
+            throw ControlException(ErrorCode.APP_NOT_STAGED, "No APK at ${context.layout.relativize(apk)}.", "Run `build -t android`.")
+        }
+        val runtimeGrants = if (grants == AndroidGrants.ALL) listOf("-g") else emptyList()
+        device.adb(*(listOf("install", "-r") + runtimeGrants + apk.toString()).toTypedArray())
+            .requireSuccess(ErrorCode.INSTALL_FAILED, "Installing Posato on ${device.serial}")
+        if (grants != AndroidGrants.NONE) grantOps(SETTINGS_OPS)
+        if (grants == AndroidGrants.ALL) {
+            grantOps(DIALOG_OPS)
+            device.shell("pm grant ${AndroidDevice.PACKAGE} android.permission.POST_NOTIFICATIONS")
+            device.shell("dumpsys deviceidle whitelist +${AndroidDevice.PACKAGE}")
         }
     }
 
-    fun waitFor(
-        text: String,
-        exact: Boolean,
-        timeoutMillis: Long,
-        scrolls: Boolean = false,
-    ): List<AndroidNode> {
-        val deadline = System.currentTimeMillis() + timeoutMillis
-        var attempt = 0
-        while (true) {
-            val matches = nodes().filter { if (exact) it.text.trim() == text else it.text.contains(text, ignoreCase = true) }
-            if (matches.isNotEmpty()) return matches
-            // A control below or above the visible part of a screen is reached the way a person reaches it, by scrolling.
-            if (scrolls) {
-                if (attempt++ % SCROLL_CYCLE < SCROLLS_DOWN) {
-                    swipeUp()
-                } else {
-                    swipeDown()
-                }
-            }
-            if (System.currentTimeMillis() >= deadline) {
-                throw ControlException(ErrorCode.WAIT_TIMEOUT, "\"$text\" did not appear on ${device.serial} within ${timeoutMillis / MILLIS} s.")
-            }
-            Thread.sleep(POLL_MILLIS)
+    private fun grantOps(ops: List<String>) {
+        ops.forEach { op ->
+            device.shell("appops set ${AndroidDevice.PACKAGE} $op allow").requireSuccess(ErrorCode.COMMAND_FAILED, "Granting $op")
         }
     }
 
-    fun tap(node: AndroidNode) {
-        device.shell("input tap ${node.x} ${node.y}").requireSuccess(ErrorCode.COMMAND_FAILED, "Tapping on ${device.serial}")
+    fun uninstall() {
+        device.adb("uninstall", AndroidDevice.PACKAGE)
     }
 
-    fun type(text: String) {
-        val escaped = text.replace(" ", "%s").replace("'", "")
-        device.shell("input text '$escaped'").requireSuccess(ErrorCode.COMMAND_FAILED, "Typing on ${device.serial}")
+    fun launch() {
+        device.shell("am start -W -n ${AndroidDevice.PACKAGE}/.MainActivity")
+            .requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato on ${device.serial}")
     }
 
-    fun key(name: String) {
-        device.shell("input keyevent $name").requireSuccess(ErrorCode.COMMAND_FAILED, "Pressing $name on ${device.serial}")
+    fun terminate() {
+        device.shell("am force-stop ${AndroidDevice.PACKAGE}")
     }
 
-    fun swipeUp() {
-        device.shell("input swipe 540 1700 540 900 300")
-    }
-
-    fun swipeDown() {
-        device.shell("input swipe 540 900 540 1700 300")
+    fun clearData() {
+        device.shell("pm clear ${AndroidDevice.PACKAGE}").requireSuccess(ErrorCode.COMMAND_FAILED, "Clearing Posato's data on ${device.serial}")
     }
 
     private companion object {
-        const val POLL_MILLIS = 1_000L
-        const val MILLIS = 1_000
-        const val SCROLLS_DOWN = 4
-        const val SCROLL_CYCLE = 8
-        const val LEFT = 0
-        const val TOP = 1
-        const val RIGHT = 2
-        const val BOTTOM = 3
-        val BOUNDS = Regex("""\[(\d+),(\d+)]\[(\d+),(\d+)]""")
+        val SETTINGS_OPS = listOf("GET_USAGE_STATS", "SYSTEM_ALERT_WINDOW", "SCHEDULE_EXACT_ALARM", "MANAGE_EXTERNAL_STORAGE")
+        val DIALOG_OPS = listOf("ACTIVATE_VPN")
     }
 }
+
+/** Touches, text, and keys sent with `input`, as a person's fingers and keyboard would. */
+class AndroidInput(
+    private val device: AndroidDevice,
+) {
+    fun tap(
+        x: Double,
+        y: Double,
+    ) {
+        device.shell("input tap ${x.toInt()} ${y.toInt()}").requireSuccess(ErrorCode.COMMAND_FAILED, "Tapping on ${device.serial}")
+    }
+
+    fun type(text: String) {
+        device.shell("input text ${inputText(text)}").requireSuccess(ErrorCode.COMMAND_FAILED, "Typing on ${device.serial}")
+    }
+
+    fun key(vararg codes: String) {
+        val command = if (codes.size == 1) "input keyevent ${codes[0]}" else "input keycombination ${codes.joinToString(" ")}"
+        device.shell(command).requireSuccess(ErrorCode.COMMAND_FAILED, "Pressing ${codes.joinToString("+")} on ${device.serial}")
+    }
+
+    /** Whether the on-screen keyboard is up; it covers the lower part of the screen and takes swipes as typing. */
+    fun keyboardShown(): Boolean =
+        device.shell("dumpsys input_method | grep -c 'mInputShown=true'").stdout.trim().toIntOrNull()?.let { it > 0 } == true
+
+    fun swipe(
+        fromX: Int,
+        fromY: Int,
+        toX: Int,
+        toY: Int,
+    ) {
+        device.shell("input swipe $fromX $fromY $toX $toY $SWIPE_MILLIS").requireSuccess(ErrorCode.COMMAND_FAILED, "Swiping on ${device.serial}")
+    }
+
+    private companion object {
+        const val SWIPE_MILLIS = 300
+    }
+}
+
+/**
+ * `input text` reads `%s` as a space and passes its argument through the device shell, so the text is quoted for that
+ * shell. It types printable ASCII only and has no escape for `%`; other text would arrive changed, so it is refused.
+ */
+internal fun inputText(text: String): String {
+    if (text.any { it.code !in PRINTABLE_ASCII || it == '%' }) {
+        throw ControlException(
+            ErrorCode.UNSUPPORTED_ON_TARGET,
+            "adb input types printable ASCII without %; the text has other characters.",
+            "Use such text on the android target.",
+        )
+    }
+    return "'" + text.replace(" ", "%s").replace("'", "'\\''") + "'"
+}
+
+private val PRINTABLE_ASCII = 0x20..0x7E
