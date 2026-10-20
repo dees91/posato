@@ -152,11 +152,12 @@ class VmLifecycle(
         line: VmLine,
         keepWorkspace: Boolean = false
     ) {
-        if (tart.list().none { it.name == line.cloneName }) {
-            // A clone deleted outside posato-control would otherwise keep its lease counting against the reserve.
-            ledger.release(line.cloneName)
-            return
+        // A clone deleted outside posato-control would otherwise keep its lease counting against the reserve. The
+        // check and the release share the create lock, so a replacement clone's new lease is never released.
+        val absent = withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
+            tart.list().none { it.name == line.cloneName }.also { gone -> if (gone) ledger.release(line.cloneName) }
         }
+        if (absent) return
         if (running(line) && !keepWorkspace) {
             val linked = tart.exec(line.cloneName, LINKED_WORKSPACE_QUERY)
             refuseLinkedWorkspace(line, linkedWorkspaces(linked.stdout))
@@ -165,9 +166,12 @@ class VmLifecycle(
             tart.exec(line.cloneName, "sudo -S -p '' /bin/sh -c 'sync; /sbin/shutdown -h +0'", stdin = vmAdminPassword(context) + "\n")
             awaitStopped(line)
         }
-        tart.delete(line.cloneName)
-        vmDirectory(line).toFile().deleteRecursively()
-        ledger.release(line.cloneName)
+        // Under the create lock, so a waiting create cannot claim the clone's lease before this release ends it.
+        withCreateLock(stateRoot().resolve(CREATE_LOCK)) {
+            tart.delete(line.cloneName)
+            vmDirectory(line).toFile().deleteRecursively()
+            ledger.release(line.cloneName)
+        }
     }
 
     fun running(line: VmLine): Boolean = tart.list().any { it.name == line.cloneName && it.running }
