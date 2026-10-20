@@ -14,7 +14,7 @@ class SyncBootstrapUiStateTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
             harness.waitForKey()
-            val holder = SyncBootstrapUiState(harness.sync, this)
+            val holder = SyncBootstrapUiState(harness.sync, this, formatLastSync = Long::toString)
             repeat(2) {
                 holder.sync()
                 advanceUntilIdle()
@@ -33,7 +33,7 @@ class SyncBootstrapUiStateTest {
     fun `given a fresh holder when sync runs twice rapidly then only one workspace is created`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
-            val holder = SyncBootstrapUiState(harness.sync, this)
+            val holder = SyncBootstrapUiState(harness.sync, this, formatLastSync = Long::toString)
             holder.sync()
             holder.sync()
             advanceUntilIdle()
@@ -50,7 +50,7 @@ class SyncBootstrapUiStateTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
             harness.establish()
-            val holder = SyncBootstrapUiState(harness.sync, this)
+            val holder = SyncBootstrapUiState(harness.sync, this, formatLastSync = Long::toString)
             holder.onForeground()
             advanceUntilIdle()
             assertEquals(true, holder.syncState.value.linked)

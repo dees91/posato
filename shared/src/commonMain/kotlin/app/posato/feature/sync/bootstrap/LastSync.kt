@@ -60,20 +60,25 @@ internal class SqlLastSyncStore(
     }
 }
 
-/** Shows the stored time once per run, and keeps the time of each completed pass, in [state]. */
+/** Shows the stored time once per linked workspace, and keeps the time of each completed pass, in [state]. */
 internal class LastSyncTracker(
     private val store: LastSyncStore,
     private val clock: SyncWallClock,
     private val state: MutableStateFlow<AppleSyncState>,
 ) {
-    suspend fun show(workspace: EstablishedWorkspace) {
-        if (state.value.lastSyncedEpochMillis != null) return
-        val stored = store.read(workspace.context.workspaceId)
+    private var shownFor: WorkspaceId? = null
+
+    /** [workspaceId] is the linked workspace, or null when none is linked, which shows no time. */
+    suspend fun show(workspaceId: WorkspaceId?) {
+        if (workspaceId == shownFor) return
+        shownFor = workspaceId
+        val stored = workspaceId?.let { id -> store.read(id) }
         state.update { it.copy(lastSyncedEpochMillis = stored) }
     }
 
     suspend fun record(workspace: EstablishedWorkspace) {
         val now = clock.currentEpochMillis()
+        shownFor = workspace.context.workspaceId
         store.record(workspace.context.workspaceId, now)
         state.update { it.copy(lastSyncedEpochMillis = now) }
     }

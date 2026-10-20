@@ -140,7 +140,7 @@ class FolderWorkspaceTest {
                     checkNotNull(AccountBinding.fromBytes(ByteArray(32) { 3 })),
                 ),
             )
-            val ui = SyncBootstrapUiState(device.sync, this, device.folder)
+            val ui = SyncBootstrapUiState(device.sync, this, device.folder, Long::toString)
             ui.clearFolder()
             ui.chooseFolder(root.toString())
             delay(500)

@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 /** When this device last completed an exchange: shown in the sync section, kept on the device, never synchronized. */
@@ -57,6 +58,30 @@ class AppleSyncLastSyncTest {
             runCurrent()
 
             assertEquals(SyncStatus.RETRYABLE, second.sync.state.value.status)
+            assertEquals(5_000L, second.sync.state.value.lastSyncedEpochMillis)
+        } finally {
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a completed pass when Posato starts again and cannot reach the workspace then the earlier time is shown`() = runTest {
+        val database = createLocalPolicyTestDatabase("last-sync-offline.db")
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val first = AppleSyncTestHarness(dispatcher, wallClock = SyncWallClock { 5_000L }, testDatabase = database)
+        first.establish()
+        first.sync.onForeground()
+        advanceUntilIdle()
+        first.closeKeepingDatabase()
+
+        // No key or zone this time, so the pass stops before it reaches the workspace.
+        val second = AppleSyncTestHarness(dispatcher, wallClock = SyncWallClock { 9_000L }, testDatabase = database)
+        try {
+            second.sync.onForeground()
+            runCurrent()
+
+            assertNotEquals(SyncStatus.COMPLETED, second.sync.state.value.status)
+            assertEquals(true, second.sync.state.value.linked)
             assertEquals(5_000L, second.sync.state.value.lastSyncedEpochMillis)
         } finally {
             second.close()
