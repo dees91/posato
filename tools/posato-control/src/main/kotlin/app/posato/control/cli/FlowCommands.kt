@@ -173,8 +173,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         if (delta == 0) return emptyList()
         if (target.isApple) return listOf(FlowSteps.adjustWheels(listOf("0", "${DEFAULT_MINUTES + delta}")))
         val arrow = Query(text = if (delta > 0) "Increase Minutes" else "Decrease Minutes")
-        return listOf(FlowSteps.reveal(arrow)) +
-            List(kotlin.math.abs(delta)) { listOf(FlowSteps.tap(arrow), FlowSteps.sleep(TAP_GAP_SECONDS)) }.flatten()
+        return listOf(FlowSteps.reveal(arrow), FlowSteps.tap(arrow).copy(repeat = kotlin.math.abs(delta), seconds = TAP_GAP_SECONDS))
     }
 
     private companion object {

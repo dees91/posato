@@ -92,12 +92,13 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
                 listOf(
                     FlowSteps.typeInto(name, submit = false),
                     FlowSteps.button(ADD),
-                    FlowSteps.waitFor(Query(textContains = WEBSITES_SAVED)),
+                    // The receipt reads "1 added · 0 already on your list" once the website is saved.
+                    FlowSteps.waitFor(Query(textContains = ADDED_RECEIPT)),
                 ),
             )
         }
         // With a website saved the step offers Continue, without one Not now.
-        val next = if (FlowSteps.labels(backend).any { WEBSITES_SAVED in it || it == ONE_WEBSITE }) CONTINUE else NOT_NOW
+        val next = if (FlowSteps.labels(backend).any { SAVED_COUNT.matches(it) }) CONTINUE else NOT_NOW
         FlowSteps.run(backend, listOf(FlowSteps.reveal(button(next)), FlowSteps.tap(button(next)), FlowSteps.waitFor(stepLabel(STEP_SUMMARY))))
     }
 
@@ -110,7 +111,8 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
             listOf(
                 FlowSteps.reveal(button(GO_TO_SESSION)),
                 FlowSteps.tap(button(GO_TO_SESSION)),
-                FlowSteps.waitFor(Query(text = "Start a session", role = FlowSteps.ROLE_BUTTON)),
+                // Session offers Start a session with saved items and Choose paused items without; both are idle.
+                FlowSteps.waitFor(Query(text = "NO SESSION ACTIVE")),
                 FlowSteps.screenshot("onboarded"),
             ),
         )
@@ -162,8 +164,8 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
         const val GO_TO_SESSION = "Go to Session"
         const val ACCESS_TITLE = "Make room on this device."
         const val WEBSITE_TITLE = "What pulls you away?"
-        const val ONE_WEBSITE = "1 website saved"
-        const val WEBSITES_SAVED = "websites saved"
+        const val ADDED_RECEIPT = " added · "
+        val SAVED_COUNT = Regex("""^\d+ websites? saved$""")
         const val STEP_WELCOME = 1
         const val STEP_PRIVACY = 2
         const val STEP_ACCESS = 3

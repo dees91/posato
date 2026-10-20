@@ -124,7 +124,7 @@ class ScenarioRunner(
         when (step.action) {
             Actions.WAIT_FOR -> waitFor(step, timeoutMs)
             Actions.PRECONDITION -> waitFor(step, timeoutMs)
-            Actions.TAP -> actions.tap(locate(step))
+            Actions.TAP -> tapTimes(actions, locate(step), step)
             Actions.TYPE -> actions.type(locate(step), requireField(step.text, "type needs text"), step.clear, step.submit)
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
             Actions.ASSERT -> assertState(step)
@@ -287,3 +287,15 @@ private fun requireField(
     value: String?,
     message: String
 ): String = value ?: throw invalid(message)
+
+/** A repeated tap (a drawn wheel's arrow) locates once; the element stays where it is between taps. */
+private fun tapTimes(
+    actions: NativeActions,
+    node: SnapshotNode,
+    step: Step,
+) {
+    repeat(step.repeat.coerceAtLeast(1)) { index ->
+        if (index > 0) Thread.sleep(((step.seconds ?: 0.0) * MILLIS_PER_SECOND).toLong())
+        actions.tap(node)
+    }
+}

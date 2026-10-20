@@ -98,6 +98,12 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   swipe as gesture typing; scrolling (`scrollTo`, the flows' reveal) puts it
   away with Back first. UIAutomator lists only what is on screen, so reveal a
   control before tapping it.
+- Android back: the system Back key or gesture returns one screen; at the top
+  of Pause sets or Schedules it returns to Session, at the top of Session it
+  leaves Posato. `press -t android --key back` drives it; a predictive
+  gesture is an edge swipe on an emulator with gesture navigation (`input
+  motionevent DOWN 2 1200`, a few `MOVE`s, `UP`), with a screenshot before
+  `UP` showing the previous screen under the current one.
 - Linux reads Compose's tree through `java-atk-wrapper`; a program started in
   the guest outside `observe` must use the bus in `/tmp/posato-dbus`, or it
   starts its own AT-SPI bus and Posato's tree disappears until `launch -t

@@ -256,8 +256,7 @@ internal enum class WheelKind(
     ): List<Step> {
         if (delta == 0) return emptyList()
         val arrow = Query(text = (if (delta > 0) "Increase" else "Decrease") + " $label $unit")
-        return listOf(FlowSteps.reveal(arrow)) +
-            List(kotlin.math.abs(delta)) { listOf(FlowSteps.tap(arrow), FlowSteps.sleep(TAP_GAP_SECONDS)) }.flatten()
+        return listOf(FlowSteps.reveal(arrow), FlowSteps.tap(arrow).copy(repeat = kotlin.math.abs(delta), seconds = TAP_GAP_SECONDS))
     }
 
     private companion object {

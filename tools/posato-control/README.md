@@ -341,13 +341,14 @@ Rejected text stays editable and does not require a relaunch.
 
 Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 `precondition` (a `waitFor` that fails with `PRECONDITION_NOT_MET` and its `text` as the remedy, for the
-state a scenario starts from, such as no active session or no set an earlier run left behind), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
+state a scenario starts from, such as no active session or no set an earlier run left behind), `tap` (`repeat`
+taps the element, located once, that many times with `seconds` between taps; not on iOS), `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
 (`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
-`relaunch`. iOS only: `launchApp` (`bundleId`, brought forward without being
+`relaunch`. `openURL` (`url`) opens a link on iOS and Android, as a message or a camera scan does. iOS only: `launchApp` (`bundleId`, brought forward without being
 terminated), `terminateApp` (`bundleId`, ended if it runs, for example Safari
 before `openURL`, because the first page an already running Safari opens after
-a website pause ends can hang), `openURL` (`url`), and `pressKeys` (`secret`: the name
+a website pause ends can hang), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
 removed from the xcodebuild log), `swipeBack`, the system back gesture:
