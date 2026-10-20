@@ -2877,3 +2877,10 @@ first removal attempt that does not finish, not to a paused keychain.
   cannot push the Mac into swap and skew measurements. A claim beyond the
   budget, or during a quiet measurement, stops the clone with the new
   `HOST_MEMORY_COMMITTED`, which no flag overrides.
+## [2026-10-20] idea | Ideas 40 to 47 and roadmap revision 24
+
+- `user-confirmed`: the maintainer's ideas 40 to 47 are filed. Four small
+  ones join release 1.5 before its packaging (`TARGETS-011`, `MACOS-028`,
+  `SYNC-023`, `TARGETS-012`); four that change enforcement, schedules, the
+  synchronized model, or the brand rule are backlog candidates for 1.6
+  (`MACOS-029`, `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001`).
