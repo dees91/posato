@@ -1,9 +1,13 @@
 package app.posato.feature.targets.data
 
 import app.posato.feature.onboarding.ApplicationAccessResult
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -95,10 +99,17 @@ internal class IosLocalApplicationMappings(
 ) : LocalApplicationMappings {
     private val operationMutex = Mutex()
 
-    override val invalidations: Flow<Unit> = callbackFlow {
-        val observation = provider.observeInvalidations { trySend(Unit) }
-        awaitClose(observation::cancel)
-    }
+    // A signal that arrives while one waits is folded into it: a reader reloads after the latest change either way.
+    private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Screen Time authorization changes, and each successful choice, removal, or clearing made here. */
+    override val invalidations: Flow<Unit> = merge(
+        callbackFlow {
+            val observation = provider.observeInvalidations { trySend(Unit) }
+            awaitClose(observation::cancel)
+        },
+        changes.asSharedFlow(),
+    )
 
     override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return operationMutex.withLock {
@@ -119,7 +130,7 @@ internal class IosLocalApplicationMappings(
                 }
                 continuation.invokeOnCancellation { operation.cancel() }
             }
-        }
+        }.also { result -> if (result is LocalApplicationSelectionResult.Success) changes.tryEmit(Unit) }
     }
 
     suspend fun requestAuthorization(): ApplicationAccessResult {
@@ -145,7 +156,7 @@ internal class IosLocalApplicationMappings(
                 provider.remove(mappingId.canonicalValue, set.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
-        }
+        }.announcedWhenSucceeded()
     }
 
     override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
@@ -154,7 +165,7 @@ internal class IosLocalApplicationMappings(
                 provider.clear(set.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
-        }
+        }.announcedWhenSucceeded()
     }
 
     override suspend fun copyChoices(
@@ -166,7 +177,7 @@ internal class IosLocalApplicationMappings(
                 provider.duplicateChoices(from.hex, to.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
-        }
+        }.announcedWhenSucceeded()
     }
 
     override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
@@ -175,7 +186,12 @@ internal class IosLocalApplicationMappings(
                 provider.retainOnly(sets.map(ApplicationChoiceSet::hex)) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
-        }
+        }.announcedWhenSucceeded()
+    }
+
+    private fun LocalApplicationRemovalResult.announcedWhenSucceeded(): LocalApplicationRemovalResult {
+        if (this is LocalApplicationRemovalResult.Success) changes.tryEmit(Unit)
+        return this
     }
 }
 
