@@ -24,6 +24,10 @@ import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -39,6 +43,12 @@ internal class DesktopLocalApplicationMappings(
     private val operationMutex = Mutex()
     private var driver: JdbcSqliteDriver? = null
     private var database: MacOsApplicationMappingsDatabase? = null
+
+    // A signal that arrives while one waits is folded into it: a reader reloads after the latest change either way.
+    private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Each successful choice, removal, or clearing, so that every view of a set's apps reloads at once. */
+    override val invalidations: Flow<Unit> = changes.asSharedFlow()
 
     override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return withContext(ioDispatcher) {
@@ -84,6 +94,7 @@ internal class DesktopLocalApplicationMappings(
                         currentDatabase.applicationMappingsQueries.removeById(set.hex.hexToByteArray(), mappingId.canonicalValue.hexToByteArray())
                         readSnapshot(currentDatabase, set)
                     }
+                    changes.tryEmit(Unit)
                     LocalApplicationRemovalResult.Success(snapshot)
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
@@ -100,6 +111,7 @@ internal class DesktopLocalApplicationMappings(
                 try {
                     val currentDatabase = openDatabase()
                     currentDatabase.applicationMappingsQueries.removeSet(set.hex.hexToByteArray())
+                    changes.tryEmit(Unit)
                     LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
@@ -121,6 +133,7 @@ internal class DesktopLocalApplicationMappings(
                             .forEach { setId -> currentDatabase.applicationMappingsQueries.removeSet(setId) }
                     }
                     files.secureDatabaseArtifacts()
+                    changes.tryEmit(Unit)
                     LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
@@ -191,6 +204,7 @@ internal class DesktopLocalApplicationMappings(
                 }
                 readSnapshot(currentDatabase, set)
             }
+            changes.tryEmit(Unit)
             LocalApplicationSelectionResult.Success(snapshot)
         } catch (cancellationException: CancellationException) {
             throw cancellationException
