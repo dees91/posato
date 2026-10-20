@@ -171,9 +171,9 @@ Android application, the Linux desktop target, and the Linux helper. ADR
 
 ### Limits to publish
 
-This text is accepted with this ADR. `DOCS-006` moves it to the
-[limits page](../product/limits-and-platforms.md), and `RELEASE-007`
-publishes it with release 1.5.
+This text is accepted with this ADR. `DOCS-006` moved it to the
+[limits page](../product/limits-and-platforms.md#limits), which now owns it;
+`RELEASE-007` publishes it with release 1.5.
 
 - On Linux, website blocking maps each paused website and its `www` name to
   `0.0.0.0` and `::` in `/etc/hosts`, so connections to it fail. There is no pause

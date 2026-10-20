@@ -2,8 +2,9 @@
 
 **A little space. For what matters.**
 
-Posato blocks the websites and apps you choose for a timed pause on your Mac
-or iPhone, now or on a schedule, within the [limits](#limits) below.
+Posato blocks the websites and apps you choose for a timed pause on your Mac,
+iPhone, Linux computer, or Android phone, now or on a schedule, within the
+[limits](#limits) below.
 
 <p align="center">
   <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, start a pause on a Mac, and optionally sync pause sets, sessions, and schedules with iPhone, encrypted on your device and stored in your private iCloud database">
@@ -33,11 +34,25 @@ Open source under the [Apache License 2.0](LICENSE).
   Posato 1.1 and later can check for updates after you agree; to move from 1.0,
   quit Posato and replace it with the new version.
 - **iPhone:** install Posato from the [App Store](https://apps.apple.com/app/posato/id6812237585).
+- **Linux (new in 1.5):** download the package for your computer from
+  [GitHub Releases](https://github.com/dees91/posato/releases/latest):
+  `posato_1.5.0_arm64.deb` for arm64 or `posato_1.5.0_amd64.deb` for x86-64.
+  Install it with `sudo apt install ./posato_1.5.0_<arch>.deb`, then open
+  Posato and follow the first run. It asks for your password once to install
+  the pausing service.
+- **Android (new in 1.5):** on the phone, download `Posato-1.5.0.apk` from
+  [GitHub Releases](https://github.com/dees91/posato/releases/latest) and
+  open it. When Android asks, allow installing apps from this source, then
+  install, open Posato, and follow the first run, which asks for the
+  permissions Posato needs to pause.
 
-Posato targets **macOS 13 or later on Apple silicon and Intel Macs** and
-**iOS 18 or later**; the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
-records what was checked on each of them. Android, Linux, and Windows are
-[planned for later releases](docs/product/limits-and-platforms.md#planned-platforms).
+To update on Linux or Android, install the newer package the same way.
+
+Posato targets **macOS 13 or later on Apple silicon and Intel Macs**,
+**iOS 18 or later**, **Ubuntu 24.04 or later**, and **Android 13 or later**;
+the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
+records what was checked on each of them. Windows is
+[planned for a later release](docs/product/limits-and-platforms.md#planned-platforms).
 
 To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).
 Unsigned builds let you explore the apps; blocking and sync require Apple
@@ -97,6 +112,20 @@ session started on your iPhone blocks on the Mac only after you resume it there.
 Update Posato on every device: once one device runs Posato 1.3, devices on an
 earlier version stop syncing until they update.
 
+### Sync through a folder
+
+To link Linux, Android, or any mix of devices, keep the workspace in a folder
+that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service keeps in
+sync. Posato writes only encrypted files there. The Mac and iPhone can use a
+folder instead of iCloud; a workspace uses one or the other. Create the
+workspace on one device, then choose **Add a device** there: scan the QR code
+with the other device's camera, open the shared link, or type the pairing
+code. The code works for 10 minutes. A device that joins during a pause starts
+pausing right away. You cannot remove a single device; to stop sharing with
+one, remove the workspace and create a new one in another folder.
+
+<!-- TODO(DOCS-006): Linux and Android screenshot, side by side, for example .github/assets/step-linux-android.png, captured by the main agent. -->
+
 ## Limits
 
 Posato adds deliberate friction; it is not a lock you cannot open.
@@ -110,18 +139,23 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - **iPhone:** restrictions can linger after a session ends. For sessions under
   15 minutes, they clear only when Posato is open at the end or the next time
   you open it.
+- **Linux and Android:** websites are blocked by name, with no pause page; a
+  browser with its own DNS over HTTPS bypasses it. On Linux, paused apps are
+  ended. On Android, another VPN cannot run during a pause, and a paused app
+  is covered by a block screen.
 - **Sync:** delivery is best effort. If every copy of your workspace key is
   lost, synchronized data cannot be recovered.
 
 Read the [full blocking and sync limits](docs/product/limits-and-platforms.md#limits)
 for browser coverage, VPN and Private Relay behavior, resuming after sleep,
-and data recovery boundaries.
+folder sync and pairing codes, and data recovery boundaries.
 
 ## Privacy
 
 Posato does not collect your data. Your pause sets, websites, app choices,
 sessions, and schedules stay on your devices; with iCloud sync on, changes are encrypted on your device
-before they are stored in your private iCloud database. On Mac, update checks go
+before they are stored in your private iCloud database, and with folder sync,
+Posato writes only encrypted files to the folder you choose. On Mac, update checks go
 to GitHub Releases only after you agree. See the [privacy policy](PRIVACY.md).
 
 ## Support and security

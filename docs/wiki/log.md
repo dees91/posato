@@ -3043,3 +3043,10 @@ first removal attempt that does not finish, not to a paused keychain.
   while another connection writes, so a multi-row change belongs in one
   transaction. Mac file panels take no synthetic keys but are in Posato's
   accessibility tree; the GTK chooser leaves keyboard focus nowhere.
+## [2026-10-21] docs | DOCS-006: public packaging for 1.5
+
+- `user-confirmed` text moved: ADR 0010's accepted Linux, Android, and
+  folder sync limits now live on the limits page, which lists Linux and
+  Android as supported and keeps only Windows planned. The README, the site,
+  the App Store text, the update feed notes, and the release notes draft
+  describe 1.5; the App Store text names no other mobile platform.
