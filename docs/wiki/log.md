@@ -2885,6 +2885,14 @@ first removal attempt that does not finish, not to a paused keychain.
   synchronized model, or the brand rule are backlog candidates for 1.6
   (`MACOS-029`, `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001`).
 
+## [2026-10-20] fix | TARGETS-010: app choices refresh pause set summaries at once
+
+- `observed`: the Mac and iOS application stores now announce each
+  successful change, so the Pause sets list, schedule set choices, and a
+  running pause pick up chosen or removed apps at once (idea 37). In a Mac
+  VM the list read "Apps on this Mac: 1" right after the choice, and an app
+  chosen during a pause was blocked within 5 s.
+
 ## [2026-10-20] fix | MACOS-028: the Mac window never shrinks to its toolbar
 
 - `observed`: the window had no minimum height, so it could be 53 points
