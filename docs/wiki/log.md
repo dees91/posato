@@ -2867,3 +2867,11 @@ first removal attempt that does not finish, not to a paused keychain.
 - `open`: a removal by another device reaching the iPhone's view of an
   iCloud Drive folder (six minutes without it once, about two minutes
   another time), other folder services, and IPv6 on a network that has it.
+
+## [2026-10-20] idea | Ideas 40 to 47 and roadmap revision 24
+
+- `user-confirmed`: the maintainer's ideas 40 to 47 are filed. Four small
+  ones join release 1.5 before its packaging (`TARGETS-011`, `MACOS-028`,
+  `SYNC-023`, `TARGETS-012`); four that change enforcement, schedules, the
+  synchronized model, or the brand rule are backlog candidates for 1.6
+  (`MACOS-029`, `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001`).
