@@ -80,8 +80,8 @@ interface IosApplicationMappingsProvider {
         completion: (IosApplicationMappingsResponse) -> Unit,
     )
 
-    /** Replaces [to]'s stored choices with [from]'s and answers with [to]'s. */
-    fun copy(
+    /** Replaces [to]'s stored choices with [from]'s and answers with [to]'s; not named `copy`, a reserved Objective-C family. */
+    fun duplicateChoices(
         from: String,
         to: String,
         completion: (IosApplicationMappingsResponse) -> Unit,
@@ -163,7 +163,7 @@ internal class IosLocalApplicationMappings(
     ): LocalApplicationRemovalResult {
         return operationMutex.withLock {
             val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
-                provider.copy(from.hex, to.hex) { result -> continuation.resume(result) }
+                provider.duplicateChoices(from.hex, to.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
         }

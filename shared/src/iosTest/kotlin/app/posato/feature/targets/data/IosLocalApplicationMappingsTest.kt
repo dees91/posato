@@ -269,7 +269,7 @@ private class FakeIosApplicationMappingsProvider(
 
     val copies = mutableListOf<Pair<String, String>>()
 
-    override fun copy(
+    override fun duplicateChoices(
         from: String,
         to: String,
         completion: (IosApplicationMappingsResponse) -> Unit,

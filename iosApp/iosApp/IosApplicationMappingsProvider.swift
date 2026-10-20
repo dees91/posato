@@ -426,7 +426,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     }
 
     /// Gives `to` the same apps as `from` on this device, as a duplicated pause set does.
-    func copy(from: String, to: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) {
+    func duplicateChoices(from: String, to: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) {
         performOnMain {
             do {
                 let copied = try self.validatedMappings(try self.store(from).load())
