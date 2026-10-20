@@ -49,7 +49,7 @@ outlives the command that started it, and never start a second one.
   --duration-seconds 5400` for a Mac guest and the emulator, or `--linux`
   for the Linux clone. Proof: its final envelope reports `copies`.
 - **Mac creates:** `$PC flow folder link -t desktop --vm primary --path
-  '/Users/admin/PosatoSync'`. Proof: `outcome` is `linked`.
+  '/Users/posato/PosatoSync'`. Proof: `outcome` is `linked`.
 - **Mac offers and another Mac joins:** `flow folder offer` returns `code`;
   on the peer `flow folder link --path ...` returns `waitingForCode`, then
   `flow folder join --code <code>` returns `linked`; `flow folder done` on the

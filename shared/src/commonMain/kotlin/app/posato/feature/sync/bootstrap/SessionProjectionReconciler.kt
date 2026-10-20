@@ -6,10 +6,13 @@ import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.PauseSetStatus
 import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncProjection
 import app.posato.feature.sync.domain.SynchronizedSessionStart
+import app.posato.feature.targets.domain.ExactDomainPolicyLimits
+import kotlinx.collections.immutable.toPersistentList
 
 internal class SessionProjectionReconciler(
     private val sessions: LocalSessionSyncStore,
@@ -24,6 +27,7 @@ internal class SessionProjectionReconciler(
         nowEpochMillis: Long,
         captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
+        val capture = capturingWorkspaceWebsites(projection, captureFrozen)
         // Pending local commands are not overwritten before authoring: an intent
         // recorded mid-pass converges on the next pass instead of being transiently
         // reverted or revived here.
@@ -42,11 +46,11 @@ internal class SessionProjectionReconciler(
         }
         return when (status) {
             is LocalSessionStatus.Active -> {
-                applyActive(bankExpiry, projection, candidate, retained, status, nowEpochMillis, captureFrozen)
+                applyActive(bankExpiry, projection, candidate, retained, status, nowEpochMillis, capture)
             }
 
             is LocalSessionStatus.Ended -> {
-                adoptSuperseding(bankExpiry, projection, candidate, pendingIds, retained, status, nowEpochMillis, captureFrozen)
+                adoptSuperseding(bankExpiry, projection, candidate, pendingIds, retained, status, nowEpochMillis, capture)
             }
 
             is LocalSessionStatus.Inactive -> {
@@ -61,9 +65,28 @@ internal class SessionProjectionReconciler(
                     // being transiently adopted here.
                     SessionReconcileResult.Completed(status)
                 } else {
-                    adoptCandidate(inactiveCurrent.start, retained, nowEpochMillis, captureFrozen)
+                    adoptCandidate(inactiveCurrent.start, retained, nowEpochMillis, capture)
                 }
             }
+        }
+    }
+
+    /**
+     * The receiving device's own capture of a set, with the set's websites as the converged projection has them
+     * when the set is live there. A device that links during a peer's pause receives the start and the set in one
+     * pass, and the session phase runs before the policy phase writes the set locally. A set over this device's
+     * limit, which the policy phase refuses too, keeps the local capture, since a stored frozen set must meet it.
+     */
+    private fun capturingWorkspaceWebsites(
+        projection: SyncProjection,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
+    ): suspend (PauseSetId) -> FrozenStartSet = { setId ->
+        val local = captureFrozen(setId)
+        val websites = projection.pauseSetDomains(setId)
+        if (projection.pauseSetStatus(setId) == PauseSetStatus.LIVE && websites.size <= ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
+            local.copy(domains = websites.map { domain -> domain.canonicalValue }.toPersistentList())
+        } else {
+            local
         }
     }
 
@@ -114,8 +137,9 @@ internal class SessionProjectionReconciler(
             // converges instead of reviving the expired session.
             return SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
         }
-        // The receiving device captures its own local frozen summary once, at
-        // adoption; repeated delivery keeps the stored set instead.
+        // The receiving device captures its frozen summary once, at adoption,
+        // with the set's websites from the workspace (see apply); repeated
+        // delivery keeps the stored set instead.
         return when (
             val adopted = sessions.adopt(
                 start.sessionId,

@@ -2868,6 +2868,13 @@ first removal attempt that does not finish, not to a paused keychain.
   iCloud Drive folder (six minutes without it once, about two minutes
   another time), other folder services, and IPv6 on a network that has it.
 
+## [2026-10-20] fix | SESSION-010: a device that joins during a pause enforces it
+
+- `observed`: adoption now takes the set's websites from the converged
+  projection, so a device that links during another device's pause blocks
+  them in the same pass. A Linux clone wrote the block 6 s after joining an
+  Android pause through a folder, and a Mac VM showed the set's website in
+  the adopted pause (idea 39).
 ## [2026-10-20] tooling | VM clones claim their memory from machine-ledger
 
 - `vm create` and `linux create` pass the guest's memory, read from the
