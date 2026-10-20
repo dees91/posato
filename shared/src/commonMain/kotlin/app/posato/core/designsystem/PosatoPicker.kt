@@ -78,15 +78,16 @@ internal fun DrawnPicker(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val openMenu = rememberMenuOpening { expanded = true }
     Box(modifier) {
         // The button reads as the setting and its value, "Pause set, My set", rather than the value alone.
         PosatoTextButton(
-            onClick = { expanded = true },
+            onClick = openMenu,
             modifier = Modifier.clearAndSetSemantics {
                 contentDescription = "$label, $value"
                 role = Role.Button
                 onClick {
-                    expanded = true
+                    openMenu()
                     true
                 }
             },

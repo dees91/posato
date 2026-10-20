@@ -70,6 +70,9 @@ internal interface BootstrapStore {
 
     suspend fun persistCandidate(candidate: PersistedCandidate): BootstrapStoreResult<Unit>
 
+    /** Drops a workspace candidate that never became established; an established workspace is left alone. */
+    suspend fun discardCandidate(): BootstrapStoreResult<Unit>
+
     suspend fun commitEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit>
 }
 
@@ -136,6 +139,10 @@ internal class SqlBootstrapStore(
                 binding = candidate.binding.copyBytes(),
             )
         }
+    }
+
+    override suspend fun discardCandidate(): BootstrapStoreResult<Unit> {
+        return databaseCall { database.syncBootstrapQueries.discardBootstrapCandidate() }
     }
 
     override suspend fun commitEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {

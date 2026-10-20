@@ -6,10 +6,13 @@ enum class Target(
     DESKTOP("desktop"),
     SIMULATOR("simulator"),
     DEVICE("device"),
+    ANDROID("android"),
+    LINUX("linux"),
     ;
 
+    /** The iOS targets, driven through Xcode. */
     val isApple: Boolean
-        get() = this != DESKTOP
+        get() = this == SIMULATOR || this == DEVICE
 
     companion object {
         val choices: Map<String, Target> = mapOf(
@@ -17,6 +20,8 @@ enum class Target(
             "simulator" to SIMULATOR,
             "sim" to SIMULATOR,
             "device" to DEVICE,
+            "android" to ANDROID,
+            "linux" to LINUX,
         )
     }
 }

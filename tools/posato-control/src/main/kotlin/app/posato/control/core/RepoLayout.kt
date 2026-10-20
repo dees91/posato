@@ -16,6 +16,9 @@ class RepoLayout(
     val stateFile: Path = verificationDirectory.resolve("state.json")
     val nativeDirectory: Path = verificationDirectory.resolve("native")
     val driverDirectory: Path = verificationDirectory.resolve("driver")
+
+    /** The hub of `relay`: the devices' local Posato folders converge on it, standing in for a folder synchronization service. */
+    val syncFolder: Path = verificationDirectory.resolve("sync-folder")
     val toolDirectory: Path = root.resolve("tools").resolve("posato-control")
     val accessibilityBridgeSource: Path = toolDirectory.resolve("native").resolve("macos").resolve("PosatoAxBridge.swift")
     val accessibilityBridgeBinary: Path = nativeDirectory.resolve("posato-ax-bridge")

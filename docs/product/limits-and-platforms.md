@@ -127,8 +127,8 @@ device that was offline during a session.
 
 | Platform | Status |
 | --- | --- |
-| Android | Planned for a later release |
-| Linux desktop | Planned for a later release |
+| Android | Planned for release 1.5: Android 13 or later |
+| Linux desktop | Planned for release 1.5: Ubuntu 24.04 or later, `.deb` |
 | Windows desktop | Planned for a later release |
 
 No dates are committed. Intel Macs on macOS 13 or later are supported from

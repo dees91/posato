@@ -94,7 +94,7 @@ internal fun PosatoDeviceLabel(
 @Composable
 private fun PosatoNavigationPreview() {
     PosatoComponentPreview {
-        PosatoSidebar(footerContent = { PosatoDeviceLabel("On this Mac") }) {
+        PosatoSidebar(footerContent = { PosatoDeviceLabel("On this ${platformDevice().noun}") }) {
             PosatoNavigationItem(selected = true, onClick = {}, leadingContent = { PosatoIcon(PosatoIcons.Items, null) }) {
                 Text("Components")
             }

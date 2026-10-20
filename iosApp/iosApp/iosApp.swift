@@ -8,6 +8,8 @@ struct PosatoApp: App {
         WindowGroup {
             ComposeRoot()
                 .ignoresSafeArea(.all)
+                // A scanned or shared pairing link fills the code in the folder sync section (ADR 0010).
+                .onOpenURL { url in _ = PosatoLinksKt.openPosatoLink(url: url.absoluteString) }
         }
     }
 }
@@ -25,6 +27,7 @@ private struct ComposeRoot: UIViewControllerRepresentable {
             accountSource: accountSource,
             backend: DeferredCloudKitMailboxBackend { CloudKitMailboxLiveBackend() }
         )
+        let folderPicker = FilesFolderPicker()
         let controller = MainViewControllerKt.mainViewController(
             cryptoProvider: CryptoKitSyncProvider(),
             applicationMappingsProvider: applicationMappingsProvider,
@@ -39,9 +42,11 @@ private struct ComposeRoot: UIViewControllerRepresentable {
             scheduleEnforcementProvider: IosManagedSettingsEnforcer(storeFactory: {
                 ManagedSettingsStore(named: ScheduleMonitor.storeName)
             }),
-            scheduleMonitorProvider: IosScheduleMonitorPublisher()
+            scheduleMonitorProvider: IosScheduleMonitorPublisher(),
+            folderPicker: folderPicker
         )
         applicationMappingsProvider.presenter = controller
+        folderPicker.presenter = controller
         return controller
     }
 

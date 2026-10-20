@@ -5,6 +5,7 @@ import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.enforcement.RunningPartItems
 import app.posato.feature.enforcement.devicePauseLimits
+import app.posato.feature.enforcement.deviceRetainsPausedItems
 import app.posato.feature.enforcement.planPause
 import app.posato.feature.session.data.PART_SESSION
 import app.posato.feature.session.data.PartRetentionStore
@@ -51,7 +52,7 @@ internal class SessionComposition(
     ) : this(
         // On iPhone the manual store itself is what the session holds; a record of planned items there would
         // also keep items the monitor's budget never paused.
-        retention.takeIf { devicePauseLimits === PauseLimits.MAC },
+        retention.takeIf { deviceRetainsPausedItems },
         devicePauseLimits,
         { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
         applicationMappings::keptApplications,

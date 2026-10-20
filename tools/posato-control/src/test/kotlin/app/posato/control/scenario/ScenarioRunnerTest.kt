@@ -40,7 +40,9 @@ class ScenarioRunnerTest {
             scrollRequest = query to timeoutMs
         }
 
-        override fun snapshot(maxDepth: Int?): SnapshotNode = tree
+        var snapshots = 0
+
+        override fun snapshot(maxDepth: Int?): SnapshotNode = tree.also { snapshots++ }
 
         override fun tap(node: SnapshotNode) {
             events.add("tap ${node.path}")
@@ -214,5 +216,21 @@ class ScenarioRunnerTest {
 
         assertTrue(result.ok)
         assertEquals(1, actions.events.count { it.startsWith("snapshot") })
+    }
+
+    /**
+     * Turning a drawn wheel takes one tap per step. On Android each locate reads the screen through UIAutomator for
+     * seconds, so a repeated tap locates once; a miscount would set another time than the flow asked for.
+     */
+    @Test
+    fun `a repeated tap locates its element once and taps it the asked number of times`() {
+        val actions = RecordingActions(tree)
+        val step = Step(action = Actions.TAP, query = Query(text = "Add website"), repeat = 3, seconds = 0.0)
+
+        val result = ScenarioRunner(actions) { it.toString() }.run(Scenario(steps = listOf(step)))
+
+        assertTrue(result.ok)
+        assertEquals(List(3) { "tap 0/0/0/3/2" }, actions.events)
+        assertEquals(1, actions.snapshots)
     }
 }

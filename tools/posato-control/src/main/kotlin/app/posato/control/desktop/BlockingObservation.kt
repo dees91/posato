@@ -18,7 +18,19 @@ data class WebsiteObservation(
     val proxied: Boolean,
     val status: Int,
     val outcome: String,
+    /** Android and Linux: the address a name lookup returned, which a pause sets to an unroutable one. */
+    val address: String? = null,
 )
+
+/** Meets a website and an application as a person would on one target; it reads nothing from Posato itself. */
+interface Observer {
+    fun website(url: String): WebsiteObservation
+
+    fun application(
+        name: String,
+        seconds: Int,
+    ): ApplicationObservation
+}
 
 @Serializable
 data class ApplicationObservation(
@@ -83,8 +95,8 @@ internal fun splitCurlOutput(stdout: String): Pair<String, Int> {
  */
 class BlockingObserver(
     private val context: RunContext
-) {
-    fun website(url: String): WebsiteObservation {
+) : Observer {
+    override fun website(url: String): WebsiteObservation {
         val proxy = parseHttpProxy(context.subprocess.run(listOf("/usr/sbin/scutil", "--proxy")).stdout)
         val output = context.subprocess.run(curlCommand(url, proxy), timeout = Duration.ofSeconds(CURL_SECONDS + GRACE_SECONDS))
         val (body, status) = splitCurlOutput(output.stdout)
@@ -96,7 +108,7 @@ class BlockingObserver(
      * name is resolved to its bundle identifier first, because a display name and a process name can differ
      * (Firefox runs as `firefox`), and a name lookup would then report a running application as ended.
      */
-    fun application(
+    override fun application(
         name: String,
         seconds: Int
     ): ApplicationObservation {

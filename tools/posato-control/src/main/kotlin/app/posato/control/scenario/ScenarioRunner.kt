@@ -23,8 +23,9 @@ interface NativeActions {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This native driver does not implement scrolling.")
     }
 
-    fun orient(orientation: String) {
-        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "orient rotates an iOS device; this target has no orientation.")
+    /** Opens a URL through the system, as a link from a message or a camera scan arrives. */
+    fun openUrl(url: String) {
+        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This target opens no URLs in a scenario; on Linux Posato takes a pasted link.")
     }
 
     fun snapshot(maxDepth: Int?): SnapshotNode
@@ -123,12 +124,12 @@ class ScenarioRunner(
         when (step.action) {
             Actions.WAIT_FOR -> waitFor(step, timeoutMs)
             Actions.PRECONDITION -> waitFor(step, timeoutMs)
-            Actions.TAP -> actions.tap(locate(step))
+            Actions.TAP -> tapTimes(actions, locate(step), step)
             Actions.TYPE -> actions.type(locate(step), requireField(step.text, "type needs text"), step.clear, step.submit)
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
             Actions.ASSERT -> assertState(step)
             Actions.SCROLL_TO -> actions.scrollTo(step.query ?: throw invalid("scrollTo needs a query"), timeoutMs)
-            Actions.ORIENT -> actions.orient(requireField(step.orientation, "orient needs an orientation"))
+            Actions.OPEN_URL -> actions.openUrl(requireField(step.url, "openURL needs a url"))
             else -> throw invalid("Unknown action '${step.action}'.")
         }
     }
@@ -269,9 +270,12 @@ private fun missed(
 
 private fun invalid(message: String): ControlException = ControlException(ErrorCode.SCENARIO_INVALID, message)
 
-/** SpringBoard queries, app switching, URLs, and typed secrets exist only in the XCUITest driver. */
+/**
+ * SpringBoard queries, app switching, rotation, and typed secrets exist only in the XCUITest driver; other targets open
+ * URLs themselves.
+ */
 private fun refuseIosSystemStep(step: Step) {
-    if (step.query?.isSystemScope == true || step.action in Actions.iosOnly - Actions.ORIENT) {
+    if (step.query?.isSystemScope == true || step.action in Actions.iosOnly - Actions.OPEN_URL) {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "${step.action} with iOS system surfaces runs only in the iOS driver.")
     }
 }
@@ -283,3 +287,15 @@ private fun requireField(
     value: String?,
     message: String
 ): String = value ?: throw invalid(message)
+
+/** A repeated tap (a drawn wheel's arrow) locates once; the element stays where it is between taps. */
+private fun tapTimes(
+    actions: NativeActions,
+    node: SnapshotNode,
+    step: Step,
+) {
+    repeat(step.repeat.coerceAtLeast(1)) { index ->
+        if (index > 0) Thread.sleep(((step.seconds ?: 0.0) * MILLIS_PER_SECOND).toLong())
+        actions.tap(node)
+    }
+}

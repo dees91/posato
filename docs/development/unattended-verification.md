@@ -6,7 +6,8 @@ Application verification). The macOS application never runs on the host Mac:
 the host builds the package and `posato-control` refuses to drive it there. This guide sets up the environment in which an
 agent verifies a Posato change with no person at the Mac or the phone: the macOS app inside Tart virtual
 machines and the iOS app on a dedicated test iPhone, both signed in to a
-dedicated test Apple Account. After the one-time setup below, the
+dedicated test Apple Account, the Linux app in a Tart Ubuntu VM, and the
+Android app on an emulator. After the one-time setup below, the
 `posato-control` driver answers every system dialog itself. Background,
 measurements, and platform limits are in the
 [unattended verification topic](../wiki/topics/unattended-verification.md).
@@ -23,8 +24,9 @@ login Keychain.
   refuse below it. A clone created with `--allow-low-disk` keeps working down
   to a hard floor of 5 GB. Purgeable space, such as Time Machine local
   snapshots, does not count as free.
-  On a host with `machine-ledger`, `vm create` also claims a 5 GB lease for
-  the clone and stops when the ledger refuses it below its own reserve.
+  On a host with `machine-ledger`, `vm create` and `linux create` also claim
+  a 5 GB lease for the clone and stop when the ledger refuses it below its
+  own reserve.
 - An Apple Developer Program membership, and the App Store Connect team key
   described in [Apple development provisioning](apple-provisioning.md).
 - A dedicated test Apple Account with two-factor authentication. Use an
@@ -168,6 +170,76 @@ this line has none, and it runs only notarized candidates.
    `tart rename posato-run-ventura <ventura-golden>`; set
    `posato.vm.venturaGolden` to that name.
 
+## The Linux golden VM and the Android emulator
+
+Linux and Android need no Apple Account and no signing. The Linux guest is a
+Tart Ubuntu VM with an X11 session that logs in by itself; the Android target
+is an emulator of your own.
+
+1. Clone Cirrus Labs' Ubuntu image, size it, and boot it:
+
+   ```shell
+   tart clone ghcr.io/cirruslabs/ubuntu:latest <linux-golden>
+   tart set <linux-golden> --memory 4096 --cpu 4 --disk-size 30 --display 1280x900
+   tart run <linux-golden> --no-graphics &
+   ```
+
+2. Install the session, the packaging tools, and the input and capture tools
+   through `tart exec <linux-golden> /bin/sh -c '...'`:
+
+   ```shell
+   sudo -n apt-get update
+   sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+     xorg lightdm lightdm-gtk-greeter openbox openjdk-21-jdk fakeroot dpkg-dev binutils \
+     xdotool imagemagick x11-utils dbus-x11 policykit-1 pkexec sqlite3 curl dnsutils \
+     fonts-dejavu-core gnome-calculator at-spi2-core libatk-wrapper-java \
+     libatk-wrapper-java-jni python3-pyatspi
+   ```
+
+   The last four publish Posato's accessibility tree on AT-SPI, which
+   `posato-control -t linux` reads; `launch -t linux` turns it on for the
+   process it starts.
+
+3. Log the guest user in automatically to an Openbox session, and let that
+   user approve `pkexec` so the pausing service installs without a password
+   (as root; `<guest-user>` is the image's user):
+
+   ```shell
+   mkdir -p /etc/lightdm/lightdm.conf.d /etc/polkit-1/rules.d
+   printf '[Seat:*]\nautologin-user=<guest-user>\nautologin-user-timeout=0\nuser-session=openbox\nautologin-session=openbox\n' \
+     > /etc/lightdm/lightdm.conf.d/50-posato-autologin.conf
+   groupadd -f autologin && usermod -aG autologin <guest-user>
+   printf 'polkit.addRule(function(action, subject) { if (subject.user == "<guest-user>" && action.id == "org.freedesktop.policykit.exec") { return polkit.Result.YES; } });\n' \
+     > /etc/polkit-1/rules.d/49-posato-verification.rules
+   systemctl set-default graphical.target && systemctl enable lightdm
+   ```
+
+   The rule applies only to this verification guest; a person's Linux
+   computer asks for their password.
+4. Shut the guest down with `tart stop <linux-golden>` and set
+   `posato.vm.linuxGolden`. `posato-control linux create` clones it as
+   `posato-run-linux`.
+
+For Android, install the Android SDK's command-line tools, emulator, and a
+Google APIs system image for API 33 or later, then create and boot an
+emulator only Posato uses:
+
+```shell
+avdmanager create avd -n <posato-avd> -k "system-images;android-<api>;google_apis_playstore;arm64-v8a" -d pixel_7
+emulator -avd <posato-avd> -port 5560 -no-window -no-audio -no-boot-anim -no-snapshot-save &
+```
+
+Set `posato.android.serial` to its serial (`emulator-5560` for that port).
+Never drive an emulator that someone else uses.
+
+A phone on USB works the same way: turn on Developer options and USB
+debugging, answer "Allow USB debugging?" once with Always allow, and pass its
+serial with `--udid` (`posato-control devices list` shows it). `doctor -t
+android` names what a phone adds: another app's VPN, which a website pause
+turns off, strict private DNS, which bypasses website pausing, and a screen
+lock, after which a reboot needs one unlock by a person. The emulator has
+none of these.
+
 ## Register the VMs for development signing
 
 The sync companion's development profile only runs on registered devices.
@@ -196,6 +268,8 @@ posato.vm.primaryGolden=<primary-golden>
 posato.vm.peerGolden=<peer-golden>
 posato.vm.legacyGolden=<legacy-golden>
 posato.vm.venturaGolden=<ventura-golden>
+posato.vm.linuxGolden=<linux-golden>
+posato.android.serial=<emulator-serial>
 posato.vm.adminKeychainService=<vm-admin-item>
 posato.vm.adminKeychainAccount=<guest-user>
 posato.vm.accountKeychainService=<apple-account-item>

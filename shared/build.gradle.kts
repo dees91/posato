@@ -66,6 +66,7 @@ kotlin {
             implementation(libs.navigation3.ui)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.qrose)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.sqldelight.async.extensions)
@@ -77,6 +78,12 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
+        }
+        jvmMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+        }
+        androidMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
         }
         jvmMain.dependencies {
             implementation(libs.kotlinx.coroutines.swing)

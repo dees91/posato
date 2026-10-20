@@ -110,9 +110,17 @@ class XcodeBuild(
         target: Target,
         udid: String?
     ): List<String> = when (target) {
-        Target.SIMULATOR -> listOf("-destination", if (udid != null) "platform=iOS Simulator,id=$udid" else "generic/platform=iOS Simulator")
-        Target.DEVICE -> listOf("-destination", "generic/platform=iOS")
-        Target.DESKTOP -> throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "xcodebuild does not build the desktop application.")
+        Target.SIMULATOR -> {
+            listOf("-destination", if (udid != null) "platform=iOS Simulator,id=$udid" else "generic/platform=iOS Simulator")
+        }
+
+        Target.DEVICE -> {
+            listOf("-destination", "generic/platform=iOS")
+        }
+
+        Target.DESKTOP, Target.ANDROID, Target.LINUX -> {
+            throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "xcodebuild builds only the iOS application.")
+        }
     }
 
     private fun signing(target: Target): List<String> = when (target) {
@@ -129,7 +137,7 @@ class XcodeBuild(
             listOf("-allowProvisioningUpdates", "DEVELOPMENT_TEAM=$team", "CODE_SIGN_STYLE=Automatic")
         }
 
-        Target.DESKTOP -> {
+        Target.DESKTOP, Target.ANDROID, Target.LINUX -> {
             emptyList()
         }
     }

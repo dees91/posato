@@ -14,7 +14,9 @@ import app.posato.control.cli.DevicesShutdownCommand
 import app.posato.control.cli.DoctorCommand
 import app.posato.control.cli.FindCommand
 import app.posato.control.cli.FlowCommand
+import app.posato.control.cli.FlowFolderCommand
 import app.posato.control.cli.FlowICloudCommand
+import app.posato.control.cli.FlowOnboardCommand
 import app.posato.control.cli.FlowScheduleAddCommand
 import app.posato.control.cli.FlowSessionCommand
 import app.posato.control.cli.FlowSetCommand
@@ -26,6 +28,7 @@ import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PrEvidenceCommand
 import app.posato.control.cli.PressCommand
+import app.posato.control.cli.RelayCommand
 import app.posato.control.cli.ResetCommand
 import app.posato.control.cli.ResourcesCommand
 import app.posato.control.cli.RunCommand
@@ -65,6 +68,8 @@ import app.posato.control.cli.VmTypeCommand
 import app.posato.control.cli.VmVncHoldCommand
 import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
+import app.posato.control.cli.androidCommand
+import app.posato.control.cli.linuxCommand
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Envelope
@@ -91,9 +96,51 @@ private val englishLocalization = object : Localization {}
 class PosatoControl : CliktCommand(name = "posato-control") {
     override fun help(context: Context): String =
         "Agent-facing driver for the Posato macOS and iOS applications: build, launch, drive, inspect, screenshot, and reset. " +
-            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device."
+            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device|android|linux."
 
     override fun run() = Unit
+}
+
+private fun vmCommand(): VmCommand {
+    return VmCommand().subcommands(
+        VmCreateCommand(),
+        VmSyncCommand(),
+        VmBootCommand(),
+        VmShutdownCommand(),
+        VmTypeCommand(),
+        VmInstallCommand(),
+        VmDestroyCommand(),
+        VmLeasesCommand(),
+        VmPromptCommand(),
+        VmClickCommand(),
+        VmDragCommand(),
+        VmScrollCommand(),
+        VmAllowNotificationsCommand(),
+        VmPressCommand(),
+        VmScreenshotCommand(),
+        VmVncHoldCommand(),
+        VmICloudCommand(),
+        VmNetworkCommand(),
+        VmSyncFixtureCommand(),
+        VmTextCommand(),
+        VmWaitTextCommand(),
+        VmExecCommand(),
+        VmPushCommand(),
+        VmKillCommand(),
+        VmDialogsCommand(),
+        VmOnboardCommand(),
+    )
+}
+
+private fun flowCommand(): FlowCommand {
+    return FlowCommand().subcommands(
+        FlowOnboardCommand(),
+        FlowScheduleAddCommand(),
+        FlowSetCommand(),
+        FlowSessionCommand(),
+        FlowICloudCommand(),
+        FlowFolderCommand(),
+    )
 }
 
 fun buildCommand(): PosatoControl = PosatoControl().subcommands(
@@ -125,35 +172,11 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
-    FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand()),
-    VmCommand().subcommands(
-        VmCreateCommand(),
-        VmSyncCommand(),
-        VmBootCommand(),
-        VmShutdownCommand(),
-        VmTypeCommand(),
-        VmInstallCommand(),
-        VmDestroyCommand(),
-        VmLeasesCommand(),
-        VmPromptCommand(),
-        VmClickCommand(),
-        VmDragCommand(),
-        VmScrollCommand(),
-        VmAllowNotificationsCommand(),
-        VmPressCommand(),
-        VmScreenshotCommand(),
-        VmVncHoldCommand(),
-        VmICloudCommand(),
-        VmNetworkCommand(),
-        VmSyncFixtureCommand(),
-        VmTextCommand(),
-        VmWaitTextCommand(),
-        VmExecCommand(),
-        VmPushCommand(),
-        VmKillCommand(),
-        VmDialogsCommand(),
-        VmOnboardCommand(),
-    ),
+    RelayCommand(),
+    linuxCommand(),
+    androidCommand(),
+    flowCommand(),
+    vmCommand(),
 )
 
 fun run(args: Array<String>): Int {

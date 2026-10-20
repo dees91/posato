@@ -47,6 +47,8 @@ data class Step(
     val secret: String? = null,
     val optional: Boolean = false,
     val values: List<String> = emptyList(),
+    /** `tap`: how many times to tap the element, located once, with [seconds] between taps (a drawn wheel's arrow). */
+    val repeat: Int = 1,
 )
 
 @Serializable

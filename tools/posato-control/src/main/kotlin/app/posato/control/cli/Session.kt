@@ -44,7 +44,7 @@ class Session(
         ?: throw ControlException(
             ErrorCode.USAGE,
             "This command needs a target.",
-            "Pass --target desktop|simulator|device (or export POSATO_CONTROL_TARGET).",
+            "Pass --target desktop|simulator|device|android|linux (or export POSATO_CONTROL_TARGET).",
         )
 
     fun backend(): Backend = cachedBackend ?: create(target()).also { cachedBackend = it }

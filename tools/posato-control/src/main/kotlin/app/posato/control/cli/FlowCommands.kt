@@ -19,10 +19,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-/** Common paths through the app as single commands, on the desktop (in a VM) and on iOS alike. */
+/** Common paths through the app as single commands, on the desktop (in a VM), iOS, Android, and Linux alike. */
 class FlowCommand : CliktCommand(name = "flow") {
     override fun help(context: Context): String =
-        "Drive a common path through Posato in one command: add a schedule, create a set, start a session, link or remove iCloud."
+        "Drive a common path through Posato in one command: onboard, add a schedule, create a set, start a session, link a folder or iCloud."
 
     override fun run() = Unit
 }
@@ -33,8 +33,9 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
-        // The Mac's in-page Back reads the list in lower case; the iOS bar's back button names the screen by its title.
-        val back = if (session.target() == Target.DESKTOP) "Back to pause sets" else "Back to Pause sets"
+        // The drawn in-page Back (Mac, Android, Linux) reads the list in lower case; the iOS bar's back button names the
+        // screen by its title.
+        val back = if (session.target().isApple) "Back to Pause sets" else "Back to pause sets"
         FlowSteps.run(
             backend,
             listOf(
@@ -67,8 +68,11 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
             FlowSteps.screenshot("set-created"),
         )
         FlowSteps.run(backend, steps)
-        if (!hasSetNamed(FlowSteps.labels(backend))) {
-            throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause sets shows no set named $name.")
+        // The list redraws after Back; a screen read while it does shows the list before the save.
+        val deadline = System.currentTimeMillis() + LIST_SECONDS * MILLIS_PER_SECOND
+        while (!hasSetNamed(FlowSteps.labels(backend))) {
+            if (System.currentTimeMillis() > deadline) throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause sets shows no set named $name.")
+            Thread.sleep(POLL_MILLIS)
         }
         return buildJsonObject {
             put("name", name)
@@ -87,6 +91,9 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
 
     private companion object {
         const val SHORT_SECONDS = 3.0
+        const val LIST_SECONDS = 10L
+        const val MILLIS_PER_SECOND = 1_000L
+        const val POLL_MILLIS = 500L
     }
 }
 
@@ -142,7 +149,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         target: Target,
         minutes: Int,
     ): String {
-        if (target != Target.DESKTOP) return lengthText(minutes)
+        if (target.isApple) return lengthText(minutes)
         return if (minutes < MINUTES_PER_HOUR) "$minutes min" else "${minutes / MINUTES_PER_HOUR} h"
     }
 
@@ -164,10 +171,9 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         delta: Int,
     ): List<Step> {
         if (delta == 0) return emptyList()
-        if (target != Target.DESKTOP) return listOf(FlowSteps.adjustWheels(listOf("0", "${DEFAULT_MINUTES + delta}")))
+        if (target.isApple) return listOf(FlowSteps.adjustWheels(listOf("0", "${DEFAULT_MINUTES + delta}")))
         val arrow = Query(text = if (delta > 0) "Increase Minutes" else "Decrease Minutes")
-        return listOf(FlowSteps.reveal(arrow)) +
-            List(kotlin.math.abs(delta)) { listOf(FlowSteps.tap(arrow), FlowSteps.sleep(TAP_GAP_SECONDS)) }.flatten()
+        return listOf(FlowSteps.reveal(arrow), FlowSteps.tap(arrow).copy(repeat = kotlin.math.abs(delta), seconds = TAP_GAP_SECONDS))
     }
 
     private companion object {

@@ -2828,3 +2828,42 @@ first removal attempt that does not finish, not to a paused keychain.
   releases it. A claim refused below the ledger's reserve stops the clone
   with `DISK_SPACE_LOW`; `--allow-low-disk` claims below the reserve. A host
   without the ledger, or a failed call, only logs a line.
+## [2026-10-11] delivery | Linux, Android, and folder sync for release 1.5
+
+- `observed`: the folder transport implements the existing bootstrap and
+  mailbox ports, so the exchange, reducer, and removal run unchanged on a
+  folder; a pairing code delivers the workspace key. Two Tart Macs, a Tart
+  Ubuntu guest, and an Android emulator shared pauses, sets, and schedules
+  through `posato-control relay`; a schedule made on a Mac started on
+  Android in the background and after a reboot.
+- `observed`: Linux blocks through a marked `/etc/hosts` block written by a
+  root service that clears itself at the end; Android through a DNS-only
+  `VpnService` and a usage-access block screen.
+- New verification commands: `posato-control linux`, `android`, `relay`,
+  and `flow folder`; the Linux golden VM and the Android emulator are set up
+  as described in the unattended verification guide.
+- `observed`: the test iPhone joined a Tart Mac's workspace in iCloud Drive
+  through the Files picker and showed the Mac's pause on its next foreground,
+  after listing was changed to download the folder under file coordination.
+- `user-confirmed` (2026-10-19): pairing also works by QR code and link,
+  `posato://join?code=<code>`, with the same one-time code; a phone camera
+  opens it in Posato.
+- `observed` (2026-10-20): on a Galaxy XCover7 (Android 14), **Allow
+  access** ended Posato because an API 36 overload was called on API 34;
+  the emulator (Android 17) hid it. The review corrections (tunnel after a
+  reboot, removed items kept paused, battery request) passed on the phone,
+  the Linux clone, and the test iPhone. After a reboot Android enforces only
+  after the first unlock.
+- `posato-control` drives Android (UIAutomator, phones and emulators) and
+  Linux (AT-SPI through `java-atk-wrapper`) with the shared commands and
+  flows, as it drives the Mac and iOS.
+- `user-confirmed` (2026-10-20): Android is edge to edge with predictive back,
+  and Back from Pause sets or Schedules returns to Session before it leaves
+  Posato (DESIGN.md).
+- `user-confirmed` (2026-10-20): ADR 0010 is accepted. Roadmap revision 23
+  adds `SESSION-010` (idea 39, a running pause adopted at link time without
+  the set's websites), `TARGETS-010`, and `DOCS-006` to release 1.5, with an
+  x86-64 Linux package from a GitHub Actions runner in `RELEASE-007`.
+- `open`: a removal by another device reaching the iPhone's view of an
+  iCloud Drive folder (six minutes without it once, about two minutes
+  another time), other folder services, and IPv6 on a network that has it.

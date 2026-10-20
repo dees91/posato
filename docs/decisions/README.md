@@ -35,3 +35,7 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0009: Keep Posato for Mac present in the menu bar](0009-macos-menu-bar-presence.md)
   — accepted resident process, native status item, window, quit, and login
   rules, delivered by `MACOS-013` (sleep and wake unverified in a VM).
+- [ADR 0010: Bring Posato to Linux and Android with a Folder Workspace](0010-linux-android-and-folder-workspace.md)
+  — accepted Linux and Android targets, their enforcement mechanisms and
+  privileges, the folder workspace with a one-time pairing code, and the
+  revision of ADR 0002's portable workspace, delivered for release 1.5.

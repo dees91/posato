@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 21 (2026-10-09: `SYNC-021` joins release 1.4; `TARGETS-009` is dropped; amended 2026-10-09: backlog additions `IOS-008` and `SYNC-022`; amended 2026-10-10: backlog additions `SESSION-008`, `TARGETS-010`, and `SESSION-009`)
+- **Revision:** 23 (2026-10-20: release 1.5 completed with `SESSION-010`, `TARGETS-010`, and `DOCS-006`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-10
+- **Last amended:** 2026-10-20
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -163,6 +163,32 @@
   The 2026-10-10 backlog addition `SESSION-009` (idea 38, from a
   maintainer report, filed as an agent proposal under the same delegation)
   changes no release.
+  The 2026-10-11 backlog addition `SESSION-010` (idea 39, found by the
+  release 1.5 cross-device run and filed as an agent proposal under the
+  same delegation) changes no release.
+  Revision 22 composes release 1.5 (`user-confirmed`, 2026-10-10): Posato
+  leaves the Apple-only release train for Linux and Android, synchronized
+  through one folder that the person keeps synchronized with a service of
+  their choice. `PLATFORM-001` and `SYNC-018` move from the backlog into
+  the release and are delivered by one long run. The maintainer accepted
+  the direction in chat: the Mac desktop application also offers the
+  folder transport, a workspace keeps one transport, and iOS joins the
+  folder mode too (added the same day);
+  a device joins with a one-time pairing code and there is no device
+  revocation (a new workspace replaces it), which ADR 0010 records as a
+  revision of ADR 0002; Android blocks applications through usage access
+  and a full-screen block screen rather than an accessibility service.
+  `LINUX-001` and `ANDROID-001` are new rows, and each extends
+  `posato-control` and `verify-posato` for its platform. Windows stays in
+  the backlog as `PLATFORM-002`.
+  Revision 23 completes the release 1.5 composition (`user-confirmed`,
+  2026-10-20) after the maintainer accepted ADR 0010. `SESSION-010` and
+  `TARGETS-010` move from the backlog into the release: a folder workspace
+  makes a device that joins during another device's pause more common.
+  `DOCS-006` is a new row that prepares the 1.5 public packaging. The
+  maintainer chose a GitHub Actions x86-64 runner for the x86-64 Linux
+  package, so `RELEASE-007` builds the `.deb` for both architectures and
+  publishes a release-signed Android APK.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -427,6 +453,35 @@ across the waves:
 | `DOCS-005` | Prepare the public packaging for 1.4 without publishing it: recapture the showcase with the interface from `DESIGN-004` and render the media again; describe 1.4 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.4/W2 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027`, `SYNC-021` | PR-RELEASE-1-4-MEDIA |
 | `RELEASE-006` | Verify the 1.4.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.4/W3 | `DESIGN-004`, `IOS-007`, `MACOS-026`, `SESSION-007`, `MACOS-027`, `SYNC-021`, `DOCS-005` | PR-RELEASE-1-4 |
 
+## Release 1.5: Linux and Android, synchronized through a folder
+
+Theme: Posato runs on Linux and Android as well as on Apple devices. The
+devices of one person share pauses, pause sets, and schedules through a
+folder that Dropbox, OneDrive, Syncthing, or any other service keeps
+synchronized; Posato only reads and writes encrypted files in it. The Mac
+and the iPhone can join such a workspace instead of using iCloud.
+
+The maintainer asked for one long run (`user-confirmed`, 2026-10-10). The
+rows are delivered as stacked pull requests in the order of the table.
+The four delivery and discovery rows share one
+[brief](specifications/release-1-5-linux-android.md) and execution record,
+with one milestone per pull request.
+Revision 23 adds `SESSION-010` and `TARGETS-010` as separate pull
+requests after the long run, each with its own record path. `DOCS-006`
+captures the final interface, so it follows them, and `RELEASE-007` comes
+last.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PLATFORM-001` | Record the platform decision in ADR 0010: Linux and Android first, Windows later; per-platform enforcement mechanisms and privilege models; one shared Compose interface. | Platform coverage | discovery | R1.5/W1 | None | PR-PORTABLE-FOLDER |
+| `SYNC-018` | Synchronize a workspace through one user-selected folder with the format-1 encrypted operation model: one file per bundle, a one-time pairing code that delivers the workspace key, no device revocation; offered by the Mac desktop application and the iOS application, verified between two Tart Macs over a shared folder and on the test iPhone. | Portable synchronization | delivery | R1.5/W1 | `PLATFORM-001` | PR-PORTABLE-FOLDER |
+| `LINUX-001` | Ship Posato for Linux from the shared desktop application as a `.deb` package: a systemd helper that blocks websites through `/etc/hosts` and ends chosen applications, applications chosen from desktop entries, the folder transport, and `posato-control --vm linux` with a Tart Ubuntu guest. | Platform coverage | delivery | R1.5/W2 | `SYNC-018` | PR-LINUX |
+| `ANDROID-001` | Ship Posato for Android from the shared interface: websites blocked by a local DNS filter (`VpnService`), applications by usage access and a full-screen block screen, schedules, the folder transport, and `posato-control -t android` on an emulator, ending with a Linux, Android, and Mac workspace that pauses across all three. | Platform coverage | delivery | R1.5/W3 | `SYNC-018`, `LINUX-001` | PR-ANDROID |
+| `SESSION-010` | Capture an adopted session's paused items after the same pass's pause-set changes are applied: a device that links while another device's pause is running adopts that session in the session phase, before the policy phase writes the set's websites locally, so it freezes its pre-link set and enforces nothing (`NOTHING_TO_ENFORCE`) until the next pause. Write the failing exchange test first, then recapture once after the policy phase or read the set's websites from the converged projection, without letting a policy-capacity failure suppress a session end. Present since sync began; also affects iCloud links. | Sessions and enforcement | delivery | R1.5/W4 | `SYNC-018` | PR-SESSION-ADOPTION |
+| `TARGETS-010` | Refresh a pause set's "Apps on this Mac" or apps summary in the Pause sets list as soon as applications are chosen, removed, or cleared, without waiting for a policy change: emit the device-local application mappings' invalidations after every successful change on every platform, and check the other readers of those invalidations (Schedules set source, session recompose, Mac presence). Not a regression: published 1.3.0 behaves the same. | Target management | delivery | R1.5/W4 | `ANDROID-001` | PR-SET-SUMMARY |
+| `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010` | PR-RELEASE-1-5-MEDIA |
+| `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `DOCS-006` | PR-RELEASE-1-5 |
+
 ## Backlog
 
 Rows without a release. Each names what would let the maintainer assign it.
@@ -447,12 +502,10 @@ The idea numbers refer to the wiki idea queue.
 | `IOS-008` | Let one **Remove workspace** press on the iPhone finish a removal when the zone has a long history: `IosCloudKitMailboxProvider` caps a press at `MAX_REMOVAL_CALLS` (10), as the Mac did before `SYNC-021`. Reproduce it on the test iPhone with the `SYNC-021` fixture and apply the same progress-bounded continuation and progress state. | Sessions and enforcement | Idea 34; `SYNC-021` plan review | A reproduction on the test iPhone; release composition |
 | `SYNC-022` | Finish what `SYNC-021` deferred: build the verification-only seeding operation; rebuild the long-history fixture and show a pre-fix failure on it; one press in 3 fresh Tart clones, after a settled link, and across a window close and reopen; then clean the test Apple Account's zone with the `SYNC-021` controls and waits, and run the iPhone check of `AC-05`. The zone is cleaned only after seeding exists or after `IOS-008` has reproduced on the current history. Also decide whether the first sync after a link should page a long history in larger passes (idea 35). | Sessions and enforcement | Idea 35; `SYNC-021` deferrals | A release composition; the test account keeps its history until then |
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
-| `TARGETS-010` | Refresh a pause set's "Apps on this Mac" or apps summary in the Pause sets list as soon as applications are chosen, removed, or cleared, without waiting for a policy change: emit the device-local application mappings' invalidations after every successful change on the Mac and on iOS, and check the other readers of those invalidations (Schedules set source, session recompose, Mac presence). Not a 1.4 regression: published 1.3.0 behaves the same. | Target management | Idea 37; `DOCS-005` review | A release composition; first candidate for 1.5 |
 | `SESSION-009` | Clear the Mac's "Restrictions not active on this Mac" notice when a session that arrived from another device ends unresumed: when the early return in `clearAfterEnd` finds nothing applied (`confirmedClear` and no enforced identity), also clear the pending action and return the view to inactive, so the transition owner stops re-sending transitions in a tight loop that flickers the Resume button and rereads the store. Test first with an isolated regression in the session owner tests, then one linked Mac VM and test-iPhone run. Present since at least 1.0.0; a relaunch clears it. | Sessions and enforcement | Idea 38; maintainer report 2026-10-10 | A release composition |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
-| `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
-| `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
+| `PLATFORM-002` | Bring Posato to Windows under ADR 0010: enforcement mechanism, privilege model, packaging, and verification. | Platform coverage | `PLATFORM-001` | A planning checkpoint after release 1.5 |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
 | `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
@@ -487,6 +540,10 @@ The idea numbers refer to the wiki idea queue.
 | Longer quick choices for a manual pause | `SESSION-007` | The final set in `DESIGN.md`; pauses started with a long choice and with **Until end of day** in a Mac VM and on the test iPhone, each with the expected end |
 | Public packaging for 1.4 | `DOCS-005` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
 | Reusable pause sets for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-set selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
+| Linux and Android with folder synchronization | `PLATFORM-001`, `SYNC-018`, `LINUX-001`, `ANDROID-001` | Accepted ADR 0010; `posato-control` runs on two Tart Macs, a Tart Ubuntu guest, and an Android emulator sharing one folder, with blocking observed on each |
+| A device that joins during a pause enforces it | `SESSION-010` | The failing exchange test first; a device linked during another device's pause blocks the set's websites without waiting for the next pause |
+| Pause set summaries refreshed at once | `TARGETS-010` | The summary changes right after apps are chosen, removed, or cleared, in a Mac VM, on the test iPhone, and on Android |
+| Public packaging for 1.5 | `DOCS-006` | Limits page and README updated, site built, Android and Linux screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates

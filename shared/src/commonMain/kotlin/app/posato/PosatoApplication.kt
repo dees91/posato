@@ -31,6 +31,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNavigationPlacement
@@ -69,6 +72,8 @@ import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.PairingLinks
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
@@ -97,6 +102,7 @@ class PosatoApplication internal constructor(
     private val schedules: ScheduleDependencies,
     private val scheduledPauses: ScheduledPauses,
     private val sessionComposition: SessionComposition,
+    private val folderSync: FolderSyncControls,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -130,7 +136,7 @@ class PosatoApplication internal constructor(
         navigation: ApplicationNavigation = remember { ApplicationNavigation() },
     ) {
         var setupDone by remember { mutableStateOf(false) }
-        val syncState = rememberSyncBootstrapUiState(bootstrap)
+        val syncState = rememberSyncBootstrapUiState(bootstrap, folderSync)
         val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper) {
             sessionOwner.status.value is LocalSessionStatus.Active || sessionOwner.view.value.busy
         }
@@ -139,6 +145,7 @@ class PosatoApplication internal constructor(
             store,
             onboardingDependencies.applicationAccess,
             helperSetup,
+            folderSync.icloudSupported,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         LaunchedEffect(helperSetup) {
@@ -146,16 +153,7 @@ class PosatoApplication internal constructor(
             combine(sessionOwner.blockingSetup(), scheduledPauses.pause) { blocked, pause -> blocked || pause?.restricts == true }
                 .collect { helperSetup.sessionBlocked = it }
         }
-        if (hostsSession) {
-            LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
-            // An edit to a set a running session uses pauses its additions at once.
-            LaunchedEffect(sessionOwner) {
-                merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
-            }
-            LaunchedEffect(notifier) { notifier.run() }
-            // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
-            LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
-        }
+        if (hostsSession) HostedSessionEffects()
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
             ForegroundEffects(helperSetup)
@@ -190,6 +188,19 @@ class PosatoApplication internal constructor(
                 )
             }
         }
+    }
+
+    /** The session timer, recomposition, notices, and schedules of a process that hosts sessions. */
+    @Composable
+    private fun HostedSessionEffects() {
+        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+        // An edit to a set a running session uses pauses its additions at once.
+        LaunchedEffect(sessionOwner) {
+            merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
+        }
+        LaunchedEffect(notifier) { notifier.run() }
+        // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
+        LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
     }
 
     @Composable
@@ -238,6 +249,7 @@ class PosatoApplication internal constructor(
                 onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
                 modifier = modifier,
             ) { layout ->
+                FirstTabBack(navigation, device)
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
                     PosatoNavStack(
@@ -270,6 +282,24 @@ class PosatoApplication internal constructor(
                 }
             }
         }
+    }
+
+    /**
+     * On Android, Back from Pause sets or Schedules returns to Session before it leaves Posato, as a bottom bar's
+     * destinations do there. A screen open inside the tab handles Back first, since its stack registers later.
+     */
+    @Composable
+    private fun FirstTabBack(
+        navigation: ApplicationNavigation,
+        device: PosatoDevice,
+    ) {
+        NavigationBackHandler(
+            state = rememberNavigationEventState(NavigationEventInfo.None),
+            isBackEnabled = device == PosatoDevice.Android &&
+                navigation.destination != ApplicationDestination.SESSION &&
+                navigation.informationPage == null,
+            onBackCompleted = { navigation.select(ApplicationDestination.SESSION) },
+        )
     }
 
     @Composable
@@ -488,6 +518,12 @@ class PosatoApplication internal constructor(
                 navigation.destination = ApplicationDestination.SESSION
                 navigation.showInformation(null)
                 latestOnRequest(request)
+            }
+        }
+        // A join link opened on another screen brings Session's sync section forward, which then takes its code.
+        LaunchedEffect(Unit) {
+            PairingLinks.code.collect { code ->
+                if (code != null) navigation.select(ApplicationDestination.SESSION)
             }
         }
     }

@@ -235,7 +235,12 @@ label as its hint, never a floating label.
 ### Android
 
 Material components, Material's ripple, and its bottom sheet keep their own
-behavior. The Android preview is not a product host.
+behavior. Posato draws behind the status and navigation bars on every Android
+release (edge to edge) and keeps content in the safe drawing area; the predictive
+back gesture is on from Android 13, with the previous screen shown under the
+gesture where the system draws it (`user-confirmed`, 2026-10-20). A drop-down
+menu opens after the keyboard has gone, so it never opens above its button over
+the field just typed in.
 
 ## Foundations
 
@@ -480,9 +485,12 @@ edge swipe on iPhone and iPad; Command-[, Escape, and the trackpad's two-finger
 swipe between pages on the Mac. Search's **Back to adding** is part of the
 same stack. In a focused text field the first Escape only leaves the field and
 keeps what was typed; the next Escape goes back (`user-confirmed`,
-2026-09-30). Back never switches destination or leaves the application, and it
-is unavailable while a start, end, save, or system approval or password prompt
-is in progress. On iOS the screen slides with the finger and settles with its
+2026-09-30). On Apple hosts back never switches destination or leaves the
+application. On Android the system back, button or predictive gesture, returns
+one screen the same way; at the top of Pause sets or Schedules it returns to
+Session, and at the top of Session it leaves Posato, as a bottom bar's
+destinations do there (`user-confirmed`, 2026-10-20). Back is unavailable while
+a start, end, save, or system approval or password prompt is in progress. On iOS the screen slides with the finger and settles with its
 velocity, as [Platform adaptation](#ios-and-ipados) describes, and without a
 slide under Reduce Motion. The Mac changes screens without a transition; the
 trackpad swipe changes the screen as the fingers lift, once macOS counts the

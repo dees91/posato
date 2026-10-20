@@ -81,6 +81,8 @@ internal fun ApplicationScope.ResidentPosato(
         if (MacUpdater.start(updater, loadUpdaterCopy())) updates = MacUpdateSettings
     }
     LaunchedEffect(window.visible) { MacPresenceNative.setMainWindowVisible(window.visible) }
+    val linkRequests by MacLinks.windowRequests.collectAsState()
+    LaunchedEffect(linkRequests) { if (linkRequests > 0) window.show() }
     StatusMenuEffects(presence, copy, menu, window, onPowerOff = { powerOffEpochMillis = it }, onQuit = quit)
     ApplicationEventsEffect(window, onQuitRequest = { response ->
         scope.launch { if (confirmSystemQuit()) response.performQuit() else response.cancelQuit() }

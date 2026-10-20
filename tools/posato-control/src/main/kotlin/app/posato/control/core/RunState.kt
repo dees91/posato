@@ -24,11 +24,15 @@ data class RunState(
     val desktop: LaunchedProcess? = null,
     val simulator: LaunchedProcess? = null,
     val device: LaunchedProcess? = null,
+    val android: LaunchedProcess? = null,
+    val linux: LaunchedProcess? = null,
 ) {
     fun forTarget(target: Target): LaunchedProcess? = when (target) {
         Target.DESKTOP -> desktop
         Target.SIMULATOR -> simulator
         Target.DEVICE -> device
+        Target.ANDROID -> android
+        Target.LINUX -> linux
     }
 
     fun with(
@@ -38,6 +42,8 @@ data class RunState(
         Target.DESKTOP -> copy(desktop = process)
         Target.SIMULATOR -> copy(simulator = process)
         Target.DEVICE -> copy(device = process)
+        Target.ANDROID -> copy(android = process)
+        Target.LINUX -> copy(linux = process)
     }
 }
 

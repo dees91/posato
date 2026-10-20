@@ -40,6 +40,7 @@ import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.IosKeychainReadStatus
 import app.posato.feature.sync.data.IosSigningKey
 import app.posato.feature.sync.data.UnavailableIosKeychainProvider
+import app.posato.feature.sync.folder.IosFolderPicker
 import app.posato.feature.targets.data.IosApplicationMappingsObservation
 import app.posato.feature.targets.data.IosApplicationMappingsOperation
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
@@ -127,7 +128,14 @@ class IosBootstrapCompositionTest {
             UnavailableApplicationAccess,
             UnavailableSessionNotifications,
             IosScheduleBridge(IosEnforcement(InertEnforcementProvider()), UnavailableIosScheduleMonitor),
+            InertFolderPicker,
         )
+    }
+}
+
+private object InertFolderPicker : IosFolderPicker {
+    override fun pickFolder(completion: (String?) -> Unit) {
+        completion(null)
     }
 }
 

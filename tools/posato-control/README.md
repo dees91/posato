@@ -62,6 +62,8 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
 | `posato.control.devicePasscodeKeychainService` / `...Account` | `POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test iPhone passcode that `pressKeys` types. |
 | `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` / `posato.vm.venturaGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` / `POSATO_VM_VENTURA_GOLDEN` | Tart golden VMs of the primary, peer, legacy (previous macOS version), and ventura (macOS 13 with Rosetta, for the x86-64 build) lines. |
+| `posato.vm.linuxGolden` | `POSATO_VM_LINUX_GOLDEN` | Tart golden VM of the Ubuntu guest that `linux create` clones. |
+| `posato.android.serial` | `POSATO_ANDROID_SERIAL` | adb serial of the Posato emulator that `android` commands drive; use an emulator of your own, never one someone else works on. |
 | `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
 | `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
 | `posato.vm.accountPhoneKeychainService` | `POSATO_VM_ACCOUNT_PHONE_KEYCHAIN_SERVICE` | Login Keychain item (same account as above) holding the test account's trusted phone number, for iCloud re-verification. |
@@ -84,8 +86,9 @@ stages its ad-hoc package in `development-package`, apart from the driver's
 
 ## Targets and the JSON envelope
 
-Every command takes `--target/-t desktop|simulator|device` (`sim` is an
-alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
+Every command takes `--target/-t desktop|simulator|device|android|linux`
+(`sim` is an alias; see [Linux and Android](#linux-and-android)) plus the
+common options `--udid` (on Android, the adb serial), `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
 `posato-control launch -t desktop --vm primary`. `--human` prints plain text
 instead of the envelope and ends with the outcome, `ok (<ms> ms)` or
@@ -197,6 +200,8 @@ grants a permission.
 | `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. Posato accepts two sets with one name, so the command refuses with `ALREADY_EXISTS` when the list already shows a set of that name; a rerun never adds a duplicate. |
 | `flow session [--set S] [--minutes 5-59\|60\|120\|240\|480] [--until-end-of-day]` | desktop in a VM, simulator, device | Start a manual session from Session setup: choose the set, reveal **Review session** first (a later page scroll could turn the length wheel), tap a quick length (25 and 45 minutes, 1, 2, 4, or 8 hours) or **Until end of day**, or step the minutes from 25, check that Review shows that length or **Until end of day**, and wait for **End session early**. |
 | `flow icloud link\|remove [--timeout-seconds N]` | desktop in a VM | Link to the iCloud workspace, pressing **Check again** while the key is awaited, or remove the workspace, pressing the confirmation's own button and again after a removal that did not finish. A link returns only after the first sync after it has settled: **Remove workspace** can be pressed and the row no longer says Syncing or checks the key. Both wait 900 s unless `--timeout-seconds` says otherwise, since a workspace with a long history can keep that sync or a removal running for several minutes; the result and a `WAIT_TIMEOUT` report `presses` and the row's last state as `row` (`syncing`, `checking key`, `sync did not finish`, `sync completed`, `linked`, or `not linked`). Which buttons are offered is read from the row's buttons, not its sentence. With `--vm`, the host first reads iCloud Keychain for a link as `vm icloud` does and again after every two minutes without an outcome, runs Resume Data Sync when it is paused, and adds `iCloudKeychain` and `iCloudResumed` to the result, whose `presses` counts the presses of every two-minute wait, also those that ran out, and is reported with a timeout or a refusal too; it stops with `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails or the guest is signed out. A removal needs no key and is never refused, but it stalls against a paused keychain, so the host first resumes a paused keychain and runs the removal whether or not that succeeds. |
+| `flow folder link\|offer\|done\|join\|remove [--path P] [--code C] [--timeout-seconds N]` | desktop in a VM, simulator, device | Folder workspace ([ADR 0010](../../docs/decisions/0010-linux-android-and-folder-workspace.md)): `link` chooses the folder at `--path` (choosing again when another folder is offered) and creates or joins the workspace; `offer` presses **Add a device** and returns the pairing code it shows; `done` closes the code; `join` enters `--code`, pressing **Join** again while the offer has not synchronized yet; `remove` removes the workspace. iOS accepts no typed path, so on an iPhone the folder is chosen in the Files picker by a scenario before `link`. |
+| `relay [--line L]... [--linux] [--android SERIAL]... [--interval-seconds 3] [--duration-seconds 1800]` | host | Stands in for a folder synchronization service: every round copies each device's new, changed, and deleted files under its own `PosatoSync` folder to the host hub `build/verification/sync-folder` and then to every other device. Mac guests are reached through `tart exec`, the Linux clone through its host-side shared directory, and an emulator through `adb shell`; a device that does not answer joins again in a later round. A second relay refuses with `ALREADY_RUNNING`. Run it detached (in its own session) for a whole scenario. |
 | `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura] [--allow-low-disk] [--wait-minutes N]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the driver and, when one is staged, the development package onto its disk, so a clone for a notarized candidate needs no build; recopy; shut down from inside and delete. `create` refuses below 20 GB free with `DISK_SPACE_LOW` unless `--allow-low-disk`, which reports the shortage as `diskSpaceWarning`; it also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. `create` takes a machine-wide lock from its check of Tart's VMs until the clone runs, so two sessions creating one line at once get one clone and one refusal. `create --wait-minutes N` waits up to N minutes, polling every 30 s, only while what blocks is in use: a running golden VM or guest, or a clone whose creating process lives; a stopped clone left by an exited creator is refused at once, naming it. A refusal reports `waitedMs`. See [Tart VMs](#tart-vms). |
 | `vm leases` | host | Lists each line's clone with `state` `free`, `held` (running, or its creating worktree still exists), or `stale` (stopped, with its worktree gone or no recorded owner), the owner's worktree, run, and time, and how many guests run. A stale clone is only reported. Only its creator destroys it, or a coordinating session after `vm leases` and the refusal both show that the creating process has exited and its worktree is gone. |
 | `vm icloud [--line] [--resume]` | desktop in a VM | Read iCloud Keychain's state from System Settings (`syncing`, `unknown`; exit 3 `ICLOUD_KEYCHAIN_PAUSED` when paused, signed out, or `needs-attention`: the connect alert shows, or `vm onboard` met it in this clone, so the golden VM's account needs renewing); `--resume` runs Resume Data Sync and answers its dialogs, including a picker-bypass request over the screen and "This Mac can't connect to iCloud" over the password sheet (Later). |
@@ -336,13 +341,14 @@ Rejected text stays editable and does not require a relaunch.
 
 Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 `precondition` (a `waitFor` that fails with `PRECONDITION_NOT_MET` and its `text` as the remedy, for the
-state a scenario starts from, such as no active session or no set an earlier run left behind), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
+state a scenario starts from, such as no active session or no set an earlier run left behind), `tap` (`repeat`
+taps the element, located once, that many times with `seconds` between taps; not on iOS), `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
 (`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
-`relaunch`. iOS only: `launchApp` (`bundleId`, brought forward without being
+`relaunch`. `openURL` (`url`) opens a link on iOS and Android, as a message or a camera scan does. iOS only: `launchApp` (`bundleId`, brought forward without being
 terminated), `terminateApp` (`bundleId`, ended if it runs, for example Safari
 before `openURL`, because the first page an already running Safari opens after
-a website pause ends can hang), `openURL` (`url`), and `pressKeys` (`secret`: the name
+a website pause ends can hang), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
 removed from the xcodebuild log), `swipeBack`, the system back gesture:
@@ -466,7 +472,8 @@ test Apple Account, and Keychain items is in
   already covers the rest of a run), for 24 hours. A claim the ledger refuses below its reserve stops the clone
   with `DISK_SPACE_LOW` and the ledger's reason; `--allow-low-disk` claims
   below the reserve instead. `vm destroy` releases the lease once the clone
-  is gone. Without the ledger, or when a call fails or times out, the driver
+  is gone. `linux create` and `linux destroy` do the same for
+  `tart:posato-run-linux`, without `--allow-low-disk`. Without the ledger, or when a call fails or times out, the driver
   logs one line and goes on.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
   secrets from the login Keychain; labels assume an English guest. The first
@@ -516,6 +523,78 @@ with a notarized candidate, for update and release checks:
 The evidence is `candidate-install.json` in the run directory. After an
 update relaunches the application, `launch -t desktop --vm <line> --adopt`
 tracks the new process.
+
+## Linux and Android
+
+`-t android` and `-t linux` are targets like the others: `doctor`, `build`,
+`install`, `launch`, `terminate`, `status`, `snapshot`, `find`, `tap`, `type`,
+`press`, `wait`, `run`, `screenshot`, `logs`, `db`, `reset`, `cleanup`,
+`observe`, and every `flow` take them. Both read the same element tree as the
+Mac and iOS (roles, labels, paths), so a query or a scenario step means the
+same thing on each target. Posato's shared Compose screens draw the same
+controls on the Mac, Android, and Linux; flows branch only for iOS.
+
+**Android** runs on a phone or an emulator: `--udid <adb serial>`, or the
+serial in `posato.android.serial`. `devices list` shows what adb lists. Never
+use an emulator another person works on.
+
+- The tree is read with UIAutomator (`uiautomator dump`), the framework under
+  Appium and Maestro; it covers the whole screen, so the VPN, permission, and
+  battery requests are addressed like Posato's own controls. A Compose control
+  (a clickable view with its texts and role marker as children) reads as one
+  button labelled by its texts. Taps, text, keys, and swipes use `input`; text
+  is printable ASCII without `%`.
+- `build -t android` builds the debug APK. `install -t android --grants
+  all|settings|none` installs it: `all` (the default) also gives the VPN
+  consent, notifications, and the battery exemption, so no request appears;
+  `settings` gives only what a person switches on in Settings (usage access,
+  display over other apps, exact alarms, all-files access) and leaves the
+  requests to onboarding, as a person meets them; `none` gives nothing.
+- `flow onboard -t android [--website W]` walks first-run onboarding from
+  whatever step it shows, answering each system request with its allow
+  button. `reset -t android --yes` uninstalls (`--keep-install` clears data).
+- `doctor -t android` reports the device and its Android version, the APK,
+  the installation, another app's active VPN (a website pause turns it off),
+  strict private DNS (which bypasses website pausing), and a screen lock
+  (after a reboot Posato runs only once a person unlocks the phone).
+- `observe -t android --website URL --application PACKAGE --expect
+  blocked|allowed` reads the address the name resolves to (a pause answers
+  `0.0.0.0` or `127.0.0.1`) and opens the package to see whether "Paused by
+  Posato" covers it.
+- `db -t android` and `logs -t android` copy the databases through `run-as`
+  and read logcat. A scenario's `openURL` step opens a link, such as
+  `posato://join?code=...`, as a camera scan or a message would.
+- `android shell --script S` runs an `adb shell` script on the device.
+
+**Linux** runs in a Tart Ubuntu clone, `posato-run-linux`, of the golden VM
+that `posato.vm.linuxGolden` names (its one-time setup is in
+[the unattended verification guide](../../docs/development/unattended-verification.md)).
+
+- `linux create` clones the golden VM, boots it with the host directory
+  `build/verification/linux-share/posato-sync` mounted at `/mnt/shared`, and
+  waits for the X11 session; `boot`, `stop`, and `destroy` manage the clone,
+  and `linux exec --script S` runs a shell script as the session user. Do not
+  run the Linux clone and a macOS clone at the same time: two virtualization
+  guests under load have crashed the Linux guest.
+- `build -t linux` builds the package inputs on the host; `install -t linux`
+  packages a `.deb` with `jpackage` in the clone and installs it with `apt`.
+- The tree is Posato's accessibility tree on AT-SPI, read in the guest with
+  `pyatspi` (the helper `src/main/resources/linux/posato-atspi.py`). `launch
+  -t linux` starts Posato with the guest's `java-atk-wrapper`, on a session
+  bus kept in `/tmp/posato-dbus`, so Compose publishes its semantics there.
+  Compose reports bounds on Linux with offsets that do not match the screen,
+  so `tap` performs the element's accessibility action, as the Mac presses,
+  and `type` focuses the field through AT-SPI before `xdotool` types.
+- `flow onboard -t linux` installs the pausing service; the guest's polkit
+  rule lets the session user approve `pkexec` without a password.
+- `observe -t linux --website URL --application PATH` reads `getent ahosts`
+  (a pause answers `0.0.0.0` or `::`) and starts the program on Posato's
+  session bus, then checks whether a process still runs that file.
+
+The folder workspace runs between any of these devices and Mac guests with
+`flow folder` and `relay` between their folders. Each device keeps its own
+local folder: macOS guests `$HOME/PosatoSync`, the Linux clone
+`/mnt/shared/posato-sync`, and Android `/sdcard/PosatoSync`.
 
 ## Evidence and state
 

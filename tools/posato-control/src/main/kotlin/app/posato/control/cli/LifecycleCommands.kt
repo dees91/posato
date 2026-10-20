@@ -1,5 +1,8 @@
 package app.posato.control.cli
 
+import app.posato.control.android.AndroidBackend
+import app.posato.control.android.AndroidDevice
+import app.posato.control.android.AndroidGrants
 import app.posato.control.apple.Devicectl
 import app.posato.control.apple.PhysicalDevice
 import app.posato.control.apple.Simctl
@@ -20,6 +23,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.choice
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
@@ -41,9 +45,21 @@ class BuildCommand : ControlCommand("build", "Build the application for the targ
     )
 }
 
-class InstallCommand : ControlCommand("install", "Install the built application on the simulator or device.") {
-    override fun execute(session: Session): JsonElement =
-        ControlJson.pretty.encodeToJsonElement(StatusResult.serializer(), session.backend().install())
+class InstallCommand : ControlCommand("install", "Install the built application on the simulator, device, Android, or the Linux clone.") {
+    private val grants by option(
+        "--grants",
+        help = "Android: all (every grant, as for unattended runs), settings (only the Settings-page grants; " +
+            "onboarding raises the VPN, notification, and battery requests), or none.",
+    ).choice(AndroidGrants.choices)
+
+    override fun execute(session: Session): JsonElement {
+        val backend = session.backend()
+        grants?.let { chosen ->
+            if (backend !is AndroidBackend) throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--grants applies to the android target.")
+            backend.grants = chosen
+        }
+        return ControlJson.pretty.encodeToJsonElement(StatusResult.serializer(), backend.install())
+    }
 }
 
 class LaunchCommand : ControlCommand("launch", "Launch the application and track its process.") {
@@ -85,17 +101,27 @@ class StatusCommand : ControlCommand("status", "Report installation, process, an
 data class DeviceInventory(
     val simulators: List<SimulatorDevice>,
     val devices: List<PhysicalDevice>,
+    /** Android phones and emulators adb lists, with their state (`device`, `unauthorized`, `offline`). */
+    val android: List<AndroidListing> = emptyList(),
+)
+
+@Serializable
+data class AndroidListing(
+    val serial: String,
+    val state: String,
+    val model: String? = null,
 )
 
 class DevicesCommand : CliktCommand(name = "devices") {
-    override fun help(context: Context): String = "List, boot, or shut down simulators and list paired iPhones."
+    override fun help(context: Context): String = "List, boot, or shut down simulators and list paired iPhones and Android devices."
 
     override fun run() = Unit
 }
 
-class DevicesListCommand : ControlCommand("list", "List available simulators and paired physical devices.") {
+class DevicesListCommand : ControlCommand("list", "List available simulators, paired iPhones, and Android devices.") {
     override fun execute(session: Session): JsonElement {
-        val inventory = DeviceInventory(Simctl(session.context).listDevices(), Devicectl(session.context).listDevices())
+        val adb = session.context.subprocess.run(listOf(AndroidDevice.ADB, "devices", "-l")).stdout
+        val inventory = DeviceInventory(Simctl(session.context).listDevices(), Devicectl(session.context).listDevices(), parseAdbDevices(adb))
         return ControlJson.pretty.encodeToJsonElement(DeviceInventory.serializer(), inventory)
     }
 }
@@ -134,4 +160,11 @@ class DevicesShutdownCommand : ControlCommand("shutdown", "Shut down every boote
         simctl.listDevices().filter { it.state == "Booted" }.forEach { simctl.shutdown(it.udid) }
         return ControlJson.pretty.encodeToJsonElement(ListSerializer(SimulatorDevice.serializer()), simctl.listDevices())
     }
+}
+
+/** `adb devices -l`: a header, then one line per device with its serial, state, and `key:value` details. */
+internal fun parseAdbDevices(output: String): List<AndroidListing> = output.lines().drop(1).mapNotNull { line ->
+    val fields = line.trim().split(Regex("\\s+"))
+    if (fields.size < 2) return@mapNotNull null
+    AndroidListing(fields[0], fields[1], fields.firstOrNull { it.startsWith("model:") }?.substringAfter("model:"))
 }

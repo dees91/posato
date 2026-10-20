@@ -33,9 +33,11 @@ internal enum class OnboardingStep {
     SUMMARY
 }
 
-internal enum class OnboardingPermissionPlatform {
+public enum class OnboardingPermissionPlatform {
     IOS,
-    MAC
+    MAC,
+    LINUX,
+    ANDROID,
 }
 
 internal data class OnboardingViewState(
@@ -56,6 +58,7 @@ internal class OnboardingUiState(
     private val applicationAccess: ApplicationAccessPort,
     val helperSetup: MacHelperSetupUiState,
     private val scope: CoroutineScope,
+    private val offersIcloud: Boolean = true,
 ) {
     var step by mutableStateOf(OnboardingStep.PURPOSE)
         private set
@@ -105,10 +108,13 @@ internal class OnboardingUiState(
         }
         step = when (step) {
             OnboardingStep.PURPOSE -> OnboardingStep.PRIVACY
-            OnboardingStep.PRIVACY -> OnboardingStep.ICLOUD
+            OnboardingStep.PRIVACY -> if (offersIcloud) OnboardingStep.ICLOUD else OnboardingStep.PERMISSION
             OnboardingStep.ICLOUD -> OnboardingStep.PERMISSION
             OnboardingStep.PERMISSION -> OnboardingStep.WEBSITE
             OnboardingStep.WEBSITE, OnboardingStep.SUMMARY -> OnboardingStep.SUMMARY
+        }
+        if (step == OnboardingStep.PERMISSION && accessResult == null) {
+            scope.launch { applicationAccess.currentAccess()?.let { current -> if (accessResult == null) accessResult = current } }
         }
     }
 
