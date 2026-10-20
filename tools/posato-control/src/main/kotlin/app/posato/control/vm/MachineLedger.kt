@@ -11,11 +11,11 @@ import java.nio.file.Path
 import java.time.Duration
 
 /**
- * The host's `machine-ledger`, which keeps leases on large artifacts so that sessions of every project share one free
- * space reserve. `vm create` and `linux create` claim their clone before cloning, and `vm destroy` and `linux destroy`
- * release it. The ledger is cooperative:
+ * The host's `machine-ledger`, which keeps leases on large artifacts and on memory so that sessions of every project
+ * share one free space reserve and one memory budget. `vm create` and `linux create` claim their clone before cloning,
+ * with the memory the clone will take, and `vm destroy` and `linux destroy` release it. The ledger is cooperative:
  * a host without it, or one whose call fails or hangs, still creates and destroys clones, and only a claim the ledger
- * refuses below its reserve stops a clone.
+ * refuses, below its disk reserve or beyond its memory budget, stops a clone.
  */
 internal class MachineLedger(
     private val binary: Path?,
@@ -23,14 +23,16 @@ internal class MachineLedger(
     private val run: (List<String>) -> ProcessOutput,
 ) {
     /**
-     * Claims [clone], about to be created in [cloneDirectory] by [worktree] with [command]. [belowReserve], for a
-     * clone created with `--allow-low-disk`, records the lease even below the reserve.
+     * Claims [clone], about to be created in [cloneDirectory] by [worktree] with [command], and the [memoryMib] its
+     * guest will take once it runs, when known. [belowReserve], for a clone created with `--allow-low-disk`, records
+     * the lease even below the disk reserve; nothing overrides the memory budget.
      */
     fun claim(
         clone: String,
         cloneDirectory: Path,
         worktree: Path,
         belowReserve: Boolean,
+        memoryMib: Int? = null,
         command: String = "vm create",
     ) {
         if (binary == null) {
@@ -41,12 +43,14 @@ internal class MachineLedger(
             addAll(listOf(binary.toString(), "claim", "--owner", OWNER, "--kind", KIND, "--id", leaseId(clone)))
             addAll(listOf("--path", cloneDirectory.toString(), "--size", CLONE_GROWTH, "--ttl", LEASE_TTL))
             addAll(listOf("--note", "posato-control $command in $worktree"))
+            memoryMib?.let { addAll(listOf("--memory", "${it}M")) }
             if (belowReserve) add("--below-reserve")
         }
         val output = call(claim, "claim") ?: return
         when (output.exitCode) {
             0 -> log(output.stdout.trim())
             REFUSED -> throw refusal(clone, output.stderr)
+            REFUSED_MEMORY -> throw memoryRefusal(clone, output.stderr)
             else -> log("machine-ledger claim exited with ${output.exitCode}; creating $clone without a lease: ${output.stderr.trim()}")
         }
     }
@@ -82,6 +86,17 @@ internal class MachineLedger(
             "and create the clone anyway.",
     )
 
+    /** The ledger's reason lists what runs and its memory; only stopping something frees it, so no flag goes on. */
+    private fun memoryRefusal(
+        clone: String,
+        stderr: String
+    ) = ControlException(
+        ErrorCode.HOST_MEMORY_COMMITTED,
+        stderr.trim().ifEmpty { "machine-ledger refused the lease ${leaseId(clone)}: the host's memory is committed." },
+        "Ask the maintainer what to stop: `machine-ledger host` lists the running VMs, emulators, simulators and Colima " +
+            "with their memory. Do not work around the refusal.",
+    )
+
     companion object {
         private const val OWNER = "Polyglot/posato"
         private const val KIND = "tart-vm"
@@ -99,6 +114,9 @@ internal class MachineLedger(
 
         /** machine-ledger's exit code for a claim that would leave less free space than its reserve. */
         private const val REFUSED = 3
+
+        /** machine-ledger's exit code for a claim beyond its memory budget, or during a quiet measurement. */
+        private const val REFUSED_MEMORY = 4
         private val TIMEOUT: Duration = Duration.ofMinutes(1)
 
         private fun leaseId(clone: String) = "tart:$clone"

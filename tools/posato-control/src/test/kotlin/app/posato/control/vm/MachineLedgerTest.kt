@@ -15,7 +15,8 @@ import kotlin.test.assertTrue
 
 /**
  * `vm create` claims a lease from the host's machine-ledger before it clones. Failure modes: a claim that machine-ledger
- * reads as another artifact or without the allowed shortage, a refusal below the reserve that still clones, and a host
+ * reads as another artifact or without the allowed shortage, a refusal below the reserve or beyond the memory budget
+ * that still clones, a memory refusal that offers a flag to override it, and a host
  * without machine-ledger, or with one that fails, that can no longer create a clone. E2E runs on one host whose
  * ledger is installed and admits the claim, so it reaches none of these.
  */
@@ -51,6 +52,28 @@ class MachineLedgerTest {
         assertEquals("24h", command.option("--ttl"))
         assertTrue(command.option("--note").orEmpty().contains(worktree.toString()))
         assertFalse("--below-reserve" in command)
+    }
+
+    @Test
+    fun `a claim carries the memory its guest will take, in MiB, and none when Tart could not tell`() {
+        ledger().claim("posato-run-primary", cloneDirectory, worktree, belowReserve = false, memoryMib = 8192)
+        ledger().claim("posato-run-primary", cloneDirectory, worktree, belowReserve = false)
+
+        assertEquals("8192M", commands[0].option("--memory"))
+        assertFalse("--memory" in commands[1])
+    }
+
+    @Test
+    fun `a claim refused for memory stops the clone with the ledger's list of what runs, and no flag overrides it`() {
+        val reason = "machine-ledger: claim refused for tart:posato-run-primary (Polyglot/posato): ceilings 24.0 GiB"
+
+        val failure = assertFailsWith<ControlException> {
+            ledger(exitCode = 4, stderr = "$reason\n").claim("posato-run-primary", cloneDirectory, worktree, true, 8192)
+        }
+
+        assertEquals(ErrorCode.HOST_MEMORY_COMMITTED, failure.code)
+        assertTrue(failure.message.orEmpty().contains(reason))
+        assertFalse(failure.hint.orEmpty().contains("--allow-low-disk"))
     }
 
     @Test

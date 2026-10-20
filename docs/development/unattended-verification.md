@@ -25,8 +25,8 @@ login Keychain.
   to a hard floor of 5 GB. Purgeable space, such as Time Machine local
   snapshots, does not count as free.
   On a host with `machine-ledger`, `vm create` and `linux create` also claim
-  a 5 GB lease for the clone and stop when the ledger refuses it below its
-  own reserve.
+  a 5 GB lease for the clone, with the guest's memory, and stop when the
+  ledger refuses it below its own disk reserve or beyond its memory budget.
 - An Apple Developer Program membership, and the App Store Connect team key
   described in [Apple development provisioning](apple-provisioning.md).
 - A dedicated test Apple Account with two-factor authentication. Use an

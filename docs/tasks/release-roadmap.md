@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 23 (2026-10-20: release 1.5 completed with `SESSION-010`, `TARGETS-010`, and `DOCS-006`)
+- **Revision:** 24 (2026-10-20: four maintainer ideas join release 1.5, four more are 1.6 candidates)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-20
@@ -189,6 +189,16 @@
   maintainer chose a GitHub Actions x86-64 runner for the x86-64 Linux
   package, so `RELEASE-007` builds the `.deb` for both architectures and
   publishes a release-signed Android APK.
+  Revision 24 files the maintainer's ideas 40 to 47 (`user-confirmed`,
+  2026-10-20). Four small rows join release 1.5 before `DOCS-006`:
+  `TARGETS-011` (no warning for a set without apps), `MACOS-028` (the
+  window that opens with only its toolbar), `SYNC-023` (when the last sync
+  happened), and `TARGETS-012` (duplicate a pause set). Four larger rows
+  enter the backlog as candidates for release 1.6: `MACOS-029` (resume
+  restrictions without a press when administrator approval is on),
+  `SCHEDULE-007` (a break in a scheduled pause), `TARGETS-013` (a website
+  opened briefly every N minutes), and `HISTORY-001` (a calm history of
+  pauses kept as planned).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -470,6 +480,9 @@ Revision 23 adds `SESSION-010` and `TARGETS-010` as separate pull
 requests after the long run, each with its own record path. `DOCS-006`
 captures the final interface, so it follows them, and `RELEASE-007` comes
 last.
+Revision 24 adds `TARGETS-011`, `MACOS-028`, `SYNC-023`, and
+`TARGETS-012` to wave 4 as separate lightweight or recorded pull requests;
+`DOCS-006` waits for them too.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -479,8 +492,12 @@ last.
 | `ANDROID-001` | Ship Posato for Android from the shared interface: websites blocked by a local DNS filter (`VpnService`), applications by usage access and a full-screen block screen, schedules, the folder transport, and `posato-control -t android` on an emulator, ending with a Linux, Android, and Mac workspace that pauses across all three. | Platform coverage | delivery | R1.5/W3 | `SYNC-018`, `LINUX-001` | PR-ANDROID |
 | `SESSION-010` | Capture an adopted session's paused items after the same pass's pause-set changes are applied: a device that links while another device's pause is running adopts that session in the session phase, before the policy phase writes the set's websites locally, so it freezes its pre-link set and enforces nothing (`NOTHING_TO_ENFORCE`) until the next pause. Write the failing exchange test first, then recapture once after the policy phase or read the set's websites from the converged projection, without letting a policy-capacity failure suppress a session end. Present since sync began; also affects iCloud links. | Sessions and enforcement | delivery | R1.5/W4 | `SYNC-018` | PR-SESSION-ADOPTION |
 | `TARGETS-010` | Refresh a pause set's "Apps on this Mac" or apps summary in the Pause sets list as soon as applications are chosen, removed, or cleared, without waiting for a policy change: emit the device-local application mappings' invalidations after every successful change on every platform, and check the other readers of those invalidations (Schedules set source, session recompose, Mac presence). Not a regression: published 1.3.0 behaves the same. | Target management | delivery | R1.5/W4 | `ANDROID-001` | PR-SET-SUMMARY |
-| `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010` | PR-RELEASE-1-5-MEDIA |
-| `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `DOCS-006` | PR-RELEASE-1-5 |
+| `TARGETS-011` | Treat a pause set with websites and no apps chosen on this device as complete: drop the warning "Apps aren't chosen for this set on this Mac. The pause includes its websites." from session Review and schedule rows on every platform, keep **Choose apps** reachable in the set, and update `DESIGN.md` readiness. A set with neither still offers **Add websites or apps**. | Target management | delivery | R1.5/W4 | `ANDROID-001` | PR-SET-READINESS |
+| `MACOS-028` | Open the Mac window at its normal size every time: reproduce in a Tart clone when Posato shows a tiny window with only its toolbar (a launch, a login launch, reopening from the menu bar, or a restore after the window was closed), fix it test first, and verify each opening path. | Platform coverage | delivery | R1.5/W4 | None | PR-MAC-WINDOW-SIZE |
+| `SYNC-023` | Show when this device last synchronized: the date and time of the last completed exchange in the synchronization section on every platform, for iCloud and folder workspaces, kept on the device and never synchronized; the state for no sync yet and for a failing sync stays as it is. | Portable synchronization | delivery | R1.5/W4 | `SYNC-018` | PR-LAST-SYNC |
+| `TARGETS-012` | Duplicate a pause set from its menu: a new set named "<name> (copy)" with the same websites through the existing set authoring and its limit of 10, and this device's chosen apps copied locally; other devices choose their own apps as for any new set. | Target management | delivery | R1.5/W4 | `ANDROID-001` | PR-SET-DUPLICATE |
+| `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012` | PR-RELEASE-1-5-MEDIA |
+| `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `DOCS-006` | PR-RELEASE-1-5 |
 
 ## Backlog
 
@@ -503,6 +520,10 @@ The idea numbers refer to the wiki idea queue.
 | `SYNC-022` | Finish what `SYNC-021` deferred: build the verification-only seeding operation; rebuild the long-history fixture and show a pre-fix failure on it; one press in 3 fresh Tart clones, after a settled link, and across a window close and reopen; then clean the test Apple Account's zone with the `SYNC-021` controls and waits, and run the iPhone check of `AC-05`. The zone is cleaned only after seeding exists or after `IOS-008` has reproduced on the current history. Also decide whether the first sync after a link should page a long history in larger passes (idea 35). | Sessions and enforcement | Idea 35; `SYNC-021` deferrals | A release composition; the test account keeps its history until then |
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
 | `SESSION-009` | Clear the Mac's "Restrictions not active on this Mac" notice when a session that arrived from another device ends unresumed: when the early return in `clearAfterEnd` finds nothing applied (`confirmedClear` and no enforced identity), also clear the pending action and return the view to inactive, so the transition owner stops re-sending transitions in a tight loop that flickers the Resume button and rereads the store. Test first with an isolated regression in the session owner tests, then one linked Mac VM and test-iPhone run. Present since at least 1.0.0; a relaunch clears it. | Sessions and enforcement | Idea 38; maintainer report 2026-10-10 | A release composition |
+| `MACOS-029` | Resume restrictions on the Mac without a press when the administrator approval switch is on: a pause received from another device, after sleep, and after a login launch applies by itself, and "Restrictions not active on this Mac" with **Resume restrictions** remains only when approval is off or applying fails. Revises the `DESIGN.md` rule that synchronization and a login launch never apply by themselves; fold in `SESSION-009`. | Sessions and enforcement | Idea 44 | A release composition; candidate for 1.6; High-risk plan review (authorization) |
+| `SCHEDULE-007` | Take a break in a running scheduled pause: release restrictions for a chosen number of minutes and apply them again automatically until the occurrence's end, on every device of the workspace; decide how many breaks and how long, beside the early-end friction of `SESSION-005`. | Schedules | Idea 45 | A release composition; candidate for 1.6 |
+| `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; discovery before delivery. | Target management | Idea 46 | A release composition; candidate for 1.6 |
+| `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan. | Product discovery | Idea 47 | A release composition; candidate for 1.6 |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
 | `PLATFORM-002` | Bring Posato to Windows under ADR 0010: enforcement mechanism, privilege model, packaging, and verification. | Platform coverage | `PLATFORM-001` | A planning checkpoint after release 1.5 |
@@ -543,6 +564,7 @@ The idea numbers refer to the wiki idea queue.
 | Linux and Android with folder synchronization | `PLATFORM-001`, `SYNC-018`, `LINUX-001`, `ANDROID-001` | Accepted ADR 0010; `posato-control` runs on two Tart Macs, a Tart Ubuntu guest, and an Android emulator sharing one folder, with blocking observed on each |
 | A device that joins during a pause enforces it | `SESSION-010` | The failing exchange test first; a device linked during another device's pause blocks the set's websites without waiting for the next pause |
 | Pause set summaries refreshed at once | `TARGETS-010` | The summary changes right after apps are chosen, removed, or cleared, in a Mac VM, on the test iPhone, and on Android |
+| Smaller frictions before 1.5 | `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012` | A set without apps shows no warning; the Mac window opens at its size on every path in a Tart clone; the last sync time on each platform; a duplicated set with its websites and this device's apps |
 | Public packaging for 1.5 | `DOCS-006` | Limits page and README updated, site built, Android and Linux screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 

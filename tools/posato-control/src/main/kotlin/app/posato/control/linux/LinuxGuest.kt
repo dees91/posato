@@ -27,7 +27,14 @@ class LinuxGuest(
 
     fun create(): String {
         if (tart.list().any { it.name == CLONE }) throw ControlException(ErrorCode.ALREADY_EXISTS, "$CLONE already exists; `linux destroy` first.")
-        ledger.claim(CLONE, tartHome().resolve("vms").resolve(CLONE), context.layout.root, belowReserve = false, command = "linux create")
+        ledger.claim(
+            CLONE,
+            tartHome().resolve("vms").resolve(CLONE),
+            context.layout.root,
+            belowReserve = false,
+            memoryMib = tart.memoryMib(golden),
+            command = "linux create",
+        )
         try {
             tart.clone(golden, CLONE)
         } catch (failure: ControlException) {

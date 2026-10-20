@@ -1260,6 +1260,32 @@ below. This queue retains idea provenance without expanding the original MVP.
     24 s. `inferred`: the same pass order applies to an iCloud link, so
     the defect predates folder sync. Filed as an agent proposal under the
     maintainer's delegation of 2026-10-09. Owner: backlog row `SESSION-010`.
+40. **A pause set without apps is complete.** `user-confirmed` (2026-10-20,
+    maintainer idea): blocking only websites is a normal case, so no warning
+    appears when a set has no apps chosen on a device. Owner: `TARGETS-011`
+    (release 1.5).
+41. **The Mac window sometimes opens tiny, with only its toolbar.**
+    Maintainer report (2026-10-20); the opening path is `open`. Owner:
+    `MACOS-028` (release 1.5).
+42. **When did this device last sync?** `user-confirmed` (2026-10-20): show
+    the date and time of the last completed sync. Owner: `SYNC-023`
+    (release 1.5).
+43. **Duplicate a pause set.** `user-confirmed` (2026-10-20). Owner:
+    `TARGETS-012` (release 1.5).
+44. **Resume restrictions without a press.** `user-confirmed` (2026-10-20):
+    the red "Restrictions not active on this Mac" notice should not need the
+    person when administrator approval is on; it remains when approval is
+    off. Revises a `DESIGN.md` rule. Owner: `MACOS-029` (candidate for 1.6).
+45. **A break in a scheduled pause.** `user-confirmed` (2026-10-20): pause
+    a running scheduled pause for some minutes, then restrictions return
+    until the occurrence ends. Owner: `SCHEDULE-007` (candidate for 1.6).
+46. **A website opened briefly every N minutes.** `user-confirmed`
+    (2026-10-20): for example a news site once an hour for a few minutes,
+    configurable. Owner: `TARGETS-013` (candidate for 1.6).
+47. **A calm history of pauses.** `user-confirmed` (2026-10-20): a chart
+    like GitHub's contribution graph of days kept as planned, chosen in a
+    calm form without streaks, scores, or shame (the `DESIGN.md` brand
+    rule). Owner: `HISTORY-001` (candidate for 1.6).
 
 ## Later platform questions
 

@@ -4,6 +4,7 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -24,6 +25,11 @@ internal fun parseTartList(json: String): List<TartVm> = ControlJson.lenient.par
     val vm = element.jsonObject
     TartVm(vm.getValue("Name").jsonPrimitive.content, vm["Running"]?.jsonPrimitive?.boolean ?: false)
 }
+
+/** Reads the configured memory, in MiB, from `tart get --format json`; null when it is missing or unreadable. */
+internal fun parseTartMemory(json: String): Int? = runCatching {
+    ControlJson.lenient.parseToJsonElement(json).jsonObject["Memory"]?.jsonPrimitive?.intOrNull
+}.getOrNull()
 
 /**
  * Refuses a clone that would break the environment. A golden VM and its own clone share a provisioning identifier,
