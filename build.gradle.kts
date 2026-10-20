@@ -165,6 +165,9 @@ val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityEx
             "shared/src/commonMain/kotlin/app/posato/feature/session/ui/SessionTransitionOwner.kt:" +
                 annotationMarker + exceptionName + "(\"TooManyFunctions\")" +
                 "\ninternal class SessionTransitionOwner(",
+            "androidApp/src/main/kotlin/app/posato/android/Permissions.kt:" +
+                annotationMarker + exceptionName + "(\"DEPRECATION\")" +
+                "\n    private fun usageAccessModeBeforeBaklava(",
         ),
     )
 }

@@ -6,6 +6,7 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Environment
 import android.os.PowerManager
 import android.os.Process
@@ -15,8 +16,26 @@ import android.provider.Settings
 internal object Permissions {
     fun usageAccess(context: Context): Boolean {
         val appOps = context.getSystemService(AppOpsManager::class.java)
-        return appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName, null) ==
-            AppOpsManager.MODE_ALLOWED
+        val op = AppOpsManager.OPSTR_GET_USAGE_STATS
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            appOps.checkOpNoThrow(op, Process.myUid(), context.packageName, null)
+        } else {
+            usageAccessModeBeforeBaklava(appOps, op, context.packageName)
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    /**
+     * The overload with an attribution tag arrived in Android 16 and replaced this one, so Android 13 to 15 can only
+     * check the grant through the replaced call (approved exception, 2026-10-20).
+     */
+    @Suppress("DEPRECATION")
+    private fun usageAccessModeBeforeBaklava(
+        appOps: AppOpsManager,
+        op: String,
+        packageName: String
+    ): Int {
+        return appOps.unsafeCheckOpNoThrow(op, Process.myUid(), packageName)
     }
 
     fun overlay(context: Context): Boolean {
