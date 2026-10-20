@@ -191,7 +191,8 @@ private fun PosatoWindow(
             this.window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
             this.window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
             this.window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
-            this.window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, 0)
+            // A height floor keeps the window from shrinking to its toolbar, and enlarges a remembered size below it.
+            this.window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, MINIMUM_WINDOW_HEIGHT)
         }
         WindowChrome(this.window, state.placement == WindowPlacement.Fullscreen, onContrastChange = { highContrast = it })
         MacBackInputEffect(backInput)
@@ -208,4 +209,5 @@ private fun PosatoWindow(
 
 private val LOADING_MENU = PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null)
 private const val MINIMUM_WINDOW_WIDTH: Int = 614
+private const val MINIMUM_WINDOW_HEIGHT: Int = 480
 private const val MENU_REFRESH_MILLIS: Long = 60_000L
