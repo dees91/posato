@@ -73,6 +73,7 @@ import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.folder.FolderSyncControls
+import app.posato.feature.sync.folder.PairingLinks
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
@@ -517,6 +518,12 @@ class PosatoApplication internal constructor(
                 navigation.destination = ApplicationDestination.SESSION
                 navigation.showInformation(null)
                 latestOnRequest(request)
+            }
+        }
+        // A join link opened on another screen brings Session's sync section forward, which then takes its code.
+        LaunchedEffect(Unit) {
+            PairingLinks.code.collect { code ->
+                if (code != null) navigation.select(ApplicationDestination.SESSION)
             }
         }
     }

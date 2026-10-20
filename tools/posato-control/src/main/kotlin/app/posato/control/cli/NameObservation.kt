@@ -1,6 +1,8 @@
 package app.posato.control.cli
 
 import app.posato.control.android.AndroidDevice
+import app.posato.control.core.ControlException
+import app.posato.control.core.ErrorCode
 import app.posato.control.desktop.ApplicationObservation
 import app.posato.control.desktop.Observer
 import app.posato.control.desktop.PageOutcome
@@ -47,7 +49,11 @@ class AndroidObserver(
         name: String,
         seconds: Int,
     ): ApplicationObservation {
-        device.shell("monkey -p ${shellQuote(name)} -c android.intent.category.LAUNCHER 1")
+        // A launch that did not happen proves nothing: an absent package would otherwise read as allowed.
+        val launch = device.shell("monkey -p ${shellQuote(name)} -c android.intent.category.LAUNCHER 1 2>&1")
+        if (launch.exitCode != 0 || "monkey aborted" in launch.stdout || "No activities found" in launch.stdout) {
+            throw ControlException(ErrorCode.COMMAND_FAILED, "Could not open $name on the device: ${launch.stdout.trim()}")
+        }
         Thread.sleep(seconds * MILLIS_PER_SECOND)
         val covered = device.snapshot().flatten().any { it.label == BLOCK_SCREEN_TITLE }
         device.input.key("KEYCODE_HOME")
@@ -77,6 +83,10 @@ class LinuxObserver(
         seconds: Int,
     ): ApplicationObservation {
         val path = shellQuote(name)
+        // A program that cannot start proves nothing: it would otherwise read as ended by the pause.
+        if (guest.exec("[ -f $path ] && [ -x $path ]").exitCode != 0) {
+            throw ControlException(ErrorCode.COMMAND_FAILED, "$name is not an executable file in the Linux guest.")
+        }
         // On another session bus the program would start its own AT-SPI bus and hide Posato's tree from later reads.
         guest.exec("export DBUS_SESSION_BUS_ADDRESS=\$(cat ${LinuxAccessibility.BUS_FILE}); nohup $path >/dev/null 2>&1 &")
         Thread.sleep(seconds * MILLIS_PER_SECOND)
