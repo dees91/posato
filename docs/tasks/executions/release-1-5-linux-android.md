@@ -8,10 +8,8 @@
 
 ## Plan
 
-1. The folder supplies the existing bootstrap, cloud, key, and mailbox ports;
-   `SyncOperationCore`, the reducer, codecs, and replica store stay unchanged.
-   The `Posato` directory is the zone, `workspace` the anchor, a pairing code
-   delivers the key, and a one-minute poll triggers fetches.
+1. The folder supplies the existing sync ports (the directory is the zone,
+   `workspace` the anchor, a pairing code delivers the key, a one-minute poll).
 2. The sync section offers iCloud (Apple hosts) or a folder: choose, create
    or join with a code, show a code, remove.
 3. Linux: XDG paths, a root `linuxHelper` (hosts block, process ending,
@@ -49,7 +47,6 @@
   bookmarks on iOS), `FolderPairing`, `SelectableSyncPorts`. Android seals
   the key with Keystore, the desktop keeps a `0600` file, iOS uses complete
   file protection.
-- **Linux (`LINUX-001`)** and **Android (`ANDROID-001`)** as planned.
 - **Pairing by QR code and link** (`user-confirmed` 2026-10-19): the code
   dialog shows a QR code of `posato://join?code=<code>` with **Share link** or
   **Copy link**; iOS, Android, and the Mac open the link into the code field
@@ -68,11 +65,14 @@
   `openURL` on Android. Text recognition and Maestro were weighed and set
   aside (`agent-delegated`): the first loses roles, the second adds a second
   flow language over the same UIAutomator.
-- **Backlog:** `SESSION-010` (idea 39), a pause running at link time is
-  adopted without its websites.
-- **Docs:** ADR 0010 (Proposed), the limits page's proposed 1.5 section, the
-  driver README, the `verify-posato` skill and feature maps, the unattended
-  verification guide, the wiki topics.
+- **Android polish (maintainer's request, 2026-10-20):** edge to edge on every
+  release, predictive back from Android 13, Back from Pause sets or Schedules
+  to Session (DESIGN.md, `user-confirmed`), menus that open after the keyboard
+  has gone, an access step that shows access already given (Android, Linux),
+  and access text naming every grant; `flow schedule` on the phone 270 to
+  142 s through located-once repeated taps.
+- **Linux and Android** as planned; **backlog:** `SESSION-010` (idea 39);
+  **docs:** ADR 0010 (Proposed), limits, driver README, skill, guide, wiki.
 
 ## Verification
 
@@ -94,7 +94,9 @@
 | Android `adb reboot` during a manual pause: resolves before the first unlock, paused again about 30 s after it, Clock covered | Passed; the unlock is a person's | runs `20261020-135843-416c`, `-140158-00c6`, `-140204-1640` |
 | Folder workspace between the Linux clone and the phone with `flow folder` on both | Passed | runs `20261020-131234-166f`, `-131756-3987`, `-132404-343e` |
 | Test iPhone (cable) at `87624b54`: picker, `flow folder link` without `--path` waits, the join link (`devicectl --payload-url`) joins, the Mac's set arrives; after the Mac's removal "Sync needs attention" and removal | Passed | `build/verification/e2e/ios-link3.log`, runs `20261020-141551-0eed`, `-142738-9aa9` |
-| `./gradlew quality` at `6d51afaa` | Passed | gradle run of the session |
+| Android polish on the Galaxy XCover7 at `dd980458` sources: no grey status bar, the access step with every grant shows Access allowed (the previous build showed Allow access, run `20261020-145201-3eb8`), the Pause set menu opens below its button with the keyboard up (before: above, run `20261020-144602-3693`), Back from Schedules and Pause sets to Session and out of Posato from Session; predictive back gesture on the Android 17 emulator shows the list under the set | Passed | runs `20261020-145115-a672`, `-145508-4364`, `-145758-5bde`, `-150958-6a62` |
+| Mac VM and Linux clone with the same sources: set, schedule with a set, session with a set, website paused; Linux onboarding without a website | Passed | `build/verification/e2e/menus-mac-linux.log`, run `20261020-151241-0d35` |
+| `./gradlew quality` at `dd980458` | Passed | gradle run of the session |
 
 ## Blockers and accepted risks
 
@@ -102,15 +104,14 @@
   folder on the iPhone kept the items of the first listing; listing now asks
   the provider to download the folder and reads under file coordination. No
   isolated test reproduces a File Provider; the device runs are the evidence.
-- `open` (iPhone, iCloud Drive): a removal by another device was not seen
-  within six minutes once, and about two minutes after it, on a relaunch,
-  another time.
+- `open` (iPhone, iCloud Drive): another device's removal was not seen within
+  six minutes once, and was seen after about two minutes another time.
 - IPv6 through the Android tunnel is checked by reading only (no IPv6 route
   on the phone's network); Android 13 itself was not run.
 - After a reboot, Android enforces only after the first unlock: Posato's data
   is credential-encrypted until then.
-- The x86-64 Linux package needs an x86-64 build machine (`RELEASE-007`).
-- The GitHub Projects mirror has no "1.5" Release option yet.
+- The x86-64 Linux package needs an x86-64 build machine (`RELEASE-007`); the
+  GitHub Projects mirror has no "1.5" Release option yet.
 - Real folder services (Dropbox, OneDrive, Syncthing) are not verified; the
   relay stands in for them, and iCloud Drive was used on Apple hosts only.
 

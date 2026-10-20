@@ -2857,6 +2857,9 @@ first removal attempt that does not finish, not to a paused keychain.
 - `posato-control` drives Android (UIAutomator, phones and emulators) and
   Linux (AT-SPI through `java-atk-wrapper`) with the shared commands and
   flows, as it drives the Mac and iOS.
+- `user-confirmed` (2026-10-20): Android is edge to edge with predictive back,
+  and Back from Pause sets or Schedules returns to Session before it leaves
+  Posato (DESIGN.md).
 - `open`: a removal by another device reaching the iPhone's view of an
   iCloud Drive folder (six minutes without it once, about two minutes
   another time), other folder services, IPv6 on a network that has it, and
