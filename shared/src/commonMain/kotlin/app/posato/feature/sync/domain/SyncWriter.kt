@@ -204,7 +204,7 @@ internal enum class OpenSyncWriterFailure {
 internal class SyncOperationCore(
     private val store: SyncReplicaStore,
     private val cryptoProvider: SyncCryptoProvider,
-    private val wallClock: SyncWallClock,
+    internal val wallClock: SyncWallClock,
 ) {
     private val mutex = Mutex()
     private var activeWriter: SyncWriter? = null

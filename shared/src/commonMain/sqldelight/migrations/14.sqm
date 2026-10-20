@@ -1,0 +1,8 @@
+CREATE TABLE sync_last_exchange (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (
+    typeof(workspace_id) = 'blob' AND length(workspace_id) = 16
+  ),
+  completed_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(completed_epoch_millis) = 'integer' AND completed_epoch_millis >= 0
+  )
+);

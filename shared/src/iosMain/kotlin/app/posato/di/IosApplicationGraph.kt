@@ -34,6 +34,7 @@ import app.posato.feature.sync.bootstrap.BootstrapCoordinator
 import app.posato.feature.sync.bootstrap.IosSyncBackgroundTime
 import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
+import app.posato.feature.sync.bootstrap.SqlLastSyncStore
 import app.posato.feature.sync.data.IosBootstrapCloudAdapter
 import app.posato.feature.sync.data.IosBootstrapKeychainAdapter
 import app.posato.feature.sync.data.IosCloudKitMailboxProvider
@@ -244,6 +245,7 @@ internal interface IosApplicationGraph :
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             backgroundTime = IosSyncBackgroundTime,
             onSetsRemoved = applicationMappings::retainSets,
+            lastSyncStore = SqlLastSyncStore(database, databaseDispatcher),
         )
     }
 }

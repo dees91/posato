@@ -7,6 +7,15 @@ CREATE TABLE sync_removed_workspace (
   )
 );
 
+CREATE TABLE sync_last_exchange (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (
+    typeof(workspace_id) = 'blob' AND length(workspace_id) = 16
+  ),
+  completed_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(completed_epoch_millis) = 'integer' AND completed_epoch_millis >= 0
+  )
+);
+
 CREATE TABLE sync_bootstrap_state (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
   candidate_workspace_id BLOB CHECK (
@@ -122,3 +131,15 @@ WHERE workspace_id = :workspace_id;
 countRemovedWorkspaces:
 SELECT count(*)
 FROM sync_removed_workspace;
+
+selectLastExchange:
+SELECT completed_epoch_millis
+FROM sync_last_exchange
+WHERE workspace_id = :workspace_id;
+
+recordLastExchange:
+INSERT OR REPLACE INTO sync_last_exchange(workspace_id, completed_epoch_millis)
+VALUES (:workspace_id, :completed_epoch_millis);
+
+clearLastExchanges:
+DELETE FROM sync_last_exchange;

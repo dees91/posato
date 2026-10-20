@@ -2884,3 +2884,11 @@ first removal attempt that does not finish, not to a paused keychain.
   `SYNC-023`, `TARGETS-012`); four that change enforcement, schedules, the
   synchronized model, or the brand rule are backlog candidates for 1.6
   (`MACOS-029`, `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001`).
+
+## [2026-10-20] feature | SYNC-023: when this device last synchronized
+
+- `observed`: a linked device's sync section shows "Last synced <time>"
+  for the last pass that completed, kept on the device per workspace and
+  never synchronized; a failing pass or a restart keeps the earlier time
+  (idea 42). A Galaxy XCover7 linked to a folder showed "Last synced
+  10:24 PM".

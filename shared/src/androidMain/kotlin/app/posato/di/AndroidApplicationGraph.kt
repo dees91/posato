@@ -39,6 +39,7 @@ import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
 import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
+import app.posato.feature.sync.bootstrap.SqlLastSyncStore
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
@@ -214,6 +215,7 @@ internal interface AndroidApplicationGraph :
             onWorkspaceRemoved = { sessions.dropRetainedMarkersExceptCurrent() },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             onSetsRemoved = applicationMappings::retainSets,
+            lastSyncStore = SqlLastSyncStore(database, databaseDispatcher),
         ).also(folderSync::startPolling)
     }
 }

@@ -27,6 +27,8 @@ internal class SyncBootstrapUiState(
     private val sync: AppleSync,
     private val scope: CoroutineScope,
     val folderControls: FolderSyncControls = AppleOnlySync,
+    /** A time of the last sync as the device writes times: the clock time today, the date and time before. */
+    val formatLastSync: (Long) -> String = { epochMillis -> epochMillis.toString() },
 ) {
     val syncState = sync.state
     val folder = folderControls.folder
@@ -171,9 +173,10 @@ internal class SyncBootstrapUiState(
 internal fun rememberSyncBootstrapUiState(
     sync: AppleSync,
     folderControls: FolderSyncControls = AppleOnlySync,
+    formatLastSync: (Long) -> String = { epochMillis -> epochMillis.toString() },
 ): SyncBootstrapUiState {
     val scope = rememberCoroutineScope()
-    val state = remember(sync, folderControls) { SyncBootstrapUiState(sync, scope, folderControls) }
+    val state = remember(sync, folderControls) { SyncBootstrapUiState(sync, scope, folderControls, formatLastSync) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = state::onForeground)
     return state
 }
