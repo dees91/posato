@@ -49,7 +49,7 @@ class SessionReviewTest {
     }
 
     @Test
-    fun `given websites and no apps chosen for the set when derived then apps are reported as not chosen`() {
+    fun `given websites and no apps chosen for the set when derived then nothing is required`() {
         val review = SessionReviewDerivation.derive(
             policyOf(listOf("stable.example")),
             LocalApplicationMappingsLoadResult.Success(
@@ -58,11 +58,12 @@ class SessionReviewTest {
             ),
         )
 
-        assertEquals(SessionActionRequired.MAPPINGS_NOT_CHOSEN, review.actionRequired)
+        // A set of websites only is complete (idea 40); choosing apps stays available in the set.
+        assertNull(review.actionRequired)
     }
 
     @Test
-    fun `given websites and no app access when derived then access is required`() {
+    fun `given websites and no app access when derived then nothing is required`() {
         val review = SessionReviewDerivation.derive(
             policyOf(listOf("stable.example")),
             LocalApplicationMappingsLoadResult.Success(
@@ -71,7 +72,8 @@ class SessionReviewTest {
             ),
         )
 
-        assertEquals(SessionActionRequired.ACCESS_REQUIRED, review.actionRequired)
+        // Without apps chosen, app access does not matter to a pause of websites (idea 40).
+        assertNull(review.actionRequired)
     }
 
     @Test

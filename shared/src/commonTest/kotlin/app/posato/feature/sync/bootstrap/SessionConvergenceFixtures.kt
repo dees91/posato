@@ -9,8 +9,10 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SequencedSessionIntent
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.session.ui.FakeEnforcementPort
+import app.posato.feature.session.ui.FakeSessionMappings
 import app.posato.feature.session.ui.SessionTargetsState
 import app.posato.feature.session.ui.SessionTransitionOwner
+import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncOperationPayload
@@ -35,6 +37,7 @@ internal fun sessionPeer(
     wallClock: SyncWallClock,
     frozen: FrozenStartSet,
     database: LocalPolicyTestDatabase = createLocalPolicyTestDatabase(databaseName),
+    liveTargets: Boolean = false,
 ): SessionPeer {
     val harness = AppleSyncTestHarness(
         dispatcher,
@@ -52,7 +55,12 @@ internal fun sessionPeer(
         store = sessions,
         clock = clock,
         enforcement = enforcement,
-        loadTargets = { targetsFor(frozen) },
+        // Live targets read this device's own pause sets, as the application does, instead of a fixed set.
+        loadTargets = if (liveTargets) {
+            { setId -> loadSessionTargets(harness.sqlPolicy, FakeSessionMappings(), setId) }
+        } else {
+            { targetsFor(frozen) }
+        },
         triggers = harness.sync.sessionTriggers,
     )
     harness.sync.sessionObserver = owner

@@ -98,8 +98,6 @@
     <string name="session_review_end">Ends at %1$s</string>
     <string name="session_review_description">Check what this session pauses before starting it.</string>
     <string name="session_action_no_items">This set has no websites or apps on this %1$s yet.</string>
-    <string name="session_action_mappings_required">Apps aren't chosen for this set on this %1$s. The pause includes its websites.</string>
-    <string name="session_action_access_required">Allow access to choose apps for this set. The pause includes its websites.</string>
     <string name="session_action_mappings_failed">Chosen applications could not be loaded. Nothing was changed.</string>
     <string name="session_start_failed">This session could not be started. Nothing was changed.</string>
     <string name="session_end_failed">This session could not be ended. Nothing was changed.</string>

@@ -1,6 +1,5 @@
 package app.posato.feature.session.domain
 
-import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.domain.TargetPolicy
 import kotlinx.collections.immutable.PersistentList
@@ -12,8 +11,6 @@ internal enum class SessionActionRequired(
 ) {
     NO_EFFECTIVE_ITEMS(true),
     MAPPINGS_LOAD_FAILED(true),
-    MAPPINGS_NOT_CHOSEN(false),
-    ACCESS_REQUIRED(false),
 }
 
 internal data class SessionReview(
@@ -45,7 +42,6 @@ internal object SessionReviewDerivation {
                 deriveFromCount(
                     policy = policy,
                     selectedMappingCount = mappings.snapshot.mappings.size,
-                    access = mappings.access,
                 )
             }
 
@@ -53,7 +49,6 @@ internal object SessionReviewDerivation {
                 deriveFromCount(
                     policy = policy,
                     selectedMappingCount = null,
-                    access = null,
                 )
             }
         }
@@ -62,28 +57,12 @@ internal object SessionReviewDerivation {
     private fun deriveFromCount(
         policy: TargetPolicy,
         selectedMappingCount: Int?,
-        access: LocalApplicationMappingsAccess?,
     ): SessionReview {
         val domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList()
         val effectiveApplications = selectedMappingCount ?: 0
         val effectiveCount = domains.size + effectiveApplications
-        val actionRequired = when {
-            effectiveCount == 0 -> {
-                SessionActionRequired.NO_EFFECTIVE_ITEMS
-            }
-
-            selectedMappingCount == 0 && access == LocalApplicationMappingsAccess.READY -> {
-                SessionActionRequired.MAPPINGS_NOT_CHOSEN
-            }
-
-            selectedMappingCount == 0 && access != null -> {
-                SessionActionRequired.ACCESS_REQUIRED
-            }
-
-            else -> {
-                null
-            }
-        }
+        // A set of websites only is complete: no app choice or app access is asked for.
+        val actionRequired = if (effectiveCount == 0) SessionActionRequired.NO_EFFECTIVE_ITEMS else null
 
         return SessionReview(
             domains = domains,

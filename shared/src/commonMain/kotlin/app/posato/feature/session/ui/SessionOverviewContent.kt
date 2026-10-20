@@ -286,7 +286,7 @@ internal fun SessionReviewContent(
                 "${if (state.untilEndOfDay) END_OF_DAY_LABEL else sessionLengthText(state.durationMinutes)} · you stay in control",
             )
             state.setName?.let { name -> Text("Set: $name", style = MaterialTheme.typography.titleMedium) }
-            state.review.actionRequired?.let { required -> SessionReadinessNotice(required, onRetry, onEditItems) }
+            state.review.actionRequired?.let { required -> SessionReadinessNotice(required, onRetry) }
             PosatoActionRow {
                 if (state.review.actionRequired == SessionActionRequired.NO_EFFECTIVE_ITEMS) {
                     PosatoButton(onItems) { Text("Add websites or apps") }
@@ -307,20 +307,12 @@ internal fun SessionReviewContent(
 private fun SessionReadinessNotice(
     required: SessionActionRequired,
     onRetry: () -> Unit,
-    onEditItems: (TargetsCategory) -> Unit,
 ) {
     val noun = remember { platformDevice().noun }
     PosatoNotice(tone = PosatoTone.Caution, actionContent = {
         when (required) {
             SessionActionRequired.MAPPINGS_LOAD_FAILED -> {
                 PosatoButton(onRetry) { Text("Retry") }
-            }
-
-            SessionActionRequired.MAPPINGS_NOT_CHOSEN, SessionActionRequired.ACCESS_REQUIRED -> {
-                PosatoButton(
-                    { onEditItems(TargetsCategory.APPLICATIONS) },
-                    style = PosatoButtonStyle.Quiet,
-                ) { Text("Choose apps") }
             }
 
             SessionActionRequired.NO_EFFECTIVE_ITEMS -> {}
