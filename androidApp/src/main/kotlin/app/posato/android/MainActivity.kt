@@ -7,6 +7,7 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import app.posato.openPosatoLink
@@ -31,6 +32,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Posato draws behind the status and navigation bars on every release, as Android 15 and later require; the
+        // shared screens keep their content inside the safe drawing area.
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as PosatoAndroidApp
         GuardService.start(this)

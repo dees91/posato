@@ -31,6 +31,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNavigationPlacement
@@ -245,6 +248,7 @@ class PosatoApplication internal constructor(
                 onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
                 modifier = modifier,
             ) { layout ->
+                FirstTabBack(navigation, device)
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
                     PosatoNavStack(
@@ -277,6 +281,24 @@ class PosatoApplication internal constructor(
                 }
             }
         }
+    }
+
+    /**
+     * On Android, Back from Pause sets or Schedules returns to Session before it leaves Posato, as a bottom bar's
+     * destinations do there. A screen open inside the tab handles Back first, since its stack registers later.
+     */
+    @Composable
+    private fun FirstTabBack(
+        navigation: ApplicationNavigation,
+        device: PosatoDevice,
+    ) {
+        NavigationBackHandler(
+            state = rememberNavigationEventState(NavigationEventInfo.None),
+            isBackEnabled = device == PosatoDevice.Android &&
+                navigation.destination != ApplicationDestination.SESSION &&
+                navigation.informationPage == null,
+            onBackCompleted = { navigation.select(ApplicationDestination.SESSION) },
+        )
     }
 
     @Composable

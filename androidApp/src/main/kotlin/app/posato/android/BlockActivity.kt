@@ -5,11 +5,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -22,11 +26,12 @@ import androidx.compose.ui.unit.sp
 /** Covers an app chosen for the running pause; leaving it goes to the home screen, never back to that app. */
 class BlockActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this) { goHome() }
         setContent {
             Column(
-                modifier = Modifier.fillMaxSize().background(Color(BACKGROUND)).padding(32.dp),
+                modifier = Modifier.fillMaxSize().background(Color(BACKGROUND)).windowInsetsPadding(WindowInsets.safeDrawing).padding(32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
