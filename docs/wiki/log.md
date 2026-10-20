@@ -2860,8 +2860,10 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed` (2026-10-20): Android is edge to edge with predictive back,
   and Back from Pause sets or Schedules returns to Session before it leaves
   Posato (DESIGN.md).
+- `user-confirmed` (2026-10-20): ADR 0010 is accepted. Roadmap revision 23
+  adds `SESSION-010` (idea 39, a running pause adopted at link time without
+  the set's websites), `TARGETS-010`, and `DOCS-006` to release 1.5, with an
+  x86-64 Linux package from a GitHub Actions runner in `RELEASE-007`.
 - `open`: a removal by another device reaching the iPhone's view of an
   iCloud Drive folder (six minutes without it once, about two minutes
-  another time), other folder services, IPv6 on a network that has it, and
-  `SESSION-010` (idea 39), a running pause adopted at link time without the
-  set's websites.
+  another time), other folder services, and IPv6 on a network that has it.

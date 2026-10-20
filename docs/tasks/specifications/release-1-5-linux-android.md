@@ -78,4 +78,5 @@ each of them.
 
 ## Decisions or blockers
 
-- ADR 0010 stays `Proposed` until the maintainer accepts it at merge.
+- ADR 0010 stays `Proposed` until the maintainer accepts it (accepted
+  2026-10-20).

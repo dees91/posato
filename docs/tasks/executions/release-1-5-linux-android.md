@@ -71,8 +71,8 @@
   has gone, an access step that shows access already given (Android, Linux),
   and access text naming every grant; `flow schedule` on the phone 270 to
   142 s through located-once repeated taps.
-- **Linux and Android** as planned; **backlog:** `SESSION-010` (idea 39);
-  **docs:** ADR 0010 (Proposed), limits, driver README, skill, guide, wiki.
+- **Then in 1.5** (roadmap revision 23): `SESSION-010`, `TARGETS-010`,
+  `DOCS-006`; **docs:** ADR 0010 (accepted 2026-10-20), limits, guides, wiki.
 
 ## Verification
 
@@ -96,6 +96,7 @@
 | Test iPhone (cable) at `87624b54`: picker, `flow folder link` without `--path` waits, the join link (`devicectl --payload-url`) joins, the Mac's set arrives; after the Mac's removal "Sync needs attention" and removal | Passed | `build/verification/e2e/ios-link3.log`, runs `20261020-141551-0eed`, `-142738-9aa9` |
 | Android polish on the Galaxy XCover7 at `dd980458` sources: no grey status bar, the access step with every grant shows Access allowed (the previous build showed Allow access, run `20261020-145201-3eb8`), the Pause set menu opens below its button with the keyboard up (before: above, run `20261020-144602-3693`), Back from Schedules and Pause sets to Session and out of Posato from Session; predictive back gesture on the Android 17 emulator shows the list under the set | Passed | runs `20261020-145115-a672`, `-145508-4364`, `-145758-5bde`, `-150958-6a62` |
 | Mac VM and Linux clone with the same sources: set, schedule with a set, session with a set, website paused; Linux onboarding without a website | Passed | `build/verification/e2e/menus-mac-linux.log`, run `20261020-151241-0d35` |
+| `linux create` and `linux destroy` claim and release the machine-ledger lease `tart:posato-run-linux` | Passed | `build/verification/e2e/ledger-linux.log`, run `20261020-172406-f9b1` |
 | `./gradlew quality` at `dd980458` | Passed | gradle run of the session |
 
 ## Blockers and accepted risks
@@ -110,8 +111,7 @@
   on the phone's network); Android 13 itself was not run.
 - After a reboot, Android enforces only after the first unlock: Posato's data
   is credential-encrypted until then.
-- The x86-64 Linux package needs an x86-64 build machine (`RELEASE-007`); the
-  GitHub Projects mirror has no "1.5" Release option yet.
+- The x86-64 Linux package: `RELEASE-007` builds it on a GitHub Actions runner.
 - Real folder services (Dropbox, OneDrive, Syncthing) are not verified; the
   relay stands in for them, and iCloud Drive was used on Apple hosts only.
 

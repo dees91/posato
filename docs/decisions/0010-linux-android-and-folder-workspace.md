@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-20); delivered by `SYNC-018`, `LINUX-001`, and `ANDROID-001` and verified on Tart Macs, a Tart Ubuntu guest, an Android emulator and phone, and the test iPhone
 - **Date:** 2026-10-10
 - **Decision owner:** Project maintainer
 - **Provenance:** the direction is `user-confirmed` (2026-10-10, release 1.5
@@ -10,8 +10,8 @@
   folder, the Mac desktop application in the same workspace, a one-time
   pairing code without device revocation, Android application blocking
   without an accessibility service, and (later the same day) iOS in folder
-  mode as well. The mechanisms below are
-  `agent-delegated` and need `user-confirmed` before this ADR is accepted.
+  mode as well. The mechanisms below were `agent-delegated` and are
+  `user-confirmed` with the acceptance on 2026-10-20.
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
 
@@ -171,9 +171,9 @@ Android application, the Linux desktop target, and the Linux helper. ADR
 
 ### Limits to publish
 
-This text is `agent-delegated`. It moves to the
-[limits page](../product/limits-and-platforms.md) only after the maintainer
-accepts this ADR, and `RELEASE-007` publishes it with release 1.5.
+This text is accepted with this ADR. `DOCS-006` moves it to the
+[limits page](../product/limits-and-platforms.md), and `RELEASE-007`
+publishes it with release 1.5.
 
 - On Linux, website blocking maps each paused website and its `www` name to
   `0.0.0.0` and `::` in `/etc/hosts`, so connections to it fail. There is no pause
@@ -187,7 +187,7 @@ accepts this ADR, and `RELEASE-007` publishes it with release 1.5.
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
   filtered. There is no pause page.
-- On Android, a paused app is covered by a block screen; it can be visible for
+- On Android, a paused app is covered by a block screen; it can be visible
   for up to about a second before the screen appears. On Linux, an app whose
   desktop entry starts a script, an interpreter, or Flatpak cannot be paused. The launcher,
   Settings, the phone, and Posato cannot be paused. Posato needs usage access,

@@ -563,8 +563,8 @@ not claim that every other device has received the update.
 ## Folder workspace (release 1.5, ADR 0010)
 
 [ADR 0010](../../decisions/0010-linux-android-and-folder-workspace.md) is
-`Proposed`; the direction is `user-confirmed` (2026-10-10) and the
-mechanisms `agent-delegated`.
+accepted (`user-confirmed` 2026-10-20); the direction was confirmed on
+2026-10-10.
 
 - `observed` (2026-10-10): the folder transport implements the existing
   bootstrap and mailbox ports, so the bootstrap coordinator, the Apple
