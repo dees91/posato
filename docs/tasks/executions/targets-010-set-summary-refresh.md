@@ -47,10 +47,11 @@
 | Mac VM: choose Calculator for My set, then **Back to pause sets** | "My set, Default, 0 websites · Apps on this Mac: 1" at once | `build/verification/e2e/targets-010-mac.log`, run `20261020-211427-7974` |
 | Mac VM: a pause runs with Calculator; TextEdit is chosen during it | TextEdit blocked 5 s after the choice; after removing it the list again reads 1 | runs `20261020-211442-65d0`, `20261020-211544-9c60` |
 | Galaxy XCover7: choose Clock, then Back | "Apps on this phone: 1" at once | `build/verification/e2e/targets-010-android.log`, run `20261020-212124-9817` |
+| Test iPhone (`AC-03`) on `88539818`: from "none chosen", choose Calculator, add Clock, untick Clock in the picker, then **Clear selection**, going **Back to Pause sets** after each | My set reads "Apps on this iPhone: 1", then 2, 1, and "none chosen", each within 0.1 s of Back | runs `20261020-223645-f55c`, `20261020-223730-4f08`, `20261020-223748-3ec8`, `20261020-223808-806c`; scenarios in `build/verification/e2e/targets-010-ios-*.json` |
 | `./gradlew quality` on the head | See the pull request's Verified comment | |
 
 ## Blockers and accepted risks
 
-- `AC-03` on the test iPhone was not run. The phone was locked
-  (`DEVICE_AUTOMATION_LOCKED`) while the maintainer was away. The iOS
-  wrapper tests cover the change; a device run waits for an unlock.
+- None. The first iPhone attempt was blocked by a locked phone
+  (`DEVICE_AUTOMATION_LOCKED`); after the maintainer unlocked it, `AC-03`
+  passed on the same head.
