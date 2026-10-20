@@ -17,6 +17,7 @@ import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalApplicationRemovalResult
 import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import app.posato.feature.targets.data.LocalPolicyResult
@@ -201,6 +202,17 @@ internal class FakeSessionMappings(
         set: ApplicationChoiceSet,
     ): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
+    }
+
+    /** Each copyChoices call, so a test sees which set's apps went where. */
+    val copies = mutableListOf<Pair<ApplicationChoiceSet, ApplicationChoiceSet>>()
+
+    override suspend fun copyChoices(
+        from: ApplicationChoiceSet,
+        to: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
+        copies += from to to
+        return LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
     }
 
     /** The sets each retainOnly call kept, so a test sees whether app choices were pruned. */

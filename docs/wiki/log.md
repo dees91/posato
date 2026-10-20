@@ -2927,3 +2927,9 @@ first removal attempt that does not finish, not to a paused keychain.
   request or a remembered smaller size opens at the minimum. Launch, a login
   launch, and reopening from the Dock opened at the normal size before and
   after; how a person's window got that small is `open`.
+## [2026-10-20] feature | TARGETS-012: duplicate a pause set
+
+- `observed`: **Duplicate** in a set's menu, and in its iOS swipe actions,
+  adds "<name> (copy)" with the set's websites and this device's apps; other
+  devices choose their own apps (idea 43). The copy appeared with its apps
+  on a Galaxy XCover7 and in a Mac VM.

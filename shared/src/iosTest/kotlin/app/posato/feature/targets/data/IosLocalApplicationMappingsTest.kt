@@ -189,6 +189,21 @@ class IosLocalApplicationMappingsTest {
     }
 
     @Test
+    fun `given two sets when one's choices are copied then the provider copies them and the copy's choices come back`() = runTest {
+        val provider = FakeIosApplicationMappingsProvider(
+            loadResponse = response(mappings = listOf(IosApplicationMappingReference(identifier()))),
+        )
+        val work = checkNotNull(ApplicationChoiceSet.restore("00000000000040008000000000000050"))
+
+        val result = assertIs<LocalApplicationRemovalResult.Success>(
+            IosLocalApplicationMappings(provider).copyChoices(work, ApplicationChoiceSet.FIRST),
+        )
+
+        assertEquals(listOf(work.hex to ApplicationChoiceSet.FIRST.hex), provider.copies)
+        assertEquals(1, result.snapshot.mappings.size)
+    }
+
+    @Test
     fun `given successful changes when made then each is announced to collectors`() = runTest {
         val mappings = IosLocalApplicationMappings(FakeIosApplicationMappingsProvider())
         var announced = 0
@@ -205,6 +220,10 @@ class IosLocalApplicationMappingsTest {
         assertIs<LocalApplicationRemovalResult.Success>(mappings.retainOnly(emptySet()))
         runCurrent()
         assertEquals(4, announced)
+        val work = checkNotNull(ApplicationChoiceSet.restore("00000000000040008000000000000050"))
+        assertIs<LocalApplicationRemovalResult.Success>(mappings.copyChoices(work, ApplicationChoiceSet.FIRST))
+        runCurrent()
+        assertEquals(5, announced)
     }
 
     @Test
@@ -288,6 +307,17 @@ private class FakeIosApplicationMappingsProvider(
         sets: List<String>,
         completion: (IosApplicationMappingsResponse) -> Unit,
     ) {
+        completion(loadResponse)
+    }
+
+    val copies = mutableListOf<Pair<String, String>>()
+
+    override fun duplicateChoices(
+        from: String,
+        to: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
+        copies += from to to
         completion(loadResponse)
     }
 

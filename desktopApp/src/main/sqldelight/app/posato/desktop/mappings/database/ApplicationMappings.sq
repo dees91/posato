@@ -36,6 +36,12 @@ removeSet:
 DELETE FROM localApplicationMapping
 WHERE setId = ?;
 
+copySet:
+INSERT OR IGNORE INTO localApplicationMapping(setId, mappingId, displayName, designatedRequirement)
+SELECT :toSetId, mappingId, displayName, designatedRequirement
+FROM localApplicationMapping
+WHERE setId = :fromSetId;
+
 countUnique:
 SELECT COUNT(DISTINCT mappingId)
 FROM localApplicationMapping;

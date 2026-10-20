@@ -425,6 +425,21 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         }
     }
 
+    /// Gives `to` the same apps as `from` on this device, as a duplicated pause set does.
+    func duplicateChoices(from: String, to: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) {
+        performOnMain {
+            do {
+                let copied = try self.validatedMappings(try self.store(from).load())
+                try self.store(to).save(copied)
+                completion(self.response(outcome: .success, mappings: copied))
+            } catch ApplicationMappingsStoreError.corruption {
+                completion(self.response(outcome: .corruption))
+            } catch {
+                completion(self.response(outcome: .storageFailure))
+            }
+        }
+    }
+
     func observeInvalidations(handler: @escaping () -> Void) -> IosApplicationMappingsObservation {
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         return ApplicationMappingsObservation(cancellation: {})

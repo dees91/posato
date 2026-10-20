@@ -173,6 +173,14 @@ private class InertMappingsProvider : IosApplicationMappingsProvider {
         throw UnsupportedOperationException()
     }
 
+    override fun duplicateChoices(
+        from: String,
+        to: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
+
     override fun clear(
         set: String,
         completion: (IosApplicationMappingsResponse) -> Unit,

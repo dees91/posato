@@ -907,9 +907,12 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
   sets**. Website entry, search, editing, limits, and the app picker keep
   their current rules; the app caption says the choice is for this set on
   this device. The row menu and the set screen's ellipsis offer **Rename**,
-  **Make default**, and **Delete**. On iOS a row offers **Rename** and
-  **Delete** under a left swipe, and the bar's menu offers all three; the bar
-  carries **New set**.
+  **Duplicate**, **Make default**, and **Delete**. On iOS a row offers
+  **Rename**, **Duplicate**, and **Delete** under a left swipe, and the bar's
+  menu offers all four; the bar carries **New set**. **Duplicate** adds
+  "<name> (copy)" with the set's websites and this device's apps, and is
+  unavailable at 10 sets as **New set** is (`user-confirmed` 2026-10-20,
+  idea 43).
 - **New set and Rename** use one name field with **Save** and **Cancel**;
   empty names and more than 80 bytes are refused inline. On iOS this is the
   system alert with a text field, presented again after a refused name. A new set opens on

@@ -249,6 +249,15 @@ public interface LocalApplicationMappings {
 
     public suspend fun clear(set: ApplicationChoiceSet = ApplicationChoiceSet.FIRST): LocalApplicationRemovalResult
 
+    /**
+     * Gives [to] the same apps as [from] on this device, replacing what [to] had; a set duplicated here keeps
+     * this device's choices. Other devices choose their own apps for it, as for any new set.
+     */
+    public suspend fun copyChoices(
+        from: ApplicationChoiceSet,
+        to: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult = LocalApplicationRemovalResult.Unavailable
+
     /** Deletes the choices of every set not in [sets], such as one another device removed. */
     public suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult
 
