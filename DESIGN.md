@@ -928,11 +928,11 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
     Work" with the set's websites and this device's apps.
   - The schedule editor shows it below the name. Schedule rows add "Set:
     Work".
-- **Readiness.** With websites but no apps chosen here, Review and the
-  schedule row say "Apps aren't chosen for this set on this Mac. The pause
-  includes its websites." with **Choose apps**, and Start stays available.
-  With neither, Start is replaced by **Add websites or apps**, which opens
-  the set, and a schedule shows "Nothing to pause on this Mac". A missing
+- **Readiness.** A set with websites and no apps chosen here is complete
+  (`user-confirmed` 2026-10-20, idea 40): Review and the schedule row show
+  no notice, whether or not app access is given, and **Choose apps** stays
+  in the set's Apps tab. With neither websites nor apps, Start is replaced
+  by **Add websites or apps**, which opens the set, and a schedule shows "Nothing to pause on this Mac". A missing
   set shows "This schedule's set was deleted. Choose a set.", "This set is
   over the limit of 10. Delete a set to use it.", or "Waiting for this set
   from your other devices." An addition beyond this device's limits during

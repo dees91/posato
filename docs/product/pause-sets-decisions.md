@@ -117,8 +117,10 @@ received yet.
 ### Readiness
 
 - **Websites without apps.** A pause starts with the set's websites when
-  this device has no app choices for the set, and says that apps are not
-  chosen here, with **Choose apps** (`user-confirmed` 2026-09-29).
+  this device has no app choices for the set, with no notice: a set of
+  websites only is complete, and **Choose apps** stays in the set's Apps
+  tab (`user-confirmed` 2026-10-20, idea 40; this supersedes the notice
+  with **Choose apps** confirmed on 2026-09-29).
 - **Nothing to pause.** A set with no websites and no apps chosen on this
   device cannot start here: Start is replaced by **Add websites or apps**,
   and a schedule shows "Nothing to pause on this Mac" (or iPhone, iPad).

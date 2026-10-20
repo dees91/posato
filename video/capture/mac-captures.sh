@@ -4,9 +4,9 @@
 # repository root after `build -t desktop`, `vm create`, `launch -t desktop
 # --vm <line>`, the unified setup (`mac-unified-onboarding-desktop.json`), and
 # the pause set fixture: the first set renamed to Focus with example.com and
-# example.net, and a second set, Evening, with example.net. Choose Chess in
-# Evening before the final `schedules` capture, or the Evening reading row
-# shows that apps aren't chosen. The guest is switched
+# example.net, and a second set, Evening, with example.net. Before 1.5 the
+# Evening reading row warned that apps weren't chosen unless Chess was chosen
+# in Evening; since TARGETS-011 it shows no notice either way. The guest is switched
 # to Dark Mode with `vm exec --script "defaults write -g AppleInterfaceStyle
 # Dark"` before the app launches. Nothing runs on the host Mac.
 #
