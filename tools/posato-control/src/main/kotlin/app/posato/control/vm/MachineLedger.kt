@@ -12,7 +12,8 @@ import java.time.Duration
 
 /**
  * The host's `machine-ledger`, which keeps leases on large artifacts so that sessions of every project share one free
- * space reserve. `vm create` claims its clone before cloning and `vm destroy` releases it. The ledger is cooperative:
+ * space reserve. `vm create` and `linux create` claim their clone before cloning, and `vm destroy` and `linux destroy`
+ * release it. The ledger is cooperative:
  * a host without it, or one whose call fails or hangs, still creates and destroys clones, and only a claim the ledger
  * refuses below its reserve stops a clone.
  */
@@ -22,26 +23,27 @@ internal class MachineLedger(
     private val run: (List<String>) -> ProcessOutput,
 ) {
     /**
-     * Claims [clone], about to be created in [cloneDirectory] by [worktree]. [belowReserve], for a clone created with
-     * `--allow-low-disk`, records the lease even below the reserve.
+     * Claims [clone], about to be created in [cloneDirectory] by [worktree] with [command]. [belowReserve], for a
+     * clone created with `--allow-low-disk`, records the lease even below the reserve.
      */
     fun claim(
         clone: String,
         cloneDirectory: Path,
         worktree: Path,
         belowReserve: Boolean,
+        command: String = "vm create",
     ) {
         if (binary == null) {
             log("machine-ledger is not installed; creating $clone without a lease.")
             return
         }
-        val command = buildList {
+        val claim = buildList {
             addAll(listOf(binary.toString(), "claim", "--owner", OWNER, "--kind", KIND, "--id", leaseId(clone)))
             addAll(listOf("--path", cloneDirectory.toString(), "--size", CLONE_GROWTH, "--ttl", LEASE_TTL))
-            addAll(listOf("--note", "posato-control vm create in $worktree"))
+            addAll(listOf("--note", "posato-control $command in $worktree"))
             if (belowReserve) add("--below-reserve")
         }
-        val output = call(command, "claim") ?: return
+        val output = call(claim, "claim") ?: return
         when (output.exitCode) {
             0 -> log(output.stdout.trim())
             REFUSED -> throw refusal(clone, output.stderr)

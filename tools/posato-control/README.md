@@ -472,7 +472,8 @@ test Apple Account, and Keychain items is in
   already covers the rest of a run), for 24 hours. A claim the ledger refuses below its reserve stops the clone
   with `DISK_SPACE_LOW` and the ledger's reason; `--allow-low-disk` claims
   below the reserve instead. `vm destroy` releases the lease once the clone
-  is gone. Without the ledger, or when a call fails or times out, the driver
+  is gone. `linux create` and `linux destroy` do the same for
+  `tart:posato-run-linux`, without `--allow-low-disk`. Without the ledger, or when a call fails or times out, the driver
   logs one line and goes on.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
   secrets from the login Keychain; labels assume an English guest. The first

@@ -5,8 +5,10 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.core.RunContext
+import app.posato.control.vm.MachineLedger
 import app.posato.control.vm.Tart
 import app.posato.control.vm.shellQuote
+import app.posato.control.vm.tartHome
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -20,11 +22,19 @@ class LinuxGuest(
     private val context: RunContext,
 ) {
     private val tart = Tart(context)
+    private val ledger = MachineLedger.of(context)
     private val golden = context.configuration.value(ConfigurationKey.VM_LINUX_GOLDEN) ?: DEFAULT_GOLDEN
 
     fun create(): String {
         if (tart.list().any { it.name == CLONE }) throw ControlException(ErrorCode.ALREADY_EXISTS, "$CLONE already exists; `linux destroy` first.")
-        tart.clone(golden, CLONE)
+        ledger.claim(CLONE, tartHome().resolve("vms").resolve(CLONE), context.layout.root, belowReserve = false, command = "linux create")
+        try {
+            tart.clone(golden, CLONE)
+        } catch (failure: ControlException) {
+            // No clone, so its lease would only hold back the reserve until it expires.
+            ledger.release(CLONE)
+            throw failure
+        }
         return boot()
     }
 
@@ -67,10 +77,13 @@ class LinuxGuest(
         }
     }
 
+    /** Deletes the clone and ends its lease, also when the clone was deleted outside posato-control. */
     fun destroy() {
-        if (tart.list().none { it.name == CLONE }) return
-        tart.stop(CLONE)
-        tart.delete(CLONE)
+        if (tart.list().any { it.name == CLONE }) {
+            tart.stop(CLONE)
+            tart.delete(CLONE)
+        }
+        ledger.release(CLONE)
     }
 
     val screen: LinuxScreen = LinuxScreen(this)
