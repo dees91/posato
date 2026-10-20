@@ -88,7 +88,16 @@ class LinuxObserver(
             throw ControlException(ErrorCode.COMMAND_FAILED, "$name is not an executable file in the Linux guest.")
         }
         // On another session bus the program would start its own AT-SPI bus and hide Posato's tree from later reads.
-        guest.exec("export DBUS_SESSION_BUS_ADDRESS=\$(cat ${LinuxAccessibility.BUS_FILE}); nohup $path >/dev/null 2>&1 &")
+        // A launch that exits by itself with an error (a missing interpreter answers 127) did not start the program;
+        // only an exit by signal, which is how the pause ends it, counts as enforcement.
+        val launch = guest.exec(
+            "export DBUS_SESSION_BUS_ADDRESS=\$(cat ${LinuxAccessibility.BUS_FILE}); nohup $path >/dev/null 2>&1 & " +
+                "pid=\$!; sleep $LAUNCH_CHECK_SECONDS; if ! kill -0 \$pid 2>/dev/null; then wait \$pid; echo \"exit=\$?\"; fi",
+        )
+        val status = Regex("exit=(\\d+)").find(launch.stdout)?.groupValues?.get(1)?.toInt()
+        if (status != null && status in 1..SIGNAL_EXIT_BASE) {
+            throw ControlException(ErrorCode.COMMAND_FAILED, "$name did not start in the Linux guest (exit status $status).")
+        }
         Thread.sleep(seconds * MILLIS_PER_SECOND)
         // A process's name is cut to 15 characters, so the program is found by the file its process runs.
         val running = guest.exec(
@@ -101,5 +110,7 @@ class LinuxObserver(
 
     private companion object {
         const val MILLIS_PER_SECOND = 1_000L
+        const val LAUNCH_CHECK_SECONDS = 1
+        const val SIGNAL_EXIT_BASE = 128
     }
 }
