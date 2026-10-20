@@ -48,7 +48,8 @@ class ScheduleRowsTest {
 
     @Test
     fun `given a set with websites and no apps chosen here then the row reports no problem`() {
-        val websitesOnly = PauseSetRow(work, "Work", false, 2, 0, persistentListOf(), refused = false, inUse = false)
+        val websitesOnly =
+            PauseSetRow(work, "Work", false, websiteCount = 2, applicationCount = 0, persistentListOf(), refused = false, inUse = false)
         val rows = buildScheduleRows(
             ScheduleSnapshot(schedules = listOf(StoredSchedule(plan))),
             0L,

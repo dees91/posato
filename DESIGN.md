@@ -931,8 +931,8 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
 - **Readiness.** A set with websites and no apps chosen here is complete
   (`user-confirmed` 2026-10-20, idea 40): Review and the schedule row show
   no notice, whether or not app access is given, and **Choose apps** stays
-  in the set's Apps tab. With neither websites nor apps, Start is replaced by **Add websites or apps**, which opens
-  the set, and a schedule shows "Nothing to pause on this Mac". A missing
+  in the set's Apps tab. With neither websites nor apps, Start is replaced
+  by **Add websites or apps**, which opens the set, and a schedule shows "Nothing to pause on this Mac". A missing
   set shows "This schedule's set was deleted. Choose a set.", "This set is
   over the limit of 10. Delete a set to use it.", or "Waiting for this set
   from your other devices." An addition beyond this device's limits during
