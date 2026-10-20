@@ -121,7 +121,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `TOOL_OUTDATED`, `PRECONDITION_NOT_MET`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `HOST_MEMORY_COMMITTED`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `TOOL_OUTDATED`, `PRECONDITION_NOT_MET`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -469,9 +469,14 @@ test Apple Account, and Keychain items is in
   large artifacts, on `PATH` or in `~/.local/bin`, `vm create` claims a lease
   `tart:<clone>` for the clone's Tart directory right before `tart clone`:
   5 GB, the expected growth of a copy-on-write clone (the 20 GB minimum
-  already covers the rest of a run), for 24 hours. A claim the ledger refuses below its reserve stops the clone
-  with `DISK_SPACE_LOW` and the ledger's reason; `--allow-low-disk` claims
-  below the reserve instead. `vm destroy` releases the lease once the clone
+  already covers the rest of a run), for 24 hours. The claim also carries
+  the memory the guest will take, read from the golden VM with `tart get`
+  (a clone inherits it). A claim the ledger refuses below its disk reserve
+  stops the clone with `DISK_SPACE_LOW` and the ledger's reason;
+  `--allow-low-disk` claims below the reserve instead. A claim beyond the
+  ledger's memory budget, or during another session's quiet measurement,
+  stops the clone with `HOST_MEMORY_COMMITTED` and the ledger's list of what
+  runs; no flag overrides it. `vm destroy` releases the lease once the clone
   is gone. `linux create` and `linux destroy` do the same for
   `tart:posato-run-linux`, without `--allow-low-disk`. Without the ledger, or when a call fails or times out, the driver
   logs one line and goes on.

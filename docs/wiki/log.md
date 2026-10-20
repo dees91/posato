@@ -2868,6 +2868,15 @@ first removal attempt that does not finish, not to a paused keychain.
   iCloud Drive folder (six minutes without it once, about two minutes
   another time), other folder services, and IPv6 on a network that has it.
 
+## [2026-10-20] tooling | VM clones claim their memory from machine-ledger
+
+- `vm create` and `linux create` pass the guest's memory, read from the
+  golden VM with `tart get`, with their `machine-ledger` claim. The ledger
+  counts the memory ceilings of running VMs, emulators, simulators, and
+  Colima against the host's RAM, so parallel sessions of several projects
+  cannot push the Mac into swap and skew measurements. A claim beyond the
+  budget, or during a quiet measurement, stops the clone with the new
+  `HOST_MEMORY_COMMITTED`, which no flag overrides.
 ## [2026-10-20] idea | Ideas 40 to 47 and roadmap revision 24
 
 - `user-confirmed`: the maintainer's ideas 40 to 47 are filed. Four small

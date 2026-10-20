@@ -244,9 +244,9 @@ private data class CloneRequest(
  * it too. With [waitMinutes] it waits, lock released, while what blocks is still in use: a running guest or a
  * clone whose creating process lives. A stopped clone left by an exited creator never frees itself, so it is
  * refused at once. Free space is measured again right before the clone, since other sessions may have used it while
- * this one waited, and the clone is then claimed from the host's [MachineLedger], which may refuse it below the reserve
- * it keeps for every project. Returns the milliseconds spent waiting and the low-disk warning, if any; a refusal carries
- * the milliseconds as `waitedMs`.
+ * this one waited, and the clone is then claimed from the host's [MachineLedger], which may refuse it below the disk
+ * reserve or beyond the memory budget it keeps for every project. Returns the milliseconds spent waiting and the
+ * low-disk warning, if any; a refusal carries the milliseconds as `waitedMs`.
  */
 private fun createUnderLock(
     context: RunContext,
@@ -271,7 +271,13 @@ private fun createUnderLock(
                 refuseClone(vms, request.golden, line.cloneName, owner)
                 diskWarning = lowDiskWarning(lowestFreeSpace(context.layout.root), request.allowLowDisk)
                 diskWarning?.let { context.log("Creating ${line.cloneName} although $it") }
-                ledger.claim(line.cloneName, tartHome().resolve("vms").resolve(line.cloneName), context.layout.root, request.allowLowDisk)
+                ledger.claim(
+                    line.cloneName,
+                    tartHome().resolve("vms").resolve(line.cloneName),
+                    context.layout.root,
+                    request.allowLowDisk,
+                    memoryMib = tart.memoryMib(request.golden),
+                )
                 try {
                     tart.clone(request.golden, line.cloneName)
                 } catch (failure: ControlException) {
