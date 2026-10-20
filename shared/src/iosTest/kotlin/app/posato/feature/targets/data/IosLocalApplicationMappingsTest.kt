@@ -187,6 +187,21 @@ class IosLocalApplicationMappingsTest {
         assertTrue(provider.observationCancelled)
     }
 
+    @Test
+    fun `given two sets when one's choices are copied then the provider copies them and the copy's choices come back`() = runTest {
+        val provider = FakeIosApplicationMappingsProvider(
+            loadResponse = response(mappings = listOf(IosApplicationMappingReference(identifier()))),
+        )
+        val work = checkNotNull(ApplicationChoiceSet.restore("00000000000040008000000000000050"))
+
+        val result = assertIs<LocalApplicationRemovalResult.Success>(
+            IosLocalApplicationMappings(provider).copyChoices(work, ApplicationChoiceSet.FIRST),
+        )
+
+        assertEquals(listOf(work.hex to ApplicationChoiceSet.FIRST.hex), provider.copies)
+        assertEquals(1, result.snapshot.mappings.size)
+    }
+
     private fun response(
         outcome: IosApplicationMappingsOutcome = IosApplicationMappingsOutcome.SUCCESS,
         access: IosApplicationMappingsAccess = IosApplicationMappingsAccess.READY,
@@ -249,6 +264,17 @@ private class FakeIosApplicationMappingsProvider(
         sets: List<String>,
         completion: (IosApplicationMappingsResponse) -> Unit,
     ) {
+        completion(loadResponse)
+    }
+
+    val copies = mutableListOf<Pair<String, String>>()
+
+    override fun copy(
+        from: String,
+        to: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
+        copies += from to to
         completion(loadResponse)
     }
 

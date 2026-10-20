@@ -99,6 +99,7 @@ internal fun PauseSetsScreen(
     onCreate: (String) -> Unit,
     onRename: (PauseSetId, String) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
+    onDuplicate: (PauseSetId) -> Unit,
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -120,6 +121,7 @@ internal fun PauseSetsScreen(
                     onOpen = { onOpen(row.id) },
                     onDialog = { dialog = it },
                     onMakeDefault = onMakeDefault,
+                    onDuplicate = onDuplicate.takeIf { state.canCreate },
                 )
             }
         }
@@ -173,17 +175,19 @@ private fun PauseSetListRow(
     onOpen: () -> Unit,
     onDialog: (PauseSetDialog) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
+    onDuplicate: ((PauseSetId) -> Unit)?,
 ) {
     if (platformUsesCupertinoChrome) {
         val swipeActions = buildList {
             add(PosatoSwipeAction("Rename", { onDialog(PauseSetDialog.Rename(row)) }))
+            if (onDuplicate != null && !row.refused) add(PosatoSwipeAction("Duplicate", { onDuplicate(row.id) }))
             if (!row.isDefault) add(PosatoSwipeAction("Delete", { onDialog(PauseSetDialog.Delete(row)) }, destructive = true))
         }
         PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, deviceNoun, onOpen, rowActions) }
     } else {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PauseSetRowContent(row, deviceNoun, onOpen, emptyList(), Modifier.weight(1f))
-            PauseSetMenu(row, onDialog, onMakeDefault)
+            PauseSetMenu(row, onDialog, onMakeDefault, onDuplicate)
         }
     }
 }

@@ -64,6 +64,7 @@ internal enum class PosatoMenuSymbol(
     Edit(PosatoIcons.Edit, "pencil"),
     Rename(PosatoIcons.Edit, "character.cursor.ibeam"),
     MakeDefault(PosatoIcons.Check, "checkmark.circle"),
+    Duplicate(PosatoIcons.Duplicate, "plus.square.on.square"),
     Skip(PosatoIcons.Arrow, "forward.end"),
     Remove(PosatoIcons.Remove, "trash"),
 }

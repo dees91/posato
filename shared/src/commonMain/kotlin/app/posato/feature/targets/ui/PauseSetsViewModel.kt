@@ -7,9 +7,11 @@ import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.schedules.data.LocalScheduleStore
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.schedules.host.ScheduledPause
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalPolicyFailure
@@ -78,6 +80,24 @@ internal class PauseSetsViewModel(
         mutate({ sets -> PauseSets.of(sets.sets.map { set -> if (set.id == id) set.copy(name = name) else set }, sets.defaultSetId) })
     }
 
+    /** A new set with [id]'s websites and this device's apps for it; other devices choose their own apps. */
+    fun duplicate(id: PauseSetId) {
+        if (state.value.isSaving) {
+            return
+        }
+        state.update { current -> current.copy(isSaving = true, failure = null) }
+        viewModelScope.launch {
+            val failure = try {
+                inputs.duplicateSet(id, inputs.ids.create(), ::editSets)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                PauseSetsFailure.SAVE_FAILED
+            }
+            state.update { current -> current.copy(isSaving = false, failure = failure) }
+        }
+    }
+
     fun makeDefault(id: PauseSetId) {
         mutate({ sets -> PauseSets.of(sets.sets, id).takeIf { sets.sets.any { set -> set.id == id && !set.refused } } })
     }
@@ -140,17 +160,8 @@ internal class PauseSetsViewModel(
         if (!removed) {
             return PauseSetsFailure.SAVE_FAILED
         }
-        keepSurvivingChoices()
+        inputs.keepSurvivingChoices()
         return null
-    }
-
-    /**
-     * Keeps app choices for the sets left after a deletion. A failed read is not an empty workspace: the
-     * choices stay, and launch preparation removes the deleted set's choices later.
-     */
-    private suspend fun keepSurvivingChoices() {
-        val remaining = (inputs.store.read() as? LocalPolicyResult.Success)?.value?.sets?.sets ?: return
-        inputs.applicationMappings.retainOnly(remaining.mapTo(mutableSetOf()) { set -> set.id.choiceSet() })
     }
 
     private fun mutate(
@@ -236,6 +247,53 @@ internal class PauseSetsViewModel(
         const val EDIT_ATTEMPTS: Int = 2
     }
 }
+
+/**
+ * Keeps app choices for the sets left after a deletion. A failed read is not an empty workspace: the
+ * choices stay, and launch preparation removes the deleted set's choices later.
+ */
+private suspend fun PauseSetsInputs.keepSurvivingChoices() {
+    val remaining = (store.read() as? LocalPolicyResult.Success)?.value?.sets?.sets ?: return
+    applicationMappings.retainOnly(remaining.mapTo(mutableSetOf()) { set -> set.id.choiceSet() })
+}
+
+/** Adds a copy of [id] as [copyId] through [editSets]; the apps are copied first and dropped again on failure. */
+private suspend fun PauseSetsInputs.duplicateSet(
+    id: PauseSetId,
+    copyId: PauseSetId,
+    editSets: suspend ((PauseSets) -> PauseSets?) -> Boolean,
+): PauseSetsFailure? {
+    val sets = (store.read() as? LocalPolicyResult.Success)?.value?.sets ?: return PauseSetsFailure.SAVE_FAILED
+    val source = sets.sets.firstOrNull { set -> set.id == id && !set.refused } ?: return PauseSetsFailure.SAVE_FAILED
+    if (sets.sets.count { set -> !set.refused } >= SyncFormatLimits.MAX_PAUSE_SETS) {
+        return PauseSetsFailure.SAVE_FAILED
+    }
+    // The apps come first, so the list's reload after the new set already counts them.
+    applicationMappings.copyChoices(id.choiceSet(), copyId.choiceSet())
+    val added = editSets { current ->
+        PauseSets.of(current.sets + LocalPauseSet(copyId, copyNameOf(source.name), source.domains), current.defaultSetId)
+    }
+    if (!added) {
+        applicationMappings.clear(copyId.choiceSet())
+        return PauseSetsFailure.SAVE_FAILED
+    }
+    // A sync merge between the two writes keeps app choices only for the sets it knew, so the copy is made again.
+    // A copy that cannot be made leaves the new set without apps, which the list then shows.
+    applicationMappings.copyChoices(id.choiceSet(), copyId.choiceSet())
+    return null
+}
+
+/** "<name> (copy)", shortened so the whole name stays within a set name's 80 bytes. */
+internal fun copyNameOf(name: String?): String {
+    var base = displayNameOf(name)
+    while ((base + COPY_SUFFIX).encodeToByteArray().size > ScheduleLimits.MAX_NAME_BYTES) {
+        // A whole character at a time, so an emoji is never cut in half.
+        base = base.dropLast(if (base.length >= 2 && base.last().isLowSurrogate()) 2 else 1)
+    }
+    return base.trimEnd() + COPY_SUFFIX
+}
+
+private const val COPY_SUFFIX: String = " (copy)"
 
 /** How many apps [id] has chosen on this device, or null when its choices cannot be read. */
 internal suspend fun LocalApplicationMappings.applicationCountOf(id: PauseSetId): Int? {

@@ -80,6 +80,13 @@ interface IosApplicationMappingsProvider {
         completion: (IosApplicationMappingsResponse) -> Unit,
     )
 
+    /** Replaces [to]'s stored choices with [from]'s and answers with [to]'s. */
+    fun copy(
+        from: String,
+        to: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    )
+
     fun observeInvalidations(handler: () -> Unit): IosApplicationMappingsObservation
 }
 
@@ -145,6 +152,18 @@ internal class IosLocalApplicationMappings(
         return operationMutex.withLock {
             val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
                 provider.clear(set.hex) { result -> continuation.resume(result) }
+            }
+            response.toRemovalResult()
+        }
+    }
+
+    override suspend fun copyChoices(
+        from: ApplicationChoiceSet,
+        to: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
+        return operationMutex.withLock {
+            val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
+                provider.copy(from.hex, to.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
         }

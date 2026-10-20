@@ -47,6 +47,7 @@ internal fun PauseSetsDestination(
                 onCreate = { name -> viewModel.create(name) { id -> navigation.open(id, TargetsCategory.WEBSITES) } },
                 onRename = viewModel::rename,
                 onMakeDefault = viewModel::makeDefault,
+                onDuplicate = viewModel::duplicate,
                 onDelete = viewModel::delete,
                 onRetry = viewModel::retry,
             )
@@ -60,6 +61,7 @@ internal fun PauseSetsDestination(
                 deviceNoun = deviceNoun,
                 onRename = viewModel::rename,
                 onMakeDefault = viewModel::makeDefault,
+                onDuplicate = viewModel::duplicate,
                 onDelete = viewModel::delete,
             )
         }
@@ -76,6 +78,7 @@ private fun PauseSetScreen(
     deviceNoun: String,
     onRename: (PauseSetId, String) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
+    onDuplicate: (PauseSetId) -> Unit,
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,7 +94,7 @@ private fun PauseSetScreen(
             title = row?.name.orEmpty(),
             onBack = { navigation.openSet = null },
             inUse = row?.inUse == true,
-            menuContent = row?.let { current -> { PauseSetMenu(current, { dialog = it }, onMakeDefault) } },
+            menuContent = row?.let { current -> { PauseSetMenu(current, { dialog = it }, onMakeDefault, onDuplicate.takeIf { state.canCreate }) } },
         ),
         modifier = modifier,
     )
@@ -121,9 +124,14 @@ internal fun PauseSetMenu(
     row: PauseSetRow,
     onDialog: (PauseSetDialog) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
+    onDuplicate: ((PauseSetId) -> Unit)?,
 ) {
     val items = buildList {
         add(PosatoMenuItem("Rename", { onDialog(PauseSetDialog.Rename(row)) }, PosatoMenuSymbol.Rename))
+        if (!row.refused) {
+            // At ten sets there is no room for a copy, as New set says.
+            add(PosatoMenuItem("Duplicate", { onDuplicate?.invoke(row.id) }, PosatoMenuSymbol.Duplicate, enabled = onDuplicate != null))
+        }
         if (!row.isDefault && !row.refused) {
             add(PosatoMenuItem("Make default", { onMakeDefault(row.id) }, PosatoMenuSymbol.MakeDefault))
         }

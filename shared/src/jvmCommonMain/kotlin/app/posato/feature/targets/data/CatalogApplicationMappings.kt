@@ -47,7 +47,7 @@ public class CatalogApplicationMappings(
 
     override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return locked {
-            val records = read() ?: return@locked LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.STORAGE)
+            val records = readRecords(file) ?: return@locked LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.STORAGE)
             snapshot(records, set)?.let { LocalApplicationMappingsLoadResult.Success(it) }
                 ?: LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.CORRUPTION)
         }
@@ -55,7 +55,7 @@ public class CatalogApplicationMappings(
 
     override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return locked {
-            val records = read() ?: return@locked LocalApplicationSelectionResult.Failure(LocalApplicationSelectionFailure.STORAGE)
+            val records = readRecords(file) ?: return@locked LocalApplicationSelectionResult.Failure(LocalApplicationSelectionFailure.STORAGE)
             val current = records.filter { it.set == set.hex }
             val entries = catalog.installed()
             val picked = catalog.choose(entries, current.map { it.key }.toSet()) ?: return@locked LocalApplicationSelectionResult.Cancelled
@@ -82,6 +82,15 @@ public class CatalogApplicationMappings(
         return change(set) { records -> records.filterNot { it.set == set.hex } }
     }
 
+    override suspend fun copyChoices(
+        from: ApplicationChoiceSet,
+        to: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
+        return change(to) { records ->
+            records.filterNot { it.set == to.hex } + records.filter { it.set == from.hex }.map { Record(to.hex, it.key, it.name, it.target) }
+        }
+    }
+
     override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
         val kept = sets.map { it.hex }.toSet()
         return change(ApplicationChoiceSet.FIRST) { records -> records.filter { it.set in kept } }
@@ -96,7 +105,7 @@ public class CatalogApplicationMappings(
     /** Each chosen app with its target in place of a designated requirement, so a running part keeps pausing it. */
     override suspend fun keptApplications(mappingIds: Set<String>): List<KeptApplication> {
         return locked {
-            read().orEmpty().filter { it.id in mappingIds }.distinctBy { it.id }.map { record ->
+            readRecords(file).orEmpty().filter { it.id in mappingIds }.distinctBy { it.id }.map { record ->
                 KeptApplication(record.id.hexBytes(), record.name.encodeToByteArray(), record.target.encodeToByteArray())
             }
         }
@@ -104,7 +113,7 @@ public class CatalogApplicationMappings(
 
     /** The targets of the given mapping identifiers, from whichever set chose them or else from a running part. */
     public suspend fun targets(mappingIds: Collection<String>): List<String> {
-        val records = locked { read().orEmpty().filter { it.id in mappingIds } }
+        val records = locked { readRecords(file).orEmpty().filter { it.id in mappingIds } }
         val missing = mappingIds.toSet() - records.map { it.id }.toSet()
         val kept = if (missing.isEmpty()) emptyList() else keptTargets(missing).values.map { it.decodeToString() }
         return (records.map { it.target } + kept).distinct()
@@ -115,25 +124,11 @@ public class CatalogApplicationMappings(
         transform: (List<Record>) -> List<Record>,
     ): LocalApplicationRemovalResult {
         return locked {
-            val records = read() ?: return@locked LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
+            val records = readRecords(file) ?: return@locked LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
             val next = transform(records)
             if (!write(next)) return@locked LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
             changes.tryEmit(Unit)
             LocalApplicationRemovalResult.Success(snapshot(next, set) ?: LocalApplicationMappingsSnapshot.empty())
-        }
-    }
-
-    private fun read(): List<Record>? {
-        return try {
-            if (!Files.exists(file)) {
-                emptyList()
-            } else {
-                Files.readAllLines(file).mapNotNull { line ->
-                    line.split('\t').takeIf { it.size == FIELDS }?.let { Record(it[0], it[1], it[2], it.last()) }
-                }
-            }
-        } catch (_: IOException) {
-            null
         }
     }
 
@@ -152,10 +147,6 @@ public class CatalogApplicationMappings(
     private suspend fun <T> locked(block: suspend () -> T): T {
         return withContext(ioDispatcher) { mutex.withLock { block() } }
     }
-
-    private companion object {
-        const val FIELDS = 4
-    }
 }
 
 private class Record(
@@ -165,6 +156,21 @@ private class Record(
     val target: String,
 ) {
     val id: String = MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
+}
+
+/** The stored choices, or null when the file cannot be read. */
+private fun readRecords(file: Path): List<Record>? {
+    return try {
+        if (!Files.exists(file)) {
+            emptyList()
+        } else {
+            Files.readAllLines(file).mapNotNull { line ->
+                line.split('\t').takeIf { it.size == FIELDS }?.let { Record(it[0], it[1], it[2], it.last()) }
+            }
+        }
+    } catch (_: IOException) {
+        null
+    }
 }
 
 private fun snapshot(
@@ -182,6 +188,7 @@ private fun String.hexBytes(): ByteArray {
 }
 
 private const val HEX_RADIX = 16
+private const val FIELDS = 4
 
 private fun String.clean(): String {
     return filterNot { it == '\t' || it == '\n' || it == '\r' }

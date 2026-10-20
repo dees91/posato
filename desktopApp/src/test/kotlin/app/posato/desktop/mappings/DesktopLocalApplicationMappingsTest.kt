@@ -321,6 +321,26 @@ class DesktopLocalApplicationMappingsTest {
         }
     }
 
+    @Test
+    fun `copying a set's choices gives the other set the same apps and replaces what it had`() {
+        var next: MacOsApplicationPickerResult = MacOsApplicationPickerResult.Success(listOf(application("Browser", 1), application("Editor", 2)))
+        val root = createTempDirectory("posato-mappings")
+        val store = createStore(root.resolve("data/mappings.db"), MacOsApplicationPicker { next }, kotlinx.coroutines.Dispatchers.IO)
+        try {
+            assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications(workSet) })
+            next = MacOsApplicationPickerResult.Success(listOf(application("Chat", 3)))
+            assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
+
+            assertIs<LocalApplicationRemovalResult.Success>(runBlocking { store.copyChoices(workSet, ApplicationChoiceSet.FIRST) })
+
+            assertEquals(listOf("Browser", "Editor"), store.namesIn(ApplicationChoiceSet.FIRST).sorted())
+            assertEquals(listOf("Browser", "Editor"), store.namesIn(workSet).sorted())
+        } finally {
+            store.close()
+            root.toFile().deleteRecursively()
+        }
+    }
+
     private fun withStore(
         pickerResult: MacOsApplicationPickerResult,
         block: (DesktopLocalApplicationMappings, java.nio.file.Path) -> Unit,

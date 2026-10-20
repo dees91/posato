@@ -44,7 +44,7 @@ internal class DesktopLocalApplicationMappings(
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 try {
-                    LocalApplicationMappingsLoadResult.Success(readSnapshot(openDatabase(), set))
+                    LocalApplicationMappingsLoadResult.Success(openDatabase().snapshotOf(set, files))
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
                 } catch (_: CorruptApplicationMappingsException) {
@@ -82,7 +82,7 @@ internal class DesktopLocalApplicationMappings(
                     val currentDatabase = openDatabase()
                     val snapshot = currentDatabase.transactionWithResult {
                         currentDatabase.applicationMappingsQueries.removeById(set.hex.hexToByteArray(), mappingId.canonicalValue.hexToByteArray())
-                        readSnapshot(currentDatabase, set)
+                        currentDatabase.snapshotOf(set, files)
                     }
                     LocalApplicationRemovalResult.Success(snapshot)
                 } catch (cancellationException: CancellationException) {
@@ -101,6 +101,29 @@ internal class DesktopLocalApplicationMappings(
                     val currentDatabase = openDatabase()
                     currentDatabase.applicationMappingsQueries.removeSet(set.hex.hexToByteArray())
                     LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
+                } catch (cancellationException: CancellationException) {
+                    throw cancellationException
+                } catch (_: Exception) {
+                    LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
+                }
+            }
+        }
+    }
+
+    override suspend fun copyChoices(
+        from: ApplicationChoiceSet,
+        to: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
+        return withContext(ioDispatcher) {
+            operationMutex.withLock {
+                try {
+                    val currentDatabase = openDatabase()
+                    val snapshot = currentDatabase.transactionWithResult {
+                        currentDatabase.applicationMappingsQueries.removeSet(to.hex.hexToByteArray())
+                        currentDatabase.applicationMappingsQueries.copySet(to.hex.hexToByteArray(), from.hex.hexToByteArray())
+                        currentDatabase.snapshotOf(to, files)
+                    }
+                    LocalApplicationRemovalResult.Success(snapshot)
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
                 } catch (_: Exception) {
@@ -189,7 +212,7 @@ internal class DesktopLocalApplicationMappings(
                 if (currentDatabase.applicationMappingsQueries.countUnique().executeAsOne() > LocalApplicationMappingLimits.MAXIMUM_MAPPINGS) {
                     throw ApplicationMappingCapacityException()
                 }
-                readSnapshot(currentDatabase, set)
+                currentDatabase.snapshotOf(set, files)
             }
             LocalApplicationSelectionResult.Success(snapshot)
         } catch (cancellationException: CancellationException) {
@@ -220,42 +243,6 @@ internal class DesktopLocalApplicationMappings(
 
         return openedDatabase
     }
-
-    private fun readSnapshot(
-        currentDatabase: MacOsApplicationMappingsDatabase,
-        set: ApplicationChoiceSet,
-    ): LocalApplicationMappingsSnapshot {
-        val mappings = currentDatabase.applicationMappingsQueries
-            .selectForSet(set.hex.hexToByteArray(), ::restoreStoredMapping)
-            .executeAsList()
-        files.secureDatabaseArtifacts()
-
-        return LocalApplicationMappingsSnapshot.restore(mappings) ?: throw CorruptApplicationMappingsException()
-    }
-}
-
-private const val SHA256_BYTES: Int = 32
-private const val MAXIMUM_REQUIREMENT_BYTES: Int = 4_096
-
-private fun restoreStoredMapping(
-    mappingId: ByteArray,
-    displayName: ByteArray,
-    designatedRequirement: ByteArray,
-): LocalApplicationMapping {
-    if (mappingId.size != SHA256_BYTES || designatedRequirement.isEmpty() || designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
-        corruptApplicationMappings()
-    }
-    if (!mappingId.contentEquals(designatedRequirement.sha256())) {
-        corruptApplicationMappings()
-    }
-    val restoredId = LocalApplicationMappingId.restore(mappingId.toHex()) ?: corruptApplicationMappings()
-    val restoredName = try {
-        displayName.decodeToString(throwOnInvalidSequence = true)
-    } catch (_: Exception) {
-        corruptApplicationMappings()
-    }
-
-    return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
 }
 
 /**
@@ -307,27 +294,6 @@ private class StoredApplicationCandidate(
 )
 
 private class ApplicationMappingCapacityException : Exception()
-
-private class CorruptApplicationMappingsException : Exception()
-
-private fun corruptApplicationMappings(): Nothing {
-    throw CorruptApplicationMappingsException()
-}
-
-private fun ByteArray.sha256(): ByteArray {
-    return MessageDigest.getInstance("SHA-256").digest(this)
-}
-
-private fun ByteArray.toHex(): String {
-    return joinToString(separator = "") { byte -> "%02x".format(byte) }
-}
-
-private fun String.hexToByteArray(): ByteArray {
-    return chunked(HEX_PAIR_LENGTH).map { pair -> pair.toInt(HEX_RADIX).toByte() }.toByteArray()
-}
-
-private const val HEX_PAIR_LENGTH: Int = 2
-private const val HEX_RADIX: Int = 16
 
 private fun rejected(reason: LocalApplicationSelectionRejection): LocalApplicationSelectionResult {
     return LocalApplicationSelectionResult.Rejected(reason)
