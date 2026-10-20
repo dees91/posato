@@ -9,6 +9,9 @@ import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.testIdentifier
+import app.posato.feature.targets.data.LocalPolicyResult
+import app.posato.feature.targets.data.LocalTargetPolicyState
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -39,11 +42,48 @@ class AppleSyncSessionConvergenceTest {
             val adopted = assertIs<LocalSessionStatus.Active>(second.read())
             assertEquals(sessionId, adopted.record.sessionId)
             assertEquals(SessionOrigin.ADOPTED, adopted.origin)
-            assertEquals(SESSION_FROZEN_SECOND, adopted.frozenStartSet)
+            // The set's websites come from the workspace, whose set has none here; the rest is this device's capture.
+            assertEquals(SESSION_FROZEN_SECOND.copy(domains = persistentListOf()), adopted.frozenStartSet)
             assertTrue(second.enforcement.calls.contains("apply"))
             assertEquals(sessionId.reconciliationId(), second.enforcement.lastRequest?.sessionId)
             assertEquals(SyncStatus.COMPLETED, first.status())
             assertEquals(SyncStatus.COMPLETED, second.status())
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a peer pause with set websites when a device adopts it then it enforces those websites in the same pass`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-adopt-set-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(
+            dispatcher,
+            "session-adopt-set-second.db",
+            mailbox,
+            SyncWallClock { 200 },
+            SESSION_FROZEN_SECOND,
+            liveTargets = true,
+        )
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+            val current = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(first.harness.sqlPolicy.read()).value
+            assertIs<LocalPolicyResult.Success<*>>(first.harness.syncPolicy.replace(current.revision, testPolicy("first.example")))
+            advanceUntilIdle()
+
+            val sessionId = SessionId(testIdentifier(66))
+            start(first, sessionId)
+            // The second device receives the start and the set's websites in one pass.
+            exchange(first, second)
+
+            val adopted = assertIs<LocalSessionStatus.Active>(second.read())
+            assertEquals(sessionId, adopted.record.sessionId)
+            assertEquals<List<String>?>(listOf("first.example"), adopted.frozenStartSet?.domains)
+            assertEquals<List<String>?>(listOf("first.example"), second.enforcement.lastRequest?.domains)
         } finally {
             first.close()
             second.close()
@@ -474,7 +514,8 @@ class AppleSyncSessionConvergenceTest {
 
             val adopted = assertIs<LocalSessionStatus.Active>(second.read())
             assertEquals(replacement, adopted.record.sessionId)
-            assertEquals(SESSION_FROZEN_SECOND, adopted.frozenStartSet)
+            // The set's websites come from the workspace, whose set has none here; the rest is this device's capture.
+            assertEquals(SESSION_FROZEN_SECOND.copy(domains = persistentListOf()), adopted.frozenStartSet)
             val clearIndex = second.enforcement.calls.indexOf("clear")
             val applyIndex = second.enforcement.calls.indexOf("apply")
             assertTrue(clearIndex >= 0 && applyIndex > clearIndex)
