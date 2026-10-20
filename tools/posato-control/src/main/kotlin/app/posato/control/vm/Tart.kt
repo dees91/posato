@@ -12,6 +12,12 @@ class Tart(
 ) {
     fun list(): List<TartVm> = parseTartList(run(listOf(TART, "list", "--format", "json"), "Listing Tart VMs").stdout)
 
+    /** The memory [name] is configured with, in MiB, which a clone of it inherits; null when Tart cannot tell. */
+    fun memoryMib(name: String): Int? = context.subprocess
+        .run(listOf(TART, "get", name, "--format", "json"), timeout = EXEC_TIMEOUT)
+        .takeIf { it.exitCode == 0 }
+        ?.let { parseTartMemory(it.stdout) }
+
     fun clone(
         source: String,
         name: String

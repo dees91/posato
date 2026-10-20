@@ -21,6 +21,13 @@ class VmSupportTest {
     }
 
     @Test
+    fun `tart get output is read into the configured memory, and anything else into none`() {
+        assertEquals(8192, parseTartMemory("""{"CPU" : 4, "Memory" : 8192, "Disk" : 60, "Running" : false}"""))
+        assertNull(parseTartMemory("""{"CPU" : 4}"""))
+        assertNull(parseTartMemory("tart: the VM does not exist"))
+    }
+
+    @Test
     fun `a clone may start while its golden VM is stopped and one guest runs`() {
         refuseClone(parseTartList(list), golden = "golden-a", clone = "run-a")
     }
