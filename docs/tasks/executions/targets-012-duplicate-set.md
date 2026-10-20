@@ -49,10 +49,9 @@
 | `:shared:jvmTest`, `:desktopApp:test`, `:shared:iosSimulatorArm64Test` for the wrapper, Detekt, ktlint, and iOS and Android compiles | Passed | gradle runs of the session |
 | Galaxy XCover7: My set with example.org and Clock, then **Duplicate** | "My set (copy), 1 website · Apps on this phone: 1" | `build/verification/e2e/targets-012-android.log`, runs `20261020-225239-f83a`, `20261020-225251-a086` |
 | Mac VM: Calculator chosen for My set, then **Duplicate** | "My set (copy), 0 websites · Apps on this Mac: 1" | `build/verification/e2e/targets-012-mac.log`, runs `20261020-230002-6bd4`, `20261020-230016-9c2b` |
+| Test iPhone on `3814bbe3`: a set "Dup" with dup.example and Calculator, then **Duplicate** from the row's swipe actions, a relaunch, and both sets opened | "Dup (copy), 1 website · Apps on this iPhone: 1" after the relaunch, with dup.example and one app; the source unchanged; both sets deleted afterwards | runs `20261020-234334-1b8b` (its last step expected the Websites tab, which the set screen does not reset; the next run checked it), `20261020-234436-a7a6` |
 | `./gradlew quality` on the head | See the pull request's Verified comment | |
 
 ## Blockers and accepted risks
 
-- The iOS Swift copy was not run on the test iPhone, which was locked while
-  the maintainer was away. The quality gate builds it, and the wrapper test
-  covers the call.
+- None.
