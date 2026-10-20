@@ -18,7 +18,7 @@ Link your iPhone and Mac through your Apple Account to sync pause sets with thei
 
 FOLDER SYNC AND OTHER DEVICES
 
-Instead of iCloud, you can keep your workspace in a folder that iCloud Drive, Dropbox, OneDrive, or another service keeps in sync. Posato writes only encrypted files there and syncs the folder when you open the app. Folder sync also links Posato on Linux and other devices; posato.app has the downloads. Add a device by scanning a QR code or opening a link.
+Instead of iCloud, you can keep your workspace in a folder that iCloud Drive, Dropbox, OneDrive, or another service keeps in sync. Posato writes only encrypted files there and syncs the folder when you open the app. Folder sync also links Posato on Linux computers; posato.app has the downloads. Add a device by scanning a QR code or opening a link.
 
 Sync can be delayed or fail to arrive, and Posato cannot wake a sleeping device. The Mac app is a separate download for Apple silicon and Intel Macs. After a one-time setup there, pauses and schedules start without asking for your password each time.
 

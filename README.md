@@ -48,6 +48,10 @@ Open source under the [Apache License 2.0](LICENSE).
 
 To update on Linux or Android, install the newer package the same way.
 
+<p align="center">
+  <a href=".github/assets/step-linux-android.png"><img src=".github/assets/step-linux-android.png" width="960" alt="Posato on Linux and on an Android phone, side by side, each with a 45-minute pause of one website running"></a>
+</p>
+
 Posato targets **macOS 13 or later on Apple silicon and Intel Macs**,
 **iOS 18 or later**, **Ubuntu 24.04 or later**, and **Android 13 or later**;
 the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
@@ -118,13 +122,13 @@ To link Linux, Android, or any mix of devices, keep the workspace in a folder
 that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service keeps in
 sync. Posato writes only encrypted files there. The Mac and iPhone can use a
 folder instead of iCloud; a workspace uses one or the other. Create the
-workspace on one device, then choose **Add a device** there: scan the QR code
-with the other device's camera, open the shared link, or type the pairing
-code. The code works for 10 minutes. A device that joins during a pause starts
+workspace on one device, then choose **Add a device** there. On the other
+device, choose its copy of the same folder, then scan the QR code with its
+camera, open the shared link, or type the pairing code. The code works for
+10 minutes. A device that joins during a pause starts
 pausing right away. You cannot remove a single device; to stop sharing with
 one, remove the workspace and create a new one in another folder.
 
-<!-- TODO(DOCS-006): Linux and Android screenshot, side by side, for example .github/assets/step-linux-android.png, captured by the main agent. -->
 
 ## Limits
 

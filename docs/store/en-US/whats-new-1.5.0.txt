@@ -1,5 +1,5 @@
 - Sync through a folder: keep your workspace in a folder that iCloud Drive, Dropbox, OneDrive, or another service keeps in sync, instead of iCloud. Posato writes only encrypted files there and syncs the folder when you open it. It also links Posato on Linux, new in 1.5.
-- Join by link: on a device in the workspace, choose Add a device, then scan its QR code with the iPhone camera or open the shared link. The code works for 10 minutes.
+- Join by link: choose the same folder on the iPhone, then on a device in the workspace choose Add a device and scan its QR code with the iPhone camera or open the shared link. The code works for 10 minutes.
 - A device that joins during a pause starts pausing right away.
 - The sync section shows when this device last synced.
 - Duplicate a pause set from its menu.
