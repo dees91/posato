@@ -38,6 +38,7 @@ import app.posato.core.designsystem.PosatoTextField
 import app.posato.feature.transfer.data.ExportCode
 import app.posato.feature.transfer.domain.ImportMode
 import app.posato.feature.transfer.domain.ImportPlanResult
+import app.posato.feature.transfer.domain.ImportSummary
 
 /** Shows the current export or import step, if any. */
 @Composable
@@ -246,14 +247,12 @@ private fun ResultDialog(
             PosatoButton(onClick = state::close) { Text("Done") }
         },
     ) {
-        PosatoCaption(
-            buildList {
-                if (summary.changed.isNotEmpty()) add("Pause sets changed: ${summary.changed.joinToString(", ")}.")
-                if (summary.removed.isNotEmpty()) add("Removed: ${summary.removed.joinToString(", ")}.")
-                if (summary.removedSchedules.isNotEmpty()) add("Schedules removed: ${summary.removedSchedules.joinToString(", ")}.")
-                if (summary.websitesAdded > 0) add(if (summary.websitesAdded == 1) "1 website added." else "${summary.websitesAdded} websites added.")
-            }.ifEmpty { listOf("Nothing new was added.") }.joinToString(" "),
-        )
+        val changes = changesOf(summary)
+        // Imported schedules have their own line below, so "nothing new" is said only when none came either.
+        when {
+            changes.isNotEmpty() -> PosatoCaption(changes.joinToString(" "))
+            dialog.schedules.isEmpty() -> PosatoCaption("Nothing new was added.")
+        }
         if (dialog.schedules.isNotEmpty()) {
             if (dialog.turnedOn) {
                 PosatoCaption("Imported schedules are on.", modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
@@ -296,4 +295,13 @@ private fun TransferAlert(
         },
         confirmButton = { PosatoActionRow { actions() } },
     )
+}
+
+private fun changesOf(summary: ImportSummary): List<String> {
+    return buildList {
+        if (summary.changed.isNotEmpty()) add("Pause sets changed: ${summary.changed.joinToString(", ")}.")
+        if (summary.removed.isNotEmpty()) add("Removed: ${summary.removed.joinToString(", ")}.")
+        if (summary.removedSchedules.isNotEmpty()) add("Schedules removed: ${summary.removedSchedules.joinToString(", ")}.")
+        if (summary.websitesAdded > 0) add(if (summary.websitesAdded == 1) "1 website added." else "${summary.websitesAdded} websites added.")
+    }
 }
