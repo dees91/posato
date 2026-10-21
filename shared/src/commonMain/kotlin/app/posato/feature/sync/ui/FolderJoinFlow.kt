@@ -44,11 +44,15 @@ internal sealed interface CodeStep {
 internal data class FolderJoinSteps(
     val folderChosen: Boolean,
     val code: CodeStep,
+    val folderRead: Boolean = false,
 ) {
-    /** Both steps are done, so the device joins without another press. */
+    /**
+     * Both steps are done and the folder has been read, so the device joins without another press. A folder not read
+     * yet may still turn out to be a removed workspace's copy, on which no code may be used.
+     */
     val joinsNow: Boolean
         get() {
-            return folderChosen && code is CodeStep.Ready
+            return folderChosen && folderRead && code is CodeStep.Ready
         }
 }
 
@@ -72,7 +76,7 @@ internal fun folderJoinSteps(
 
         else -> CodeStep.Enter(error)
     }
-    return FolderJoinSteps(folderChosen = folder != null, code = step)
+    return FolderJoinSteps(folderChosen = folder != null, code = step, folderRead = folder != null && contents != FolderContents.UNKNOWN)
 }
 
 /** Accepts a code, and while its offer has not reached this copy of the folder, tries again later. */

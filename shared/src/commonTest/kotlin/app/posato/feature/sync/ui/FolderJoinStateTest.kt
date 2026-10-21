@@ -8,17 +8,21 @@ import app.posato.feature.sync.folder.FolderReading
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.PairingAcceptResult
 import app.posato.feature.sync.folder.PairingOfferResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class FolderJoinStateTest {
     private val workspace = WorkspaceId(SyncIdentifier.fromExactBytes(ByteArray(16) { 7 })!!)
 
     private class Controls(
         var reading: FolderReading,
+        val accepted: PairingAcceptResult = PairingAcceptResult.NOT_FOUND,
     ) : FolderSyncControls {
         override val supported = true
         override val icloudSupported = false
@@ -32,7 +36,7 @@ class FolderJoinStateTest {
 
         override suspend fun dismissOffer() = Unit
 
-        override suspend fun accept(code: String) = PairingAcceptResult.NOT_FOUND
+        override suspend fun accept(code: String) = accepted
 
         override suspend fun read() = reading
     }
@@ -51,6 +55,17 @@ class FolderJoinStateTest {
         join.readFolder(linked = false, isRemoved = { false }) { links += 1 }
         join.readFolder(linked = true, isRemoved = { false }) { links += 1 }
         assertEquals(1, links)
+    }
+
+    @Test
+    fun `given a joined code when linking is cancelled because the device linked then the used code is forgotten`() = runTest {
+        val memory = FolderJoinMemory()
+        val join = FolderJoinState(Controls(FolderReading(FolderContents.WORKSPACE, workspace), PairingAcceptResult.JOINED), memory)
+        join.enterCode("ABCDEF")
+        assertFailsWith<CancellationException> {
+            join.join(join.pendingCode!!) { throw CancellationException("the linked screen replaced the steps") }
+        }
+        assertNull(memory.pendingCode)
     }
 
     @Test

@@ -136,8 +136,12 @@ internal class FolderJoinState(
             }
             waitingForOffer = false
             memory.draft = ""
-            onJoined()
-            memory.pendingCode = null
+            try {
+                onJoined()
+            } finally {
+                // The offer is used up, so the code goes even when the linked screen cancels this join while it links.
+                if (memory.pendingCode === code) memory.pendingCode = null
+            }
         } finally {
             waitingForOffer = false
         }

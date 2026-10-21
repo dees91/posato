@@ -120,7 +120,8 @@ private fun JoinEffects(
             state.readFolder()
         }
     }
-    LaunchedEffect(folder, code) {
+    // Keyed on joinsNow too, so a folder that reads as a removed copy, or is read again, stops a join in progress.
+    LaunchedEffect(folder, code, steps.joinsNow) {
         if (!steps.joinsNow || code == null) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             if (state.joining.pendingCode === code) state.join(code)

@@ -71,6 +71,12 @@ Agent decisions under the maintainer's delegation unless marked otherwise.
   in front, one live container and spoken errors, the code and draft kept
   across a rebuilt screen (and the row kept open), dead strings removed, the
   linking sentence in Create, `Step n` marker labels.
+- Hosted review of `61d577b8`: two P1 fixed test first. A code queued
+  before the folder joins only once the folder has been read, and a read
+  that turns the step away from joining cancels the join; a joined code is
+  forgotten even when the linked screen cancels the join while it links.
+  The P2 (driver changes after the cited runs) is covered by the Android
+  runs below on the fixed head.
 
 ## Checks
 
@@ -104,6 +110,17 @@ Verified e8adff8d Linux late offer run 20261021-202731-e79c (waiting with the of
 Verified e8adff8d Linux flows: create `20261021-202403-9d86`, offer `20261021-202756-4a3a`, done `20261021-202802-b132`, remove `20261021-202804-74fc`.
 Verified e8adff8d Mac flows run 20261021-203528-b76a (Tart clone: create linked; offer `20261021-203551-766a`, done `20261021-203559-3f03`, remove `20261021-203806-0879`).
 Verified e8adff8d Mac stored key run 20261021-203726-8f76 (after the app's state was reset the key file stayed; choosing the folder linked at once, the `R2` path).
+
+After the hosted review (`FolderJoinFlowTest`, `FolderJoinStateTest`
+failed 2 of 17 before the fix), on the Galaxy XCover7: create linked
+`20261021-211528-d6c2`; offer `20261021-211841-4f9b` with the folder copied
+aside, done; after `reset` the copy restored, link `waitingForCode`
+`20261021-212018-0e18`, typed join `linked` `20261021-212320-7d35`; remove
+`20261021-212353-80cd` then step 2 reads "Create the workspace"
+`20261021-212505-77ac` (the joined code is gone); the copy restored again,
+**Change**, the join link opened first, link `removedCopy`
+`20261021-212531-24cb` with the unexpired offer still in the folder
+`20261021-212652-778f` (screenshot `20261021-212656-fe72`).
 
 A `posato-control` read of the Linux tree failed once mid-wait
 (`/tmp/posato-dbus` missing after `reset`), so the late-offer run's own

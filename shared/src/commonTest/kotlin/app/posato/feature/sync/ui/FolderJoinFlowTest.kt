@@ -60,6 +60,12 @@ class FolderJoinFlowTest {
     }
 
     @Test
+    fun `given a code queued before the folder when the folder is chosen but not read yet then it does not join`() {
+        val steps = folderJoinSteps(folder = "Sync", contents = FolderContents.UNKNOWN, code = typed, error = null)
+        assertEquals(false, steps.joinsNow)
+    }
+
+    @Test
     fun `given a chosen folder not read yet then the code step reads it and offers no join`() {
         val steps = folderJoinSteps(folder = "Sync", contents = FolderContents.UNKNOWN, code = null, error = null)
         assertEquals(CodeStep.Reading, steps.code)
