@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.folder.FolderContents
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.PairingAcceptResult
@@ -11,10 +12,16 @@ import app.posato.feature.sync.folder.PairingLinks
 import kotlin.time.TimeSource
 
 /** The join half of the folder section: the pending code, what the chosen folder holds, and the waiting join. */
+/** The pending code and the typed draft, kept for the app's lifetime so a rebuilt screen keeps them. */
+internal class FolderJoinMemory
+
 @Stable
 internal class FolderJoinState(
     private val controls: FolderSyncControls,
+    private val memory: FolderJoinMemory = FolderJoinMemory(),
 ) {
+    var draft by mutableStateOf("")
+
     /** A code waiting to be used: scanned from a join link or typed. It joins once a folder is chosen too. */
     var pendingCode by mutableStateOf<PendingCode?>(null)
         private set
@@ -74,8 +81,12 @@ internal class FolderJoinState(
         error = null
     }
 
-    suspend fun readFolder() {
-        folderContents = controls.contents()
+    suspend fun readFolder(
+        linked: Boolean,
+        isRemoved: suspend (WorkspaceId) -> Boolean,
+        onLinkable: suspend () -> Unit,
+    ) {
+        folderContents = controls.read().contents
     }
 
     /**

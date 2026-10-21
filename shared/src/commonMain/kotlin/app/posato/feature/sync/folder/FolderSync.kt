@@ -280,14 +280,9 @@ internal class FolderSync(
         return pairing.accept(pairingCodeFrom(code) ?: code)
     }
 
-    override suspend fun contents(): FolderContents {
-        if (choice.root() == null) return FolderContents.UNKNOWN
-        val binding = (folderPorts.resolveBinding() as? BindingResolution.Available)?.binding ?: return FolderContents.UNAVAILABLE
-        return when (folderPorts.readAnchor(binding)) {
-            is AnchorReadResult.Found -> FolderContents.WORKSPACE
-            AnchorReadResult.Missing -> FolderContents.EMPTY
-            else -> FolderContents.UNAVAILABLE
-        }
+    override suspend fun read(): FolderReading {
+        if (choice.root() == null) return FolderReading(FolderContents.UNKNOWN)
+        return pairing.read()
     }
 
     /** A folder gives no change events, so a linked folder workspace is read once a minute (ADR 0010). */

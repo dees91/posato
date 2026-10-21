@@ -101,6 +101,18 @@ internal class FolderPairing(
         sweepExpired(workspace)
     }
 
+    /** What the folder holds, its workspace, and whether this device holds that workspace's key; nothing is written. */
+    suspend fun read(): FolderReading {
+        val binding = (ports.resolveBinding() as? BindingResolution.Available)?.binding ?: return FolderReading(FolderContents.UNAVAILABLE)
+        val anchor = when (val read = ports.readAnchor(binding)) {
+            is AnchorReadResult.Found -> read.anchor
+            AnchorReadResult.Missing -> return FolderReading(FolderContents.EMPTY)
+            else -> return FolderReading(FolderContents.UNAVAILABLE)
+        }
+        val keyHere = ports.readItem(binding, anchor.account()) is KeyItemReadResult.Found
+        return FolderReading(FolderContents.WORKSPACE, anchor.workspaceId, keyHere)
+    }
+
     suspend fun accept(code: String): PairingAcceptResult {
         val codeBytes = decodeCode(code) ?: return PairingAcceptResult.INVALID_CODE
         val binding = (ports.resolveBinding() as? BindingResolution.Available)?.binding ?: return PairingAcceptResult.UNAVAILABLE

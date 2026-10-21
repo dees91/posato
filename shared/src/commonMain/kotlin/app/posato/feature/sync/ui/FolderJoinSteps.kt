@@ -74,7 +74,7 @@ internal fun FolderJoinStepsView(
     val joining = state.joining
     val code = joining.pendingCode
     val steps = folderJoinSteps(folder, joining.folderContents, code, joining.error)
-    LaunchedEffect(folder) { if (folder != null) joining.readFolder() }
+    LaunchedEffect(folder) { if (folder != null) joining.readFolder(false, { false }) {} }
     LaunchedEffect(folder, code) { if (steps.joinsNow && code != null) state.join(code) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
         JoinStep(number = 1, done = steps.folderChosen, active = !steps.folderChosen) {
@@ -101,7 +101,7 @@ private fun CodeStepView(
     val scans = state.folderControls.scansCodes
     val title = stringResource(if (scans) Res.string.sync_folder_step_scan else Res.string.sync_folder_step_type)
     when (val step = steps.code) {
-        CodeStep.NotYet -> JoinStep(number = 2, done = false, active = false) { StepTitle(title) }
+        CodeStep.NotYet, CodeStep.Reading, CodeStep.RemovedCopy -> JoinStep(number = 2, done = false, active = false) { StepTitle(title) }
 
         CodeStep.Create -> JoinStep(number = 2, done = false, active = true) {
             StepTitle(stringResource(Res.string.sync_folder_step_create))

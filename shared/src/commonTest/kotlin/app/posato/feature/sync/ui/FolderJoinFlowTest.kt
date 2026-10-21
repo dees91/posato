@@ -46,9 +46,30 @@ class FolderJoinFlowTest {
     }
 
     @Test
-    fun `given no folder and no code then the code step is not yet active`() {
+    fun `given no folder and no code then the code can be typed before the folder is chosen`() {
         val steps = folderJoinSteps(folder = null, contents = FolderContents.UNKNOWN, code = null, error = null)
-        assertEquals(FolderJoinSteps(folderChosen = false, code = CodeStep.NotYet), steps)
+        assertEquals(FolderJoinSteps(folderChosen = false, code = CodeStep.Enter(null)), steps)
+    }
+
+    @Test
+    fun `given a code typed before a folder is chosen then it waits for the folder and joins once it is chosen`() {
+        val before = folderJoinSteps(folder = null, contents = FolderContents.UNKNOWN, code = typed, error = null)
+        assertEquals(CodeStep.Ready(CodeSource.TYPED), before.code)
+        assertEquals(false, before.joinsNow)
+        assertEquals(true, folderJoinSteps(folder = "Sync", contents = FolderContents.WORKSPACE, code = typed, error = null).joinsNow)
+    }
+
+    @Test
+    fun `given a chosen folder not read yet then the code step reads it and offers no join`() {
+        val steps = folderJoinSteps(folder = "Sync", contents = FolderContents.UNKNOWN, code = null, error = null)
+        assertEquals(CodeStep.Reading, steps.code)
+    }
+
+    @Test
+    fun `given a folder that holds a workspace this device removed then it explains and never joins with a code`() {
+        val steps = folderJoinSteps(folder = "Sync", contents = FolderContents.REMOVED_COPY, code = scanned, error = null)
+        assertEquals(CodeStep.RemovedCopy, steps.code)
+        assertEquals(false, steps.joinsNow)
     }
 
     @Test

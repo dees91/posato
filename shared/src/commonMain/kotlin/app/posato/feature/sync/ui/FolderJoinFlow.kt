@@ -26,6 +26,10 @@ internal sealed interface CodeStep {
 
     data object Create : CodeStep
 
+    data object Reading : CodeStep
+
+    data object RemovedCopy : CodeStep
+
     data class Enter(
         val error: PairingAcceptResult?,
     ) : CodeStep

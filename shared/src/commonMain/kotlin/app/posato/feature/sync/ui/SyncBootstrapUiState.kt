@@ -89,7 +89,7 @@ internal class SyncBootstrapUiState(
         joining.forgetFolder()
         scope.launch {
             sync.discardCandidate()
-            joining.readFolder()
+            joining.readFolder(false, { false }) {}
         }
     }
 
