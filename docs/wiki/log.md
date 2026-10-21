@@ -2933,3 +2933,9 @@ first removal attempt that does not finish, not to a paused keychain.
   adds "<name> (copy)" with the set's websites and this device's apps; other
   devices choose their own apps (idea 43). The copy appeared with its apps
   on a Galaxy XCover7 and in a Mac VM.
+
+## [2026-10-21] decision | Roadmap revision 25: release 1.5 waits for six rows
+
+- `user-confirmed`: `SYNC-024`, `SYNC-025`, `SYNC-026` (idea 48),
+  `ANDROID-002`, `LINUX-002` (idea 49), and `LINUX-003` (idea 50) join
+  release 1.5 before `DOCS-006` recaptures and `RELEASE-007` publishes.
