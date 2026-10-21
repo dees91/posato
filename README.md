@@ -7,7 +7,7 @@ iPhone, Linux computer, or Android phone, now or on a schedule, within the
 [limits](#limits) below.
 
 <p align="center">
-  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; the same websites on a Mac, a Linux computer, an iPhone, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device">
+  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; one pause set change reaching a Mac, an iPhone, a Linux computer, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device">
 </p>
 
 Watch the [full 53-second walkthrough](https://posato.app/media/walkthrough.mp4),

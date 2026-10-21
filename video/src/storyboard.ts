@@ -344,13 +344,16 @@ export const HERO = {
     start: 300,
     end: 450,
     headline: "Your devices.\nConnected.",
-    desktops: [
-      { label: "Mac", capture: "mac-websites.png", crop: [330, 448], scale: 0.92, background: "#1d2420", ink: "#afb9ae" },
-      { label: "Linux", capture: "linux-websites.png", crop: [384, 370], scale: 1.12, background: "#fffefa", ink: "#626b63" },
-    ],
-    phones: [
-      { label: "iPhone", capture: "iphone-websites.png" },
-      { label: "Android", capture: "android-websites.png" },
+    /** One real capture of the Focus set; the second website appearing is the change that syncs. */
+    card: { before: "mac-websites-empty.png", after: "mac-websites.png", crop: [326, 116, 570, 504] },
+    change: 36,
+    rail: [56, 104],
+    /** The row lays out by count, so another platform is one more entry. */
+    devices: [
+      { label: "Mac", kind: "laptop" },
+      { label: "iPhone", kind: "phone" },
+      { label: "Linux", kind: "laptop" },
+      { label: "Android", kind: "phone" },
     ],
     line: "Sync through iCloud or a folder you choose.",
   },

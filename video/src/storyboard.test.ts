@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { capturePoint, CAPTURE, frameMetrics, LAYOUTS, type Layout } from "./layout";
 import {
+  HERO,
   MAX_QUIET_FRAMES,
   SCENE_OVERLAP,
   sceneAssets,
@@ -93,6 +94,8 @@ test("stills and the social preview reference tracked captures", () => {
     assert.ok(existsSync(publicFile(still.phone)), `missing ${still.phone}`);
   }
   for (const phone of SOCIAL_PREVIEW.phones) assert.ok(existsSync(publicFile(phone)), `missing ${phone}`);
+  for (const capture of [HERO.sync.card.before, HERO.sync.card.after]) assert.ok(existsSync(publicFile(capture)), `missing ${capture}`);
+  assert.ok(HERO.sync.devices.length > 0);
   assert.ok(existsSync(publicFile("forest.svg")));
   assert.equal(SOCIAL_PREVIEW.width, 1280);
   assert.equal(SOCIAL_PREVIEW.height, 640);

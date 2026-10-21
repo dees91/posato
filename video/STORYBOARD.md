@@ -1,6 +1,6 @@
 # Posato showcase storyboard
 
-- **Revision:** 6 (2026-10-21, `DOCS-006`: Posato 1.5 on Mac, iPhone, Linux, and Android; the hero's sync scene shows all four and names folder sync, the close names the platforms, and the README stills pair a computer with a phone across platforms)
+- **Revision:** 6 (2026-10-21, `DOCS-006`: Posato 1.5 on Mac, iPhone, Linux, and Android; the hero's sync scene shows one pause set changing and reaching all four, and names folder sync, the close names the platforms, and the README stills pair a computer with a phone across platforms)
 - **Format:** `Hero` 24 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
 - **Audience:** someone meeting Posato on GitHub or posato.app who has ten seconds to decide whether it is for them.
 - **Executable projection:** `src/storyboard.ts`. Copy, frame numbers, targets, and captures live there; `src/storyboard.test.ts` enforces this document's rules.
@@ -33,7 +33,7 @@ callout pills, or title cards.
 | 72–114 | Brief duration selection under "Start your pause."; time remains only in the UI |
 | 114–168 | Review and Start; the heading holds steady, click at frame 156 |
 | 168–300 | Restrictions active, end time and early-end action; shared crop settles |
-| 300–450 | Website captures from a Mac, a Linux computer, an iPhone, and an Android phone; "Your devices. Connected." and "Sync through iCloud or a folder you choose." |
+| 300–450 | "Your devices. Connected."; one crop of the Focus set on the Mac gains its second website (`mac-websites-empty` to `mac-websites`), a light runs along a rail, and a row of generic computer and phone outlines labeled Mac, iPhone, Linux, and Android each gets a check as it passes; "Sync through iCloud or a folder you choose." |
 | 450–630 | "Your cloud. Your data."; encrypted on your device, stored in your private iCloud or in a folder you choose |
 | 630–720 | "A little space. For what matters.", the four platforms, and the open-interval mark |
 
@@ -41,7 +41,7 @@ The hero uses the existing active-session capture in place of the
 proposed browser-blocking shot. It demonstrates the reported application state,
 not a newly recorded enforcement attempt. The paired website captures illustrate shared choices, not measured delivery
 latency or simultaneous activation. Sync is optional and best effort; device-local
-app selections are not presented as shared. Privacy copy follows `PRIVACY.md`. The walkthrough stays a Mac and iPhone story; its opening and closing cards name all four platforms.
+app selections are not presented as shared. The sync scene draws the product once and the platforms as plain outlines with their names, so another platform is one more entry in `HERO.sync.devices`, not another screen; the outlines carry no Apple, Linux, or Android artwork, and the checks show a change arriving, not measured delivery. Privacy copy follows `PRIVACY.md`. The walkthrough stays a Mac and iPhone story; its opening and closing cards name all four platforms.
 The site poster uses frame 240 (`POSTER_FRAME`).
 Adjacent captures share an animated crop with 20-frame eased masked transitions.
 Headings preserve their line breaks and fade out before the next text enters.
@@ -104,7 +104,6 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `iphone-duration-45` | setup with the set Focus and 45 minutes selected |
 | `iphone-active-45` | Session active |
 | `iphone-schedules` | Schedules with Deep work saved |
-| `linux-websites` | Linux: Focus, Websites, both domains (hero sync scene) |
 | `linux-duration-45` | Linux: setup with the set Focus and 45 minutes selected (still and site) |
 | `linux-add-device` | Linux: Folder sync, Add a device with the QR code and a pairing code (still and site) |
 | `android-websites` | Android: Focus, Websites, both domains (hero, still, and site) |

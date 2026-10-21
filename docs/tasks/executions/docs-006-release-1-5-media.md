@@ -113,6 +113,6 @@ the release commit signs, are
 | --- | --- |
 | `./gradlew qualityLint` | passed on `1910d1d6` and after the review fixes |
 | `website/` `npm run build`; wide and phone renders | passed: 5 pages, four badges, install grid |
-| `video/` `npm run media` (check, renders, `verify`) | passed: GIF 1,768,032 bytes, site MP4 571,266 bytes |
+| `video/` `npm run media` (check, renders, `verify`) | passed: GIF 1,979,021 bytes, site MP4 548,696 bytes |
 | Captures (`build/verification/runs/`) | Linux `20261021-094149-2207` to `-094816-cf41`; Mac `20261021-100611-5631`, `-100849-d08d`; iPhone `20261021-102925-336a` to `-103419-b5f3`; Android `20261021-093919-363a` to `-110451-3842` |
 | Privacy scan of tracked PNGs | example domains, synthetic folders, expired pairing codes only; bars cropped; no metadata |

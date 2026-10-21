@@ -9,7 +9,7 @@ shows real Posato captures with synthetic choices. The walkthrough and the
 stills place them in the same generic device frames as the site, and the
 walkthrough names each click with a synthetic cursor; the hero crops the Mac
 captures directly and shows its one click, Start, the same way, then shows
-the same websites on a Mac, a Linux computer, an iPhone, and an Android phone.
+a change to one pause set reaching a Mac, an iPhone, a Linux computer, and an Android phone, drawn as outlines.
 [STORYBOARD.md](STORYBOARD.md) is the human contract and
 `src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
 enforces the storyboard rules. This is documentation artwork, not a test of
@@ -43,7 +43,7 @@ moves every crop taken from it, and nothing else reports that.
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,768,032 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,979,021 bytes.
 - `../.github/assets/step-websites.png` (Mac and Android), `step-duration.png`
   (Linux and iPhone), `step-schedules.png` (Mac and iPhone), and
   `step-folder.png` (Linux and Android): 1920 x 1080 composed stills on a
@@ -51,7 +51,7 @@ Outputs:
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 571,266 bytes, with a JPEG poster for the first paint, phones, and
+  faststart, 548,696 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
