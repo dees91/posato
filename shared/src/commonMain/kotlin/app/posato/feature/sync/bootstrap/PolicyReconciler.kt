@@ -43,8 +43,9 @@ internal class PolicyReconciler(
 ) {
     /**
      * At first link, queues what this device holds and the workspace may not: every website of a set the
-     * workspace has not removed, and a name only for sets other than the first. The first set's name and the
-     * default are never published here, so a late link cannot overwrite a choice made on another device.
+     * workspace has not removed, the name of a set it does not know, and the first set's name and this device's
+     * default only while the workspace has not chosen them, so a late link does not overwrite a choice that
+     * reached it (ADR 0006, "Migration identity"). Only this workspace's queued changes count.
      */
     suspend fun seedLocalExtras(
         workspaceId: ByteArray,
@@ -56,12 +57,14 @@ internal class PolicyReconciler(
                 is LocalPolicyResult.Failure -> return@withWriteGate read
             }
             val pending = when (val read = policies.readIntents()) {
-                is LocalPolicyResult.Success -> read.value.map(SequencedPolicyIntent::intent)
+                is LocalPolicyResult.Success -> read.value
+                    .filter { row -> row.workspaceId.contentEquals(workspaceId) }
+                    .map(SequencedPolicyIntent::intent)
                 is LocalPolicyResult.Failure -> return@withWriteGate read
             }
-            val seeds = local.sets
-                .filter { set -> projection.pauseSetStatus(set.id) != PauseSetStatus.REMOVED }
-                .flatMap { set -> seedsFor(set, projection, pending) }
+            val sets = local.sets.filter { set -> projection.pauseSetStatus(set.id) != PauseSetStatus.REMOVED }
+            val puts = sets.flatMap { set -> seedsFor(set, projection, pending) }
+            val seeds = puts + listOfNotNull(seededDefault(local, projection, pending, puts))
             if (seeds.isEmpty()) {
                 LocalPolicyResult.Success(Unit)
             } else {

@@ -2,6 +2,7 @@ package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.PauseSetStatus
+import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncProjection
 import app.posato.feature.targets.data.setIdOf
 import app.posato.feature.targets.domain.ExactDomain
@@ -16,9 +17,14 @@ internal fun seedsFor(
     pending: List<StoredPolicyIntent>,
 ): List<StoredPolicyIntent> {
     val pendingForSet = pending.filter { intent -> intent.setIdOf() == set.id }
-    // Only a set the workspace does not know is named; the first set is live from the start, so its name never is.
+    // A set the workspace does not know is named; the first set, live from the start, only while nobody named it.
+    val unnamed = when (projection.pauseSetStatus(set.id)) {
+        PauseSetStatus.UNKNOWN -> true
+        PauseSetStatus.LIVE -> set.id == PauseSetId.FIRST && projection.pauseSets.none { live -> live.setId == set.id && live.name != null }
+        PauseSetStatus.REMOVED, PauseSetStatus.REFUSED -> false
+    }
     val put = set.name
-        ?.takeIf { projection.pauseSetStatus(set.id) == PauseSetStatus.UNKNOWN }
+        ?.takeIf { unnamed }
         ?.takeIf { pendingForSet.none { intent -> intent is StoredPolicyIntent.PutSet } }
         ?.let { name -> StoredPolicyIntent.PutSet(set.id, name) }
     val pendingDomains = pendingForSet.mapNotNullTo(mutableSetOf(), StoredPolicyIntent::domainOrNull)
@@ -88,6 +94,33 @@ private fun applyPending(
         }
     }
     return domains.sortedBy(ExactDomain::canonicalValue)
+}
+
+/**
+ * The default this device publishes at first link: its own resolved default, only while the workspace never
+ * chose one, when it differs from the workspace's, survives the seed, and its set would not be refused at the cap.
+ */
+internal fun seededDefault(
+    local: PauseSets,
+    projection: SyncProjection,
+    pending: List<StoredPolicyIntent>,
+    seeds: List<StoredPolicyIntent>,
+): StoredPolicyIntent.ChooseDefault? {
+    val chosen = local.resolvedDefault() ?: return null
+    val newSets = seeds.filterIsInstance<StoredPolicyIntent.PutSet>()
+        .filter { put -> projection.pauseSetStatus(put.setId) == PauseSetStatus.UNKNOWN }
+        .map(StoredPolicyIntent.PutSet::setId)
+    val fits = when (projection.pauseSetStatus(chosen)) {
+        PauseSetStatus.LIVE -> true
+        PauseSetStatus.UNKNOWN -> chosen in newSets && projection.pauseSets.size + newSets.indexOf(chosen) < SyncFormatLimits.MAX_PAUSE_SETS
+        PauseSetStatus.REMOVED, PauseSetStatus.REFUSED -> false
+    }
+    return StoredPolicyIntent.ChooseDefault(chosen).takeIf {
+        !projection.defaultChosen &&
+            pending.none { intent -> intent is StoredPolicyIntent.ChooseDefault } &&
+            chosen != projection.defaultPauseSetId &&
+            fits
+    }
 }
 
 internal fun chosenDefault(

@@ -128,8 +128,23 @@ product rules are in [pause set rules](../product/pause-sets-decisions.md).
   linked workspace each replica authors one `pause-sets-enabled` when it
   migrates or first links. It never authors `set-put` or `set-default`
   during migration, so a late migration cannot overwrite a name or default
-  chosen elsewhere. At first link it authors no name for the first set and
-  no `set-default`; it authors `set-put` only for its other sets. `user-confirmed` known limit (2026-09-30): a replica
+  chosen elsewhere. At first link it authors `set-put` for its sets the
+  workspace does not know, and for the first set only while the
+  workspace's first set has no name; it authors one `set-default`, after
+  those puts, only while the workspace holds no `set-default` at all and
+  its own resolved default differs from the workspace's, survives the
+  link, and would not be refused at the set cap. So a device that renamed
+  its first set or chose another default before it linked keeps them
+  (`user-confirmed` 2026-10-21, `SYNC-024`; until then the first set's name
+  and the default were never authored at first link). Known limits,
+  `user-confirmed` 2026-10-21: a replica decides from what has reached it,
+  so with two concurrent first links, an iCloud anchor race, or a folder
+  that delivers files out of order (`inferred`), both replicas can author a
+  name or default and the greater total order (HLC, author, operation)
+  wins; and a replica that joins a workspace where nobody named the first
+  set or chose a default changes them for every member. Kinds 12 and 16
+  are mandatory since 1.3, so a 1.3 or later replica reduces them with no
+  new gate. `user-confirmed` known limit (2026-09-30): a replica
   that migrates or links after the first set was removed loses the first
   set's local websites and application choices.
 - **Compatibility.** `observed` (release 1.2, `AppleSync.exchangeLegsOrHalt`

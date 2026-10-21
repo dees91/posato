@@ -355,6 +355,7 @@ private class ProjectionAccumulator(
             refusedPauseSetIds = sets.refusedIds.toSet(),
             defaultPauseSetId = sets.defaultFor(chosenDefault),
             pauseSetsEnabled = pauseSetsEnabled,
+            defaultChosen = chosenDefault != null,
         )
     }
 
