@@ -2946,5 +2946,7 @@ first removal attempt that does not finish, not to a paused keychain.
   Posato" over Calculator shows Posato's dark palette in Dark Mode (run
   `20261021-141029-7af5`) and the light palette in Light (run
   `20261021-141041-dbc3`). The block screen now uses the shared theme
-  through `PosatoAndroidTheme`, and its window starts on the matching
-  surface.
+  through `PosatoAndroidTheme`; its window background mirrors the matching
+  surface (`inferred` to avoid a flash; the first frame was not captured).
+  Blocked by a running 45-minute pause with Calculator in its set; the
+  theme was switched with `cmd uimode night yes|no`.
