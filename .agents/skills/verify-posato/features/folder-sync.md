@@ -32,11 +32,15 @@ attention instead of creating it again.
 ## How to get to it (user POV)
 
 - Session, the **Folder sync** row (on Apple devices the **iCloud** row,
-  under "Or sync through a folder instead of iCloud."), the **Folder path**
-  field or **Choose folder…** (or **Use another folder** after an earlier
-  choice), **Use this folder**, **Sync with this folder**.
+  under "Or sync through a folder instead of iCloud."). Unlinked, it shows
+  two numbered steps that can be done in either order: step 1, the
+  **Folder path** field or **Choose folder…**, then **Use this folder** (a
+  chosen folder becomes a chip with **Change**); step 2, in an empty folder
+  **Create workspace**, in a folder with a workspace the scan hint (phones)
+  and **Pairing code** with **Join**. A scanned link marks step 2 "Pairing
+  code received"; the device joins by itself once both steps are done and
+  says "The code has not reached this folder yet" while it waits.
 - A member: **Add a device** shows the code; **Done** withdraws it.
-- A new device: after choosing the folder, **Pairing code** and **Join**.
 
 ## Driving it with posato-control
 
@@ -67,8 +71,8 @@ outlives the command that started it, and never start a second one.
   `vm click --text Allow --exact`; a `vm exec` into that folder waits on
   the alert). On the iPhone tap **Choose folder…**, then the picker's back
   button (`id: BackButton`), `id: DOC.sidebar.item.iCloud Drive`,
-  `id: PosatoSync, Folder`, and **Open**; **Sync with this folder**; type the
-  Mac's code and press `return` (the keyboard hides **Join**). Proof: the
+  `id: PosatoSync, Folder`, and **Open**; type the Mac's code and press
+  `return` (the keyboard hides **Join**). Proof: the
   Mac's set appears after the next `terminate` and `launch`.
 - **Join by link:** open the member's link on the joining device instead of
   typing: Android `$PC android shell --script 'am start -a
@@ -76,8 +80,8 @@ outlives the command that started it, and never start a second one.
   `xcrun devicectl device process launch --device <udid> --payload-url
   "posato://join?code=<code>" app.posato.ios` (what a camera scan does), a
   Mac guest `$PC vm exec --line <line> --script 'open
-  "posato://join?code=<code>"'`. Proof: the code field holds the code, and
-  the device joins once it waits for a code.
+  "posato://join?code=<code>"'`. Proof: step 2 reads "Pairing code
+  received", and the device joins as soon as its folder is chosen.
 - **Removal:** `flow folder remove` on one device. Proof: the folder is empty
   and the other device shows "Sync needs attention" within two minutes and
   the folder stays empty.
@@ -89,11 +93,11 @@ outlives the command that started it, and never start a second one.
   folder and the relay copies.
 - Create the workspace on one device before linking the others; two devices
   that create at the same moment before their folders synchronize diverge.
-- A device that once chose another folder shows **Use another folder**;
-  `flow folder link` presses it so no earlier choice carries over.
-- A pairing code fails with "No offer for this code" until the offer reaches
-  the joining device's folder; `flow folder join` presses **Join** again until
-  it does.
+- A device that once chose another folder shows the folder chip's
+  **Change**; `flow folder link` presses it so no earlier choice carries over.
+- Until the offer reaches the joining device's folder, the app waits and
+  checks again by itself (for up to 10 minutes, then "No offer for this
+  code"); `flow folder join` only waits.
 - A file the product rejects (wrong name, size, or content) is skipped and
   never accepted; when one device misses a change, compare the bundle files'
   checksums across folders before suspecting the product.

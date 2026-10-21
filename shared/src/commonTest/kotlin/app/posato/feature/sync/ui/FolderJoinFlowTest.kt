@@ -56,7 +56,13 @@ class FolderJoinFlowTest {
         val results = ArrayDeque(listOf(PairingAcceptResult.NOT_FOUND, PairingAcceptResult.UNAVAILABLE, PairingAcceptResult.JOINED))
         var calls = 0
         val waiting = mutableListOf<Boolean>()
-        val joiner = FolderJoiner({ calls += 1; results.removeFirst() }, { currentTime })
+        val joiner = FolderJoiner(
+            {
+                calls += 1
+                results.removeFirst()
+            },
+            { currentTime },
+        )
         val result = joiner.join("CODE") { waiting += it }
         assertEquals(PairingAcceptResult.JOINED, result)
         assertEquals(3, calls)
@@ -67,7 +73,13 @@ class FolderJoinFlowTest {
     @Test
     fun `given an expired code when joining then it stops at once with the error`() = runTest {
         var calls = 0
-        val joiner = FolderJoiner({ calls += 1; PairingAcceptResult.EXPIRED }, { currentTime })
+        val joiner = FolderJoiner(
+            {
+                calls += 1
+                PairingAcceptResult.EXPIRED
+            },
+            { currentTime },
+        )
         assertEquals(PairingAcceptResult.EXPIRED, joiner.join("CODE"))
         assertEquals(1, calls)
     }

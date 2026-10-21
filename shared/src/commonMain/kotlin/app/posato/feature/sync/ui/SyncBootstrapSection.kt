@@ -118,7 +118,7 @@ internal fun SyncBootstrapSection(
     }
 }
 
-/** A join link the system opened Posato with opens the section and joins as soon as this device waits for a code. */
+/** A join link the system opened Posato with opens the section and fills in the code step. */
 @Composable
 private fun LinkCodeEffects(
     state: SyncBootstrapUiState,
@@ -128,7 +128,7 @@ private fun LinkCodeEffects(
     val linkCode by state.linkCode.collectAsState()
     val expand by rememberUpdatedState(onExpand)
     LaunchedEffect(linkCode) { if (linkCode != null) expand() }
-    LaunchedEffect(linkCode, snapshot.joinPending, snapshot.linked) { linkCode?.let(state::useLinkCode) }
+    LaunchedEffect(linkCode, snapshot.linked) { linkCode?.let { state.joining.capture(it, snapshot.linked) } }
 }
 
 @Composable

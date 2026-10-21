@@ -14,7 +14,6 @@ import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.folder.AppleOnlySync
 import app.posato.feature.sync.folder.FolderChoiceResult
 import app.posato.feature.sync.folder.FolderSyncControls
-import app.posato.feature.sync.folder.PairingAcceptResult
 import app.posato.feature.sync.folder.PairingLinks
 import app.posato.feature.sync.folder.PairingOffer
 import app.posato.feature.sync.folder.PairingOfferResult
@@ -42,8 +41,8 @@ internal class SyncBootstrapUiState(
         private set
     var linkCopied by mutableStateOf(false)
         private set
-    var joinResult by mutableStateOf<PairingAcceptResult?>(null)
-        private set
+    val joining = FolderJoinState(folderControls)
+
     var folderRefused by mutableStateOf(false)
         private set
     var running by mutableStateOf(false)
@@ -86,7 +85,12 @@ internal class SyncBootstrapUiState(
     fun chooseFolder(path: String) {
         if (running || syncState.value.linked) return
         folderRefused = folderControls.choose(path) != FolderChoiceResult.CHOSEN
-        if (!folderRefused) scope.launch { sync.discardCandidate() }
+        if (folderRefused) return
+        joining.forgetFolder()
+        scope.launch {
+            sync.discardCandidate()
+            joining.readFolder()
+        }
     }
 
     fun browseFolder() {
@@ -97,7 +101,7 @@ internal class SyncBootstrapUiState(
     fun clearFolder() {
         if (running || syncState.value.linked) return
         folderControls.clear()
-        joinResult = null
+        joining.forgetFolder()
         folderRefused = false
         scope.launch { sync.discardCandidate() }
     }
@@ -125,17 +129,6 @@ internal class SyncBootstrapUiState(
         }
     }
 
-    /** Uses a link's code once: joins at once while this device waits for one, and drops it once linked. */
-    fun useLinkCode(code: String) {
-        val snapshot = syncState.value
-        if (snapshot.linked) {
-            PairingLinks.consume(code)
-        } else if (snapshot.joinPending && !running) {
-            join(code)
-            PairingLinks.consume(code)
-        }
-    }
-
     fun closeCode() {
         offer = null
         offerFailed = false
@@ -143,20 +136,14 @@ internal class SyncBootstrapUiState(
         scope.launch { folderControls.dismissOffer() }
     }
 
-    fun join(code: String) {
-        if (running) return
-        running = true
-        // The previous attempt's message would otherwise read as this attempt's outcome until it finishes.
-        joinResult = null
-        scope.launch {
+    /** Joins with a pending code once both steps are done, then links this device with the received key. */
+    suspend fun join(code: PendingCode) {
+        joining.join(code) {
+            running = true
+            checking = true
             try {
-                val result = folderControls.accept(code)
-                joinResult = result
-                if (result == PairingAcceptResult.JOINED) {
-                    checking = true
-                    sync.syncWithIcloud()
-                    completedChecks += 1
-                }
+                sync.syncWithIcloud()
+                completedChecks += 1
             } finally {
                 checking = false
                 running = false
