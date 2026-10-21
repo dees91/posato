@@ -30,6 +30,7 @@ internal class LinuxStatusArea(
     private val onAction: (PresenceMenuActionId) -> Unit,
     private val onMenuOpened: () -> Unit,
     private val onBusLost: () -> Unit,
+    private val sessionBusAddress: () -> String? = ::environmentBusAddress,
 ) : Closeable {
     private var connection: DBusConnection? = null
 
@@ -44,9 +45,13 @@ internal class LinuxStatusArea(
     val watcherPresent: StateFlow<Boolean> = mutableWatcherPresent
 
     fun start(): Boolean {
+        val address = sessionBusAddress()?.takeIf { it.isNotBlank() } ?: return false
         val bus = try {
-            DBusConnectionBuilder.forSessionBus().withShared(false).withDisconnectCallback(LostBus { if (!closing) onBusLost() }).build()
+            DBusConnectionBuilder.forAddress(address).withShared(false).withDisconnectCallback(LostBus { if (!closing) onBusLost() }).build()
         } catch (_: DBusException) {
+            return false
+        } catch (_: RuntimeException) {
+            // dbus-java reports a malformed or unreachable address with unchecked exceptions too.
             return false
         }
         connection = bus
@@ -63,6 +68,9 @@ internal class LinuxStatusArea(
             watcherChanged(daemon.NameHasOwner(WATCHER_NAME))
             true
         } catch (_: DBusException) {
+            close()
+            false
+        } catch (_: RuntimeException) {
             close()
             false
         }
@@ -122,9 +130,13 @@ internal class LinuxStatusArea(
         private const val BUS_PATH = "/org/freedesktop/DBus"
 
         /** A second launch: asks the running Posato to show its window; false when no session bus or Posato answers. */
-        fun forwardShow(activationToken: String): Boolean {
+        fun forwardShow(
+            activationToken: String,
+            sessionBusAddress: () -> String? = ::environmentBusAddress,
+        ): Boolean {
+            val address = sessionBusAddress()?.takeIf { it.isNotBlank() } ?: return false
             return runCatching {
-                DBusConnectionBuilder.forSessionBus().withShared(false).build().use { bus ->
+                DBusConnectionBuilder.forAddress(address).withShared(false).build().use { bus ->
                     bus.getRemoteObject(INSTANCE_NAME, INSTANCE_PATH, PosatoInstance::class.java).show(activationToken)
                 }
                 true
@@ -136,3 +148,6 @@ internal class LinuxStatusArea(
 private fun DBusConnection.sendQuietly(signal: org.freedesktop.dbus.messages.DBusSignal) {
     runCatching { sendMessage(signal) }
 }
+
+/** The session bus the desktop advertises to the processes of the login session; blank or absent without one. */
+private fun environmentBusAddress(): String? = System.getenv("DBUS_SESSION_BUS_ADDRESS")

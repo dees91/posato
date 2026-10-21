@@ -1395,6 +1395,7 @@ dependencies {
     // these classes, so they compile here and ship only in the Linux jar (linuxDesktopRuntime below).
     compileOnly(libs.dbus.java.core)
     testImplementation(libs.dbus.java.core)
+    testImplementation(libs.dbus.java.transport.native.unixsocket)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
 }

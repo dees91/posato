@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -29,6 +30,7 @@ fun linuxCommand(): LinuxCommand = LinuxCommand().subcommands(
     LinuxTrayCommand(),
     LinuxScreenCommand(),
     LinuxReloginCommand(),
+    LinuxSessionCommand(),
 )
 
 /** The Linux clone of ADR 0010: a Tart Ubuntu guest; Posato in it is driven with the shared commands and `-t linux`. */
@@ -124,5 +126,14 @@ class LinuxReloginCommand : ControlCommand("relogin", "Log the clone's user out 
     override fun execute(session: Session): JsonElement {
         LinuxGuest(session.context).also { it.requireRunning() }.desktopSession.relogin()
         return buildJsonObject { put("vm", LinuxGuest.CLONE) }
+    }
+}
+
+class LinuxSessionCommand : ControlCommand("session", "On the GNOME line, log the user in to the Xorg or the Wayland session.") {
+    private val desktopSession by argument(help = "xorg or wayland").choice("xorg" to LinuxSession.XORG, "wayland" to LinuxSession.WAYLAND)
+
+    override fun execute(session: Session): JsonElement {
+        LinuxGuest(session.context).also { it.requireRunning() }.desktopSession.selectSession(desktopSession)
+        return buildJsonObject { put("session", desktopSession.type) }
     }
 }
