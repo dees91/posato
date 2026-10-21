@@ -4,6 +4,10 @@ import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.mailbox.ChangeFetchResult
+import app.posato.feature.sync.mailbox.ChangePage
+import app.posato.feature.sync.mailbox.MailboxCursor
+import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
@@ -115,8 +119,11 @@ class AppleSyncFirstSetNameTest {
     }
 
     @Test
-    fun `given two renamed devices that link at the same time when they exchange then both converge on one name`() = runTest {
-        val (first, second) = pair("first-set-concurrent")
+    fun `given two renamed devices that link at the same time when they exchange then both publish and the later clock's name wins`() = runTest {
+        val shared = SharedFakeMailboxPort()
+        // Each first pass publishes before it can see the other's bundles, as with two links at the same moment.
+        val held = HeldMailbox(shared)
+        val (first, second) = pair("first-set-concurrent", held)
         try {
             first.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList())), null)))
             second.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Other", emptyList())), null)))
@@ -125,24 +132,30 @@ class AppleSyncFirstSetNameTest {
             first.sync.onForeground()
             second.sync.onForeground()
             advanceUntilIdle()
+            held.holding = false
             repeat(2) {
                 first.sync.syncNow()
                 second.sync.syncNow()
                 advanceUntilIdle()
             }
 
-            val name = first.firstName()
-            assertTrue(name == "Focus" || name == "Other", "name $name")
-            assertEquals(name, second.firstName())
+            val published = first.acceptedPayloads()
+            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Focus") in published)
+            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Other") in published)
+            // The second device's wall clock is later (200 against 100), so its put has the greater total order.
+            assertEquals("Other", first.firstName())
+            assertEquals("Other", second.firstName())
         } finally {
             first.close()
             second.close()
         }
     }
 
-    private fun TestScope.pair(name: String): Pair<AppleSyncTestHarness, AppleSyncTestHarness> {
+    private fun TestScope.pair(
+        name: String,
+        mailbox: MailboxPort = SharedFakeMailboxPort(),
+    ): Pair<AppleSyncTestHarness, AppleSyncTestHarness> {
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val mailbox = SharedFakeMailboxPort()
         return AppleSyncTestHarness(dispatcher, "$name-a.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 }) to
             AppleSyncTestHarness(
                 dispatcher,
@@ -185,5 +198,19 @@ class AppleSyncFirstSetNameTest {
     /** Every operation this replica holds, its own and the ones it accepted from the folder or iCloud. */
     private suspend fun AppleSyncTestHarness.acceptedPayloads(): List<SyncOperationPayload> {
         return snapshot().acceptedBundles.values.map { stored -> stored.operation.payload }
+    }
+}
+
+/** Delivers nothing while [holding], so two devices each author before either sees the other. */
+private class HeldMailbox(
+    private val inner: SharedFakeMailboxPort,
+) : MailboxPort by inner {
+    var holding = true
+
+    override suspend fun fetchChanges(
+        expectedBinding: AccountBinding,
+        cursor: MailboxCursor,
+    ): ChangeFetchResult {
+        return if (holding) ChangeFetchResult.Page(ChangePage(null, false, cursor)) else inner.fetchChanges(expectedBinding, cursor)
     }
 }

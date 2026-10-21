@@ -128,6 +128,44 @@ class PolicyReconcilerFirstLinkSeedTest {
     }
 
     @Test
+    fun `given a default whose new set is already queued when seeded then the default is still queued after it`() = runTest {
+        withStore("seed-default-queued-set.db") { store ->
+            store.replaceLocal(sets(LocalPauseSet(PauseSetId.FIRST, null, emptyList()), default = evening, extra = evening))
+            assertIs<LocalPolicyResult.Success<Unit>>(
+                store.recordIntents(PolicySyncWrite(workspaceId, listOf(StoredPolicyIntent.PutSet(evening, "Evening")))),
+            )
+
+            seed(store, reduce())
+
+            assertEquals(listOf(StoredPolicyIntent.PutSet(evening, "Evening"), StoredPolicyIntent.ChooseDefault(evening)), store.pending())
+        }
+    }
+
+    @Test
+    fun `given an earlier new set that takes the workspace's last free slot when seeded then the later default set is not queued as default`() = runTest {
+        withStore("seed-default-last-slot.db") { store ->
+            val earlier = checkNotNull(PauseSetId.of(testIdentifier(81)))
+            val full = (90 until 90 + SyncFormatLimits.MAX_PAUSE_SETS - 2).map { value -> checkNotNull(PauseSetId.of(testIdentifier(value))) }
+            store.replaceLocal(
+                checkNotNull(
+                    PauseSets.of(
+                        listOf(
+                            LocalPauseSet(PauseSetId.FIRST, null, emptyList()),
+                            LocalPauseSet(earlier, "Earlier", emptyList()),
+                            LocalPauseSet(evening, "Evening", emptyList()),
+                        ),
+                        evening,
+                    ),
+                ),
+            )
+
+            seed(store, reduce(*full.map { id -> SyncOperationPayload.PauseSetPut(id, "Full") }.toTypedArray()))
+
+            assertEquals(listOf(StoredPolicyIntent.PutSet(earlier, "Earlier"), StoredPolicyIntent.PutSet(evening, "Evening")), store.pending())
+        }
+    }
+
+    @Test
     fun `given two seeds before any drain when seeded then each name and the default are queued once`() = runTest {
         withStore("seed-twice.db") { store ->
             store.replaceLocal(sets(LocalPauseSet(PauseSetId.FIRST, "Focus", domains("a")), default = evening, extra = evening))
