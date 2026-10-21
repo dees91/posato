@@ -1,11 +1,16 @@
 package app.posato.control.cli
 
 import app.posato.control.linux.LinuxGuest
+import app.posato.control.linux.LinuxLine
+import app.posato.control.linux.LinuxSession
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.choice
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -28,7 +33,24 @@ class LinuxCommand : CliktCommand("linux") {
 }
 
 class LinuxCreateCommand : ControlCommand("create", "Clone the Linux golden VM and wait for its X11 session.") {
-    override fun execute(session: Session): JsonElement = buildJsonObject { put("vm", LinuxGuest(session.context).create()) }
+    private val golden by option("--golden", help = "The golden line: openbox (default) or gnome (GDM, the ubuntu session).")
+        .choice("openbox" to LinuxLine.OPENBOX, "gnome" to LinuxLine.GNOME)
+        .default(LinuxLine.OPENBOX)
+
+    private val desktopSession by option("--session", help = "With --golden gnome: xorg (default, the golden's own) or wayland.")
+        .choice("xorg" to LinuxSession.XORG, "wayland" to LinuxSession.WAYLAND)
+
+    override fun execute(session: Session): JsonElement {
+        if (desktopSession != null && golden != LinuxLine.GNOME) throw UsageError("--session needs --golden gnome.")
+        val guest = LinuxGuest(session.context, golden)
+        val vm = guest.create()
+        desktopSession?.takeIf { it != LinuxSession.XORG }?.let(guest::selectSession)
+        return buildJsonObject {
+            put("vm", vm)
+            put("golden", golden.name.lowercase())
+            desktopSession?.let { put("session", it.type) }
+        }
+    }
 }
 
 class LinuxBootCommand : ControlCommand("boot", "Start the stopped Linux clone again with its data.") {

@@ -20,10 +20,11 @@ import java.util.Base64
  */
 class LinuxGuest(
     private val context: RunContext,
+    line: LinuxLine = LinuxLine.OPENBOX,
 ) {
     private val tart = Tart(context)
     private val ledger = MachineLedger.of(context)
-    private val golden = context.configuration.value(ConfigurationKey.VM_LINUX_GOLDEN) ?: DEFAULT_GOLDEN
+    private val golden = context.configuration.value(line.key) ?: line.defaultGolden
 
     fun create(): String {
         if (tart.list().any { it.name == CLONE }) throw ControlException(ErrorCode.ALREADY_EXISTS, "$CLONE already exists; `linux destroy` first.")
@@ -69,6 +70,28 @@ class LinuxGuest(
         tart.stop(CLONE)
     }
 
+    /**
+     * Logs the GNOME line's user in again to [session]: GDM reads the user's session from AccountsService, which caches
+     * it, so the display manager stops, the file and the daemon change, and GDM starts and logs the user in again.
+     */
+    fun selectSession(session: LinuxSession) {
+        val script = "sudo -n sh -c " + shellQuote(
+            "systemctl stop gdm3 && " +
+                "sed -i 's/^DefaultSession=.*/DefaultSession=${session.desktop}.desktop/' /etc/gdm3/custom.conf && " +
+                "sed -i 's/^Session=.*/Session=${session.desktop}/; s/^XSession=.*/XSession=${session.desktop}/' " +
+                "/var/lib/AccountsService/users/\$SUDO_USER && " +
+                "systemctl restart accounts-daemon && systemctl start gdm3",
+        )
+        exec(script).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Selecting the ${session.name.lowercase()} session in $CLONE")
+        val deadline = System.currentTimeMillis() + BOOT_TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            val type = exec(CURRENT_SESSION_TYPE)
+            if (type.stdout.trim() == session.type && exec("test -S /tmp/.X11-unix/X0").exitCode == 0) return
+            Thread.sleep(POLL_MILLIS)
+        }
+        throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not log in to the ${session.type} session in time.")
+    }
+
     /** Whether the clone exists and runs; every command in the guest needs it. */
     fun running(): Boolean = tart.list().any { it.name == CLONE && it.running }
 
@@ -105,7 +128,7 @@ class LinuxGuest(
         // The guest agent's control socket sometimes refuses one connection; a person's retry is what the next attempt is.
         var attempt = 0
         while (true) {
-            val output = tart.exec(CLONE, "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; $script", stdin)
+            val output = tart.exec(CLONE, "$SESSION_ENVIRONMENT; $script", stdin)
             if (AGENT_ERROR !in output.stderr || ++attempt >= AGENT_ATTEMPTS) return output
             Thread.sleep(AGENT_RETRY_MILLIS)
         }
@@ -147,6 +170,14 @@ class LinuxGuest(
         fun syncShare(context: RunContext): Path = context.layout.verificationDirectory.resolve("linux-share").resolve(SHARE_NAME)
 
         const val DEFAULT_GOLDEN = "posato-golden-linux"
+        const val DEFAULT_GNOME_GOLDEN = "posato-golden-linux-gnome"
+
+        private const val CURRENT_SESSION_TYPE = "loginctl show-session " +
+            "\$(loginctl list-sessions --no-legend | awk '\$3==\"'\$USER'\"{print \$1}' | tail -1) -p Type --value"
+
+        /** X11 under Xorg (GDM's or LightDM's authority in ~/.Xauthority) or under GNOME's Xwayland (mutter's file). */
+        private const val SESSION_ENVIRONMENT = "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; " +
+            "for f in /run/user/\$(id -u)/.mutter-Xwaylandauth.*; do [ -e \"\$f\" ] && export XAUTHORITY=\"\$f\"; done"
         const val VERSION = "1.5.0"
         private const val BOOT_TIMEOUT_MILLIS = 180_000L
         private const val PROBE_SECONDS = 10L
@@ -155,6 +186,27 @@ class LinuxGuest(
         private const val AGENT_ATTEMPTS = 4
         private const val AGENT_RETRY_MILLIS = 1_500L
     }
+}
+
+/**
+ * The golden a Linux clone starts from: the Openbox line for the shared commands, or the GNOME line (GDM, the
+ * `ubuntu` session with its AppIndicator extension, Wayland by default and Xorg selectable) for the status area.
+ */
+enum class LinuxLine(
+    val key: ConfigurationKey,
+    val defaultGolden: String,
+) {
+    OPENBOX(ConfigurationKey.VM_LINUX_GOLDEN, LinuxGuest.DEFAULT_GOLDEN),
+    GNOME(ConfigurationKey.VM_LINUX_GNOME_GOLDEN, LinuxGuest.DEFAULT_GNOME_GOLDEN),
+}
+
+/** The GNOME line's session: Xorg for `xdotool` and whole-screen capture, Wayland for what a stock Ubuntu runs. */
+enum class LinuxSession(
+    val desktop: String,
+    val type: String,
+) {
+    XORG("ubuntu-xorg", "x11"),
+    WAYLAND("ubuntu", "wayland"),
 }
 
 /** The clone's screen, captured in the guest, and its keyboard, driven with `xdotool`. */

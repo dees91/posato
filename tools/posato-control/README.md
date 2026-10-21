@@ -63,6 +63,7 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.control.devicePasscodeKeychainService` / `...Account` | `POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test iPhone passcode that `pressKeys` types. |
 | `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` / `posato.vm.venturaGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` / `POSATO_VM_VENTURA_GOLDEN` | Tart golden VMs of the primary, peer, legacy (previous macOS version), and ventura (macOS 13 with Rosetta, for the x86-64 build) lines. |
 | `posato.vm.linuxGolden` | `POSATO_VM_LINUX_GOLDEN` | Tart golden VM of the Ubuntu guest that `linux create` clones. |
+| `posato.vm.linuxGnomeGolden` | `POSATO_VM_LINUX_GNOME_GOLDEN` | Tart golden VM of the GNOME Ubuntu guest that `linux create --golden gnome` clones (default `posato-golden-linux-gnome`). |
 | `posato.android.serial` | `POSATO_ANDROID_SERIAL` | adb serial of the Posato emulator that `android` commands drive; use an emulator of your own, never one someone else works on. |
 | `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
 | `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
@@ -575,7 +576,10 @@ use an emulator another person works on.
 that `posato.vm.linuxGolden` names (its one-time setup is in
 [the unattended verification guide](../../docs/development/unattended-verification.md)).
 
-- `linux create` clones the golden VM, boots it with the host directory
+- `linux create [--golden openbox|gnome] [--session xorg|wayland]` clones
+  the Openbox golden, or the GNOME golden (GDM, Ubuntu's `ubuntu` session
+  with its AppIndicator extension; Xorg unless `--session wayland`), boots
+  it with the host directory
   `build/verification/linux-share/posato-sync` mounted at `/mnt/shared`, and
   waits for the X11 session; `boot`, `stop`, and `destroy` manage the clone,
   and `linux exec --script S` runs a shell script as the session user. Do not
