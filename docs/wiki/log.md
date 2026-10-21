@@ -2946,6 +2946,27 @@ first removal attempt that does not finish, not to a paused keychain.
   device removed now says so instead of "Sync with iCloud didn't finish.";
   folder-mode messages and announcements name the folder. The removed-copy
   state is not stored across restarts (`SYNC-026` owns the rebuilt section).
+## [2026-10-21] fix | LINUX-002: Linux follows the desktop's light or dark setting
+
+- `observed` in a Tart Ubuntu 24.04 clone: Posato reads
+  GNOME's `org.gnome.desktop.interface color-scheme` with `gsettings` at
+  its first frame and again whenever dconf rewrites the user's settings
+  folder, so it opens dark when the desktop is dark and switches live both
+  ways. The folder is watched instead of the session bus. Desktops without
+  this GNOME key, such as KDE, keep the light palette; the XDG desktop
+  portal's appearance setting is a later idea.
+- `observed`: on a fresh clone with no dconf folder yet, Posato waited for
+  the folder to appear, then followed the first switch to dark.
+- Verified 2f313155 Linux light to dark to light while running: light run
+  `20261021-143152-d6f4`, dark run `20261021-143157-d660`, light run
+  `20261021-143202-287a`; relaunched while dark, run
+  `20261021-143212-a8de`, opens dark.
+- A Navigation 3 screen kept the surface color captured when its entry was
+  created, so after a live light or dark switch its background stayed
+  behind (`observed` on Linux; `inferred` for the Mac and Android, which
+  share `PosatoNavStack`; the iPhone uses `CupertinoNavDisplay`, which never
+  had it). The entry now reads the color itself.
+
 ## [2026-10-21] decision | Roadmap revision 26: export and import, warmer light palette
 
 - `user-confirmed`: `TARGETS-007` (idea 14, one-time export and import of
