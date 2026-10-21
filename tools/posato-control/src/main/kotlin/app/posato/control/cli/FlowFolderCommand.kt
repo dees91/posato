@@ -70,6 +70,8 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             when {
                 ADD_DEVICE in labels -> "linked"
 
+                labels.any { it.startsWith(REMOVED_COPY) } -> "removedCopy"
+
                 CREATE in labels && !created -> null.also {
                     FlowSteps.run(backend, listOf(FlowSteps.reveal(button(CREATE)), FlowSteps.tap(button(CREATE))))
                     created = true
@@ -199,6 +201,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val DONE_ACTION = "done"
         const val USE_FOLDER = "Use this folder"
         const val CREATE = "Create workspace"
+        const val REMOVED_COPY = "This folder holds a copy of a workspace you removed"
         const val CHANGE = "Change"
         const val BROWSE = "Choose folder…"
         const val ADD_DEVICE = "Add a device"
