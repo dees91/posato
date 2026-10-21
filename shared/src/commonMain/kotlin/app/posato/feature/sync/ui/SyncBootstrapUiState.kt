@@ -61,6 +61,8 @@ internal class SyncBootstrapUiState(
             try {
                 if (syncState.value.linked) sync.syncNow() else sync.syncWithIcloud()
                 if (checking) completedChecks += 1
+                // A folder may now hold a workspace (created here, or a removed copy refused) that the steps read from.
+                if (!syncState.value.linked && folder.value != null) readFolder()
             } finally {
                 checking = false
                 running = false
@@ -89,7 +91,7 @@ internal class SyncBootstrapUiState(
         joining.forgetFolder()
         scope.launch {
             sync.discardCandidate()
-            joining.readFolder(false, { false }) {}
+            readFolder()
         }
     }
 
@@ -138,16 +140,24 @@ internal class SyncBootstrapUiState(
 
     /** Joins with a pending code once both steps are done, then links this device with the received key. */
     suspend fun join(code: PendingCode) {
-        joining.join(code) {
-            running = true
-            checking = true
-            try {
-                sync.syncWithIcloud()
-                completedChecks += 1
-            } finally {
-                checking = false
-                running = false
-            }
+        joining.join(code, linkWithStoredKey)
+    }
+
+    /** Reads the chosen folder; one whose key this device already holds while nothing is linked links at once. */
+    suspend fun readFolder() {
+        joining.readFolder(syncState.value.linked, sync::isRemovedWorkspace, linkWithStoredKey)
+    }
+
+    /** Links with the key a join stored; shown as a check, like a press of Sync. */
+    private val linkWithStoredKey: suspend () -> Unit = {
+        running = true
+        checking = true
+        try {
+            sync.linkWithStoredKey()
+            completedChecks += 1
+        } finally {
+            checking = false
+            running = false
         }
     }
 

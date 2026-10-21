@@ -1029,7 +1029,14 @@ badges and counts have accessible labels.
   without another press; while the code has not reached the folder, the step
   says so with an activity indicator and Posato keeps checking while the
   section is shown, so there is no **Check again**. Errors for a code show
-  under the field. In an empty folder step 2 becomes **Create workspace**.
+  under the field and are spoken at once. A code can also be typed before a
+  folder is chosen; it then waits for the folder. While the chosen folder is
+  being read, step 2 says so and offers no **Join**. A copy of a workspace
+  this device removed shows the `SYNC-025` explanation in step 2 instead of
+  the code field. In an empty folder step 2 becomes **Create workspace**,
+  with the sentence on what linking combines (the mockup's footer, accepted
+  with it: "When this device creates the workspace instead (an empty folder),
+  step 2 becomes 'Create the workspace'").
   Linked, the row shows the status, the last sync, the folder chip without
   **Change**, one primary **Add a device**, and quiet **Sync now** and red
   **Remove workspace**.

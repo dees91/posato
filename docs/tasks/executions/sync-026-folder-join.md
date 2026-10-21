@@ -26,6 +26,19 @@
 5. `posato-control` flows adapted; Android runs; Linux run after the VM is
    free; `DESIGN.md`; review.
 
+## Decisions
+
+Agent decisions under the maintainer's delegation unless marked otherwise.
+
+- A folder that holds a workspace whose key this device already has, while
+  nothing is linked (a join that stored the key, then Posato stopped before
+  linking), links once when the folder is read; the link after a join waits
+  for an attempt already running instead of skipping it.
+- The Create step keeps the sentence on what linking combines and that app
+  choices stay on each device.
+- The scan hint says "this phone's camera" on every device with a share
+  sheet, an iPad included; a wording for tablets is left to `I18N-001`.
+
 ## Result
 
 - **Tests:** `FolderJoinFlowTest` (commonTest) failed on the stub

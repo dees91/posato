@@ -318,9 +318,6 @@ For what matters.</string>
     <string name="sync_folder_use">Use this folder</string>
     <string name="sync_folder_browse">Choose folder…</string>
     <string name="sync_folder_invalid">Choose a folder that exists and that Posato can write to.</string>
-    <string name="sync_folder_chosen">Folder: %1$s</string>
-    <string name="action_sync_with_folder">Sync with this folder</string>
-    <string name="sync_folder_change">Use another folder</string>
     <string name="sync_folder_or">Or sync through a folder instead of iCloud.</string>
     <string name="sync_folder_waiting_for_key">This folder already holds a workspace. Enter the pairing code shown on a device in that workspace.</string>
     <string name="sync_folder_code_label">Pairing code</string>
@@ -352,13 +349,14 @@ For what matters.</string>
     <string name="sync_folder_create_hint">This folder has no Posato workspace yet. Create one here, then add your other devices. If another device already uses this folder, wait until the folder has synced here and scan that device's code.</string>
     <string name="sync_folder_create">Create workspace</string>
     <string name="sync_folder_step_done">Done</string>
+    <string name="sync_folder_step_number">Step %1$d</string>
+    <string name="sync_folder_reading">Reading the folder…</string>
     <string name="sync_folder_add_device">Add a device</string>
     <string name="sync_folder_code_title">Pairing code</string>
     <string name="sync_folder_code_message">Scan this QR code with the other device's camera, or share the link. On a computer, choose the same folder there and enter the code. It works for 10 minutes.</string>
     <string name="sync_folder_share_link">Share link</string>
     <string name="sync_folder_copy_link">Copy link</string>
     <string name="sync_folder_link_copied">Link copied. Paste it into the pairing code field on the other device.</string>
-    <string name="sync_folder_link_received">Pairing code received. Choose the same folder as on the other device, then sync with it to join.</string>
     <string name="sync_folder_qr_description">QR code that opens Posato on the other device with this pairing code</string>
     <string name="sync_folder_code_done">Done</string>
     <string name="sync_folder_code_failed">A pairing code could not be created. Check that the folder is available and try again.</string>

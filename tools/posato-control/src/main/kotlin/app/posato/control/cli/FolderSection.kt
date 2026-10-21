@@ -26,12 +26,10 @@ internal class FolderSection(
         val onScreen = FlowSteps.labels(backend)
         // A control already on screen is read as it is: scrolling to look for the others would carry it away.
         if (backend.target !in VISIBLE_ONLY || reveal.any { it in onScreen }) return onScreen
-        if (backend.target in VISIBLE_ONLY) {
-            reveal.firstOrNull { label ->
-                val query = button(label)
-                FlowSteps.run(backend, listOf(FlowSteps.reveal(query).copy(optional = true, timeoutSeconds = OUTCOME_REVEAL_SECONDS)))
-                label in FlowSteps.labels(backend)
-            }
+        reveal.firstOrNull { label ->
+            val query = button(label)
+            FlowSteps.run(backend, listOf(FlowSteps.reveal(query).copy(optional = true, timeoutSeconds = OUTCOME_REVEAL_SECONDS)))
+            label in FlowSteps.labels(backend)
         }
         return FlowSteps.labels(backend)
     }

@@ -7,15 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,9 +22,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoActivityIndicator
-import app.posato.core.designsystem.PosatoAlert
-import app.posato.core.designsystem.PosatoAlertAction
-import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -40,23 +33,16 @@ import app.posato.feature.sync.folder.LinkSharing
 import app.posato.feature.sync.folder.PairingAcceptResult
 import app.posato.feature.sync.folder.pairingLink
 import app.posato.generated.resources.Res
-import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
-import app.posato.generated.resources.action_sync_with_folder
-import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_folder_add_device
 import app.posato.generated.resources.sync_folder_browse
-import app.posato.generated.resources.sync_folder_change
-import app.posato.generated.resources.sync_folder_chosen
 import app.posato.generated.resources.sync_folder_code_done
 import app.posato.generated.resources.sync_folder_code_failed
-import app.posato.generated.resources.sync_folder_code_label
 import app.posato.generated.resources.sync_folder_code_message
 import app.posato.generated.resources.sync_folder_code_title
 import app.posato.generated.resources.sync_folder_copy_link
 import app.posato.generated.resources.sync_folder_description
 import app.posato.generated.resources.sync_folder_invalid
-import app.posato.generated.resources.sync_folder_join
 import app.posato.generated.resources.sync_folder_join_expired
 import app.posato.generated.resources.sync_folder_join_invalid
 import app.posato.generated.resources.sync_folder_join_not_found
@@ -64,8 +50,6 @@ import app.posato.generated.resources.sync_folder_join_refused
 import app.posato.generated.resources.sync_folder_join_unavailable
 import app.posato.generated.resources.sync_folder_join_wrong_workspace
 import app.posato.generated.resources.sync_folder_link_copied
-import app.posato.generated.resources.sync_folder_link_received
-import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
 import app.posato.generated.resources.sync_folder_share_link
@@ -102,7 +86,7 @@ internal fun FolderOptions(
 
 /**
  * What the expanded folder row says above its controls. While unlinked, the steps speak for themselves, so only an
- * attempt that went wrong or a removed workspace's copy adds a sentence.
+ * attempt that went wrong adds a sentence; step 2 explains a removed workspace's copy.
  */
 private fun folderMessage(
     snapshot: AppleSyncState,
@@ -115,7 +99,6 @@ private fun folderMessage(
         snapshot.linked -> snapshot.statusMessage(folderMode = true)
         checking -> null
         folder == null -> Res.string.sync_folder_description
-        snapshot.removedWorkspaceCopy -> snapshot.statusMessage(folderMode = true)
         snapshot.status == SyncStatus.RETRYABLE || snapshot.status == SyncStatus.ACTION_REQUIRED -> snapshot.statusMessage(folderMode = true)
         else -> null
     }

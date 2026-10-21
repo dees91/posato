@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,6 +27,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -46,7 +50,10 @@ import app.posato.generated.resources.sync_folder_create
 import app.posato.generated.resources.sync_folder_create_hint
 import app.posato.generated.resources.sync_folder_join
 import app.posato.generated.resources.sync_folder_joining
+import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_or_type
+import app.posato.generated.resources.sync_folder_reading
+import app.posato.generated.resources.sync_folder_removed_copy
 import app.posato.generated.resources.sync_folder_scan_hint
 import app.posato.generated.resources.sync_folder_step_create
 import app.posato.generated.resources.sync_folder_step_done
@@ -54,11 +61,13 @@ import app.posato.generated.resources.sync_folder_step_folder
 import app.posato.generated.resources.sync_folder_step_folder_done
 import app.posato.generated.resources.sync_folder_step_folder_hint
 import app.posato.generated.resources.sync_folder_step_folder_hint_code
+import app.posato.generated.resources.sync_folder_step_number
 import app.posato.generated.resources.sync_folder_step_scan
 import app.posato.generated.resources.sync_folder_step_type
 import app.posato.generated.resources.sync_folder_type_hint
 import app.posato.generated.resources.sync_folder_use_another_code
 import app.posato.generated.resources.sync_folder_waiting_offer
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -74,8 +83,7 @@ internal fun FolderJoinStepsView(
     val joining = state.joining
     val code = joining.pendingCode
     val steps = folderJoinSteps(folder, joining.folderContents, code, joining.error)
-    LaunchedEffect(folder) { if (folder != null) joining.readFolder(false, { false }) {} }
-    LaunchedEffect(folder, code) { if (steps.joinsNow && code != null) state.join(code) }
+    JoinEffects(state, folder, code, steps)
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
         JoinStep(number = 1, done = steps.folderChosen, active = !steps.folderChosen) {
             if (folder != null) {
@@ -92,6 +100,34 @@ internal fun FolderJoinStepsView(
     }
 }
 
+/**
+ * Reads the chosen folder, again every few seconds while it offers to create (it may still be syncing in), and joins
+ * once both steps are done, only while Posato is in front: a join waiting in the background would never be seen.
+ */
+@Composable
+private fun JoinEffects(
+    state: SyncBootstrapUiState,
+    folder: String?,
+    code: PendingCode?,
+    steps: FolderJoinSteps,
+) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val creating = steps.code == CodeStep.Create
+    LaunchedEffect(folder) { if (folder != null) state.readFolder() }
+    LaunchedEffect(folder, creating) {
+        while (creating) {
+            delay(CREATE_REREAD_MILLIS)
+            state.readFolder()
+        }
+    }
+    LaunchedEffect(folder, code) {
+        if (!steps.joinsNow || code == null) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            if (state.joining.pendingCode === code) state.join(code)
+        }
+    }
+}
+
 @Composable
 private fun CodeStepView(
     state: SyncBootstrapUiState,
@@ -101,17 +137,29 @@ private fun CodeStepView(
     val scans = state.folderControls.scansCodes
     val title = stringResource(if (scans) Res.string.sync_folder_step_scan else Res.string.sync_folder_step_type)
     when (val step = steps.code) {
-        CodeStep.NotYet, CodeStep.Reading, CodeStep.RemovedCopy -> JoinStep(number = 2, done = false, active = false) { StepTitle(title) }
+        CodeStep.Reading -> JoinStep(number = 2, done = false, active = false) {
+            StepTitle(title)
+            Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
+                PosatoActivityIndicator()
+                PosatoCaption(stringResource(Res.string.sync_folder_reading))
+            }
+        }
+
+        CodeStep.RemovedCopy -> JoinStep(number = 2, done = false, active = true) {
+            StepTitle(title)
+            PosatoCaption(stringResource(Res.string.sync_folder_removed_copy), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        }
 
         CodeStep.Create -> JoinStep(number = 2, done = false, active = true) {
             StepTitle(stringResource(Res.string.sync_folder_step_create))
             PosatoCaption(stringResource(Res.string.sync_folder_create_hint))
+            PosatoCaption(stringResource(Res.string.sync_folder_linking))
             PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Primary, enabled = !running) {
                 Text(stringResource(Res.string.sync_folder_create))
             }
         }
 
-        is CodeStep.Enter -> JoinStep(number = 2, done = false, active = true) {
+        is CodeStep.Enter -> JoinStep(number = 2, done = false, active = steps.folderChosen, dimmed = false) {
             StepTitle(title)
             CodeEntry(state, step, scans, running)
         }
@@ -145,14 +193,19 @@ private fun CodeEntry(
     } else {
         PosatoCaption(stringResource(Res.string.sync_folder_type_hint))
     }
-    val field = rememberTextFieldState()
-    PosatoTextField(
-        state = field,
-        label = stringResource(Res.string.sync_folder_code_label),
-        enabled = !running,
-        errorMessage = step.error?.joinMessage()?.let { stringResource(it) },
-        onSubmit = { state.joining.enterCode(field.text.toString()) },
-    )
+    val field = rememberTextFieldState(state.joining.draft)
+    LaunchedEffect(field) { snapshotFlow { field.text.toString() }.collect { state.joining.draft = it } }
+    val error = step.error?.joinMessage()?.let { stringResource(it) }
+    // A code that cannot work is spoken at once, since the field it belongs to may not have focus.
+    Box(Modifier.semantics { if (error != null) liveRegion = LiveRegionMode.Assertive }) {
+        PosatoTextField(
+            state = field,
+            label = stringResource(Res.string.sync_folder_code_label),
+            enabled = !running,
+            errorMessage = error,
+            onSubmit = { state.joining.enterCode(field.text.toString()) },
+        )
+    }
     PosatoButton(onClick = { state.joining.enterCode(field.text.toString()) }, style = PosatoButtonStyle.Primary, enabled = !running) {
         Text(stringResource(Res.string.sync_folder_join))
     }
@@ -168,14 +221,21 @@ private fun ReadyCode(
     val scanned = step.source == CodeSource.SCANNED
     StepTitle(stringResource(if (scanned) Res.string.sync_folder_code_received else Res.string.sync_folder_code_entered))
     PosatoCaption(stringResource(if (scanned) Res.string.sync_folder_code_received_note else Res.string.sync_folder_code_entered_note))
-    if (folderChosen && (state.joining.waitingForOffer || state.checking)) {
-        Row(
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    val activity = when {
+        !folderChosen -> null
+        state.checking -> Res.string.sync_folder_joining
+        state.joining.waitingForOffer -> Res.string.sync_folder_waiting_offer
+        else -> null
+    }
+    // One live container whose sentence changes, so a screen reader hears each change once.
+    Row(
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (activity != null) {
             PosatoActivityIndicator()
-            PosatoCaption(stringResource(if (state.joining.waitingForOffer) Res.string.sync_folder_waiting_offer else Res.string.sync_folder_joining))
+            PosatoCaption(stringResource(activity))
         }
     }
     if (!state.checking) {
@@ -191,9 +251,9 @@ private fun JoinStep(
     number: Int,
     done: Boolean,
     active: Boolean,
+    dimmed: Boolean = !done && !active,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val dimmed = !done && !active
     Row(
         modifier = Modifier.fillMaxWidth().alpha(if (dimmed) DIMMED_ALPHA else 1f),
         horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
@@ -210,7 +270,7 @@ private fun StepMarker(
     active: Boolean,
 ) {
     val palette = MaterialTheme.colorScheme
-    val description = if (done) stringResource(Res.string.sync_folder_step_done) else number.toString()
+    val description = if (done) stringResource(Res.string.sync_folder_step_done) else stringResource(Res.string.sync_folder_step_number, number)
     Box(
         modifier = Modifier
             .size(MARKER_SIZE)
@@ -259,6 +319,7 @@ internal fun FolderChip(
 }
 
 private const val DIMMED_ALPHA = 0.5f
+private const val CREATE_REREAD_MILLIS = 5_000L
 private val MARKER_SIZE = 24.dp
 private val MARKER_BORDER = 1.5.dp
 private val MARKER_ICON = 16.dp

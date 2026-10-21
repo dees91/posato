@@ -9,6 +9,7 @@ import app.posato.feature.sync.domain.LocalSyncMutation
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWriter
+import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalPolicySyncStore
@@ -92,6 +93,7 @@ internal class AppleSync(
     private val authoring = AppleSyncAuthoring(store, policySync, publish)
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
+    private val removedWorkspaces = store
     internal val sessionTriggers: SessionSyncTriggers = object : SessionSyncTriggers {
         override suspend fun captureWorkspace(): SessionWorkspaceCapture {
             return when (val captured = this@AppleSync.captureWorkspace()) {
@@ -147,23 +149,40 @@ internal class AppleSync(
         scope.async {
             if (!joinFlight.tryLock()) return@async
             try {
-                guarded {
-                    if (coordinator.joins.hasPending()) {
-                        continueJoin()
-                    } else {
-                        val result = coordinator.bootstrap()
-                        // One update, so an announcement never speaks a passing retry before the removed copy.
-                        mutableState.update {
-                            it.copy(status = result.toSyncStatus(), reason = null, removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace)
-                        }
-                        mutableState.refreshLinked(coordinator, lastSync)
-                        if (result is BootstrapResult.Ready) syncNow()
-                    }
-                }
+                linkAttempt()
             } finally {
                 joinFlight.unlock()
             }
         }.await()
+    }
+
+    /**
+     * Links after a pairing code stored the workspace key. Unlike [syncWithIcloud], it waits for an attempt already
+     * running (a foreground check after the camera opened Posato) instead of skipping, so the stored key is used.
+     */
+    suspend fun linkWithStoredKey() {
+        scope.async { joinFlight.withLock { linkAttempt() } }.await()
+    }
+
+    /** Whether this device removed [workspaceId], so a folder holding a copy of it cannot link. Nothing is written. */
+    suspend fun isRemovedWorkspace(workspaceId: WorkspaceId): Boolean {
+        return (removedWorkspaces.containsRemoved(workspaceId) as? BootstrapStoreResult.Success)?.value == true
+    }
+
+    private suspend fun linkAttempt() {
+        guarded {
+            if (coordinator.joins.hasPending()) {
+                continueJoin()
+            } else {
+                val result = coordinator.bootstrap()
+                // One update, so an announcement never speaks a passing retry before the removed copy.
+                mutableState.update {
+                    it.copy(status = result.toSyncStatus(), reason = null, removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace)
+                }
+                mutableState.refreshLinked(coordinator, lastSync)
+                if (result is BootstrapResult.Ready) syncNow()
+            }
+        }
     }
 
     suspend fun onForeground() {

@@ -1,7 +1,6 @@
 package app.posato.feature.sync.folder
 
 import app.posato.feature.sync.domain.WorkspaceId
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 

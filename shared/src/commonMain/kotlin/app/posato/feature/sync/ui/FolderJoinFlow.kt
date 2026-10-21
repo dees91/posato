@@ -20,10 +20,11 @@ internal class PendingCode(
     }
 }
 
-/** The second step of joining: it waits for a folder, creates in an empty one, asks for a code, or has one. */
+/**
+ * The second step of joining: it reads a chosen folder, creates in an empty one, explains a removed workspace's copy,
+ * asks for a code (also before a folder is chosen), or has one.
+ */
 internal sealed interface CodeStep {
-    data object NotYet : CodeStep
-
     data object Create : CodeStep
 
     data object Reading : CodeStep
@@ -58,9 +59,13 @@ internal fun folderJoinSteps(
     error: PairingAcceptResult?,
 ): FolderJoinSteps {
     val step = when {
+        folder != null && contents == FolderContents.REMOVED_COPY -> CodeStep.RemovedCopy
+
         code != null -> CodeStep.Ready(code.source)
 
-        folder == null -> CodeStep.NotYet
+        folder == null -> CodeStep.Enter(error)
+
+        contents == FolderContents.UNKNOWN -> CodeStep.Reading
 
         // A failed code keeps the field even in a folder that reads as empty, so the error stays where it was typed.
         contents == FolderContents.EMPTY && error == null -> CodeStep.Create
