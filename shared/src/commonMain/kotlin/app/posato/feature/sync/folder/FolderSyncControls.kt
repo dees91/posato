@@ -35,6 +35,14 @@ internal enum class FolderChoiceResult {
     NOT_A_FOLDER,
 }
 
+/** What the chosen folder holds, read without changing it: before a choice or a read, [UNKNOWN]. */
+internal enum class FolderContents {
+    UNKNOWN,
+    EMPTY,
+    WORKSPACE,
+    UNAVAILABLE,
+}
+
 /**
  * How this host passes a pairing link on: the system share sheet on a phone, the clipboard on a computer. [share]
  * returns whether the link left Posato.
@@ -90,6 +98,17 @@ internal interface FolderSyncControls {
     suspend fun dismissOffer()
 
     suspend fun accept(code: String): PairingAcceptResult
+
+    /** Whether the chosen folder already holds a workspace, from the same read a join makes; nothing is written. */
+    suspend fun contents(): FolderContents {
+        return FolderContents.UNKNOWN
+    }
+
+    /** A phone, where the system camera opens a scanned join link in Posato. */
+    val scansCodes: Boolean
+        get() {
+            return linkSharing.usesShareSheet
+        }
 }
 
 internal object AppleOnlySync : FolderSyncControls {
