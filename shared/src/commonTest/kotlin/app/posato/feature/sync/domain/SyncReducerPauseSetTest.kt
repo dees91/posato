@@ -320,6 +320,26 @@ class SyncReducerPauseSetTest {
     }
 
     @Test
+    fun `given any applied set-default when reduced then the workspace counts a default as chosen, even for a removed set`() {
+        val none = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetPut(set(80), "Work")))
+        val live = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetPut(set(80), "Work"), SyncOperationPayload.PauseSetDefault(set(80))))
+        val firstChosen = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetDefault(first)))
+        val dead = SyncReducer.reduce(
+            ops(
+                SyncOperationPayload.PauseSetPut(set(80), "Work"),
+                SyncOperationPayload.PauseSetDefault(set(80)),
+                SyncOperationPayload.PauseSetRemove(set(80)),
+            ),
+        )
+
+        assertFalse(none.defaultChosen)
+        assertTrue(live.defaultChosen)
+        assertTrue(firstChosen.defaultChosen)
+        assertTrue(dead.defaultChosen)
+        assertEquals(first, dead.defaultPauseSetId)
+    }
+
+    @Test
     fun `given duplicate pause sets enabled operations when reduced then the flag is set and the duplicate changes nothing`() {
         val operations = ops(SyncOperationPayload.PauseSetsEnabled, SyncOperationPayload.PauseSetsEnabled)
 

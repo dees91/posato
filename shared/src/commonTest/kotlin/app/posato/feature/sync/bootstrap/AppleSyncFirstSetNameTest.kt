@@ -11,6 +11,7 @@ import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -26,76 +27,139 @@ class AppleSyncFirstSetNameTest {
     private val evening = checkNotNull(PauseSetId.of(testIdentifier(82)))
 
     @Test
-    fun `given a renamed first set and another default when this device creates the workspace then both are kept and published`() = runTest {
-        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler), name = "first-set-create.db")
+    fun `given a renamed first set and another default when this device creates the workspace then both are kept and a later device receives them`() = runTest {
+        val (creator, joiner) = pair("first-set-create")
         try {
-            harness.replaceLocal(
-                checkNotNull(
-                    PauseSets.of(
-                        listOf(
-                            LocalPauseSet(PauseSetId.FIRST, "Focus", domains("example.com")),
-                            LocalPauseSet(evening, "Evening", domains("example.net")),
-                        ),
-                        evening,
-                    ),
-                ),
-            )
-            harness.establish()
-            harness.sync.onForeground()
+            creator.replaceLocal(focusWithEveningDefault())
+            creator.establish()
+            creator.sync.onForeground()
             advanceUntilIdle()
 
-            val local = harness.localSets()
-            assertEquals("Focus", local.sets.single { set -> set.id == PauseSetId.FIRST }.name)
-            assertEquals(evening, local.defaultSetId)
-            val authored = harness.acceptedPayloads()
-            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Focus") in authored, "first set's name not published")
-            assertTrue(SyncOperationPayload.PauseSetDefault(evening) in authored, "default not published")
-        } finally {
-            harness.close()
-        }
-    }
+            assertEquals("Focus", creator.firstName())
+            assertEquals(evening, creator.localSets().defaultSetId)
+            val published = creator.acceptedPayloads()
+            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Focus") in published, "first set's name not published")
+            assertTrue(SyncOperationPayload.PauseSetDefault(evening) in published, "default not published")
 
-    @Test
-    fun `given a workspace that named its first set when a renamed device joins then the workspace's name wins`() = runTest {
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val mailbox = SharedFakeMailboxPort()
-        val member = AppleSyncTestHarness(dispatcher, "first-set-join-member.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
-        val joiner = AppleSyncTestHarness(
-            dispatcher,
-            "first-set-join-joiner.db",
-            mailboxPort = mailbox,
-            wallClock = SyncWallClock { 200 },
-            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
-        )
-        try {
-            member.establish()
-            member.sync.onForeground()
-            advanceUntilIdle()
-            val linked = member.localSets()
-            val workspaceId = checkNotNull(
-                assertIs<BootstrapStoreResult.Success<EstablishedWorkspace?>>(member.sync.captureWorkspace()).value,
-            ).context.workspaceId.value.copyBytes()
-            assertIs<LocalPolicyResult.Success<*>>(
-                member.syncPolicy.replaceSets(
-                    member.localState().revision,
-                    checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Work", emptyList())), linked.defaultSetId)),
-                ),
-            )
-            member.sync.syncNow()
-            advanceUntilIdle()
-            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Work") in member.acceptedPayloads(), "workspace $workspaceId")
-
-            joiner.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList())), null)))
             joiner.establish()
             joiner.sync.onForeground()
             advanceUntilIdle()
 
-            assertEquals("Work", joiner.localSets().sets.single { set -> set.id == PauseSetId.FIRST }.name)
-            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Focus") !in joiner.acceptedPayloads())
+            assertEquals("Focus", joiner.firstName())
+            assertEquals(evening, joiner.localSets().resolvedDefault())
+        } finally {
+            creator.close()
+            joiner.close()
+        }
+    }
+
+    @Test
+    fun `given a workspace that named its first set and chose a default when a renamed device joins then the workspace's choices win`() = runTest {
+        val (member, joiner) = pair("first-set-join-named")
+        try {
+            member.establish()
+            member.sync.onForeground()
+            advanceUntilIdle()
+            assertIs<LocalPolicyResult.Success<*>>(
+                member.syncPolicy.replaceSets(
+                    member.localState().revision,
+                    checkNotNull(
+                        PauseSets.of(
+                            listOf(LocalPauseSet(PauseSetId.FIRST, "Work", emptyList()), LocalPauseSet(evening, "Evening", domains("example.net"))),
+                            evening,
+                        ),
+                    ),
+                ),
+            )
+            member.sync.syncNow()
+            advanceUntilIdle()
+
+            joiner.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList())), PauseSetId.FIRST)))
+            joiner.establish()
+            joiner.sync.onForeground()
+            advanceUntilIdle()
+
+            assertEquals("Work", joiner.firstName())
+            assertEquals(evening, joiner.localSets().resolvedDefault())
+            val published = joiner.acceptedPayloads()
+            assertTrue(SyncOperationPayload.PauseSetPut(PauseSetId.FIRST, "Focus") !in published)
+            assertEquals(1, published.count { payload -> payload is SyncOperationPayload.PauseSetDefault })
         } finally {
             member.close()
             joiner.close()
         }
+    }
+
+    @Test
+    fun `given a workspace that never named its first set when a renamed device joins then it publishes its name and default to the member`() = runTest {
+        val (member, joiner) = pair("first-set-join-unnamed")
+        try {
+            member.establish()
+            member.sync.onForeground()
+            advanceUntilIdle()
+
+            joiner.replaceLocal(focusWithEveningDefault())
+            joiner.establish()
+            joiner.sync.onForeground()
+            advanceUntilIdle()
+            member.sync.syncNow()
+            advanceUntilIdle()
+
+            assertEquals("Focus", joiner.firstName())
+            assertEquals("Focus", member.firstName())
+            assertEquals(evening, member.localSets().resolvedDefault())
+        } finally {
+            member.close()
+            joiner.close()
+        }
+    }
+
+    @Test
+    fun `given two renamed devices that link at the same time when they exchange then both converge on one name`() = runTest {
+        val (first, second) = pair("first-set-concurrent")
+        try {
+            first.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList())), null)))
+            second.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Other", emptyList())), null)))
+            first.establish()
+            second.establish()
+            first.sync.onForeground()
+            second.sync.onForeground()
+            advanceUntilIdle()
+            repeat(2) {
+                first.sync.syncNow()
+                second.sync.syncNow()
+                advanceUntilIdle()
+            }
+
+            val name = first.firstName()
+            assertTrue(name == "Focus" || name == "Other", "name $name")
+            assertEquals(name, second.firstName())
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    private fun TestScope.pair(name: String): Pair<AppleSyncTestHarness, AppleSyncTestHarness> {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        return AppleSyncTestHarness(dispatcher, "$name-a.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 }) to
+            AppleSyncTestHarness(
+                dispatcher,
+                "$name-b.db",
+                mailboxPort = mailbox,
+                wallClock = SyncWallClock { 200 },
+                cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
+            )
+    }
+
+    private fun focusWithEveningDefault(): PauseSets {
+        return checkNotNull(
+            PauseSets.of(
+                listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", domains("example.com")), LocalPauseSet(evening, "Evening", domains("example.net"))),
+                evening,
+            ),
+        )
     }
 
     private fun domains(vararg labels: String): List<ExactDomain> {
@@ -108,6 +172,10 @@ class AppleSyncFirstSetNameTest {
 
     private suspend fun AppleSyncTestHarness.localSets(): PauseSets {
         return localState().sets
+    }
+
+    private suspend fun AppleSyncTestHarness.firstName(): String? {
+        return localSets().sets.single { set -> set.id == PauseSetId.FIRST }.name
     }
 
     private suspend fun AppleSyncTestHarness.replaceLocal(sets: PauseSets) {
