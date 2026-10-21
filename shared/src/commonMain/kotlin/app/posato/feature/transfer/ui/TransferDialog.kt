@@ -80,8 +80,10 @@ internal fun previewText(result: ImportPlanResult): String {
             if (summary.added.isNotEmpty()) add("Adds ${summary.added.joinToString(", ")}.")
             if (summary.combined.isNotEmpty()) add("Adds websites to ${summary.combined.joinToString(", ")}.")
             if (summary.removed.isNotEmpty()) add("Removes ${summary.removed.joinToString(", ")} and their apps on this device.")
-            if (summary.schedules.isNotEmpty()) add("${count(summary.schedules.size, "schedule", "schedules")} arrive switched off.")
-            if (summary.removed.isNotEmpty() && summary.firstSetAppsStay) {
+            summary.firstSetWas?.let { was -> add("$was becomes ${summary.firstSetName} and keeps this device's apps.") }
+            if (summary.removedSchedules.isNotEmpty()) add("Removes schedules: ${summary.removedSchedules.joinToString(", ")}.")
+            if (summary.schedules.isNotEmpty()) add("${count(summary.schedules.size, "schedule arrives", "schedules arrive")} switched off.")
+            if (summary.removed.isNotEmpty() && summary.firstSetAppsStay && summary.firstSetWas == null) {
                 summary.firstSetName?.let { name -> add("$name stays first and keeps this device's apps.") }
             }
             if (isEmpty()) add("Nothing new to add.")

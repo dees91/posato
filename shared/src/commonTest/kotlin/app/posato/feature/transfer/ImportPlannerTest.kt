@@ -127,6 +127,21 @@ class ImportPlannerTest {
     }
 
     @Test
+    fun `given replace then the summary names the sets it overwrites and removes and the schedules it removes`() {
+        val existing = SchedulePlan(scheduleId(9), "Deep work", 0b1, 0, 60, enabled = true)
+        val plan = planned(
+            current(sets(first(name = "Focus"), set(evening, "Evening", "a.example")), schedules = listOf(existing)),
+            file(fileSet("x", "Reading", "b.example", first = true), fileSet("y", "Night", "c.example")),
+            ImportMode.REPLACE,
+        )
+
+        assertEquals(listOf("Reading", "Night"), plan.summary.changed)
+        assertEquals("Focus", plan.summary.firstSetWas)
+        assertEquals(listOf("Evening"), plan.summary.removed)
+        assertEquals(listOf("Deep work"), plan.summary.removedSchedules)
+    }
+
+    @Test
     fun `given replace with an unnamed first set then this device's first-set name is kept`() {
         val plan = planned(
             current(sets(first(name = "Focus", "a.example"))),

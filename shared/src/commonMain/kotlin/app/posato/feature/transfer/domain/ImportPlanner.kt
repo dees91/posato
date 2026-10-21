@@ -91,10 +91,29 @@ internal data class ImportSummary(
     val schedules: List<String>,
     val firstSetName: String?,
     val firstSetAppsStay: Boolean,
+    /** Every set the import wrote: the added and combined ones, and on replace every set left. */
+    val changed: List<String> = added + combined,
+    /** On replace, this device's first-set name when the file's first set takes its place under another name. */
+    val firstSetWas: String? = null,
+    val removedSchedules: List<String> = emptyList(),
 ) {
     override fun toString(): String {
         return "ImportSummary(redacted)"
     }
+}
+
+/** What replace overwrites: every set left came from the file, and every schedule here goes. */
+private fun replaceSummary(
+    summary: ImportSummary,
+    current: ImportCurrent,
+    sets: PauseSets,
+): ImportSummary {
+    val was = current.sets.sets.firstOrNull { set -> set.id == PauseSetId.FIRST && !set.refused }?.let { set -> displayNameOf(set.name) }
+    return summary.copy(
+        changed = sets.sets.filterNot(LocalPauseSet::refused).map { set -> displayNameOf(set.name) },
+        firstSetWas = was?.takeIf { name -> summary.firstSetAppsStay && name != summary.firstSetName },
+        removedSchedules = current.schedules.map(SchedulePlan::name),
+    )
 }
 
 /** Plans [file] against [current] in [mode]; nothing is written here. */
@@ -128,7 +147,7 @@ internal fun planImport(
         schedules = saves.map(SchedulePlan::name),
         firstSetName = firstSet?.let { set -> displayNameOf(set.name) },
         firstSetAppsStay = firstSet != null && before[PauseSetId.FIRST]?.refused == false,
-    )
+    ).let { summary -> if (mode == ImportMode.REPLACE) replaceSummary(summary, current, sets) else summary }
     val kept = sets.sets.map(LocalPauseSet::id).filterTo(mutableSetOf()) { id -> id in before }
     return ImportPlanResult.Planned(ImportPlan(sets, saves, removedSchedules, kept, summary))
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -66,8 +67,12 @@ private fun ExportDialog(
     ) {
         Text(dialog.contents, style = MaterialTheme.typography.titleSmall)
         PosatoCaption("Websites, the default set, and schedules. App choices stay on this device.")
-        Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium), verticalAlignment = Alignment.Top) {
-            Switch(checked = dialog.code != null, onCheckedChange = state::protect, enabled = !dialog.busy)
+        Row(
+            modifier = Modifier.toggleable(value = dialog.code != null, enabled = !dialog.busy, role = Role.Switch, onValueChange = state::protect),
+            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Switch(checked = dialog.code != null, onCheckedChange = null, enabled = !dialog.busy)
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
                 Text("Protect with a code")
                 PosatoCaption("Only someone with the code can open the file. Send the code separately, for example by message.")
@@ -241,12 +246,12 @@ private fun ResultDialog(
             PosatoButton(onClick = state::close) { Text("Done") }
         },
     ) {
-        val sets = summary.added.size + summary.combined.size
         PosatoCaption(
             buildList {
-                if (sets > 0) add("Pause sets changed: ${(summary.added + summary.combined).joinToString(", ")}.")
+                if (summary.changed.isNotEmpty()) add("Pause sets changed: ${summary.changed.joinToString(", ")}.")
                 if (summary.removed.isNotEmpty()) add("Removed: ${summary.removed.joinToString(", ")}.")
-                if (summary.websitesAdded > 0) add("${summary.websitesAdded} websites added.")
+                if (summary.removedSchedules.isNotEmpty()) add("Schedules removed: ${summary.removedSchedules.joinToString(", ")}.")
+                if (summary.websitesAdded > 0) add(if (summary.websitesAdded == 1) "1 website added." else "${summary.websitesAdded} websites added.")
             }.ifEmpty { listOf("Nothing new was added.") }.joinToString(" "),
         )
         if (dialog.schedules.isNotEmpty()) {
