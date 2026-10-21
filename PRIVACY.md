@@ -109,12 +109,14 @@ sync for that workspace.
 - To add a device, Posato on a device in the workspace shows a one-time
   pairing code, also as a QR code and as a `posato://` link that contains only
   that code. It places the workspace key in the folder, encrypted with a key
-  derived from the code, and deletes it when the new device has joined or once
-  the code expires after 10 minutes. Posato shows the QR code but does not use
-  your camera. If you share the link through a message, mail, or the
-  clipboard, it passes through the app you choose. Anyone who has the code or
-  the link and can open the folder, or its file history, before the code
-  expires can join the workspace, so share them only with your own devices.
+  derived from the code. It deletes that file when the new device has joined,
+  when you close the code, or, once the code has expired after 10 minutes,
+  the next time Posato starts or shows a new code. Posato shows the QR code
+  but does not use your camera. If you share the link through a message,
+  mail, or the clipboard, it passes through the app you choose. Anyone who
+  has the code or the link and can open the folder, or a copy of that file
+  in its file history, can recover the workspace key, even after the code
+  expires, so share them only with your own devices.
 
 **Remove workspace** deletes Posato's folder from the folder you chose, if
 this device can still reach it, and the workspace key file and the history of

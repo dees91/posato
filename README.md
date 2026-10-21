@@ -96,10 +96,11 @@ an iPhone, a Linux computer, and an Android phone; see the
 
 Add a schedule with a name, a pause set, weekdays, and hours, such as weekday
 mornings from 9 to 11. It starts and ends on its own on each device you set up, even with
-Posato's window closed or the iPhone app closed. Skip the next one or end one
+the Mac window, the iPhone app, or the Android app closed; on Linux, keep
+Posato open. Skip the next one or end one
 early when plans change. When pauses overlap, Posato pauses everything in
 their sets, within each device's limits, and each item stays paused until the
-last pause that includes it ends. Posato can tell you when a pause ends or when one
+last pause that includes it ends. On Mac and iPhone, Posato can tell you when a pause ends or when one
 starts on another device.
 
 <p align="center">

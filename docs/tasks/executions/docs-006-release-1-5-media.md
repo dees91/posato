@@ -37,7 +37,6 @@ marked otherwise.
 
 ## Result
 
-- **Limits page and copy** as before, plus the split limits.
 - **Equal platforms.** Hero and install section: four badges and one
   requirements line; README Quick start the same. Hero video: the sync scene
   shows a Mac, Linux, an iPhone, and Android with "Sync through iCloud or a
@@ -47,28 +46,28 @@ marked otherwise.
   service sees, the key file (Android Keystore sealed), the pairing code and
   link, the Linux service, the Android VPN (Google Public DNS fallback when
   the network offers none), usage access, and permissions.
-- **Captures** from `305d5bd7`: all Mac frames in a Tart VM, all iPhone
-  frames on the test iPhone, Linux in a Tart Ubuntu clone, Android on the
-  Galaxy XCover7, with the Focus and Evening fixture; new
-  `linux-captures.sh` and `android-captures.sh`.
+- **Captures** from `305d5bd7` on all four (Mac in a Tart VM, the test
+  iPhone, a Tart Ubuntu clone, the Galaxy XCover7), new capture scripts.
 
 ## Findings for the maintainer
 
-`observed` during the captures, not fixed here:
-
-- Android: linking a folder workspace renamed the renamed default set back
-  to "My set" (twice), once with an "Update Posato on your other devices"
-  notice on a single device.
-- Android: "Sync with iCloud didn't finish." shown in folder mode.
-- Posato on Linux ignores the desktop's dark theme; the Android block
-  screen ignores Dark Mode.
-- Android: the pairing-code step is lost when the screen is recreated.
+`observed`, not fixed here: on Android, linking a folder workspace renamed
+the default set back to "My set" (twice) and folder mode showed "Sync with
+iCloud didn't finish."; Linux ignores the desktop's dark theme and the
+Android block screen ignores Dark Mode; Android loses the pairing-code step
+when the screen is recreated.
 
 ## Review
 
 - Independent agent, 2026-10-21 (first pass): no Critical; two Required
   fixed (privacy gap recorded, then closed by `AC-07`; alt text).
-- Second pass on the widened row: see below.
+- Independent agent, 2026-10-21 (second pass, widened row): no Critical;
+  two Required fixed: the pairing offer expiry and key recovery wording in
+  `PRIVACY.md`, and the schedule claim, which Linux does not meet with its
+  window closed. Recommended taken: notices only on Mac and iPhone, VPN
+  consent in the notes, mark attributions; unused Android captures dropped.
+- Left to `RELEASE-007`: check the x86-64 `.deb`, date the policy, and
+  whether the limits page adds that Linux schedules need Posato open.
 
 ## GitHub release notes for 1.5.0
 
@@ -83,7 +82,7 @@ the release commit signs, are
 > ## New
 >
 > - **Posato for Linux.** Ubuntu 24.04 or later on arm64 and x86-64. Posato installs a small pausing service once, with your password. Paused websites are blocked through `/etc/hosts`, with no pause page, and paused apps are ended.
-> - **Posato for Android.** Android 13 or later, installed from the APK below. Paused websites are blocked by a local VPN that only answers website names, with no pause page, and paused apps are covered by a block screen. The first run asks for usage access, display over other apps, notifications, exact alarms, access to files for a sync folder, and running without battery limits.
+> - **Posato for Android.** Android 13 or later, installed from the APK below. Paused websites are blocked by a local VPN that only answers website names, with no pause page, and paused apps are covered by a block screen. The first run asks for a local VPN that only answers website names, usage access, display over other apps, notifications, exact alarms, access to files for a sync folder, and running without battery limits.
 > - **Sync through a folder.** Keep your workspace in a folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted files there. The Mac and iPhone can use a folder instead of iCloud; a workspace uses one or the other.
 > - **Add a device by code, QR code, or link.** On the new device, choose its copy of the same folder. On a device in the workspace, choose **Add a device** for a one-time pairing code that works for 10 minutes. Scan its QR code with a phone's camera, use **Share link** or **Copy link**, or type the code. There is no way to remove a single device: to stop sharing with one, remove the workspace and create a new one in another folder.
 > - **Duplicate a pause set** from its menu. A set with websites and no apps chosen on this device no longer shows a warning.
@@ -112,8 +111,8 @@ the release commit signs, are
 
 | Check | Result |
 | --- | --- |
-| `./gradlew qualityLint` | passed on the uncommitted text change (2026-10-21) |
-| `website/` `npm ci` and `npm run build` | passed: 5 pages, Linux and Android images in `dist` |
-| Linux capture run | runs `20261021-012511-95e7`, `20261021-012546-2464` |
-| Android capture run | runs `20261021-012303-1ad9`, `20261021-012338-7259` |
-| Privacy scan of new tracked PNGs | Status bar and navigation bar cropped from the phone image; only `example.com` and app UI are visible; PIL wrote the PNGs without metadata |
+| `./gradlew qualityLint` | passed on `1910d1d6` and after the review fixes |
+| `website/` `npm run build`; wide and phone renders | passed: 5 pages, four badges, install grid |
+| `video/` `npm run media` (check, renders, `verify`) | passed: GIF 1,768,032 bytes, site MP4 571,266 bytes |
+| Captures (`build/verification/runs/`) | Linux `20261021-094149-2207` to `-094816-cf41`; Mac `20261021-100611-5631`, `-100849-d08d`; iPhone `20261021-102925-336a` to `-103419-b5f3`; Android `20261021-093919-363a` to `-110451-3842` |
+| Privacy scan of tracked PNGs | example domains, synthetic folders, expired pairing codes only; bars cropped; no metadata |
