@@ -61,7 +61,8 @@ sync: nothing stays connected. App choices stay on each device.
 
 - `AC-01`: Format tests written first and shown failing: a plain and a
   coded file round-trip, with RFC 7914 vectors and one pinned coded file in
-  the JVM and Swift providers; a wrong code, a damaged file, an iteration
+  the JVM and Swift providers; a failed tag ("This code doesn't match, or the file was changed."), a
+  damaged header or a truncated file, an iteration
   count other than the version's, a file over 4 MiB, a newer version,
   invalid domains, and over-limit contents are each refused with their own
   message and change nothing.
@@ -78,7 +79,7 @@ sync: nothing stays connected. App choices stay on each device.
   at the cap. A real device pair receives an import.
 - `AC-04`: On real devices, each platform exports once and imports once:
   Mac primary to peer VM with add and replace, a coded Mac export on the
-  test iPhone, Android to Linux in each add mode, Linux to Android with
+  test iPhone, an iPhone export imported on Android, Android to Linux in each add mode, Linux to Android with
   replace, and an import during a running pause. PBKDF2 latency measured on
   the Galaxy XCover7 and iPhone 13 mini stays within 2 s.
 - `AC-05`: `PRIVACY.md` and `DESIGN.md` describe export and import; the
@@ -111,8 +112,8 @@ noted):
   mask with Monday as bit 0, names and domains strings; two schedules are
   duplicates when name, weekdays, start, end, and set match after
   normalization. Deeply nested unknown fields under the size cap are
-  ignored safely on JVM and Native. `SyncScheduleStore` captures the
-  workspace itself, so schedule intents need no extra plumbing.
+  ignored safely on JVM and Native. The composite import write captures the
+  workspace once for both stores (execution record, step 5).
 - **App choices on replace:** removed sets lose this device's app choices
   through `retainOnly`, as `keepSurvivingChoices` does; the preview says
   this device's apps for the first set stay with the imported first set.

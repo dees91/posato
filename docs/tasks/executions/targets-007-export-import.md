@@ -35,38 +35,46 @@
    worst-case round-trip test). Then format and versions, JSON shape, refs,
    names and domains normalized (trim, NFC) and checked through
    `PauseSets.of` (at most 10 live sets, 1,024 unique domains, name rules)
-   and `SchedulePlan` rules, 10 schedules. Messages distinguish a damaged
-   file, a wrong code (the tag fails on an intact container), a newer
-   version, and each limit.
+   and `SchedulePlan` rules, 10 schedules. A bad header, length, or
+   truncation is "damaged"; a failed GCM tag reads "This code doesn't match,
+   or the file was changed." (GCM cannot tell the two apart); then a newer
+   version and each limit.
 4. **Planner (pure).** `planImport(current, file, mode)` returns the next
    `PauseSets`, schedule saves and removals, and the preview.
    - Matching (`user-confirmed`): the file's unnamed first set matches this
      device's first set, also an empty unnamed one on a fresh install.
      Other sets match by normalized, case-insensitive name.
    - Add and combine: matched sets gain missing websites; others are new;
-     this device's default stays.
+     this device's default and every local name stay (first matches first;
+     a file set named like the local first set is new and takes
+     " (imported)").
    - Add and keep separate: every file set is new; a clash takes
      " (imported)" (`user-confirmed`) by the `copyNameOf` byte rule. An
      unnamed file first set placed as a new set takes the stored name
-     "My set".
+     "My set", through the same clash rule.
    - Replace: the file's first set lands on `PauseSetId.FIRST` when FIRST is
-     live here, else on a new id. With an unnamed file first set, this
-     device's first-set name is kept (preview shows it). Without a first set
-     in the file, local FIRST is kept, emptied, and keeps its name; it is
-     never removed. Every other current set, refused ones too, is removed;
-     the file's default becomes the default.
+     live here, else on a new id (a refused FIRST is removed like other
+     refused sets). A named file first set brings its name; an unnamed one
+     keeps this device's first-set name (preview shows it, and that the
+     first set's apps stay). Without a first set in the file, a live local
+     FIRST is kept, emptied, and keeps its name. Every other current set,
+     refused ones too, is removed; the file's default becomes the default.
    - Replace is refused while a running pause or running schedule
      occurrence uses a set it would remove or a schedule it would remove,
-     with Delete's wording ("You can replace after the pause ends"). Add
-     always works; first-set edits during a pause follow hand-edit rules.
+     with Delete's wording ("You can replace after the pause ends"), checked
+     at preview and again at confirm. Add always works; first-set edits
+     during a pause follow hand-edit rules.
    - Schedules arrive switched off. Add appends them with mapped refs and
      skips exact duplicates; replace removes current ones first.
    - Over a limit: refused, suggesting combine or replace.
-5. **Authoring.** One SQL transaction under both write gates (policy then
-   schedules) writes the sets, the schedules, and their sync intents, so a
-   linked device queues what the same hand edits would. On confirm the
-   planner runs again under the gates; if the result differs from the
-   preview, the import stops and shows the new preview. No blind retry.
+5. **Authoring.** A new composite write path, `ImportWrite`, in one SQL
+   transaction on the shared `PosatoDatabase`, under the policy gate then
+   the schedule gate (this lock order is the only one used). It captures the
+   linked workspace once for both stores and refuses the import if that
+   fails; writes sets with `pauseSetIntents(before, after)` and schedules
+   with the existing schedule intent rows; runs `sweepRetention`; fires both
+   stores' change flows after commit. On confirm the planner runs again
+   under the gates; a different result stops and shows the new preview.
 6. **Turning schedules on.** The result screen lists the imported schedules
    with **Turn on imported schedules**; it warns when a schedule's window is
    open now (it would start a pause at once). Each can also be turned on
@@ -92,8 +100,9 @@
     Ctrl+L fallback, the iOS picker like `flow folder`), proven in the tool
     before the feature; the host moves files (`vm`, `linux exec`, `adb`).
 12. **Devices, one target at a time:** every platform exports once and
-    imports once; Mac primary to peer VM with add and replace; Android to
-    Linux combine and separate; Linux to Android replace; a Mac coded
+    imports once; Mac primary to peer VM with add and replace; an iPhone export
+    imported on Android; Android to Linux combine and separate; Linux to
+    Android replace; a Mac coded
     export to the iPhone; an import during a running pause; a linked
     Android and Linux pair receiving an import.
 13. **Docs:** `PRIVACY.md` "Export and import" (contents, the code and its
@@ -101,15 +110,11 @@
 
 ## Decisions
 
-- `user-confirmed` 2026-10-21: D1 9-character code with the risk stated;
-  D2 add keeps this device's default, replace takes the file's; D3 refuse
-  over a limit; replace refused while a running pause uses what it would
-  remove; imported schedules arrive off and are turned on deliberately;
-  replace keeps this device's first-set name for an unnamed file first set;
-  first-set matching including a fresh install; " (imported)"; export only
-  live items and replace removes refused ones.
-- `agent-delegated` 2026-10-21: the 4 MiB cap, the container layout and
-  HKDF separation, one transaction under both gates, re-plan on confirm,
-  "My set" for an unnamed first set placed as a new set, and replace
-  without a file first set keeping an emptied local FIRST.
+- `user-confirmed` 2026-10-21: 9-character code with the risk stated; add
+  keeps the default and replace takes the file's; refuse over a limit;
+  replace refused during a pause that uses what it removes; schedules
+  arrive off; first-set matching; " (imported)"; live items only.
+- `agent-delegated` 2026-10-21: 4 MiB cap, container layout, HKDF
+  separation, `ImportWrite`, re-plan on confirm, "My set", combine keeps
+  local names, emptied FIRST when the file has none.
 - `PRIVACY.md` is rewritten for 1.5 in #178; the second to land rebases.
