@@ -142,7 +142,7 @@ class PolicyReconcilerFirstLinkSeedTest {
     }
 
     @Test
-    fun `given an earlier new set that takes the workspace's last free slot when seeded then the later default set is not queued as default`() = runTest {
+    fun `given an earlier new set in the last free slot when seeded then the later default set is not queued as default`() = runTest {
         withStore("seed-default-last-slot.db") { store ->
             val earlier = checkNotNull(PauseSetId.of(testIdentifier(81)))
             val full = (90 until 90 + SyncFormatLimits.MAX_PAUSE_SETS - 2).map { value -> checkNotNull(PauseSetId.of(testIdentifier(value))) }

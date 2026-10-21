@@ -1,7 +1,7 @@
 # Execution: `SYNC-024`
 
 - **Brief:** [Keep the first set's name and the default when a device creates a workspace](../specifications/sync-024-first-set-name.md)
-- **Status:** `in-review` (implemented and verified on devices; independent review next)
+- **Status:** `in-review` (review findings folded; ready for the pull request)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `sync-024-first-set-name`
@@ -70,17 +70,36 @@
 ## Review
 
 - Plan review, 2026-10-21: no Critical; seven Required, folded as R1 to R7.
+- Independent completed-change review, 2026-10-21: no Critical; Required:
+  the maintainer's acceptance of the ADR wording (`AC-04`, now met).
+  Recommended taken: a default whose new set is already queued (R-1, fixed
+  test first), the concurrent winner pinned (R-2), a last-slot boundary
+  test (R-3), revision-labelled runs (R-4), README iOS note (R-5); optional
+  O1 (a repeated rename is a no-op), O5 (ADR wording), and O6 (brief).
+
+## Acceptance
+
+- `AC-01`, `AC-02`: tests below. `AC-03`: device runs below.
+- `AC-04` met: the maintainer accepted the ADR 0006 wording, including the
+  cap, removed, and refused conditions and both known limits
+  (`user-confirmed` 2026-10-21).
 
 ## Checks
 
 | Check | Result |
 | --- | --- |
-| Failing tests on `43c61ae4` (before the fix) | create, join unnamed, concurrent, the updated old-rule case, drain, double seed, stale rows, and the reducer flag fail; guards pass |
-| `:shared:jvmTest` sync tests after `7ad40c41` | pass |
-| Android runs | `20261021-121555-8c67` reset to `20261021-121601-4745` onboard; `-121701-c7bb` rename, `-121729-843f` Evening, `-121808-b14e` default, `-122009-633a` folder link, `-122306-cc82` snapshot, `-122309-5164` screenshot |
-| `./gradlew quality` | passed after the line-length and style fixes |
-| Android create (folder) | `20261021-123537-b413` reset to `-123543-58fb` onboard; `-123638-7553` rename, `-123705-87fe` Evening, `-123745-6dba` default, `-123808-74a1` link |
-| Linux join | `20261021-124047-c81a` create to `-124150-048c` onboard; `-124228-e198` link, `-124253-ab99` offer, `-124324-a6dd` join, `-124358-851c` snapshot, `-124359-15c3` screenshot |
-| Linux negative join ("Other") | `20261021-124408-45e0` create to `-124510-8848` rename; `-124530-5f86` link, `-124621-1bf1` join, `-124658-8829` snapshot, `-124700-55e8` screenshot; phone `-124714-e611` |
-| Mac iCloud create | `20261021-124738-c8e1` create, `-124930-4ed1` onboard, `-125524-8cd0` old workspace removed; `-125555-5c89` rename, `-125602-2357` Evening, `-125610-cbb8` default, `-125614-5c5a` link, `-130340-baae` snapshot, `-130341-073e` screenshot |
-| Cleanup | iCloud workspace removed `-130831-380c`, clone destroyed `-131323-2836`, phone workspace removed `-131332-0f3c`, folders deleted |
+| Failing tests first | on `43c61ae4`: create, join unnamed, concurrent, the old-rule case, drain, double seed, stale rows, reducer flag; on `f1a191df`: the queued-set default; guards passed |
+| Mutation for the last-slot test | with the cap condition loosened to `<=`, the last-slot, cap, and queued-set cases fail; reverted |
+| `./gradlew quality` | passed on the closeout commit (`b4652bec` plus a shorter test name and this record) |
+
+Verified `b4652bec` Android create (Galaxy XCover7, folder): reset run `20261021-133920-7c34`, rename `20261021-134033-0a76`, Evening `20261021-134109-cc83`, default `20261021-134155-5ea6`, link run `20261021-134219-11c3`; Focus and Evening Default kept.
+Verified `b4652bec` Linux join (Tart Ubuntu clone, relay): link run `20261021-134615-d0d4`, offer `20261021-134641-96ec`, join run `20261021-134706-fe90`, snapshot run `20261021-134742-483c` shows Focus and Evening, Default.
+
+Earlier runs on `dc968b3a`, before the R-1 fix (which only changes a
+default whose set was already queued, not exercised there): Linux
+negative join "Other" (`20261021-124621-1bf1`, snapshot `-124658-8829`
+shows Focus) and the Tart Mac iCloud create (`20261021-125614-5c5a`,
+snapshot `-130340-baae` keeps Focus and Evening Default). Runs on the
+`6dc51df8` APK (`20261021-121555` to `-123808`) are superseded.
+Cleanup: workspaces removed (`-130831-380c`, `-134751-d16d`), clones
+destroyed, folders deleted, no pause or VPN left.
