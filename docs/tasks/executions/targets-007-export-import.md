@@ -71,11 +71,9 @@
    with **Turn on imported schedules**; it warns when a schedule's window is
    open now (it would start a pause at once). Each can also be turned on
    later in Schedules. `DESIGN.md` gets this step.
-7. **Files.** Mac and Linux: AWT `FileDialog` save and open. iPhone: share
-   sheet for export, `UIDocumentPickerViewController` for import. Android:
-   `CreateDocument` for export (share sheet second), `OpenDocument` with
-   `*/*` and magic-byte detection for import. Host ports like
-   `FolderSyncControls.browse`.
+7. **Files, code handling, JSON, apps:** as in the brief's "Implementation
+   constraints" (pickers per platform, temporary files deleted, typed-code
+   normalization and zeroing, JSON field types, app choices on replace).
 8. **UI from the mockup:** menu items, export dialog, import dialog with the
    code step, two radio cards, add's two options, preview, Import or
    destructive Replace, the linked-device warning, and the result screen.
@@ -85,14 +83,14 @@
    go in this record.
 10. **Tests first:** RFC 7914 PBKDF2-SHA256 vectors and one pinned
     end-to-end coded file in the JVM and Swift provider tests; codec and
-    validation (AC-01, including a bounded iteration count); planner cases
-    for each matching, replace, pause, and limit rule (AC-02); the
-    transaction and re-plan (AC-03).
+    validation incl. nested unknown fields on JVM and Native (AC-01);
+    planner cases for each matching, replace, pause, and limit rule
+    (AC-02); convergence of two exchanging stores after an import (AC-03).
 11. **Tool first:** `posato-control flow export --out PATH [--code]` and
     `flow import --file PATH [--code C] --mode combine|separate|replace`
-    on every target; the host moves files (`vm`, `linux exec`, `adb`,
-    `devicectl`; iOS falls back to the app's Documents if the picker cannot
-    be driven).
+    on every target, driving the real dialogs (Mac Go to folder, Linux
+    Ctrl+L fallback, the iOS picker like `flow folder`), proven in the tool
+    before the feature; the host moves files (`vm`, `linux exec`, `adb`).
 12. **Devices, one target at a time:** every platform exports once and
     imports once; Mac primary to peer VM with add and replace; Android to
     Linux combine and separate; Linux to Android replace; a Mac coded
@@ -114,7 +112,4 @@
   HKDF separation, one transaction under both gates, re-plan on confirm,
   "My set" for an unnamed first set placed as a new set, and replace
   without a file first set keeping an emptied local FIRST.
-
-## Notes
-
 - `PRIVACY.md` is rewritten for 1.5 in #178; the second to land rebases.

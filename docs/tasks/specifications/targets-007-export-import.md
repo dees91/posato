@@ -72,9 +72,10 @@ sync: nothing stays connected. App choices stay on each device.
   imported sets and arrive off, duplicates, the limits, and replace refused
   during a running pause.
 - `AC-03`: Sets, schedules, and their intents are written in one
-  transaction and re-planned on confirm; on a linked device an import queues
-  the same intents as the equivalent hand edits (shared test), and another
-  member receives them on a real device pair.
+  transaction and re-planned on confirm. Two linked stores that exchange
+  after an import converge: the peer's sets, default, and schedules match,
+  including replace with a removed set, a default change, and a set refused
+  at the cap. A real device pair receives an import.
 - `AC-04`: On real devices, each platform exports once and imports once:
   Mac primary to peer VM with add and replace, a coded Mac export on the
   test iPhone, Android to Linux in each add mode, Linux to Android with
@@ -82,6 +83,42 @@ sync: nothing stays connected. App choices stay on each device.
   the Galaxy XCover7 and iPhone 13 mini stays within 2 s.
 - `AC-05`: `PRIVACY.md` and `DESIGN.md` describe export and import; the
   `DESIGN.md` entry is `user-confirmed` from the mockup.
+
+## Implementation constraints
+
+From the independent plan review (2026-10-21, `agent-delegated` unless
+noted):
+
+- **iPhone:** import with `UIDocumentPickerViewController(forOpeningContentTypes:
+  asCopy: true)`; declare `.posato` in `UTExportedTypeDeclarations`, with no
+  `CFBundleDocumentTypes`; no Documents or `UIFileSharingEnabled` fallback,
+  which would be a product and privacy change. Export through the share
+  sheet, then delete the temporary file when the sheet closes.
+- **Android:** export with `CreateDocument` (share sheet second, its
+  `FileProvider` cache file deleted afterwards); import with `OpenDocument`
+  for `*/*` and detect the file by its first bytes.
+- **Desktop:** AWT `FileDialog` parented to the Compose window and called on
+  the event thread (`NSSavePanel` on macOS, GTK chooser on Linux).
+  `posato-control` drives them: on the Mac the accessibility bridge gains
+  Go to folder (⇧⌘G); on Linux, where the JDK chooser may be invisible to
+  AT-SPI, an `xdotool` Ctrl+L, path, Return fallback, proven in the tool
+  before the feature uses it.
+- **Code handling:** typed codes are normalized (case, spaces, hyphens;
+  0→O, 1→I, 8→B); the code stays out of saved state, `rememberSaveable`,
+  and logs; `PBEKeySpec.clearPassword()` and key bytes zeroed with
+  `fill(0)`, as `FolderPairing` does.
+- **JSON:** times are minutes from midnight (0 to 1439), weekdays a 7-bit
+  mask with Monday as bit 0, names and domains strings; two schedules are
+  duplicates when name, weekdays, start, end, and set match after
+  normalization. Deeply nested unknown fields under the size cap are
+  ignored safely on JVM and Native. `SyncScheduleStore` captures the
+  workspace itself, so schedule intents need no extra plumbing.
+- **App choices on replace:** removed sets lose this device's app choices
+  through `retainOnly`, as `keepSurvivingChoices` does; the preview says
+  this device's apps for the first set stay with the imported first set.
+- **Cap race:** a peer can fill the 10-set cap first; imported sets may then
+  be refused on every device, deterministically, and the result screen
+  shows them as refused, as the Pause sets list does.
 
 ## Verification
 
