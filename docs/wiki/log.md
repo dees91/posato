@@ -2939,3 +2939,12 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: `SYNC-024`, `SYNC-025`, `SYNC-026` (idea 48),
   `ANDROID-002`, `LINUX-002` (idea 49), and `LINUX-003` (idea 50) join
   release 1.5 before `DOCS-006` recaptures and `RELEASE-007` publishes.
+
+## [2026-10-21] fix | ANDROID-002: the block screen follows Dark Mode
+
+- `observed` on a Galaxy XCover7 (Android 14) on `bb1a9e3f`: "Paused by
+  Posato" over Calculator shows Posato's dark palette in Dark Mode (run
+  `20261021-141029-7af5`) and the light palette in Light (run
+  `20261021-141041-dbc3`). The block screen now uses the shared theme
+  through `PosatoAndroidTheme`, and its window starts on the matching
+  surface.
