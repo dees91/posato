@@ -46,8 +46,12 @@ sync: nothing stays connected. App choices stay on each device.
 - The code is 9 characters (about 45 bits) with a slow key derivation; it
   protects against casual readers, not against a determined offline attack
   on a leaked file, and `PRIVACY.md` and the export dialog say so.
-- During a running pause, import follows the hand-edit rules: added
-  websites pause now; removed ones stay paused until the pause ends.
+- During a running pause, add always works with the hand-edit rules (added
+  websites pause now). Replace is refused while a running pause or a running
+  scheduled pause uses a set or schedule it would remove, with Delete's
+  wording.
+- Imported schedules arrive switched off; a separate step on the result
+  screen turns them on and warns when a window is open now.
 - Non-goals: opening a `.posato` file from Files, Finder, or a share
   extension (import starts in Posato), exporting app choices, merging
   website lists across differently named sets, sync of any kind, and
@@ -56,19 +60,26 @@ sync: nothing stays connected. App choices stay on each device.
 ## Acceptance
 
 - `AC-01`: Format tests written first and shown failing: a plain and a
-  coded file round-trip; a wrong code, a damaged file, a file over 1 MiB, an
-  unknown format version, invalid domains, and over-limit contents are each
-  refused with their own message and change nothing.
+  coded file round-trip, with RFC 7914 vectors and one pinned coded file in
+  the JVM and Swift providers; a wrong code, a damaged file, an iteration
+  count other than the version's, a file over 4 MiB, a newer version,
+  invalid domains, and over-limit contents are each refused with their own
+  message and change nothing.
 - `AC-02`: Import planner tests written first: add-and-combine,
   add-and-keep-separate (`Name (imported)`), and replace, including the
-  unnamed first set, the default set, schedules that point at imported
-  sets, duplicates, and the limits.
-- `AC-03`: On a linked device, an import queues the same intents as the
-  equivalent hand edits (shared test), and another member receives them on
-  a real device pair.
-- `AC-04`: On real devices: a coded export from a Mac in a Tart clone
-  imported on the test iPhone; an Android export imported on a Linux clone
-  in each add mode; a Linux export imported on Android with replace.
+  unnamed first set (matched, placed as a new set, kept name on replace,
+  no first set in the file), the default set, schedules that point at
+  imported sets and arrive off, duplicates, the limits, and replace refused
+  during a running pause.
+- `AC-03`: Sets, schedules, and their intents are written in one
+  transaction and re-planned on confirm; on a linked device an import queues
+  the same intents as the equivalent hand edits (shared test), and another
+  member receives them on a real device pair.
+- `AC-04`: On real devices, each platform exports once and imports once:
+  Mac primary to peer VM with add and replace, a coded Mac export on the
+  test iPhone, Android to Linux in each add mode, Linux to Android with
+  replace, and an import during a running pause. PBKDF2 latency measured on
+  the Galaxy XCover7 and iPhone 13 mini stays within 2 s.
 - `AC-05`: `PRIVACY.md` and `DESIGN.md` describe export and import; the
   `DESIGN.md` entry is `user-confirmed` from the mockup.
 
@@ -82,5 +93,5 @@ sync: nothing stays connected. App choices stay on each device.
 
 ## Decisions or blockers
 
-D1 to D4 are `user-confirmed` and D5 is `agent-delegated` (2026-10-21);
-see the execution record.
+The maintainer's decisions are `user-confirmed` and the agent's choices
+`agent-delegated` (2026-10-21); see the execution record.
