@@ -1,7 +1,7 @@
 # Execution: `LINUX-003`
 
 - **Brief:** [Posato for Linux keeps running in the background](../specifications/linux-003-background.md)
-- **Status:** `in progress`; plan reviewed and rechecked, GNOME golden built
+- **Status:** `implemented`; waiting for the completed-change review
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `linux-003-background`
@@ -28,59 +28,22 @@ and `gnome-shell-extension-appindicator` installed, logged in to
 
 ## Plan
 
-Folded after the independent plan review (4 Critical, 9 Required; the
-maintainer decided C2, C4, R6, and R9, `user-confirmed` 2026-10-21).
+Folded after the plan review (4 Critical, 9 Required) and its recheck (3
+Required); the maintainer decided C2, C4, R6, and R9 (`user-confirmed`
+2026-10-21).
 
-1. **GNOME golden** (done 2026-10-21, `b0ebacce`): `posato-golden-linux-gnome`
-   with GDM and `ubuntu-desktop-minimal`, in the unattended verification
-   guide and `~/machine-wiki`, claimed in `machine-ledger` first. The stored
-   session is Xorg (`ubuntu-xorg`), for `xdotool` and `import -window root`;
-   `linux create --golden gnome --session wayland` switches GDM's
-   `DefaultSession` and AccountsService to `ubuntu`, and GNOME runs on
-   Wayland under Tart's virtio GPU (`observed`, run
-   `20261021-145024-9768`), where `linux screen` uses `gnome-screenshot -f`
-   (GNOME Shell's `Screenshot` D-Bus method answers `AccessDenied`).
-2. **Tool first** (`posato-control`, README, the skill's
-   `features/linux-and-android.md`, auditing scenarios that assume closing
-   quits): a GNOME launch mode in which `/tmp/posato-dbus` holds the
-   session bus's address instead of a private bus, so the item reaches the
-   watcher and the shell's AT-SPI bus stays in use, with toolkit
-   accessibility on (an autostarted process gets the ATK setting through
-   `~/.config/environment.d` on the golden); `tray -t linux [--activate
-   LABEL]` over `gdbus` (layout and `clicked` event); `linux screen`;
-   `linux relogin`.
-3. **D-Bus probe in the real package first:** merge `META-INF/services` in
-   `linuxAppJar`, run `jdeps` on the jar and add `jdk.security.auth` to the
-   jlink modules if it is needed, then install the `.deb` in a GNOME clone
-   with a minimal probe that connects to the session bus, owns
-   `app.posato.Posato`, exports a stub item, and registers it with the
-   watcher; step 6 builds the real item on it.
-4. **Tests first** (`desktopApp` jvmTest): dbusmenu layout per `DESIGN.md`
-   state with stable ids; autostart entry contents, atomic write, removal,
-   and Tweaks-written `Hidden=true` and `X-GNOME-Autostart-enabled=false`
-   read as off; file-lock contention (lock held and name unreachable: the
-   second process exits without opening the database).
-5. **Linux resident composable** (no Mac file changes): the new Linux
-   exclusive lock next to the database, then the
-   graph with `hostsSession = false`, `presence.runWhileResident()` at
-   application level, window visibility, the first-close rule with a
-   marker under `$XDG_DATA_HOME/Posato` and a Compose alert, quit through
-   `quitPromptFor` with the Linux schedule-only prompt in a focused
-   `DialogWindow`, Ctrl+Q, `--background`, surfaces released when hidden,
-   exit on bus disconnect.
-6. **Status area:** `dbus-java-core` and
-   `dbus-java-transport-native-unixsocket`, pinned at 5.2.2 (MIT, about
-   400 KB, with `slf4j-api` MIT): the item, the menu, `Show` with the
-   activation token, watcher tracking through `NameOwnerChanged`, refresh
-   on `AboutToShow` bounded to once a minute while open.
-7. **Login item:** a platform-neutral port with the Linux row in "On this
-   computer" and the rules in the brief; `prerm` removes the installing
-   user's entry.
-8. **Text:** the Linux strings and the `DESIGN.md` Linux paragraph,
-   `THIRD_PARTY_NOTICES.md` and the package notices, and the limits page
-   (no icon on GNOME without the AppIndicator extension).
-9. **Verify** `AC-01` to `AC-07` (Wayland once for `AC-01` and `AC-04`),
-   `./gradlew quality`, independent review. Rebase after #184 merges.
+1. GNOME golden (`b0ebacce`): GDM, `ubuntu-desktop-minimal`, Xorg stored,
+   Wayland by `--session wayland`, whole-screen capture with
+   `gnome-screenshot -f` on Wayland; guide, `~/machine-wiki`, ledger claim.
+2. Tool first: session bus in `/tmp/posato-dbus` on GNOME with the shell's
+   AT-SPI bus, `linux tray`, `linux screen`, `linux relogin`,
+   `linux session`.
+3. D-Bus probe in the real `.deb` (merged `META-INF/services`, `jdeps`).
+4. Tests first: menu ids, autostart rules, lock contention, menu open
+   window, no session bus.
+5. Linux resident composable with no Mac file changed; status area; login
+   item; `prerm`; notices; `DESIGN.md` Linux paragraph.
+6. `AC-01` to `AC-07`, Wayland once, `./gradlew quality`, review.
 
 ## Decisions
 
@@ -98,7 +61,22 @@ maintainer decided C2, C4, R6, and R9, `user-confirmed` 2026-10-21).
 
 ## Result
 
-Not started.
+- **Status icon:** a StatusNotifierItem with a dbusmenu menu over
+  `dbus-java` 5.2.2, symbolic SVG icons with an `index.theme` (the
+  AppIndicator extension finds `IconThemePath` icons only through one) and
+  pixmaps; jlink adds `java.xml` and `jdk.security.auth` (`jdeps`).
+- **Lifecycle:** Linux-only lock, `Show` forwarding, `--background`,
+  resident composable with `runWhileResident()`, the Linux close and quit
+  rules, notices in focused dialog windows, About's **In the background**.
+- **Found while verifying:** GNOME never reports the menu closing, so
+  `LayoutUpdated` went out every minute (10 in 10 minutes); an opened menu
+  now counts as open for two minutes. Without a session bus, dbus-java's
+  unchecked `InvalidBusAddressException` ended Posato at start on Openbox;
+  the address is now read first. The GNOME golden's desktop settings
+  handed the network to an absent NetworkManager; the golden uses
+  systemd-networkd (guide updated). Both regressions have tests first.
+- **Left to `DOCS-006`:** the limits page line (no icon on GNOME without
+  the AppIndicator extension), since #178 moves the Linux limits there.
 
 ## Review
 
@@ -107,10 +85,21 @@ explicit D-Bus probe), folded above. Plan review 2026-10-21 (independent agent):
 all folded above; recommendations taken: activation token and Show
 retry, minimal bus surface, symbolic icon with fallback and change
 signals, `prerm` autostart removal, exact pins and package notices,
-lock and Tweaks tests, rebase after #184. A shorter recheck follows.
+lock and Tweaks tests, rebase after #184 (done, onto `79b87c00`).
+Completed-change review: pending.
 
 ## Checks
 
 | Check | Result |
 | --- | --- |
-| Spike clone | `linux create` run `20261021-141729-d109`; destroyed run `20261021-142832-04f0` |
+| Spike and probe | spike `20261021-141729-d109`; packaged D-Bus probe `20261021-151018-b053` to `-151244-bbcb` |
+| `AC-01`, `AC-04` Xorg (`e29213be`) | close during pause `-152218-c317`, end early from icon `-152238-f25c`; `--background` and plain second launch, one process `-152731-21bf` |
+| `AC-02` (`e29213be`) | schedule started with the window closed, one pin row, blocked `-152634-8d75`; ended on time `-154149-1453` |
+| `AC-03` (`1f9754ff`) | switch on `-191809-7844`, login launch `--background` with icon `-192022-9445`, due schedule blocked `-192345-838a`; switch off, entry gone, nothing after login `-194515-45a1` |
+| `AC-05` (`1f9754ff`) | dialog with the window hidden `-193955-c7a6`; after Quit still blocked `-194014-9381`, ended by the service `-194502-1a83` |
+| `AC-07` (`1f9754ff`, no ATK) | 600 s: CPU 0.48%, threads 43 to 38, RSS 115.4 to 116.7 MB, no `LayoutUpdated` (first run on `e29213be`: 10, fixed) |
+| Wayland `AC-01`, `AC-04` (`1f9754ff`) | `-200422-5069`, `-200442-7c00`, `-200501-5ca4` |
+| `AC-06` Openbox (`1e479838`) | closing with nothing quits `-200947-f722`; with a schedule stays with the notice `-201118-2854` |
+| `./gradlew quality` | passed on `1f9754ff`; `qualityLint` and Linux tests on `1e479838` |
+
+All run ids start with `20261021`.

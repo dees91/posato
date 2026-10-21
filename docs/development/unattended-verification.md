@@ -232,7 +232,16 @@ second golden line from the first:
    ```shell
    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
      ubuntu-desktop-minimal yaru-theme-gtk yaru-theme-icon yaru-theme-gnome-shell \
-     gnome-terminal gnome-control-center nautilus gnome-screenshot
+     gnome-terminal gnome-control-center nautilus gnome-screenshot xdg-utils
+   ```
+
+   The desktop settings install a netplan file that hands the network to
+   NetworkManager, which this install leaves out, so a clone boots without a
+   network. Keep the guest on systemd-networkd:
+
+   ```shell
+   printf 'network:\n  version: 2\n  renderer: networkd\n' > /etc/netplan/00-network-manager-all.yaml
+   chmod 600 /etc/netplan/00-network-manager-all.yaml
    ```
 
 3. Replace LightDM with GDM, log the guest user in automatically, and store
