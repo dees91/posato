@@ -114,7 +114,7 @@ class PauseSetFileSealTest {
 
     @Test
     fun `given the version's iteration count then it is pinned`() {
-        assertEquals(600_000, EXPORT_ITERATIONS_V1)
+        assertEquals(1_000_000, EXPORT_ITERATIONS_V1)
     }
 }
 

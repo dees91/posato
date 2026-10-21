@@ -8,7 +8,7 @@ import app.posato.feature.sync.domain.SyncFormatLimits
  * PBKDF2 rounds for container version 1. A reader accepts only this count for version 1, so a changed header
  * can never make it derive with an attacker's count; a later version raises it with a new version byte.
  */
-internal const val EXPORT_ITERATIONS_V1: Int = 600_000
+internal const val EXPORT_ITERATIONS_V1: Int = 1_000_000
 
 private const val CONTAINER_VERSION: Int = 1
 private const val SALT_BYTES: Int = 16
