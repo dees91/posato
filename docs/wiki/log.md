@@ -2960,3 +2960,22 @@ first removal attempt that does not finish, not to a paused keychain.
   behind (`observed` on Linux; `inferred` for the Mac and Android, which
   share `PosatoNavStack`; the iPhone uses `CupertinoNavDisplay`, which never
   had it). The entry now reads the color itself.
+
+## [2026-10-21] decision | Roadmap revision 26: export and import, warmer light palette
+
+- `user-confirmed`: `TARGETS-007` (idea 14, one-time export and import of
+  pause sets and schedules with an optional code) and `DESIGN-005` (idea 51,
+  light surface #F4F3EB) join release 1.5. `observed`: the test Apple
+  Account's long-history zone was removed during `SYNC-024`'s
+  verification, so `SYNC-022` must rebuild it.
+
+## [2026-10-21] fix | ANDROID-002: the block screen follows Dark Mode
+
+- `observed` on a Galaxy XCover7 (Android 14) on `bb1a9e3f`: "Paused by
+  Posato" over Calculator shows Posato's dark palette in Dark Mode (run
+  `20261021-141029-7af5`) and the light palette in Light (run
+  `20261021-141041-dbc3`). The block screen now uses the shared theme
+  through `PosatoAndroidTheme`; its window background mirrors the matching
+  surface (`inferred` to avoid a flash; the first frame was not captured).
+  Blocked by a running 45-minute pause with Calculator in its set; the
+  theme was switched with `cmd uimode night yes|no`.

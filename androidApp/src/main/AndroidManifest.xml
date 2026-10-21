@@ -62,7 +62,8 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="app.posato.android.block" />
+            android:taskAffinity="app.posato.android.block"
+            android:theme="@style/Theme.Posato.Block" />
 
         <service
             android:name=".GuardService"
