@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit
  * again whenever dconf rewrites the user's settings database, so it changes with the desktop while it runs. The
  * file is watched rather than the session bus because Posato may run on a session bus of its own. The first read
  * happens once, when the theme is first drawn, so the window opens in the right palette instead of flashing.
+ * Desktops that do not keep this GNOME key, such as KDE, get the light palette; reading the XDG desktop portal's
+ * appearance setting instead is a later idea.
  */
 internal object LinuxColorScheme {
     private val dark = MutableStateFlow(readPrefersDark())
@@ -34,7 +36,6 @@ internal object LinuxColorScheme {
                 while (!Files.isDirectory(directory)) {
                     Thread.sleep(FOLDER_POLL_MILLIS)
                 }
-                dark.value = readPrefersDark()
                 watchFolder(directory)
             }
         } catch (_: InterruptedException) {
@@ -42,11 +43,15 @@ internal object LinuxColorScheme {
         }
     }
 
-    /** Re-reads the scheme after every change in the dconf folder, until the folder goes away. */
+    /**
+     * Reads the scheme once the folder is watched, so a change in between is not missed, and again after every
+     * change in the dconf folder, until the folder goes away.
+     */
     private fun watchFolder(directory: Path) {
         try {
             FileSystems.getDefault().newWatchService().use { service ->
                 directory.register(service, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY)
+                dark.value = readPrefersDark()
                 do {
                     val key = service.take()
                     key.pollEvents()
@@ -70,7 +75,8 @@ internal object LinuxColorScheme {
                 .redirectErrorStream(true)
                 .start()
             if (!process.waitFor(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                process.destroyForcibly()
+                process.inputStream.close()
+                process.destroyForcibly().waitFor()
                 return false
             }
             val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }

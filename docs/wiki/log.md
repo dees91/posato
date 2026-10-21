@@ -2942,13 +2942,17 @@ first removal attempt that does not finish, not to a paused keychain.
 
 ## [2026-10-21] fix | LINUX-002: Linux follows the desktop's light or dark setting
 
-- `observed` in a Tart Ubuntu 24.04 clone: Posato reads GNOME's
-  `org.gnome.desktop.interface color-scheme` with `gsettings` at its first
-  frame and again whenever dconf rewrites the user's settings folder, so it
-  opens dark when the desktop is dark and switches live both ways. The
-  folder is watched instead of the session bus, and a missing folder on a
-  new account is waited for.
+- `observed` in a Tart Ubuntu 24.04 clone on `ce0b7ebb`: Posato reads
+  GNOME's `org.gnome.desktop.interface color-scheme` with `gsettings` at
+  its first frame and again whenever dconf rewrites the user's settings
+  folder, so it opens dark when the desktop is dark and switches live both
+  ways. The folder is watched instead of the session bus. Desktops without
+  this GNOME key, such as KDE, keep the light palette; the XDG desktop
+  portal's appearance setting is a later idea.
+- `inferred`: on a new account with no dconf folder yet, Posato waits for
+  the folder to appear before watching it.
 - A Navigation 3 screen kept the surface color captured when its entry was
-  created, so a live light or dark switch left the screen background behind
-  on every platform; the entry now reads the color itself.
-
+  created, so after a live light or dark switch its background stayed
+  behind (`observed` on Linux; `inferred` for the Mac and Android, which
+  share `PosatoNavStack`; the iPhone uses `CupertinoNavDisplay`, which never
+  had it). The entry now reads the color itself.
