@@ -19,10 +19,11 @@ internal fun SyncAnnouncements(
     onAnnouncement: (String) -> Unit,
 ) {
     val snapshot by state.syncState.collectAsState()
+    val folder by state.folder.collectAsState()
     val announce by rememberUpdatedState(onAnnouncement)
     var trackingJoin by remember { mutableStateOf(false) }
     val message = stringResource(
-        if (state.checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked, snapshot.reason),
+        if (state.checking) Res.string.sync_checking_key else snapshot.statusMessage(state.folderMode(folder)),
     )
     LaunchedEffect(snapshot.status, snapshot.reason, state.checking, state.completedChecks) {
         if (snapshot.joinPending || state.checking) trackingJoin = true

@@ -152,8 +152,10 @@ internal class AppleSync(
                         continueJoin()
                     } else {
                         val result = coordinator.bootstrap()
-                        publish(result.toSyncStatus())
-                        mutableState.update { it.copy(removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace) }
+                        // One update, so an announcement never speaks a passing retry before the removed copy.
+                        mutableState.update {
+                            it.copy(status = result.toSyncStatus(), reason = null, removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace)
+                        }
                         mutableState.refreshLinked(coordinator, lastSync)
                         if (result is BootstrapResult.Ready) syncNow()
                     }

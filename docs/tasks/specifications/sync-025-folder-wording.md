@@ -14,8 +14,10 @@
 ## Outcome
 
 In folder mode Posato never names iCloud. A folder that holds a copy of a
-workspace this device removed says so for as long as it is chosen, and says
-what to do, instead of "Sync with iCloud didn't finish."
+workspace this device removed says so after each sync attempt with it, and
+says what to do, instead of "Sync with iCloud didn't finish." The state is
+not stored, so after Posato restarts the section shows it again only after
+the next attempt; `SYNC-026` decides how the rebuilt section keeps it.
 
 ## Boundaries
 

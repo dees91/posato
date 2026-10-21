@@ -329,7 +329,7 @@ For what matters.</string>
     <string name="sync_folder_retryable">Sync with the folder didn’t finish.</string>
     <string name="sync_folder_connected">Connected to the folder</string>
     <string name="sync_folder_removed_copy">This folder holds a copy of a workspace you removed from this device, so this device cannot link to it. Choose another folder, or delete the Posato folder inside this one to start a new workspace here.</string>
-    <string name="sync_folder_removed_copy_summary">Holds a workspace you removed</string>
+    <string name="sync_folder_removed_copy_summary">Folder holds a removed workspace</string>
     <string name="sync_folder_add_device">Add a device</string>
     <string name="sync_folder_code_title">Pairing code</string>
     <string name="sync_folder_code_message">Scan this QR code with the other device's camera, or share the link. On a computer, choose the same folder there and enter the code. It works for 10 minutes.</string>

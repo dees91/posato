@@ -94,7 +94,7 @@ internal fun SyncBootstrapSection(
     val removingHere = showsRemovalProgress && snapshot.removing
     val checking = state.checking
     val controls = state.folderControls
-    val folderMode = controls.supported && (folder != null || !controls.icloudSupported)
+    val folderMode = state.folderMode(folder)
     LinkCodeEffects(state, snapshot) { expanded = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         SyncRow(expanded, folderMode, rowSummary(snapshot, folderMode, checking, removingHere, state.running)) { expanded = !expanded }
