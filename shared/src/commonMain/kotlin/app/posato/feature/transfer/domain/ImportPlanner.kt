@@ -31,6 +31,8 @@ internal data class ImportCurrent(
     val schedules: List<SchedulePlan>,
     val runningSets: Set<PauseSetId>,
     val runningSchedules: Set<ScheduleId>,
+    /** Schedules the workspace refused at its limit: not counted, but removed by replace. */
+    val refusedSchedules: List<ScheduleId> = emptyList(),
 )
 
 /**
@@ -103,14 +105,15 @@ internal fun planImport(
     ids: ImportIds,
 ): ImportPlanResult {
     val placed = if (mode == ImportMode.REPLACE) replaceSets(current, file, ids) else addSets(current, file, mode, ids)
-    val removedSchedules = if (mode == ImportMode.REPLACE) current.schedules.map(SchedulePlan::id) else emptyList()
+    val removedSchedules = if (mode == ImportMode.REPLACE) current.schedules.map(SchedulePlan::id) + current.refusedSchedules else emptyList()
     if (mode == ImportMode.REPLACE &&
         (placed.removed.any { set -> set.id in current.runningSets } || removedSchedules.any { id -> id in current.runningSchedules })
     ) {
         return ImportPlanResult.Refused(ImportRefusal.IN_USE_BY_PAUSE)
     }
     val saves = importedSchedules(current, file, mode, ids, placed.mapping)
-    val refusal = limitRefusal(placed.sets, current.schedules.size - removedSchedules.size + saves.size)
+    val keptSchedules = if (mode == ImportMode.REPLACE) 0 else current.schedules.size
+    val refusal = limitRefusal(placed.sets, keptSchedules + saves.size)
     if (refusal != null) {
         return ImportPlanResult.Refused(refusal)
     }

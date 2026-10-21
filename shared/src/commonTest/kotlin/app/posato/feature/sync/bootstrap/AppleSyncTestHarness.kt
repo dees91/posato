@@ -32,7 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 internal class AppleSyncTestHarness(
-    dispatcher: CoroutineDispatcher,
+    val dispatcher: CoroutineDispatcher,
     name: String = "apple-sync-test.db",
     bootstrapStore: BootstrapStore? = null,
     mailboxPort: MailboxPort? = null,

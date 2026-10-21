@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.Flow
 internal interface LocalScheduleStore {
     val changes: Flow<Unit>
 
+    /** Tells readers that a write outside this store, such as an import, changed the schedules. */
+    fun announceChange() = Unit
+
     suspend fun <T> withWriteGate(block: suspend () -> T): T
 
     suspend fun read(): ScheduleResult<ScheduleSnapshot>

@@ -28,6 +28,10 @@ internal class SqlScheduleStore(
     override val changes: Flow<Unit>
         get() = mutableChanges
 
+    override fun announceChange() {
+        mutableChanges.tryEmit(Unit)
+    }
+
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
         return writeGate.withLock { block() }
     }

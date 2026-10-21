@@ -31,6 +31,10 @@ internal class SyncScheduleStore(
     override val changes: Flow<Unit>
         get() = local.changes
 
+    override fun announceChange() {
+        local.announceChange()
+    }
+
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
         return local.withWriteGate(block)
     }
