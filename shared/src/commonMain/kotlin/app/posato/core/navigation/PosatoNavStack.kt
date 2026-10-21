@@ -39,10 +39,13 @@ internal fun <T : Any> PosatoNavStack(
     content: @Composable (T) -> Unit,
 ) {
     val clipped = modifier.clipToBounds()
-    val surface = MaterialTheme.colorScheme.surface
+    // The surface is read inside each entry: Navigation 3 keeps an entry's content, so a color captured here would
+    // keep the old appearance after the system switches between light and dark while Posato is open.
     val entryProvider = { key: T ->
         NavEntry(key) {
-            Box(Modifier.fillMaxSize().background(surface), contentAlignment = contentAlignment) { content(key) }
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface), contentAlignment = contentAlignment) {
+                content(key)
+            }
         }
     }
     val dispatcher = rememberStackDispatcherOwner(enabled = backEnabled)
