@@ -171,12 +171,13 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         reveal: List<String>,
         outcome: (List<String>) -> String?,
     ): String {
-        var labels = FolderSection(backend).outcomeLabels(reveal)
-        while (System.currentTimeMillis() < deadline) {
+        // Each round reads first and checks the deadline after, so a slow read (scrolling on a phone) still counts.
+        var labels: List<String>
+        do {
+            labels = FolderSection(backend).outcomeLabels(reveal)
             outcome(labels)?.let { return it }
             Thread.sleep(POLL_MILLIS)
-            labels = FolderSection(backend).outcomeLabels(reveal)
-        }
+        } while (System.currentTimeMillis() < deadline)
         val row = labels.firstOrNull { it.startsWith(FOLDER_ROW) || it.startsWith(ICLOUD_ROW) }
         throw ControlException(ErrorCode.WAIT_TIMEOUT, "The folder $what did not finish within $timeoutSeconds s; the row reads ${row ?: "unknown"}.")
     }

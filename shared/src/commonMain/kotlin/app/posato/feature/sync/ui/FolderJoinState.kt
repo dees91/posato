@@ -34,13 +34,19 @@ internal class FolderJoinState(
     private val started = TimeSource.Monotonic.markNow()
     private val joiner = FolderJoiner(controls::accept) { started.elapsedNow().inWholeMilliseconds }
 
-    /** Takes a join link's code once; a linked device has no use for it. */
+    /**
+     * Takes a join link's code; a linked device has no use for it. The link stays until the code is used or set
+     * aside, so a screen the system rebuilds (a rotation, a theme change) still has it.
+     */
     fun capture(
         code: String,
         linked: Boolean,
     ) {
-        PairingLinks.consume(code)
-        if (linked) return
+        if (linked) {
+            PairingLinks.consume(code)
+            return
+        }
+        if (pendingCode?.code == code) return
         error = null
         pendingCode = PendingCode(code, CodeSource.SCANNED)
     }
@@ -53,8 +59,13 @@ internal class FolderJoinState(
     }
 
     fun clearCode() {
+        pendingCode?.let(::release)
         pendingCode = null
         error = null
+    }
+
+    private fun release(code: PendingCode) {
+        if (code.source == CodeSource.SCANNED) PairingLinks.consume(code.code)
     }
 
     /** Forgets what the previous folder held, when the folder changes. */
@@ -78,6 +89,7 @@ internal class FolderJoinState(
         try {
             val result = joiner.join(code.code) { waitingForOffer = it }
             if (pendingCode !== code) return
+            release(code)
             if (result != PairingAcceptResult.JOINED) {
                 pendingCode = null
                 error = result

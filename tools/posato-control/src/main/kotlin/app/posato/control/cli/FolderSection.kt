@@ -19,10 +19,13 @@ internal class FolderSection(
     }
 
     /**
-     * The labels an outcome is read from. Android and iOS list only what is on screen, so the first of [reveal] that
-     * the section shows is scrolled to first.
+     * The labels an outcome is read from. Android and iOS list only what is on screen, so when none of [reveal] is on
+     * screen, the first of them that the section shows is scrolled to first.
      */
     fun outcomeLabels(reveal: List<String>): List<String> {
+        val onScreen = FlowSteps.labels(backend)
+        // A control already on screen is read as it is: scrolling to look for the others would carry it away.
+        if (backend.target !in VISIBLE_ONLY || reveal.any { it in onScreen }) return onScreen
         if (backend.target in VISIBLE_ONLY) {
             reveal.firstOrNull { label ->
                 val query = button(label)
