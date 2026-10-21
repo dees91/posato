@@ -74,6 +74,7 @@ internal fun contentsOf(file: PauseSetFile): String {
 internal fun previewText(result: ImportPlanResult): String {
     return when (result) {
         is ImportPlanResult.Refused -> refusalText(result.reason)
+
         is ImportPlanResult.Planned -> buildList {
             val summary = result.plan.summary
             if (summary.added.isNotEmpty()) add("Adds ${summary.added.joinToString(", ")}.")

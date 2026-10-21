@@ -46,6 +46,7 @@ import app.posato.feature.targets.data.IosApplicationMappingsOperation
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import app.posato.feature.targets.data.IosApplicationMappingsResponse
 import app.posato.feature.targets.data.IosLocalApplicationMappings
+import app.posato.feature.transfer.NoPauseSetFilePicker
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -129,6 +130,7 @@ class IosBootstrapCompositionTest {
             UnavailableSessionNotifications,
             IosScheduleBridge(IosEnforcement(InertEnforcementProvider()), UnavailableIosScheduleMonitor),
             InertFolderPicker,
+            NoPauseSetFilePicker,
         )
     }
 }

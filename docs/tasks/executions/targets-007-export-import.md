@@ -1,7 +1,7 @@
 # Execution: `TARGETS-007`
 
 - **Brief:** [Export pause sets and schedules to a file and import them on any device](../specifications/targets-007-export-import.md)
-- **Status:** `planned` (plan review folded; waiting for a short re-check)
+- **Status:** `in-progress` (shared code, UI, and platform panels done; device runs pending)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `targets-007-export-import` (rebase after #182, roadmap revision 26)
@@ -64,9 +64,8 @@
      with Delete's wording ("You can replace after the pause ends"), checked
      at preview and again at confirm. Add always works; first-set edits
      during a pause follow hand-edit rules.
-   - Schedules arrive switched off. Add appends them with mapped refs and
-     skips exact duplicates; replace removes current ones first.
-   - Over a limit: refused, suggesting combine or replace.
+   - Schedules arrive off; add skips exact duplicates; replace removes all
+     current ones first. Over a limit: refused, suggesting combine or replace.
 5. **Authoring.** A new composite write path, `ImportWrite`, in one SQL
    transaction on the shared `PosatoDatabase`, under the policy gate then
    the schedule gate (this lock order is the only one used). It captures the
@@ -85,10 +84,8 @@
 8. **UI from the mockup:** menu items, export dialog, import dialog with the
    code step, two radio cards, add's two options, preview, Import or
    destructive Replace, the linked-device warning, and the result screen.
-9. **Measure first:** PBKDF2 latency at candidate counts on the Galaxy
-   XCover7 and the iPhone 13 mini; pick the highest count within 2 s on the
-   slower one; derivation runs off the main thread with progress. Numbers
-   go in this record.
+9. **Measure first:** PBKDF2 latency on the XCover7 and iPhone 13 mini; the
+   highest count within 2 s on the slower one, derived off the main thread.
 10. **Tests first:** RFC 7914 PBKDF2-SHA256 vectors and one pinned
     end-to-end coded file in the JVM and Swift provider tests; codec and
     validation incl. nested unknown fields on JVM and Native (AC-01);
@@ -99,14 +96,11 @@
     on every target, driving the real dialogs (Mac Go to folder, Linux
     Ctrl+L fallback, the iOS picker like `flow folder`), proven in the tool
     before the feature; the host moves files (`vm`, `linux exec`, `adb`).
-12. **Devices, one target at a time:** every platform exports once and
-    imports once; Mac primary to peer VM with add and replace; an iPhone export
-    imported on Android; Android to Linux combine and separate; Linux to
-    Android replace; a Mac coded
-    export to the iPhone; an import during a running pause; a linked
-    Android and Linux pair receiving an import.
-13. **Docs:** `PRIVACY.md` "Export and import" (contents, the code and its
-    limit, nothing kept), `DESIGN.md` entries.
+12. **Devices, one target at a time:** each platform exports and imports
+    once; Mac primary to peer with add and replace; iPhone to Android; Android
+    to Linux combine and separate; Linux to Android replace; Mac coded to
+    iPhone; an import during a pause; a linked Android and Linux pair.
+13. **Docs:** `PRIVACY.md` "Export and import", `DESIGN.md` entries.
 
 ## Decisions
 
@@ -114,7 +108,13 @@
   keeps the default and replace takes the file's; refuse over a limit;
   replace refused during a pause that uses what it removes; schedules
   arrive off; first-set matching; " (imported)"; live items only.
-- `agent-delegated` 2026-10-21: 4 MiB cap, container layout, HKDF
-  separation, `ImportWrite`, re-plan on confirm, "My set", combine keeps
-  local names, emptied FIRST when the file has none.
+- `agent-delegated` 2026-10-21: 4 MiB cap, container layout, HKDF, the
+  `ImportWriter`, re-plan on confirm, "My set", combine keeps local names.
 - `PRIVACY.md` is rewritten for 1.5 in #178; the second to land rebases.
+
+## Progress
+
+- Failing first, then green: the codec, seal, planner, writer, export, and
+  service tests (common), `PauseSetFileVectorTest` (JVM; RFC 7914 and a
+  file pinned with Python), `IosPbkdf2Test` (iOS; native, so in Kotlin
+  `iosTest`, not the Swift provider). Count provisionally 600,000 (step 9).

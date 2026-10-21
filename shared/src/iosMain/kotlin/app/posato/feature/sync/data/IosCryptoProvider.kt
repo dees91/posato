@@ -5,9 +5,9 @@ import app.posato.feature.sync.domain.SyncFormatLimits
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.reinterpret
-import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.CoreCrypto.CCKeyDerivationPBKDF
 import platform.CoreCrypto.kCCPBKDF2
@@ -89,7 +89,8 @@ internal class IosSyncCryptoProvider(
         length: Int,
     ): ByteArray? {
         // CommonCrypto takes the password as a C string, so only ASCII passes through unchanged.
-        if (iterations < 1 || length < 1 || password.isEmpty() || salt.isEmpty() || password.any { byte -> byte <= 0 }) {
+        val usable = password.isNotEmpty() && password.none { byte -> byte <= 0 } && salt.isNotEmpty()
+        if (iterations < 1 || length < 1 || !usable) {
             return commonPbkdf2HmacSha256(password, salt, iterations, length)
         }
         val output = ByteArray(length)

@@ -100,7 +100,8 @@ internal interface LocalTargetPolicyStore {
         get() = emptyFlow()
 
     /** Tells readers that a write outside this store, such as an import, changed the sets. */
-    fun announceChange() = Unit
+    val changeAnnouncer: () -> Unit
+        get() = {}
 
     suspend fun read(): LocalPolicyResult<LocalTargetPolicyState>
 

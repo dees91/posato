@@ -84,7 +84,8 @@ internal class PauseSetFileSeal(
         ) {
             return PauseSetOpenResult.Damaged
         }
-        val normalized = code?.let(ExportCode::normalize) ?: return if (code == null) PauseSetOpenResult.CodeNeeded else PauseSetOpenResult.CodeMismatch
+        val normalized =
+            code?.let(ExportCode::normalize) ?: return if (code == null) PauseSetOpenResult.CodeNeeded else PauseSetOpenResult.CodeMismatch
         val header = bytes.copyOfRange(0, headerBytes)
         val salt = header.copyOfRange(magic.size + 1 + Int.SIZE_BYTES, magic.size + 1 + Int.SIZE_BYTES + SALT_BYTES)
         val nonce = header.copyOfRange(headerBytes - SyncFormatLimits.AES_NONCE_BYTES, headerBytes)
@@ -125,6 +126,7 @@ internal object ExportCode {
 
     private const val ALPHABET: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     private const val ALPHABET_MASK: Int = 0x1F
+    private const val GROUP_CHARACTERS: Int = 3
 
     /** Nine characters drawn uniformly: each takes five bits of one random byte. */
     fun generate(crypto: SyncCryptoProvider): String? {
@@ -154,14 +156,16 @@ internal object ExportCode {
 
     /** Three groups of three, as it is shown and read aloud. */
     fun grouped(code: String): String {
-        return code.chunked(3).joinToString(" ")
+        return code.chunked(GROUP_CHARACTERS).joinToString(" ")
     }
 }
 
 private fun Int.toBytes(): ByteArray {
-    return byteArrayOf((this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), toByte())
+    return ByteArray(Int.SIZE_BYTES) { index -> (this ushr ((Int.SIZE_BYTES - 1 - index) * Byte.SIZE_BITS)).toByte() }
 }
 
 private fun ByteArray.toInt(): Int {
-    return fold(0) { value, byte -> (value shl Byte.SIZE_BITS) or (byte.toInt() and 0xFF) }
+    return fold(0) { value, byte -> (value shl Byte.SIZE_BITS) or (byte.toInt() and BYTE_MASK) }
 }
+
+private const val BYTE_MASK: Int = 0xFF

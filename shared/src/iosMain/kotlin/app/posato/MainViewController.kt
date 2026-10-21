@@ -14,9 +14,9 @@ import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.UnavailableIosKeychainProvider
 import app.posato.feature.sync.folder.IosFolderPicker
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
+import app.posato.feature.transfer.IosPauseSetFilePicker
 import kotlinx.coroutines.runBlocking
 import platform.UIKit.UIViewController
-import app.posato.feature.transfer.IosPauseSetFilePicker
 
 fun mainViewController(
     cryptoProvider: IosCryptoProvider,

@@ -155,7 +155,9 @@ private fun addSets(
     file.sets.forEach { fileSet ->
         val match = when {
             mode != ImportMode.COMBINE -> null
+
             fileSet.first && firstLive -> PauseSetId.FIRST
+
             else -> fileSet.name?.let { name ->
                 result.firstOrNull { set -> set.id != PauseSetId.FIRST && !set.refused && set.name != null && nameKey(set.name) == nameKey(name) }?.id
             }
@@ -228,8 +230,14 @@ private fun limitRefusal(
 ): ImportRefusal? {
     return when {
         sets.count { set -> !set.refused } > SyncFormatLimits.MAX_PAUSE_SETS -> ImportRefusal.TOO_MANY_SETS
-        sets.flatMapTo(mutableSetOf<ExactDomain>(), LocalPauseSet::domains).size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT -> ImportRefusal.TOO_MANY_WEBSITES
+
+        sets.flatMapTo(
+            mutableSetOf<ExactDomain>(),
+            LocalPauseSet::domains,
+        ).size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT -> ImportRefusal.TOO_MANY_WEBSITES
+
         scheduleCount > ScheduleLimits.MAX_SCHEDULES -> ImportRefusal.TOO_MANY_SCHEDULES
+
         else -> null
     }
 }

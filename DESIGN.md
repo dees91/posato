@@ -965,6 +965,40 @@ Rows, menus, dialogs, and the set choice reuse the existing item, menu,
 selection, and notice components. Names and counts wrap under large text;
 badges and counts have accessible labels.
 
+### Release 1.5 export and import
+
+Accepted with `TARGETS-007` from the clickable mockup (`user-confirmed`
+2026-10-21); the [execution record](docs/tasks/executions/targets-007-export-import.md)
+owns the planner rules.
+
+- **Entry.** A "…" beside **New set** in Pause sets offers **Export pause
+  sets…** and **Import…**, on every platform.
+- **Export.** A dialog names what travels ("3 sets · 12 websites · 2
+  schedules"; app choices stay on this device) and offers **Protect with a
+  code**. Turned on, it shows a nine-character code in three groups of
+  three, says Posato does not keep it and that it stops a casual reader but
+  not someone with the file and a lot of computing power; turned off, it
+  says anyone with the file can read it. **Export file…** opens the save
+  panel on a computer and the share sheet or document picker on a phone.
+- **Import.** After the file is chosen, a protected file asks for its code
+  (a mismatch reads "This code doesn't match, or the file was changed.").
+  The review shows the file's contents and **Choose how to import** with two
+  radio cards that read as selectable (a radio, a stronger border, and a
+  tinted fill when chosen): **Add to my pause sets**, with **Combine sets
+  with the same name** or **Keep them separate** (a name already here gets
+  " (imported)"), and **Replace my pause sets**, whose button is
+  destructive. A line under the cards says what the choice does; on a
+  linked device another says the changes also reach the other devices. An
+  import over a limit, or a replace that would remove what a running pause
+  uses, explains why and offers no button.
+- **Matching.** `user-confirmed`: the file's unnamed first set is this
+  device's first set, also on a fresh install. Add keeps this device's
+  default and every local name; replace takes the file's default.
+- **Result.** "Imported" lists what changed. Imported schedules arrive
+  switched off (`user-confirmed`); **Turn on imported schedules** turns them
+  on in one step and warns first which would start a pause right away. They
+  can also be turned on later in Schedules.
+
 ### Session
 
 - Inactive: NO SESSION ACTIVE (sentence case on iOS: No session active), Room

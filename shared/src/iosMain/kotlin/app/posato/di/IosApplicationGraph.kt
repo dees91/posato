@@ -42,10 +42,6 @@ import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.IosMailboxAdapter
 import app.posato.feature.sync.data.IosSyncCryptoProvider
-import app.posato.feature.transfer.IosPauseSetFilePicker
-import app.posato.feature.transfer.IosPauseSetFiles
-import app.posato.feature.transfer.NoPauseSetFilePicker
-import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
@@ -65,6 +61,10 @@ import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.targets.data.retainSets
+import app.posato.feature.transfer.IosPauseSetFilePicker
+import app.posato.feature.transfer.IosPauseSetFiles
+import app.posato.feature.transfer.NoPauseSetFilePicker
+import app.posato.feature.transfer.data.TransferPlatform
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -108,15 +108,6 @@ internal interface IosApplicationGraph :
             @Provides folderPicker: IosFolderPicker,
             @Provides pauseSetFilePicker: IosPauseSetFilePicker,
         ): IosApplicationGraph
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideTransferPlatform(
-        pauseSetFilePicker: IosPauseSetFilePicker,
-        cryptoProvider: IosCryptoProvider,
-    ): TransferPlatform {
-        return TransferPlatform(IosPauseSetFiles(pauseSetFilePicker), IosSyncCryptoProvider(cryptoProvider))
     }
 
     @Provides

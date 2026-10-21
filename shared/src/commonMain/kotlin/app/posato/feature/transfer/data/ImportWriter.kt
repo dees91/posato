@@ -86,8 +86,8 @@ internal class ImportWriter(
                 withContext(NonCancellable) {
                     write(expected, replan, workspaceId).also { result ->
                         if (result is ImportWriteResult.Written) {
-                            policy.announceChange()
-                            schedules.announceChange()
+                            policy.changeAnnouncer()
+                            schedules.changeAnnouncer()
                             if (workspaceId != null) {
                                 link.syncNow()
                             }

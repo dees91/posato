@@ -44,42 +44,66 @@ class PauseSetTransferTest {
     private val evening = checkNotNull(PauseSetId.of(testIdentifier(11)))
 
     @Test
-    fun `given a coded export when the other device opens it with the code and combines it then it holds the sets and schedules switched off`() = runTest {
-        val source = harness("transfer-source")
-        val target = harness("transfer-target")
-        try {
-            source.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", domains("example.com")), LocalPauseSet(work, "Work", domains("example.net"))), work)))
-            assertIs<ScheduleResult.Success<*>>(source.schedules.save(SchedulePlan(ScheduleId("00000000000040008000000000000001"), "Deep work", 0b11111, 540, 660, enabled = true, setId = work), null))
+    fun `given a coded export when the other device opens it with the code and combines it then it holds the sets and schedules switched off`() =
+        runTest {
+            val source = harness("transfer-source")
+            val target = harness("transfer-target")
+            try {
+                source.replaceLocal(
+                    checkNotNull(
+                        PauseSets.of(
+                            listOf(
+                                LocalPauseSet(PauseSetId.FIRST, "Focus", domains("example.com")),
+                                LocalPauseSet(work, "Work", domains("example.net")),
+                            ),
+                            work,
+                        ),
+                    ),
+                )
+                assertIs<ScheduleResult.Success<*>>(
+                    source.schedules.save(
+                        SchedulePlan(ScheduleId("00000000000040008000000000000001"), "Deep work", 0b11111, 540, 660, enabled = true, setId = work),
+                        null,
+                    ),
+                )
 
-            val exported = assertNotNull(source.transfer().let { transfer -> transfer.export(transfer.newCode()) })
-            val code = assertNotNull(exported.code)
-            assertIs<TransferRead.CodeNeeded>(target.transfer().read(exported.bytes, null))
-            val file = assertIs<TransferRead.File>(target.transfer().read(exported.bytes, code)).file
-            val preview = checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))
+                val exported = assertNotNull(source.transfer().let { transfer -> transfer.export(transfer.newCode()) })
+                val code = assertNotNull(exported.code)
+                assertIs<TransferRead.CodeNeeded>(target.transfer().read(exported.bytes, null))
+                val file = assertIs<TransferRead.File>(target.transfer().read(exported.bytes, code)).file
+                val preview = checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))
 
-            val imported = assertIs<TransferImport.Imported>(target.transfer().import(preview))
+                val imported = assertIs<TransferImport.Imported>(target.transfer().import(preview))
 
-            // Combine keeps this device's own first-set name, here the unnamed one of a fresh install.
-            assertEquals(setOf(null, "Work"), target.sets().sets.map { set -> set.name }.toSet())
-            assertEquals(domains("example.com"), target.sets().domainsOf(PauseSetId.FIRST))
-            assertEquals(listOf(false), target.plans().map(SchedulePlan::enabled))
-            assertTrue(target.transfer().turnOn(imported.schedules))
-            assertEquals(listOf(true), target.plans().map(SchedulePlan::enabled))
-        } finally {
-            source.close()
-            target.close()
+                // Combine keeps this device's own first-set name, here the unnamed one of a fresh install.
+                assertEquals(setOf(null, "Work"), target.sets().sets.map { set -> set.name }.toSet())
+                assertEquals(domains("example.com"), target.sets().domainsOf(PauseSetId.FIRST))
+                assertEquals(listOf(false), target.plans().map(SchedulePlan::enabled))
+                assertTrue(target.transfer().turnOn(imported.schedules))
+                assertEquals(listOf(true), target.plans().map(SchedulePlan::enabled))
+            } finally {
+                source.close()
+                target.close()
+            }
         }
-    }
 
     @Test
     fun `given a replace that removes a set then this device's apps stay only for the sets that remain`() = runTest {
         val target = harness("transfer-replace")
         val mappings = FakeSessionMappings()
         try {
-            target.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(evening, "Evening", emptyList())), null)))
+            target.replaceLocal(
+                checkNotNull(
+                    PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(evening, "Evening", emptyList())), null),
+                ),
+            )
             val exported = assertNotNull(target.transfer(mappings).export(code = null))
             assertNull(exported.code)
-            target.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", emptyList())), null)))
+            target.replaceLocal(
+                checkNotNull(
+                    PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", emptyList())), null),
+                ),
+            )
             val file = assertIs<TransferRead.File>(target.transfer(mappings).read(exported.bytes, null)).file
             val preview = checkNotNull(target.transfer(mappings).preview(file, ImportMode.REPLACE))
             assertIs<ImportPlanResult.Planned>(preview.result)
@@ -99,11 +123,15 @@ class PauseSetTransferTest {
         try {
             val file = assertIs<TransferRead.File>(
                 target.transfer().read(
-                    """{"format":"posato-pause-sets","version":1,"sets":[{"ref":"a","name":null,"first":true,"domains":[]}],"schedules":[{"name":"Now","weekdays":127,"start":600,"end":720,"set":"a"}]}""".encodeToByteArray(),
+                    (
+                        """{"format":"posato-pause-sets","version":1,"sets":[{"ref":"a","name":null,"first":true,"domains":[]}],""" +
+                            """"schedules":[{"name":"Now","weekdays":127,"start":600,"end":720,"set":"a"}]}"""
+                    ).encodeToByteArray(),
                     null,
                 ),
             ).file
-            val imported = assertIs<TransferImport.Imported>(target.transfer().import(checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))))
+            val imported =
+                assertIs<TransferImport.Imported>(target.transfer().import(checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))))
 
             assertEquals(listOf("Now"), target.transfer().openNow(imported.schedules))
         } finally {

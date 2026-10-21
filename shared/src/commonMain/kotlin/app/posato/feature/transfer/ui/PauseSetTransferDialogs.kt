@@ -147,7 +147,11 @@ private fun ReviewDialog(
                     ModeOption("Combine sets with the same name", "A set here gets the websites it is missing.", mode == ImportMode.COMBINE) {
                         state.choose(ImportMode.COMBINE)
                     }
-                    ModeOption("Keep them separate", "Each set from the file is added; a name already here gets \"(imported)\".", mode == ImportMode.SEPARATE) {
+                    ModeOption(
+                        "Keep them separate",
+                        "Each set from the file is added; a name already here gets \"(imported)\".",
+                        mode == ImportMode.SEPARATE,
+                    ) {
                         state.choose(ImportMode.SEPARATE)
                     }
                 }
@@ -203,7 +207,11 @@ private fun ModeOption(
     onSelect: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().selectable(selected = selected, onClick = onSelect, role = Role.RadioButton).padding(start = PosatoSpace.Large),
+        modifier = Modifier.fillMaxWidth().selectable(
+            selected = selected,
+            onClick = onSelect,
+            role = Role.RadioButton,
+        ).padding(start = PosatoSpace.Large),
         horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
         verticalAlignment = Alignment.Top,
     ) {

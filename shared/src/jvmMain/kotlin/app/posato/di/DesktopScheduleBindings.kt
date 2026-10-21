@@ -17,8 +17,11 @@ import app.posato.feature.schedules.host.StartGate
 import app.posato.feature.session.data.SqlPartRetentionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.loadSessionTargets
+import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.transfer.DesktopPauseSetFiles
+import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Named
@@ -71,5 +74,11 @@ internal interface DesktopScheduleBindings : ScheduleBindings {
     @Provides
     fun provideScheduledPauses(host: ScheduleHost): ScheduledPauses {
         return host
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferPlatform(): TransferPlatform {
+        return TransferPlatform(DesktopPauseSetFiles, JdkSyncCryptoProvider())
     }
 }

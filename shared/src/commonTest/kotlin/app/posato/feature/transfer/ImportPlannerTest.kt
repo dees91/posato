@@ -269,7 +269,12 @@ class ImportPlannerTest {
         assertEquals(
             ImportPlanResult.Refused(ImportRefusal.IN_USE_BY_PAUSE),
             planImport(
-                current(sets(first(name = null)), schedules = listOf(running), running = setOf(PauseSetId.FIRST), runningSchedules = setOf(running.id)),
+                current(
+                    sets(first(name = null)),
+                    schedules = listOf(running),
+                    running = setOf(PauseSetId.FIRST),
+                    runningSchedules = setOf(running.id),
+                ),
                 file(fileSet("x", null, first = true)),
                 ImportMode.REPLACE,
                 ids(),

@@ -60,8 +60,11 @@ internal class PauseSetTransferUiState(
                     "Exported",
                     "Send the code ${ExportCode.grouped(export.code)} separately from the file. Posato does not keep it.",
                 )
+
                 saved -> null
+
                 file == null -> export.copy(busy = false, failed = true)
+
                 else -> export.copy(busy = false)
             }
         }
@@ -101,11 +104,13 @@ internal class PauseSetTransferUiState(
         scope.launch {
             dialog = when (val result = transfer.import(review.preview)) {
                 is TransferImport.Imported -> TransferDialog.Result(result.summary, result.schedules, transfer.openNow(result.schedules))
+
                 is TransferImport.Changed -> review.copy(
                     preview = result.preview,
                     busy = false,
                     notice = "Your pause sets changed since you opened the file. Check what the import does now.",
                 )
+
                 TransferImport.Failed -> review.copy(busy = false, notice = "The import could not be saved. Nothing was changed.")
             }
         }
@@ -129,12 +134,19 @@ internal class PauseSetTransferUiState(
             is TransferRead.File -> transfer.preview(read.file, ImportMode.COMBINE)
                 ?.let { preview -> TransferDialog.Review(preview, linked()) }
                 ?: failure("Your pause sets could not be read.")
+
             TransferRead.CodeNeeded -> TransferDialog.Code(bytes)
+
             TransferRead.CodeMismatch -> TransferDialog.Code(bytes, failure = "This code doesn't match, or the file was changed.")
+
             TransferRead.Damaged -> failure("This file is damaged. Export it again on the other device.")
+
             TransferRead.NewerVersion -> failure("This file was made by a newer Posato. Update Posato on this device, then try again.")
+
             TransferRead.NotPosatoFile -> failure("This is not a Posato export. Choose a .posato file.")
+
             TransferRead.InvalidContents -> failure("This file has a set, website, or schedule Posato cannot use.")
+
             TransferRead.OverLimit -> failure("This file holds more sets, websites, or schedules than Posato keeps.")
         }
     }

@@ -117,52 +117,95 @@ internal object PauseSetFileJson {
     }
 
     private fun readContents(root: JsonObject): PauseSetJsonResult {
-        val rawSets = root["sets"] as? JsonArray ?: return refused(PauseSetFileProblem.INVALID_CONTENTS)
-        val rawSchedules = root["schedules"] as? JsonArray ?: return refused(PauseSetFileProblem.INVALID_CONTENTS)
+        val rawSets = root["sets"] as? JsonArray
+        val rawSchedules = root["schedules"] as? JsonArray
+        if (rawSets == null || rawSchedules == null) {
+            return refused(PauseSetFileProblem.INVALID_CONTENTS)
+        }
         if (rawSets.size > SyncFormatLimits.MAX_PAUSE_SETS || rawSchedules.size > ScheduleLimits.MAX_SCHEDULES) {
             return refused(PauseSetFileProblem.OVER_LIMIT)
         }
-        val sets = rawSets.map { element -> readSet(element) ?: return refused(PauseSetFileProblem.INVALID_CONTENTS) }
-        val refs = sets.map(FileSet::ref)
-        if (refs.distinct().size != refs.size || sets.count(FileSet::first) > 1) {
-            return refused(PauseSetFileProblem.INVALID_CONTENTS)
-        }
-        if (sets.any { set -> set.domains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT } ||
-            sets.flatMapTo(mutableSetOf(), FileSet::domains).size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT
-        ) {
-            return refused(PauseSetFileProblem.OVER_LIMIT)
-        }
-        val defaultElement = root["defaultSet"]
-        val defaultSet = when {
-            defaultElement == null || defaultElement is JsonNull -> null
-            defaultElement is JsonPrimitive && defaultElement.isString && defaultElement.content in refs -> defaultElement.content
-            else -> return refused(PauseSetFileProblem.INVALID_CONTENTS)
-        }
-        val schedules = rawSchedules.map { element ->
-            readSchedule(element)?.takeIf { schedule -> schedule.set in refs } ?: return refused(PauseSetFileProblem.INVALID_CONTENTS)
-        }
-        return PauseSetJsonResult.Read(PauseSetFile(sets, defaultSet, schedules))
+        return readFile(root, rawSets, rawSchedules)
     }
+
+    private fun readFile(
+        root: JsonObject,
+        rawSets: JsonArray,
+        rawSchedules: JsonArray,
+    ): PauseSetJsonResult {
+        val sets = rawSets.map(::readSet)
+        val readSets = sets.filterNotNull()
+        val refs = readSets.map(FileSet::ref)
+        val problem = if (readSets.size != sets.size) PauseSetFileProblem.INVALID_CONTENTS else setsProblem(readSets)
+        val defaultSet = readDefault(root["defaultSet"], refs)
+        val schedules = rawSchedules.map { element -> readSchedule(element)?.takeIf { schedule -> schedule.set in refs } }
+        return when {
+            problem != null -> refused(problem)
+            defaultSet == null || schedules.any { schedule -> schedule == null } -> refused(PauseSetFileProblem.INVALID_CONTENTS)
+            else -> PauseSetJsonResult.Read(PauseSetFile(readSets, defaultSet.ref, schedules.filterNotNull()))
+        }
+    }
+
+    private fun setsProblem(sets: List<FileSet>): PauseSetFileProblem? {
+        val refs = sets.map(FileSet::ref)
+        return when {
+            refs.distinct().size != refs.size || sets.count(FileSet::first) > 1 -> PauseSetFileProblem.INVALID_CONTENTS
+            sets.flatMapTo(mutableSetOf(), FileSet::domains).size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT -> PauseSetFileProblem.OVER_LIMIT
+            else -> null
+        }
+    }
+
+    /** The default set's reference, possibly absent; null only when the field names no set in the file. */
+    private fun readDefault(
+        element: JsonElement?,
+        refs: List<String>,
+    ): DefaultRef? {
+        return when {
+            element == null || element is JsonNull -> DefaultRef(null)
+            element is JsonPrimitive && element.isString && element.content in refs -> DefaultRef(element.content)
+            else -> null
+        }
+    }
+
+    private class DefaultRef(
+        val ref: String?,
+    )
 
     private fun readSet(element: JsonElement): FileSet? {
         val set = element as? JsonObject ?: return null
         val ref = set.string("ref")?.takeIf { ref -> ref.isNotEmpty() && ref.length <= PauseSetFileLimits.MAX_REF_LENGTH } ?: return null
         val first = (set["first"] as? JsonPrimitive)?.takeUnless(JsonPrimitive::isString)?.content?.toBooleanStrictOrNull() ?: return null
-        val nameElement = set["name"]
-        val name = when {
-            nameElement == null || nameElement is JsonNull -> if (first) null else return null
-            else -> normalizedName((nameElement as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content ?: return null) ?: return null
+        val name = readSetName(set["name"], first) ?: return null
+        val domains = readDomains(set["domains"]) ?: return null
+        return FileSet(ref, name.value, first, domains)
+    }
+
+    /** A set's name: absent only for the first set, which may stay unnamed. */
+    private fun readSetName(
+        element: JsonElement?,
+        first: Boolean,
+    ): SetName? {
+        if (element == null || element is JsonNull) {
+            return if (first) SetName(null) else null
         }
-        val rawDomains = set["domains"] as? JsonArray ?: return null
-        if (rawDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
+        val text = (element as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content ?: return null
+        return normalizedName(text)?.let(::SetName)
+    }
+
+    private fun readDomains(element: JsonElement?): List<ExactDomain>? {
+        val raw = element as? JsonArray ?: return null
+        if (raw.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
             return null
         }
-        val domains = rawDomains.map { domain ->
+        return raw.map { domain ->
             val text = (domain as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content ?: return null
             ExactDomain.restore(text) ?: return null
         }.distinct()
-        return FileSet(ref, name, first, domains)
     }
+
+    private class SetName(
+        val value: String?,
+    )
 
     private fun readSchedule(element: JsonElement): FileSchedule? {
         val schedule = element as? JsonObject ?: return null
@@ -215,15 +258,30 @@ private fun nestingDepth(bytes: ByteArray): Int {
     for (byte in bytes) {
         val char = byte.toInt().toChar()
         when {
-            escaped -> escaped = false
-            inString && char == '\\' -> escaped = true
-            char == '"' -> inString = !inString
-            inString -> Unit
+            escaped -> {
+                escaped = false
+            }
+
+            inString && char == '\\' -> {
+                escaped = true
+            }
+
+            char == '"' -> {
+                inString = !inString
+            }
+
+            inString -> {
+                // Brackets inside a string never nest.
+            }
+
             char == '[' || char == '{' -> {
                 depth++
                 deepest = maxOf(deepest, depth)
             }
-            char == ']' || char == '}' -> depth--
+
+            char == ']' || char == '}' -> {
+                depth--
+            }
         }
     }
     return deepest

@@ -132,6 +132,7 @@ internal class PauseSetTransfer(
         }
         return when (val decoded = PauseSetFileJson.decode(json)) {
             is PauseSetJsonResult.Read -> TransferRead.File(decoded.file)
+
             is PauseSetJsonResult.Refused -> when (decoded.problem) {
                 PauseSetFileProblem.NOT_A_POSATO_FILE -> TransferRead.NotPosatoFile
                 PauseSetFileProblem.NEWER_VERSION -> TransferRead.NewerVersion
@@ -162,8 +163,13 @@ internal class PauseSetTransfer(
                 TransferImport.Imported(written.plan.summary, written.plan.schedulesToSave.map { schedule -> schedule.id })
             }
 
-            is ImportWriteResult.Changed -> TransferImport.Changed(preview.copy(result = written.result))
-            ImportWriteResult.WorkspaceUnknown, ImportWriteResult.Failed -> TransferImport.Failed
+            is ImportWriteResult.Changed -> {
+                TransferImport.Changed(preview.copy(result = written.result))
+            }
+
+            ImportWriteResult.WorkspaceUnknown, ImportWriteResult.Failed -> {
+                TransferImport.Failed
+            }
         }
     }
 

@@ -14,7 +14,8 @@ internal interface LocalScheduleStore {
     val changes: Flow<Unit>
 
     /** Tells readers that a write outside this store, such as an import, changed the schedules. */
-    fun announceChange() = Unit
+    val changeAnnouncer: () -> Unit
+        get() = {}
 
     suspend fun <T> withWriteGate(block: suspend () -> T): T
 

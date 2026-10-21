@@ -1,7 +1,5 @@
 package app.posato.feature.targets.ui
 
-import app.posato.feature.transfer.ui.PauseSetTransferUiState
-
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,6 +14,7 @@ import app.posato.core.designsystem.PosatoMenuItem
 import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.transfer.ui.PauseSetTransferUiState
 
 private sealed interface PauseSetsRoute {
     data object List : PauseSetsRoute

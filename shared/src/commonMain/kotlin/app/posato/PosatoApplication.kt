@@ -80,12 +80,12 @@ import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.PauseSetsDestination
+import app.posato.feature.targets.ui.PauseSetsInputs
+import app.posato.feature.targets.ui.PauseSetsNavigation
 import app.posato.feature.transfer.data.PauseSetTransfer
 import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.transfer.data.TransferStorage
 import app.posato.feature.transfer.ui.rememberPauseSetTransferUiState
-import app.posato.feature.targets.ui.PauseSetsInputs
-import app.posato.feature.targets.ui.PauseSetsNavigation
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

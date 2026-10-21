@@ -2,6 +2,7 @@ package app.posato.feature.transfer
 
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.data.ScheduleSyncLink
 import app.posato.feature.schedules.data.SyncScheduleStore
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
@@ -12,7 +13,6 @@ import app.posato.feature.sync.bootstrap.BootstrapStoreResult
 import app.posato.feature.sync.bootstrap.EstablishedWorkspace
 import app.posato.feature.sync.bootstrap.SharedFakeMailboxPort
 import app.posato.feature.sync.bootstrap.scheduleLink
-import app.posato.feature.schedules.data.ScheduleSyncLink
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.ScheduleSyncId
 import app.posato.feature.sync.domain.SyncWallClock
@@ -79,8 +79,17 @@ class ImportWriterTest {
         val (importer, peer) = linkedPair("import-replace")
         try {
             link(importer, peer)
-            importer.replaceLocalViaSync(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", domains("example.org"))), work)))
-            assertIs<ScheduleResult.Success<*>>(importer.scheduleStore().save(SchedulePlan(scheduleId(9), "Old", 0b1, 0, 60, enabled = true, setId = work), null))
+            importer.replaceLocalViaSync(
+                checkNotNull(
+                    PauseSets.of(
+                        listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", domains("example.org"))),
+                        work,
+                    ),
+                ),
+            )
+            assertIs<ScheduleResult.Success<*>>(
+                importer.scheduleStore().save(SchedulePlan(scheduleId(9), "Old", 0b1, 0, 60, enabled = true, setId = work), null),
+            )
             exchange(importer, peer)
             val file = PauseSetFile(
                 listOf(FileSet("x", null, true, domains("example.com")), FileSet("y", "Evening", false, domains("example.net"))),
@@ -108,12 +117,21 @@ class ImportWriterTest {
         try {
             link(importer, peer)
             peer.replaceLocalViaSync(
-                checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, null, emptyList())) + (1..9).map { LocalPauseSet(setId(40 + it), "Peer $it", emptyList()) }, null)),
+                checkNotNull(
+                    PauseSets.of(
+                        listOf(LocalPauseSet(PauseSetId.FIRST, null, emptyList())) + (1..9).map {
+                            LocalPauseSet(setId(40 + it), "Peer $it", emptyList())
+                        },
+                        null,
+                    ),
+                ),
             )
             peer.sync.syncNow()
             advanceUntilIdle()
             // The importer previews before it hears of the peer's nine new sets.
-            assertIs<ImportWriteResult.Written>(importer.import(PauseSetFile(listOf(FileSet("x", "Mine", false, emptyList())), null, emptyList()), ImportMode.SEPARATE))
+            assertIs<ImportWriteResult.Written>(
+                importer.import(PauseSetFile(listOf(FileSet("x", "Mine", false, emptyList())), null, emptyList()), ImportMode.SEPARATE),
+            )
             exchange(importer, peer)
 
             val live = importer.sets().sets.filterNot(LocalPauseSet::refused).map(LocalPauseSet::id).toSet()
@@ -134,7 +152,11 @@ class ImportWriterTest {
             val file = PauseSetFile(listOf(FileSet("x", "Evening", false, domains("example.net"))), null, emptyList())
             val ids = ImportIds(mapOf("x" to imported), emptyList())
             val preview = assertIs<ImportPlanResult.Planned>(planImport(harness.current(), file, ImportMode.COMBINE, ids)).plan
-            harness.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, null, emptyList()), LocalPauseSet(evening, "Evening", emptyList())), null)))
+            harness.replaceLocal(
+                checkNotNull(
+                    PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, null, emptyList()), LocalPauseSet(evening, "Evening", emptyList())), null),
+                ),
+            )
             val before = harness.sets()
 
             val result = harness.writer().apply(preview) { current -> planImport(current, file, ImportMode.COMBINE, ids) }
@@ -173,7 +195,14 @@ class ImportWriterTest {
     private fun TestScope.linkedPair(name: String): Pair<AppleSyncTestHarness, AppleSyncTestHarness> {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        return AppleSyncTestHarness(dispatcher, "$name-a.db", mailboxPort = mailbox, wallClock = tickingClock(1_000), cryptoProvider = FakeSyncCryptoProvider(random = Random(1)), withSchedules = true) to
+        return AppleSyncTestHarness(
+            dispatcher,
+            "$name-a.db",
+            mailboxPort = mailbox,
+            wallClock = tickingClock(1_000),
+            cryptoProvider = FakeSyncCryptoProvider(random = Random(1)),
+            withSchedules = true,
+        ) to
             AppleSyncTestHarness(
                 dispatcher,
                 "$name-b.db",
@@ -217,7 +246,15 @@ class ImportWriterTest {
         file: PauseSetFile,
         mode: ImportMode,
     ): ImportWriteResult {
-        val ids = ImportIds(file.sets.mapIndexed { index, set -> set.ref to listOf(imported, importedTwo)[index] }.toMap(), file.schedules.indices.map { scheduleId(30 + it) })
+        val ids = ImportIds(
+            file.sets.mapIndexed {
+                index,
+                set
+                ->
+                set.ref to listOf(imported, importedTwo)[index]
+            }.toMap(),
+            file.schedules.indices.map { scheduleId(30 + it) },
+        )
         val preview = assertIs<ImportPlanResult.Planned>(planImport(current(), file, mode, ids)).plan
         return writer().apply(preview) { current -> planImport(current, file, mode, ids) }
     }
@@ -258,7 +295,6 @@ private fun setId(value: Int): PauseSetId {
 private fun scheduleId(value: Int): ScheduleId {
     return ScheduleId(ScheduleSyncId(testIdentifier(value)).hex)
 }
-
 
 /** A clock that moves on with every reading, as a device's does between passes. */
 private fun tickingClock(start: Long): SyncWallClock {
