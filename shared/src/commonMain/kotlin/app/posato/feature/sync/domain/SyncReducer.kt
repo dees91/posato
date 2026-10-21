@@ -81,6 +81,8 @@ internal data class SyncProjection(
     val refusedPauseSetIds: Set<PauseSetId> = emptySet(),
     val defaultPauseSetId: PauseSetId? = null,
     val pauseSetsEnabled: Boolean = false,
+    /** Whether any applicable `set-default` exists, even one naming a set that is no longer live. */
+    val defaultChosen: Boolean = false,
 ) {
     fun pauseSetStatus(setId: PauseSetId): PauseSetStatus {
         return when {
@@ -353,6 +355,7 @@ private class ProjectionAccumulator(
             refusedPauseSetIds = sets.refusedIds.toSet(),
             defaultPauseSetId = sets.defaultFor(chosenDefault),
             pauseSetsEnabled = pauseSetsEnabled,
+            defaultChosen = chosenDefault != null,
         )
     }
 

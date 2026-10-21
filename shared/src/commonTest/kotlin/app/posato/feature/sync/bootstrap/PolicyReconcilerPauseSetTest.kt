@@ -32,7 +32,7 @@ class PolicyReconcilerPauseSetTest {
     private val workspaceId = testContext.workspaceId.value.copyBytes()
 
     @Test
-    fun `given local sets at first link when seeded then websites and other sets' names are queued but never the first set's name`() = runTest {
+    fun `given an unnamed first set in the workspace at first link when seeded then every name and website is queued`() = runTest {
         withStore("pause-set-seed.db") { store ->
             store.replaceLocal(
                 LocalPauseSet(PauseSetId.FIRST, "Mine", domains("a")),
@@ -45,6 +45,7 @@ class PolicyReconcilerPauseSetTest {
 
             assertEquals(
                 listOf(
+                    StoredPolicyIntent.PutSet(PauseSetId.FIRST, "Mine"),
                     StoredPolicyIntent.PresentDomain(domain("a"), PauseSetId.FIRST),
                     StoredPolicyIntent.PutSet(work, "Work"),
                     StoredPolicyIntent.PresentDomain(domain("b"), work),

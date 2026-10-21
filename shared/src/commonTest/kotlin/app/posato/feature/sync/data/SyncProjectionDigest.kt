@@ -84,6 +84,7 @@ private fun CanonicalWriter.writePauseSets(projection: SyncProjection) {
     }
     writeByte(if (projection.defaultPauseSetId == null) 0 else 1)
     writeOwnedBytes((projection.defaultPauseSetId?.value ?: SyncIdentifier.zero()).copyBytes())
+    writeByte(if (projection.defaultChosen) 1 else 0)
     writeByte(if (projection.pauseSetsEnabled) 1 else 0)
 }
 
