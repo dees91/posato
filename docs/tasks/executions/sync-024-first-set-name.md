@@ -1,7 +1,7 @@
 # Execution: `SYNC-024`
 
 - **Brief:** [Keep the first set's name and the default when a device creates a workspace](../specifications/sync-024-first-set-name.md)
-- **Status:** `in-progress` (brief, plan, and failing regression)
+- **Status:** `in-review` (implemented and verified on devices; independent review next)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `sync-024-first-set-name`
@@ -55,10 +55,17 @@
   workspace's queued changes.
 - ADR 0006 "Migration identity" states the rule and its known limits.
 - `posato-control flow set` gains `--rename-from` and `--make-default`.
-- Android (Galaxy XCover7, fresh install from this branch): renamed the
-  first set "Focus", made "Evening" the default, then created a folder
-  workspace in `/sdcard/Sync/Posato-024`; Pause sets still shows "Focus"
-  and "Evening" as Default.
+- `AC-03` on devices, all through `posato-control` with this branch:
+  - Android (Galaxy XCover7): renamed the first set "Focus", made
+    "Evening" the default, created a folder workspace; both kept.
+  - A Linux clone joined through the relay and shows "Focus" with
+    "Evening" as Default.
+  - A fresh Linux clone renamed "Other" joined the same workspace and shows
+    "Focus"; the phone still shows "Focus".
+  - A Tart Mac, after removing the test account's old iCloud workspace,
+    renamed its first set "Focus", made "Evening" the default, and linked
+    with `flow icloud link`; both kept. `flow set --rename-from` and
+    `--make-default` worked on the desktop, Android, and Linux.
 
 ## Review
 
@@ -72,4 +79,8 @@
 | `:shared:jvmTest` sync tests after `7ad40c41` | pass |
 | Android runs | `20261021-121555-8c67` reset to `20261021-121601-4745` onboard; `-121701-c7bb` rename, `-121729-843f` Evening, `-121808-b14e` default, `-122009-633a` folder link, `-122306-cc82` snapshot, `-122309-5164` screenshot |
 | `./gradlew quality` | passed after the line-length and style fixes |
-| Linux join and iCloud create on Tart clones | pending, waits for the coordinator |
+| Android create (folder) | `20261021-123537-b413` reset to `-123543-58fb` onboard; `-123638-7553` rename, `-123705-87fe` Evening, `-123745-6dba` default, `-123808-74a1` link |
+| Linux join | `20261021-124047-c81a` create to `-124150-048c` onboard; `-124228-e198` link, `-124253-ab99` offer, `-124324-a6dd` join, `-124358-851c` snapshot, `-124359-15c3` screenshot |
+| Linux negative join ("Other") | `20261021-124408-45e0` create to `-124510-8848` rename; `-124530-5f86` link, `-124621-1bf1` join, `-124658-8829` snapshot, `-124700-55e8` screenshot; phone `-124714-e611` |
+| Mac iCloud create | `20261021-124738-c8e1` create, `-124930-4ed1` onboard, `-125524-8cd0` old workspace removed; `-125555-5c89` rename, `-125602-2357` Evening, `-125610-cbb8` default, `-125614-5c5a` link, `-130340-baae` snapshot, `-130341-073e` screenshot |
+| Cleanup | iCloud workspace removed `-130831-380c`, clone destroyed `-131323-2836`, phone workspace removed `-131332-0f3c`, folders deleted |
