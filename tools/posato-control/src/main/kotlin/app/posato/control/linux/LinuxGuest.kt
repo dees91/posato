@@ -70,28 +70,6 @@ class LinuxGuest(
         tart.stop(CLONE)
     }
 
-    /**
-     * Logs the GNOME line's user in again to [session]: GDM reads the user's session from AccountsService, which caches
-     * it, so the display manager stops, the file and the daemon change, and GDM starts and logs the user in again.
-     */
-    fun selectSession(session: LinuxSession) {
-        val script = "sudo -n sh -c " + shellQuote(
-            "systemctl stop gdm3 && " +
-                "sed -i 's/^DefaultSession=.*/DefaultSession=${session.desktop}.desktop/' /etc/gdm3/custom.conf && " +
-                "sed -i 's/^Session=.*/Session=${session.desktop}/; s/^XSession=.*/XSession=${session.desktop}/' " +
-                "/var/lib/AccountsService/users/\$SUDO_USER && " +
-                "systemctl restart accounts-daemon && systemctl start gdm3",
-        )
-        exec(script).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Selecting the ${session.name.lowercase()} session in $CLONE")
-        val deadline = System.currentTimeMillis() + BOOT_TIMEOUT_MILLIS
-        while (System.currentTimeMillis() < deadline) {
-            val type = exec(CURRENT_SESSION_TYPE)
-            if (type.stdout.trim() == session.type && exec("test -S /tmp/.X11-unix/X0").exitCode == 0) return
-            Thread.sleep(POLL_MILLIS)
-        }
-        throw ControlException(ErrorCode.VM_UNAVAILABLE, "$CLONE did not log in to the ${session.type} session in time.")
-    }
-
     /** Whether the clone exists and runs; every command in the guest needs it. */
     fun running(): Boolean = tart.list().any { it.name == CLONE && it.running }
 
@@ -117,6 +95,9 @@ class LinuxGuest(
     }
 
     val screen: LinuxScreen = LinuxScreen(this)
+
+    /** The desktop session: GNOME's Xorg or Wayland choice, and logging the user in again. */
+    val desktopSession: LinuxDesktopSession = LinuxDesktopSession(this)
 
     /** Posato started with its accessibility tree on AT-SPI, and the helper that reads and presses it. */
     val accessibility: LinuxAccessibility = LinuxAccessibility(this)
@@ -172,9 +153,6 @@ class LinuxGuest(
         const val DEFAULT_GOLDEN = "posato-golden-linux"
         const val DEFAULT_GNOME_GOLDEN = "posato-golden-linux-gnome"
 
-        private const val CURRENT_SESSION_TYPE = "loginctl show-session " +
-            "\$(loginctl list-sessions --no-legend | awk '\$3==\"'\$USER'\"{print \$1}' | tail -1) -p Type --value"
-
         /** X11 under Xorg (GDM's or LightDM's authority in ~/.Xauthority) or under GNOME's Xwayland (mutter's file). */
         private const val SESSION_ENVIRONMENT = "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; " +
             "for f in /run/user/\$(id -u)/.mutter-Xwaylandauth.*; do [ -e \"\$f\" ] && export XAUTHORITY=\"\$f\"; done"
@@ -214,7 +192,12 @@ class LinuxScreen(
     private val guest: LinuxGuest,
 ) {
     fun screenshot(file: Path): Path {
-        val encoded = guest.exec("import -window root /tmp/posato-screen.png && base64 -w0 /tmp/posato-screen.png")
+        // On Wayland only GNOME's own capture sees the whole screen; Xorg and Openbox use the X root window.
+        val capture = "if [ \"\$(loginctl show-session \$XDG_SESSION_ID -p Type --value 2>/dev/null)\" = wayland ] || " +
+            "[ -n \"\$(ls /run/user/\$(id -u)/.mutter-Xwaylandauth.* 2>/dev/null)\" ]; then " +
+            "${LinuxAccessibility.SESSION_BUS}; gnome-screenshot -f /tmp/posato-screen.png; " +
+            "else import -window root /tmp/posato-screen.png; fi"
+        val encoded = guest.exec("$capture && base64 -w0 /tmp/posato-screen.png")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Capturing the screen of $CLONE").stdout.trim()
         Files.createDirectories(file.parent)
         Files.write(file, Base64.getDecoder().decode(encoded))
