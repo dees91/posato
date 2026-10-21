@@ -1016,6 +1016,30 @@ badges and counts have accessible labels.
   removal confirmation. When unlinked, the expanded iCloud options carry the
   full linking sentence as a caption next to the action. Setup controls are
   secondary to the Session action.
+- Folder sync (`user-confirmed` 2026-10-21, `SYNC-026`, from a clickable
+  mockup): while unlinked, the expanded row shows two numbered steps that can
+  be done in either order. Step 1 chooses the shared folder; once chosen it
+  becomes a chip with the folder's name, its path underneath, and **Change**.
+  Step 2 on a phone reads "Scan the QR code or type the code": a hint to scan
+  the other device's code with the phone's own camera (Posato never opens the
+  camera; the system camera opens the join link), then the code field with
+  **Join**. A computer reads "Type the pairing code". A scanned link marks
+  step 2 "Pairing code received" with a check, so a person can scan first and
+  choose the folder after. The device joins as soon as both steps are done,
+  without another press; while the code has not reached the folder, the step
+  says so with an activity indicator and Posato keeps checking while the
+  section is shown, so there is no **Check again**. Errors for a code show
+  under the field and are spoken at once. A code can also be typed before a
+  folder is chosen; it then waits for the folder. While the chosen folder is
+  being read, step 2 says so and offers no **Join**. A copy of a workspace
+  this device removed shows the `SYNC-025` explanation in step 2 instead of
+  the code field. In an empty folder step 2 becomes **Create workspace**,
+  with the sentence on what linking combines (the mockup's footer, accepted
+  with it: "When this device creates the workspace instead (an empty folder),
+  step 2 becomes 'Create the workspace'").
+  Linked, the row shows the status, the last sync, the folder chip without
+  **Change**, one primary **Add a device**, and quiet **Sync now** and red
+  **Remove workspace**.
 - This Mac (macOS only, after iCloud): `user-confirmed` (2026-09-26, PR #92
   unified setup, superseding the on-demand read): Session reads the helper
   state once, quietly, when it first appears, with no progress label or

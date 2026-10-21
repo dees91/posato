@@ -15,9 +15,10 @@ import kotlinx.serialization.json.put
 
 /**
  * Drives the folder workspace of ADR 0010 on Session's sync row: `link` chooses the folder and links (creating a
- * workspace, or ending in "waiting for a code" when the folder already holds one), `offer` shows a pairing code and
- * returns it with its dialog left open, `done` closes that dialog and withdraws the offer, `join` enters a code, and
- * `remove` removes the workspace. Each waits for the row to show the outcome.
+ * workspace in an empty folder, or ending in "waiting for a code" when the folder already holds one), `offer` shows a
+ * pairing code and returns it with its dialog left open, `done` closes that dialog and withdraws the offer, `join`
+ * enters a code (the app joins by itself once its offer reaches the folder), and `remove` removes the workspace. Each
+ * waits for the row to show the outcome.
  */
 class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, show or enter a pairing code, or remove the workspace.") {
     private val action by argument(help = "link | offer | done | join | remove").choice(LINK, OFFER, DONE_ACTION, JOIN, REMOVE)
@@ -48,8 +49,8 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
     ): JsonElement {
         // With --path an unlinked device types its folder again, as a person would, so no earlier choice carries over.
         // Without it (iPhone, where the folder comes from the Files picker) the folder already chosen is kept.
-        if (folder != null && FolderSection(backend).shows(USE_ANOTHER)) {
-            FlowSteps.run(backend, listOf(FlowSteps.reveal(button(USE_ANOTHER)), FlowSteps.tap(button(USE_ANOTHER))))
+        if (folder != null && FolderSection(backend).shows(CHANGE)) {
+            FlowSteps.run(backend, listOf(FlowSteps.reveal(button(CHANGE)), FlowSteps.tap(button(CHANGE))))
         }
         if (folder != null && FolderSection(backend).shows(USE_FOLDER)) {
             FlowSteps.run(
@@ -63,11 +64,22 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
                 ),
             )
         }
-        FlowSteps.run(backend, listOf(FlowSteps.reveal(button(SYNC_WITH_FOLDER)), FlowSteps.tap(button(SYNC_WITH_FOLDER))))
-        val outcome = waitFor(backend, deadline, "link", listOf(ADD_DEVICE, JOIN_LABEL)) { labels ->
+        // The section reads what the folder holds: an empty one offers Create workspace, one with a workspace the code.
+        var created = false
+        val outcome = waitFor(backend, deadline, "link", listOf(ADD_DEVICE, CREATE, JOIN_LABEL)) { labels ->
             when {
                 ADD_DEVICE in labels -> "linked"
-                JOIN_LABEL in labels -> "waitingForCode"
+
+                labels.any { it.startsWith(REMOVED_COPY) } -> "removedCopy"
+
+                CREATE in labels && !created -> null.also {
+                    FlowSteps.run(backend, listOf(FlowSteps.reveal(button(CREATE)), FlowSteps.tap(button(CREATE))))
+                    created = true
+                }
+
+                // The code field also shows before a folder is chosen, so it counts only once the folder is chosen and read.
+                JOIN_LABEL in labels && CHANGE in labels && READING !in labels -> "waitingForCode"
+
                 else -> null
             }
         }
@@ -102,19 +114,13 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
                 FlowSteps.tap(button(JOIN_LABEL)),
             ),
         )
-        // An offer that has not reached this device's folder yet reads "No offer for this code"; a person presses Join again.
-        // A refusal is the outcome, so a run can prove that a wrong code joins nothing.
+        // The app keeps checking while the offer has not reached this device's folder, so the flow only waits. A
+        // refusal is the outcome, so a run can prove that a wrong code joins nothing.
         val outcome = waitFor(backend, deadline, "join", listOf(ADD_DEVICE, JOIN_LABEL)) { labels ->
             val refusal = REFUSALS.entries.firstOrNull { (message, _) -> labels.any { it.startsWith(message) } }?.value
             when {
                 ADD_DEVICE in labels -> "linked"
-
                 refusal != null -> refusal
-
-                labels.any {
-                    it.startsWith(NOT_YET)
-                } && JOIN_LABEL in labels -> null.also { FlowSteps.run(backend, listOf(FlowSteps.tap(button(JOIN_LABEL)))) }
-
                 else -> null
             }
         }
@@ -129,9 +135,9 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         deadline: Long,
     ): JsonElement {
         var presses = 0
-        waitFor(backend, deadline, "removal", listOf(REMOVE_WORKSPACE, USE_ANOTHER, USE_FOLDER)) { labels ->
+        waitFor(backend, deadline, "removal", listOf(REMOVE_WORKSPACE, CREATE, CHANGE, USE_FOLDER, BROWSE)) { labels ->
             when {
-                USE_ANOTHER in labels || USE_FOLDER in labels -> "removed"
+                UNLINKED.any { it in labels } -> "removed"
 
                 REMOVE_WORKSPACE in labels -> null.also {
                     confirmRemoval(backend)
@@ -168,12 +174,13 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         reveal: List<String>,
         outcome: (List<String>) -> String?,
     ): String {
-        var labels = FolderSection(backend).outcomeLabels(reveal)
-        while (System.currentTimeMillis() < deadline) {
+        // Each round reads first and checks the deadline after, so a slow read (scrolling on a phone) still counts.
+        var labels: List<String>
+        do {
+            labels = FolderSection(backend).outcomeLabels(reveal)
             outcome(labels)?.let { return it }
             Thread.sleep(POLL_MILLIS)
-            labels = FolderSection(backend).outcomeLabels(reveal)
-        }
+        } while (System.currentTimeMillis() < deadline)
         val row = labels.firstOrNull { it.startsWith(FOLDER_ROW) || it.startsWith(ICLOUD_ROW) }
         throw ControlException(ErrorCode.WAIT_TIMEOUT, "The folder $what did not finish within $timeoutSeconds s; the row reads ${row ?: "unknown"}.")
     }
@@ -194,19 +201,23 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val REMOVE = "remove"
         const val DONE_ACTION = "done"
         const val USE_FOLDER = "Use this folder"
-        const val SYNC_WITH_FOLDER = "Sync with this folder"
+        const val CREATE = "Create workspace"
+        const val READING = "Reading the folder…"
+        const val REMOVED_COPY = "This folder holds a copy of a workspace you removed"
+        const val CHANGE = "Change"
+        const val BROWSE = "Choose folder…"
         const val ADD_DEVICE = "Add a device"
         const val JOIN_LABEL = "Join"
         const val DONE = "Done"
-        const val NOT_YET = "No offer for this code"
         val REFUSALS = mapOf(
+            "No offer for this code" to "notFound",
             "This code is not valid" to "invalid",
             "This code has expired" to "expired",
             "This code cannot open the offer" to "refused",
             "This code belongs to a workspace in another folder" to "wrongWorkspace",
             "The folder is not available" to "unavailable",
         )
-        const val USE_ANOTHER = "Use another folder"
+        val UNLINKED = setOf(CREATE, CHANGE, USE_FOLDER, BROWSE)
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val FOLDER_ROW = "Folder sync,"
         const val ICLOUD_ROW = "iCloud,"
@@ -215,6 +226,6 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val MILLIS_PER_SECOND = 1_000L
         const val DEFAULT_TIMEOUT_SECONDS = 180L
         val CODE_PATTERN = Regex("(?:[A-Z2-7]{3} ){8}[A-Z2-7]{3}")
-        val ACTIONS = setOf(USE_FOLDER, SYNC_WITH_FOLDER, ADD_DEVICE, JOIN_LABEL, USE_ANOTHER, REMOVE_WORKSPACE, "Sync with iCloud", "Sync now")
+        val ACTIONS = setOf(USE_FOLDER, BROWSE, CREATE, CHANGE, ADD_DEVICE, JOIN_LABEL, REMOVE_WORKSPACE, "Sync with iCloud", "Sync now")
     }
 }

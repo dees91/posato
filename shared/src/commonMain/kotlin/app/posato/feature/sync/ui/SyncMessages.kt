@@ -29,7 +29,7 @@ internal fun AppleSyncState.statusMessage(folderMode: Boolean): StringResource {
     }
 }
 
-/** Folder mode: a folder is chosen, or the host offers no iCloud. */
+/** Folder mode: a folder is chosen, a join code arrived, or the host offers no iCloud. */
 internal fun SyncBootstrapUiState.folderMode(folder: String?): Boolean {
-    return folderControls.supported && (folder != null || !folderControls.icloudSupported)
+    return folderControls.supported && (folder != null || !folderControls.icloudSupported || joining.pendingCode != null)
 }

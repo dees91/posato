@@ -2,7 +2,6 @@ package app.posato.feature.sync.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -89,7 +89,8 @@ internal fun SyncBootstrapSection(
     val snapshot by state.syncState.collectAsState()
     val folder by state.folder.collectAsState()
     var confirmingRemoval by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf(false) }
+    // Kept across a rebuilt screen, and opened while a code waits, so a waiting join keeps checking.
+    var expanded by rememberSaveable { mutableStateOf(state.joining.pendingCode != null) }
     val running = state.running || snapshot.checkingJoin || snapshot.removing || snapshot.status == SyncStatus.SYNCING
     val removingHere = showsRemovalProgress && snapshot.removing
     val checking = state.checking
@@ -118,7 +119,7 @@ internal fun SyncBootstrapSection(
     }
 }
 
-/** A join link the system opened Posato with opens the section and joins as soon as this device waits for a code. */
+/** A join link the system opened Posato with opens the section and fills in the code step. */
 @Composable
 private fun LinkCodeEffects(
     state: SyncBootstrapUiState,
@@ -128,7 +129,7 @@ private fun LinkCodeEffects(
     val linkCode by state.linkCode.collectAsState()
     val expand by rememberUpdatedState(onExpand)
     LaunchedEffect(linkCode) { if (linkCode != null) expand() }
-    LaunchedEffect(linkCode, snapshot.joinPending, snapshot.linked) { linkCode?.let(state::useLinkCode) }
+    LaunchedEffect(linkCode, snapshot.linked) { linkCode?.let { state.joining.capture(it, snapshot.linked) } }
 }
 
 @Composable

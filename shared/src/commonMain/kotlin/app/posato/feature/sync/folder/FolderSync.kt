@@ -280,6 +280,11 @@ internal class FolderSync(
         return pairing.accept(pairingCodeFrom(code) ?: code)
     }
 
+    override suspend fun read(): FolderReading {
+        if (choice.root() == null) return FolderReading(FolderContents.UNKNOWN)
+        return pairing.read()
+    }
+
     /** A folder gives no change events, so a linked folder workspace is read once a minute (ADR 0010). */
     fun startPolling(sync: AppleSync) {
         scope.launch {

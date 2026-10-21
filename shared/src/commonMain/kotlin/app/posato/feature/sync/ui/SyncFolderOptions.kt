@@ -7,15 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,9 +22,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoActivityIndicator
-import app.posato.core.designsystem.PosatoAlert
-import app.posato.core.designsystem.PosatoAlertAction
-import app.posato.core.designsystem.PosatoAlertRole
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -40,23 +33,16 @@ import app.posato.feature.sync.folder.LinkSharing
 import app.posato.feature.sync.folder.PairingAcceptResult
 import app.posato.feature.sync.folder.pairingLink
 import app.posato.generated.resources.Res
-import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
-import app.posato.generated.resources.action_sync_with_folder
-import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_folder_add_device
 import app.posato.generated.resources.sync_folder_browse
-import app.posato.generated.resources.sync_folder_change
-import app.posato.generated.resources.sync_folder_chosen
 import app.posato.generated.resources.sync_folder_code_done
 import app.posato.generated.resources.sync_folder_code_failed
-import app.posato.generated.resources.sync_folder_code_label
 import app.posato.generated.resources.sync_folder_code_message
 import app.posato.generated.resources.sync_folder_code_title
 import app.posato.generated.resources.sync_folder_copy_link
 import app.posato.generated.resources.sync_folder_description
 import app.posato.generated.resources.sync_folder_invalid
-import app.posato.generated.resources.sync_folder_join
 import app.posato.generated.resources.sync_folder_join_expired
 import app.posato.generated.resources.sync_folder_join_invalid
 import app.posato.generated.resources.sync_folder_join_not_found
@@ -64,8 +50,6 @@ import app.posato.generated.resources.sync_folder_join_refused
 import app.posato.generated.resources.sync_folder_join_unavailable
 import app.posato.generated.resources.sync_folder_join_wrong_workspace
 import app.posato.generated.resources.sync_folder_link_copied
-import app.posato.generated.resources.sync_folder_link_received
-import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
 import app.posato.generated.resources.sync_folder_share_link
@@ -86,90 +70,63 @@ internal fun FolderOptions(
     removing: Boolean,
     onRemove: () -> Unit,
 ) {
-    PosatoCaption(
-        stringResource(folderMessage(snapshot, folder, state.checking, removing)),
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-    )
+    folderMessage(snapshot, folder, state.checking, removing)?.let { message ->
+        PosatoCaption(stringResource(message), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+    }
     if (removing) {
         PosatoActivityIndicator()
         PosatoCaption(stringResource(Res.string.sync_removing_note))
     }
-    if (folder == null) {
-        FolderChooser(state, running)
-        return
+    if (snapshot.linked) {
+        LinkedFolder(state, snapshot, folder, running, onRemove)
+    } else {
+        FolderJoinStepsView(state, folder, running)
     }
-    PosatoCaption(stringResource(Res.string.sync_folder_chosen, folder))
-    if (!snapshot.linked && !snapshot.joinPending) {
-        LinkCodeNote(state)
-        PosatoCaption(stringResource(Res.string.sync_folder_linking))
-    }
-    if (snapshot.joinPending && !snapshot.linked) {
-        JoinWithCode(state, running)
-    }
-    state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
-    FolderActions(state, snapshot, running, onRemove)
 }
 
-/** What the expanded folder row says: the current activity, then the state of the link. */
+/**
+ * What the expanded folder row says above its controls. While unlinked, the steps speak for themselves, so only an
+ * attempt that went wrong adds a sentence; step 2 explains a removed workspace's copy.
+ */
 private fun folderMessage(
     snapshot: AppleSyncState,
     folder: String?,
     checking: Boolean,
     removing: Boolean,
-): StringResource {
+): StringResource? {
     return when {
-        checking -> Res.string.sync_checking_key
         removing -> Res.string.sync_removing_workspace
+        snapshot.linked -> snapshot.statusMessage(folderMode = true)
+        checking -> null
         folder == null -> Res.string.sync_folder_description
-        else -> snapshot.statusMessage(folderMode = true)
+        snapshot.status == SyncStatus.RETRYABLE || snapshot.status == SyncStatus.ACTION_REQUIRED -> snapshot.statusMessage(folderMode = true)
+        else -> null
     }
 }
 
+/** A linked folder workspace: the folder, one primary action to add a device, and quiet sync and removal. */
 @Composable
-private fun FolderActions(
+private fun LinkedFolder(
     state: SyncBootstrapUiState,
     snapshot: AppleSyncState,
+    folder: String?,
     running: Boolean,
     onRemove: () -> Unit,
 ) {
-    PosatoActionRow {
-        PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Secondary, enabled = !running) {
-            Text(
-                stringResource(
-                    when {
-                        snapshot.joinPending -> Res.string.action_check_again
-                        snapshot.linked -> Res.string.action_sync_now
-                        else -> Res.string.action_sync_with_folder
-                    },
-                ),
-            )
-        }
-        if (snapshot.linked) {
-            if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
-                PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                    Text(stringResource(Res.string.sync_folder_add_device))
-                }
-            }
-            PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running) {
-                Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)
-            }
-        } else {
-            PosatoButton(onClick = state::clearFolder, style = PosatoButtonStyle.Quiet, enabled = !running) {
-                Text(stringResource(Res.string.sync_folder_change))
-            }
+    folder?.let { FolderChip(it, onChange = null) }
+    state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
+    if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
+        PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Primary, enabled = !running) {
+            Text(stringResource(Res.string.sync_folder_add_device))
         }
     }
-}
-
-/** Tells the person that a join link arrived, while this device still needs its folder before it can join. */
-@Composable
-private fun LinkCodeNote(state: SyncBootstrapUiState) {
-    val linkCode by state.linkCode.collectAsState()
-    if (linkCode != null) {
-        PosatoCaption(
-            stringResource(Res.string.sync_folder_link_received),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        )
+    PosatoActionRow {
+        PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            Text(stringResource(Res.string.action_sync_now))
+        }
+        PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)
+        }
     }
 }
 
@@ -177,10 +134,11 @@ private fun LinkCodeNote(state: SyncBootstrapUiState) {
 internal fun FolderChooser(
     state: SyncBootstrapUiState,
     running: Boolean,
+    primary: Boolean = false,
 ) {
     val path = rememberTextFieldState()
     val typed = state.folderControls.acceptsTypedPath
-    LinkCodeNote(state)
+    val lead = if (primary) PosatoButtonStyle.Primary else PosatoButtonStyle.Secondary
     if (typed) {
         PosatoTextField(
             state = path,
@@ -194,40 +152,18 @@ internal fun FolderChooser(
     }
     PosatoActionRow {
         if (typed) {
-            PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = PosatoButtonStyle.Secondary, enabled = !running) {
+            PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = lead, enabled = !running) {
                 Text(stringResource(Res.string.sync_folder_use))
             }
         }
         if (state.folderControls.canBrowse) {
             PosatoButton(
                 onClick = state::browseFolder,
-                style = if (typed) PosatoButtonStyle.Quiet else PosatoButtonStyle.Secondary,
+                style = if (typed) PosatoButtonStyle.Quiet else lead,
                 enabled = !running,
             ) {
                 Text(stringResource(Res.string.sync_folder_browse))
             }
-        }
-    }
-}
-
-@Composable
-private fun JoinWithCode(
-    state: SyncBootstrapUiState,
-    running: Boolean,
-) {
-    val code = rememberTextFieldState()
-    val linkCode by state.linkCode.collectAsState()
-    LaunchedEffect(linkCode) { linkCode?.let(code::setTextAndPlaceCursorAtEnd) }
-    PosatoTextField(
-        state = code,
-        label = stringResource(Res.string.sync_folder_code_label),
-        enabled = !running,
-        errorMessage = state.joinResult?.message()?.let { stringResource(it) },
-        onSubmit = { state.join(code.text.toString()) },
-    )
-    PosatoActionRow {
-        PosatoButton(onClick = { state.join(code.text.toString()) }, style = PosatoButtonStyle.Secondary, enabled = !running) {
-            Text(stringResource(Res.string.sync_folder_join))
         }
     }
 }
@@ -284,7 +220,7 @@ internal fun PairingCodeDialog(
     )
 }
 
-private fun PairingAcceptResult.message(): StringResource? {
+internal fun PairingAcceptResult.joinMessage(): StringResource? {
     return when (this) {
         PairingAcceptResult.JOINED -> null
         PairingAcceptResult.INVALID_CODE -> Res.string.sync_folder_join_invalid

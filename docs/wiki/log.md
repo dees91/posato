@@ -2985,3 +2985,11 @@ first removal attempt that does not finish, not to a paused keychain.
   surface (`inferred` to avoid a flash; the first frame was not captured).
   Blocked by a running 45-minute pause with Calculator in its set; the
   theme was switched with `cmd uimode night yes|no`.
+
+## [2026-10-21] feature | SYNC-026: join a folder workspace in two steps
+
+- `user-confirmed` layout (2026-10-21 mockup): choose the folder and scan or
+  type the code in either order; the device joins once both are done and
+  waits while the code has not reached the folder; an empty folder offers
+  Create workspace. `observed` on a Galaxy XCover7: scan first, folder
+  first, a late offer, and an expired code.

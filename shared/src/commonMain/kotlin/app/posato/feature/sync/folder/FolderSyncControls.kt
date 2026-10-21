@@ -1,5 +1,6 @@
 package app.posato.feature.sync.folder
 
+import app.posato.feature.sync.domain.WorkspaceId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -34,6 +35,24 @@ internal enum class FolderChoiceResult {
     CHOSEN,
     NOT_A_FOLDER,
 }
+
+/** What the chosen folder holds, read without changing it: before a choice or a read, [UNKNOWN]. */
+internal enum class FolderContents {
+    UNKNOWN,
+    EMPTY,
+    WORKSPACE,
+
+    /** A workspace this device removed, which it cannot link to again (`SYNC-025`). */
+    REMOVED_COPY,
+    UNAVAILABLE,
+}
+
+/** One read of the chosen folder: what it holds, its workspace, and whether this device already holds that key. */
+internal data class FolderReading(
+    val contents: FolderContents,
+    val workspaceId: WorkspaceId? = null,
+    val keyHere: Boolean = false,
+)
 
 /**
  * How this host passes a pairing link on: the system share sheet on a phone, the clipboard on a computer. [share]
@@ -90,6 +109,17 @@ internal interface FolderSyncControls {
     suspend fun dismissOffer()
 
     suspend fun accept(code: String): PairingAcceptResult
+
+    /** Whether the chosen folder already holds a workspace, from the same read a join makes; nothing is written. */
+    suspend fun read(): FolderReading {
+        return FolderReading(FolderContents.UNKNOWN)
+    }
+
+    /** A phone, where the system camera opens a scanned join link in Posato. */
+    val scansCodes: Boolean
+        get() {
+            return linkSharing.usesShareSheet
+        }
 }
 
 internal object AppleOnlySync : FolderSyncControls {
