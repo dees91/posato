@@ -9,15 +9,11 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
-import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
 
 /** Common paths through the app as single commands, on the desktop (in a VM), iOS, Android, and Linux alike. */
 class FlowCommand : CliktCommand(name = "flow") {
@@ -25,76 +21,6 @@ class FlowCommand : CliktCommand(name = "flow") {
         "Drive a common path through Posato in one command: onboard, add a schedule, create a set, start a session, link a folder or iCloud."
 
     override fun run() = Unit
-}
-
-class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and optional websites.") {
-    private val name by option("--name", help = "Set name.").required()
-    private val websites by option("--website", help = "A website to add; repeat for more.").multiple()
-
-    override fun execute(session: Session): JsonElement {
-        val backend = session.backend()
-        // The drawn in-page Back (Mac, Android, Linux) reads the list in lower case; the iOS bar's back button names the
-        // screen by its title.
-        val back = if (session.target().isApple) "Back to Pause sets" else "Back to pause sets"
-        FlowSteps.run(
-            backend,
-            listOf(
-                FlowSteps.button("Pause sets"),
-                FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
-                FlowSteps.waitFor(Query(text = "New set", role = FlowSteps.ROLE_BUTTON)),
-            ),
-        )
-        // Posato accepts a second set with the same name, so a rerun would leave two rows the later steps cannot tell apart.
-        if (hasSetNamed(FlowSteps.labels(backend))) {
-            throw ControlException(
-                ErrorCode.ALREADY_EXISTS,
-                "Pause sets already lists a set named $name.",
-                "Choose another --name, or remove the existing set first.",
-            )
-        }
-        val steps = mutableListOf(
-            FlowSteps.button("New set"),
-            FlowSteps.typeInto(name, submit = false),
-            FlowSteps.button("Save"),
-            FlowSteps.waitFor(Query(text = back, role = FlowSteps.ROLE_BUTTON)),
-        )
-        if (websites.isNotEmpty()) {
-            steps += FlowSteps.waitFor(Query(text = "Search", role = FlowSteps.ROLE_BUTTON))
-            steps += FlowSteps.typeInto(websites.joinToString(", "), submit = true)
-            steps += FlowSteps.button("Done", optional = true, timeoutSeconds = SHORT_SECONDS)
-        }
-        steps += listOf(
-            FlowSteps.button(back),
-            FlowSteps.screenshot("set-created"),
-        )
-        FlowSteps.run(backend, steps)
-        // The list redraws after Back; a screen read while it does shows the list before the save.
-        val deadline = System.currentTimeMillis() + LIST_SECONDS * MILLIS_PER_SECOND
-        while (!hasSetNamed(FlowSteps.labels(backend))) {
-            if (System.currentTimeMillis() > deadline) throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause sets shows no set named $name.")
-            Thread.sleep(POLL_MILLIS)
-        }
-        return buildJsonObject {
-            put("name", name)
-            putJsonArray("websites") { websites.forEach(::add) }
-        }
-    }
-
-    /**
-     * A row reads "<name>, [Default set, Default, ]<n> websites · …". Matching through the website count keeps
-     * "Deep Work" and "Work, personal" from counting as a set named "Work".
-     */
-    private fun hasSetNamed(labels: List<String>): Boolean {
-        val row = Regex("^${Regex.escape(name)}, (Default set, )?(Default, )?\\d+ websites?\\b")
-        return labels.any { label -> row.containsMatchIn(label) }
-    }
-
-    private companion object {
-        const val SHORT_SECONDS = 3.0
-        const val LIST_SECONDS = 10L
-        const val MILLIS_PER_SECOND = 1_000L
-        const val POLL_MILLIS = 500L
-    }
 }
 
 /**
