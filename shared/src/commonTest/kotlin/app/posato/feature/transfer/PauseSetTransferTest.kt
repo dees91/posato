@@ -55,7 +55,7 @@ class PauseSetTransferTest {
             val code = assertNotNull(exported.code)
             assertIs<TransferRead.CodeNeeded>(target.transfer().read(exported.bytes, null))
             val file = assertIs<TransferRead.File>(target.transfer().read(exported.bytes, code)).file
-            val preview = target.transfer().preview(file, ImportMode.COMBINE)
+            val preview = checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))
 
             val imported = assertIs<TransferImport.Imported>(target.transfer().import(preview))
 
@@ -81,7 +81,7 @@ class PauseSetTransferTest {
             assertNull(exported.code)
             target.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", emptyList())), null)))
             val file = assertIs<TransferRead.File>(target.transfer(mappings).read(exported.bytes, null)).file
-            val preview = target.transfer(mappings).preview(file, ImportMode.REPLACE)
+            val preview = checkNotNull(target.transfer(mappings).preview(file, ImportMode.REPLACE))
             assertIs<ImportPlanResult.Planned>(preview.result)
 
             assertIs<TransferImport.Imported>(target.transfer(mappings).import(preview))
@@ -103,7 +103,7 @@ class PauseSetTransferTest {
                     null,
                 ),
             ).file
-            val imported = assertIs<TransferImport.Imported>(target.transfer().import(target.transfer().preview(file, ImportMode.COMBINE)))
+            val imported = assertIs<TransferImport.Imported>(target.transfer().import(checkNotNull(target.transfer().preview(file, ImportMode.COMBINE))))
 
             assertEquals(listOf("Now"), target.transfer().openNow(imported.schedules))
         } finally {

@@ -140,10 +140,9 @@ internal class PauseSetTransfer(
         file: PauseSetFile,
         mode: ImportMode,
         ids: ImportIds = ImportIds.create(file, setIds, scheduleIds),
-    ): TransferPreview {
-        val current = writer.current()
-        val result = current?.let { planImport(it, file, mode, ids) }
-        return TransferPreview(file, mode, ids, result ?: ImportPlanResult.Refused(app.posato.feature.transfer.domain.ImportRefusal.TOO_MANY_SETS))
+    ): TransferPreview? {
+        val current = writer.current() ?: return null
+        return TransferPreview(file, mode, ids, planImport(current, file, mode, ids))
     }
 
     suspend fun import(preview: TransferPreview): TransferImport {
