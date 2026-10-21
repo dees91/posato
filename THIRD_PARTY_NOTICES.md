@@ -25,6 +25,8 @@ whenever a runtime dependency changes.
 | Markdown parser (JetBrains) | macOS, iOS | Apache-2.0 |
 | kuri | macOS, iOS | MIT |
 | QRose QR code painter (Alexander Zhirkevich) | macOS, iOS, Linux, Android | MIT |
+| dbus-java core and native Unix socket transport (David M. and hypfvieh), 5.2.2 | Linux | MIT |
+| SLF4J API (QOS.ch), required by dbus-java | Linux | MIT |
 | JSpecify annotations | macOS | Apache-2.0 |
 | JetBrains Runtime API | macOS | Apache-2.0 |
 | OpenJDK runtime from Eclipse Temurin 21 (Eclipse Adoptium), bundled in the macOS application | macOS | GPL-2.0 with Classpath Exception |
@@ -36,6 +38,8 @@ whenever a runtime dependency changes.
 - **SQLite JDBC:** portions Copyright (c) 2006, David Crawshaw. All rights reserved. Distributed under a BSD-style license.
 - **kuri:** Copyright Omar Aljarrah. Distributed under the MIT License.
 - **QRose:** Copyright (c) 2023 Alexander Zhirkevich. Distributed under the MIT License.
+- **dbus-java:** Copyright (c) the dbus-java authors (hypfvieh and contributors). Distributed under the MIT License.
+- **SLF4J:** Copyright (c) 2004-2023 QOS.ch Sarl (Switzerland). Distributed under the MIT License.
 - **Sparkle:** Copyright (c) 2006-2013 Andy Matuschak; (c) 2009-2013 Elgato Systems GmbH; (c) 2011-2014 Kornel Lesiński; (c) 2015-2017 Mayur Pawashe; (c) 2014 C.W. Betts; (c) 2014 Petroules Corporation; (c) 2014 Big Nerd Ranch. Distributed under the MIT License. It includes bsdiff and bspatch (Copyright 2003-2005 Colin Percival, BSD-2-Clause), sais-lite (Copyright (c) 2008-2010 Yuta Mori, MIT), the portable Ed25519 implementation (Copyright (c) 2015 Orson Peters, zlib), and SUSignatureVerifier (Copyright (c) 2011 Mark Hamlin, BSD-2-Clause).
 - **OpenJDK (Eclipse Temurin 21):** the bundled runtime is produced from the Eclipse Temurin 21 JDK and includes its own `legal` notices directory, which must stay in the distributed application.
 

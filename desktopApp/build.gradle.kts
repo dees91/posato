@@ -1457,6 +1457,8 @@ val linuxPackageInputs by tasks.registering(Copy::class) {
     description = "Collects the Linux jar and its packaging scripts."
     from(linuxAppJar)
     from(layout.projectDirectory.dir("linux"))
+    // The license and the third-party notices travel with the package (they land in /opt/posato/lib/app).
+    from(rootProject.layout.projectDirectory.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
     into(layout.buildDirectory.dir("linux/package"))
 }
 
