@@ -12,17 +12,19 @@ internal class StatusMenu(
     private val entries: () -> List<StatusMenuEntry>,
     private val onAction: (PresenceMenuActionId) -> Unit,
     private val onOpened: () -> Unit,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : DbusMenu {
     @Volatile private var revision = 1L
 
-    @Volatile private var open = false
+    // Panels rarely say when the menu closes, so an opened menu counts as open only for a short while.
+    @Volatile private var openUntil = 0L
 
     @Volatile private var stale = false
 
     /** The LayoutUpdated signal to send now, or null when the menu is closed and the change waits for AboutToShow. */
     fun layoutChanged(): LayoutUpdated? {
         revision++
-        if (!open) {
+        if (clock() >= openUntil) {
             stale = true
             return null
         }
@@ -64,15 +66,15 @@ internal class StatusMenu(
         timestamp: UInt32,
     ) {
         when (eventId) {
-            "opened" -> open = id == ROOT || open
-            "closed" -> if (id == ROOT) open = false
+            "opened" -> if (id == ROOT) openUntil = clock() + OPEN_WINDOW_MILLIS
+            "closed" -> if (id == ROOT) openUntil = 0L
             "clicked" -> entries().firstOrNull { it.id == id && it.enabled }?.action?.let(onAction)
         }
     }
 
     override fun aboutToShow(id: Int): Boolean {
         if (id != ROOT) return false
-        open = true
+        openUntil = clock() + OPEN_WINDOW_MILLIS
         onOpened()
         val update = stale
         stale = false
@@ -90,6 +92,7 @@ internal class StatusMenu(
         const val ROOT = 0
         const val VERSION = 3L
         const val NODE = "(ia{sv}av)"
+        const val OPEN_WINDOW_MILLIS = 120_000L
     }
 }
 
