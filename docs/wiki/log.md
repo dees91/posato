@@ -2946,6 +2946,14 @@ first removal attempt that does not finish, not to a paused keychain.
   device removed now says so instead of "Sync with iCloud didn't finish.";
   folder-mode messages and announcements name the folder. The removed-copy
   state is not stored across restarts (`SYNC-026` owns the rebuilt section).
+## [2026-10-21] decision | Roadmap revision 26: export and import, warmer light palette
+
+- `user-confirmed`: `TARGETS-007` (idea 14, one-time export and import of
+  pause sets and schedules with an optional code) and `DESIGN-005` (idea 51,
+  light surface #F4F3EB) join release 1.5. `observed`: the test Apple
+  Account's long-history zone was removed during `SYNC-024`'s
+  verification, so `SYNC-022` must rebuild it.
+
 ## [2026-10-21] fix | ANDROID-002: the block screen follows Dark Mode
 
 - `observed` on a Galaxy XCover7 (Android 14) on `bb1a9e3f`: "Paused by

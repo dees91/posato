@@ -896,6 +896,13 @@ below. This queue retains idea provenance without expanding the original MVP.
       nothing can travel.
     - Merge versus replace on import, and how imported changes enter the sync
       intent log.
+    `user-confirmed` (2026-10-21, decided for release 1.5): a one-time copy,
+    not sync, for example to a Mac on another Apple Account. The file holds
+    pause sets with their websites, the default set, and schedules; app
+    choices stay on each device. Export offers an optional code that
+    encrypts the file. Import shows a summary and a clear choice between
+    adding (combine sets with the same name, or keep them separate) and
+    replacing. Clickable mockup accepted 2026-10-21. Owner: `TARGETS-007`.
 15. **Quick sharing of saved websites across Apple Accounts.**
     `user-confirmed` (2026-09-24, preliminary): a fast way to pass saved
     websites to a device signed in to a different iCloud account, for example
@@ -1298,6 +1305,11 @@ below. This queue retains idea provenance without expanding the original MVP.
     (2026-10-21): an icon in the status area like the Mac menu bar and a
     start at login, so schedules start with the window closed. Owner:
     `LINUX-003` (1.5).
+51. **A warmer light background.** `user-confirmed` (2026-10-21): the apps'
+    light surface becomes #F4F3EB instead of #FFFEFA, with the surrounding
+    container, outline, and background tones shifted so they still read
+    against it, on every platform and on posato.app's light theme; tested on
+    a Mac and an iPhone before acceptance. Owner: `DESIGN-005` (1.5).
 
 ## Later platform questions
 
