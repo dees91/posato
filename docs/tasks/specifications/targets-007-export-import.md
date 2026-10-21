@@ -41,7 +41,13 @@ sync: nothing stays connected. App choices stay on each device.
   replace mode removes sets and schedules for every member too, and the
   import screen says so.
 - The workspace's 10-set and 10-schedule limits and the domain limits hold;
-  an import that would exceed them is refused before anything changes.
+  an import that would exceed them is refused before anything changes and
+  suggests combine or replace.
+- The code is 9 characters (about 45 bits) with a slow key derivation; it
+  protects against casual readers, not against a determined offline attack
+  on a leaked file, and `PRIVACY.md` and the export dialog say so.
+- During a running pause, import follows the hand-edit rules: added
+  websites pause now; removed ones stay paused until the pause ends.
 - Non-goals: opening a `.posato` file from Files, Finder, or a share
   extension (import starts in Posato), exporting app choices, merging
   website lists across differently named sets, sync of any kind, and
@@ -76,4 +82,5 @@ sync: nothing stays connected. App choices stay on each device.
 
 ## Decisions or blockers
 
-See the execution record's open decisions D1 to D5 for the maintainer.
+D1 to D4 are `user-confirmed` and D5 is `agent-delegated` (2026-10-21);
+see the execution record.

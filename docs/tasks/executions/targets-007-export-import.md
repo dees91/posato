@@ -1,7 +1,7 @@
 # Execution: `TARGETS-007`
 
 - **Brief:** [Export pause sets and schedules to a file and import them on any device](../specifications/targets-007-export-import.md)
-- **Status:** `planned` (waiting for the independent plan review)
+- **Status:** `planned` (decisions folded; waiting for the independent plan review)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `targets-007-export-import`
@@ -19,9 +19,16 @@
    exports the type `app.posato.pause-sets` conforming to `public.data`.
    Readers detect plain versus coded by the first bytes.
 2. **Code and key.** Posato generates the code (the person never invents
-   one): 12 characters from the pairing alphabet (60 bits), shown and typed
-   in groups of three like the pairing code. Key = PBKDF2-HMAC-SHA256,
-   600,000 iterations, 32 bytes, random salt. `SyncCryptoProvider` gains
+   one): 9 characters from the pairing alphabet (about 45 bits, D1), shown
+   and typed in three groups of three like the pairing code. Key =
+   PBKDF2-HMAC-SHA256, 1,000,000 iterations (raised from the usual 600,000
+   because the code is short; the count is in the header so a later version
+   can raise it), 32 bytes, random 16-byte salt. Residual risk, stated in
+   `PRIVACY.md` and on the export dialog: the code stops a casual reader and
+   a leaked file found by chance, but someone who has the file and spends
+   serious computing power on guessing (on the order of a hundred GPU-years
+   at today's PBKDF2 rates, `inferred`) could open it, so a person who needs
+   more should not send the file through places they do not trust. `SyncCryptoProvider` gains
    `pbkdf2HmacSha256`: JDK and Android `PBKDF2WithHmacSHA256`, iOS
    CommonCrypto `CCKeyDerivationPBKDF` in the Swift provider, tested
    against published SHA-256 vectors. AES-GCM, randomness, and the code
@@ -38,7 +45,7 @@
    - Add and combine: a file set matches a current set by trimmed,
      NFC, case-insensitive name; the unnamed first set matches the current
      first set. Matched sets gain missing websites; others are new sets
-     with new ids. The current default stays.
+     with new ids. This device's default stays (D2).
    - Add and keep separate: every file set becomes a new set; a clashing
      name gets " (imported)" through the `copyNameOf` byte rule.
    - Replace: the file's first set lands on `PauseSetId.FIRST` (keeping
@@ -48,15 +55,16 @@
    - Schedules: add modes append the file's schedules with refs mapped,
      skipping exact duplicates; replace removes all current schedules and
      saves the file's. Fresh `ScheduleId`s.
-   - Over a limit the planner refuses and the summary says which choice
-     fits (D3).
+   - Over a limit the planner refuses and the summary suggests the choice
+     that fits, combine or replace (D3).
 5. **Authoring.** Sets through `LocalTargetPolicyStore.replaceSets` in one
    write gate, so `SyncTargetPolicyStore` queues the same intents as hand
    edits; schedules through `LocalScheduleStore.save`/`remove` with the
    linked workspace id. Sets first, then schedules; a failure stops and
-   reports what was applied. While a pause or a scheduled pause runs,
-   replace is unavailable (D4); add follows the hand-edit rule (added
-   items pause now).
+   reports what was applied. During a running pause, add and replace follow
+   the hand-edit rules (D4): added websites pause now, and websites removed
+   by replace, including those of a removed set, stay paused until the pause
+   ends, as when a set is edited or deleted by hand.
 6. **Files and sharing.** Mac and Linux: AWT `FileDialog` save and open
    (native on macOS, GTK on Linux). iPhone: share sheet with the file
    (AirDrop, Save to Files) for export and `UIDocumentPickerViewController`
@@ -89,19 +97,15 @@
     import on a Linux clone (separate, then combine); Linux export, import
     on Android with replace; a linked Android and Linux pair for AC-03.
 
-## Open decisions for the maintainer
+## Decisions
 
-- **D1, code length:** 12 characters (60 bits, recommended) or the
-  mockup's 9 (45 bits; still slow to guess at 600,000 PBKDF2 rounds, but
-  weaker if a file leaks).
-- **D2, default set on add:** keep this device's default (recommended) or
-  take the file's.
-- **D3, over the limit:** refuse and point to replace or combine
-  (recommended), or import what fits and list the rest.
-- **D4, replace during a running pause:** unavailable until it ends
-  (recommended), or allowed with the hand-edit rules.
-- **D5, the unnamed first set:** match it to this device's first set
-  (recommended, mirrors sync identity) or treat it as a set named "My set".
+- `user-confirmed` 2026-10-21: D1 a 9-character code, as in the mockup,
+  with 1,000,000 PBKDF2 iterations and the residual risk stated; D2 add
+  keeps this device's default and replace takes the file's; D3 an import
+  over a limit is refused and suggests combine or replace; D4 replace during
+  a running pause follows the hand-edit rules.
+- `agent-delegated` 2026-10-21: D5 the file's unnamed first set matches
+  this device's first set, as sync identity does.
 
 ## Notes
 
