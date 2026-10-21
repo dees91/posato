@@ -1,7 +1,7 @@
 # Execution: `SYNC-025`
 
 - **Brief:** [Say folder instead of iCloud in folder mode](../specifications/sync-025-folder-wording.md)
-- **Status:** `in progress`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `sync-025-folder-wording`
@@ -30,16 +30,11 @@
 
 ## Verification
 
-- Galaxy XCover7, APK from this branch: fresh install and onboarding
-  (`20261021-132331-d93f` to `-132337-255b`), folder workspace created in
-  `/sdcard/PosatoSync025` (`-133057-719a`); the linked row shows "Latest
-  sync attempt completed" and no iCloud text (`-133344-2bdd`). The
-  workspace's `Posato` folder was copied to `/sdcard/PosatoCopy025` and the
-  workspace removed (`-133728-c46c`; the source folder is empty, the copy
-  keeps `workspace` and `bundles`).
-- Open: linking to the copy and capturing the removed-copy text. The run
-  was interrupted because another session drove the same phone at the same
-  time (`flow folder link` from the `SYNC-024` worktree).
+- Verified b9c405a2 on the Galaxy XCover7 (Android 14), APK from this tree, run 20261021-135649-4ec0: fresh install and onboarding (`-135545-efb8` to `-135551-7448`), folder workspace created in `/sdcard/PosatoSync025`.
+- Verified b9c405a2: its `Posato` folder copied to `/sdcard/PosatoCopy025`, then **Remove workspace**, run 20261021-135929-cebc; the source folder is empty and the copy keeps `workspace` and `bundles`.
+- Verified b9c405a2: linking to the copy stays unlinked; the row reads "Holds a workspace you removed" and the section shows the removed-copy text, run 20261021-140318-bb62 (screenshot `-140321-7ab7`); no element contains "iCloud", run 20261021-140330-323b.
+- An earlier attempt on the same tree was interrupted by another session driving the phone; its runs are not evidence. Both folders were deleted afterwards and the lease released.
+- `posato-control flow folder link` waits for **Add a device** or **Join**, so on the removed copy it times out by design (`-140032-e945`, its message quotes the new row text).
 
 ## Checks
 
