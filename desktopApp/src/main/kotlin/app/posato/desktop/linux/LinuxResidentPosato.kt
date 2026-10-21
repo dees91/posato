@@ -1,0 +1,174 @@
+package app.posato.desktop.linux
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.ApplicationScope
+import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.rememberDialogState
+import androidx.compose.ui.window.rememberWindowState
+import app.posato.ApplicationNavigation
+import app.posato.desktop.PresenceMenuActionId
+import app.posato.desktop.linux.status.StatusAreaState
+import app.posato.desktop.linux.status.statusMenuEntries
+import app.posato.desktop.presenceMenuModel
+import app.posato.feature.presence.LinuxPresenceCopy
+import app.posato.feature.presence.PresenceAction
+import app.posato.feature.presence.PresenceMenu
+import app.posato.feature.presence.PresenceState
+import app.posato.feature.presence.ResidenceDialogContent
+import app.posato.feature.presence.SessionWindowRequest
+import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+private enum class LinuxNotice { QUIT, FIRST_CLOSE, FIRST_CLOSE_NO_ICON }
+
+/**
+ * Posato for Linux as a resident application (LINUX-003): the session host and schedules run at application level,
+ * the window comes and goes, the status icon mirrors the Mac menu, and quitting asks only while a schedule is on.
+ */
+@Composable
+internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
+    val presence = host.graph.presence
+    val menu by presence.menu.collectAsState(LOADING_MENU)
+    val watcher by (host.statusArea?.watcherPresent ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }).collectAsState()
+    var visible by remember { mutableStateOf(!host.startHidden) }
+    var notice by remember { mutableStateOf<LinuxNotice?>(null) }
+    val quit: () -> Unit = { if (menu.schedulesEnabled) notice = LinuxNotice.QUIT else exitApplication() }
+    host.residence.onQuit = quit
+
+    LaunchedEffect(Unit) { presence.runWhileResident() }
+    LaunchedEffect(Unit) { host.showRequests.collect { visible = true } }
+    LaunchedEffect(Unit) { host.menuOpened.collect { presence.onMenuOpened() } }
+    LaunchedEffect(Unit) {
+        host.actions.collect { action ->
+            if (action == PresenceMenuActionId.QUIT) return@collect quit()
+            visible = true
+            windowRequestOf(action)?.let(presence::request)
+        }
+    }
+    StatusIconEffect(host, menu)
+    // Without a status icon, a hidden Posato stays only for a pause or an enabled schedule; a login launch waits for the
+    // panel to come up first, and a panel that goes away is followed live.
+    LaunchedEffect(visible, watcher, menu) {
+        if (!hiddenWithNothingToDo(visible, watcher, menu)) return@LaunchedEffect
+        delay(WATCHER_GRACE_MILLIS)
+        exitApplication()
+    }
+
+    val navigation = remember { ApplicationNavigation() }
+    val windowState = rememberWindowState(placement = WindowPlacement.Maximized, width = WINDOW_WIDTH.dp, height = WINDOW_HEIGHT.dp)
+    if (visible) {
+        Window(
+            onCloseRequest = {
+                if (!watcher && !keepsRunning(menu)) {
+                    exitApplication()
+                } else {
+                    visible = false
+                    if (host.firstClose.firstTime()) notice = if (watcher) LinuxNotice.FIRST_CLOSE else LinuxNotice.FIRST_CLOSE_NO_ICON
+                }
+            },
+            title = "Posato",
+            state = windowState,
+            onPreviewKeyEvent = { event ->
+                val quitKey = event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.Q
+                if (quitKey) quit()
+                quitKey
+            },
+        ) {
+            host.graph.application.Content(
+                hostsSession = false,
+                windowRequests = presence.windowRequests,
+                navigation = navigation,
+                residence = host.residence,
+            )
+        }
+    }
+    notice?.let { shown -> NoticeWindow(shown, host.copy, onDismiss = { notice = null }, onQuit = ::exitApplication) }
+}
+
+@Composable
+private fun StatusIconEffect(
+    host: LinuxResidentHost,
+    menu: PresenceMenu,
+) {
+    val area = host.statusArea ?: return
+    LaunchedEffect(menu) {
+        while (true) {
+            val model = presenceMenuModel(menu, host.copy.presence, System.currentTimeMillis(), ::formatClockTime)
+            area.update(StatusAreaState(statusMenuEntries(model), "Posato", model.accessibilityDescription, model.filled))
+            // Remaining minutes only change during a pause; an idle icon is never refreshed on a timer.
+            if (menu.sessionEndEpochMillis == null) break
+            delay(MENU_REFRESH_MILLIS)
+        }
+    }
+}
+
+@Composable
+private fun NoticeWindow(
+    notice: LinuxNotice,
+    copy: LinuxPresenceCopy,
+    onDismiss: () -> Unit,
+    onQuit: () -> Unit,
+) {
+    val state = rememberDialogState(width = DIALOG_WIDTH.dp, height = DIALOG_HEIGHT.dp)
+    DialogWindow(onCloseRequest = onDismiss, state = state, title = "Posato", resizable = false, alwaysOnTop = true) {
+        when (notice) {
+            LinuxNotice.QUIT -> ResidenceDialogContent(
+                title = copy.presence.quitTitle,
+                message = copy.quitSchedules,
+                primary = copy.presence.quitKeep,
+                onPrimary = onDismiss,
+                secondary = copy.presence.quitConfirm,
+                onSecondary = onQuit,
+            )
+
+            LinuxNotice.FIRST_CLOSE -> ResidenceDialogContent(null, copy.firstClose, copy.presence.firstCloseOk, onDismiss)
+
+            LinuxNotice.FIRST_CLOSE_NO_ICON -> ResidenceDialogContent(null, copy.firstCloseNoIcon, copy.presence.firstCloseOk, onDismiss)
+        }
+    }
+}
+
+private fun windowRequestOf(action: PresenceMenuActionId): SessionWindowRequest? = when (action) {
+    PresenceMenuActionId.START_SESSION -> SessionWindowRequest.START_SESSION
+    PresenceMenuActionId.END_SESSION_EARLY -> SessionWindowRequest.END_SESSION_EARLY
+    PresenceMenuActionId.RESUME_RESTRICTIONS -> SessionWindowRequest.SESSION
+    PresenceMenuActionId.OPEN_POSATO, PresenceMenuActionId.QUIT -> null
+}
+
+private fun hiddenWithNothingToDo(
+    visible: Boolean,
+    watcher: Boolean,
+    menu: PresenceMenu,
+): Boolean = !visible && !watcher && menu.state != PresenceState.LOADING && !keepsRunning(menu)
+
+/** A pause runs or a schedule is on: the work a hidden Posato keeps doing. */
+private fun keepsRunning(menu: PresenceMenu): Boolean =
+    menu.state == PresenceState.ENFORCING || menu.state == PresenceState.NOT_ENFORCING || menu.schedulesEnabled
+
+private fun formatClockTime(epochMillis: Long): String =
+    DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+private val LOADING_MENU = PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null)
+private const val MENU_REFRESH_MILLIS = 60_000L
+private const val WATCHER_GRACE_MILLIS = 30_000L
+private const val WINDOW_WIDTH = 1_100
+private const val WINDOW_HEIGHT = 780
+private const val DIALOG_WIDTH = 460
+private const val DIALOG_HEIGHT = 220

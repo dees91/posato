@@ -8,31 +8,31 @@ internal class StatusItem(
     private val state: () -> StatusAreaState,
     private val onShow: (String) -> Unit,
 ) : StatusNotifierItem {
-    override fun getCategory(): String = "ApplicationStatus"
+    override val category: String get() = "ApplicationStatus"
 
-    override fun getId(): String = "posato"
+    override val id: String get() = "posato"
 
-    override fun getTitle(): String = state().title
+    override val title: String get() = state().title
 
-    override fun getStatus(): String = "Active"
+    override val status: String get() = "Active"
 
-    override fun getWindowId(): Int = 0
+    override val windowId: Int get() = 0
 
-    override fun getIconThemePath(): String = icons.themePath
+    override val iconThemePath: String get() = icons.themePath
 
-    override fun getIconName(): String = if (state().filled) icons.filledName else icons.outlineName
+    override val iconName: String get() = if (state().filled) icons.filledName else icons.outlineName
 
-    override fun getIconPixmap(): List<IconPixmap> = if (state().filled) icons.filledPixmaps else icons.outlinePixmaps
+    override val iconPixmap: List<IconPixmap> get() = if (state().filled) icons.filledPixmaps else icons.outlinePixmaps
 
-    override fun getOverlayIconName(): String = ""
+    override val overlayIconName: String get() = ""
 
-    override fun getAttentionIconName(): String = ""
+    override val attentionIconName: String get() = ""
 
-    override fun getToolTip(): ToolTip = state().let { ToolTip("", emptyList(), it.title, it.description) }
+    override val toolTip: ToolTip get() = state().let { ToolTip("", emptyList(), it.title, it.description) }
 
-    override fun getItemIsMenu(): Boolean = false
+    override val itemIsMenu: Boolean get() = false
 
-    override fun getMenu(): DBusPath = DBusPath(LinuxStatusArea.MENU_PATH)
+    override val menu: DBusPath get() = DBusPath(LinuxStatusArea.MENU_PATH)
 
     override fun activate(
         x: Int,

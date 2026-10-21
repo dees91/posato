@@ -22,44 +22,44 @@ import org.freedesktop.dbus.types.Variant
 /** The item a panel draws; dbus-java serves the bound properties through org.freedesktop.DBus.Properties. */
 @DBusInterfaceName("org.kde.StatusNotifierItem")
 interface StatusNotifierItem : DBusInterface {
-    @DBusBoundProperty(name = "Category")
-    fun getCategory(): String
+    @get:DBusBoundProperty(name = "Category")
+    val category: String
 
-    @DBusBoundProperty(name = "Id")
-    fun getId(): String
+    @get:DBusBoundProperty(name = "Id")
+    val id: String
 
-    @DBusBoundProperty(name = "Title")
-    fun getTitle(): String
+    @get:DBusBoundProperty(name = "Title")
+    val title: String
 
-    @DBusBoundProperty(name = "Status")
-    fun getStatus(): String
+    @get:DBusBoundProperty(name = "Status")
+    val status: String
 
-    @DBusBoundProperty(name = "WindowId")
-    fun getWindowId(): Int
+    @get:DBusBoundProperty(name = "WindowId")
+    val windowId: Int
 
-    @DBusBoundProperty(name = "IconThemePath")
-    fun getIconThemePath(): String
+    @get:DBusBoundProperty(name = "IconThemePath")
+    val iconThemePath: String
 
-    @DBusBoundProperty(name = "IconName")
-    fun getIconName(): String
+    @get:DBusBoundProperty(name = "IconName")
+    val iconName: String
 
-    @DBusBoundProperty(name = "IconPixmap")
-    fun getIconPixmap(): List<IconPixmap>
+    @get:DBusBoundProperty(name = "IconPixmap")
+    val iconPixmap: List<IconPixmap>
 
-    @DBusBoundProperty(name = "OverlayIconName")
-    fun getOverlayIconName(): String
+    @get:DBusBoundProperty(name = "OverlayIconName")
+    val overlayIconName: String
 
-    @DBusBoundProperty(name = "AttentionIconName")
-    fun getAttentionIconName(): String
+    @get:DBusBoundProperty(name = "AttentionIconName")
+    val attentionIconName: String
 
-    @DBusBoundProperty(name = "ToolTip")
-    fun getToolTip(): ToolTip
+    @get:DBusBoundProperty(name = "ToolTip")
+    val toolTip: ToolTip
 
-    @DBusBoundProperty(name = "ItemIsMenu")
-    fun getItemIsMenu(): Boolean
+    @get:DBusBoundProperty(name = "ItemIsMenu")
+    val itemIsMenu: Boolean
 
-    @DBusBoundProperty(name = "Menu")
-    fun getMenu(): DBusPath
+    @get:DBusBoundProperty(name = "Menu")
+    val menu: DBusPath
 
     @DBusMemberName("Activate")
     fun activate(
@@ -113,17 +113,17 @@ interface StatusNotifierWatcher : DBusInterface {
 /** The menu the panel draws for the item; only the calls a panel makes are answered. */
 @DBusInterfaceName("com.canonical.dbusmenu")
 interface DbusMenu : DBusInterface {
-    @DBusBoundProperty(name = "Version")
-    fun getVersion(): UInt32
+    @get:DBusBoundProperty(name = "Version")
+    val version: UInt32
 
-    @DBusBoundProperty(name = "TextDirection")
-    fun getTextDirection(): String
+    @get:DBusBoundProperty(name = "TextDirection")
+    val textDirection: String
 
-    @DBusBoundProperty(name = "Status")
-    fun getStatus(): String
+    @get:DBusBoundProperty(name = "Status")
+    val status: String
 
-    @DBusBoundProperty(name = "IconThemePath")
-    fun getIconThemePath(): List<String>
+    @get:DBusBoundProperty(name = "IconThemePath")
+    val iconThemePath: List<String>
 
     @DBusMemberName("GetLayout")
     fun getLayout(
@@ -193,7 +193,7 @@ class ToolTip(
     @field:Position(0) @JvmField val iconName: String,
     @field:Position(1) @JvmField val iconPixmaps: List<IconPixmap>,
     @field:Position(2) @JvmField val title: String,
-    @field:Position(3) @JvmField val description: String,
+    @field:Position(FOURTH) @JvmField val description: String,
 ) : Struct()
 
 /** One ARGB32 image in network byte order: `(iiay)`. */
@@ -202,3 +202,5 @@ class IconPixmap(
     @field:Position(1) @JvmField val height: Int,
     @field:Position(2) @JvmField val bytes: ByteArray,
 ) : Struct()
+
+private const val FOURTH = 3

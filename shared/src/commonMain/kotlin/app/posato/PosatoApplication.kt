@@ -44,7 +44,9 @@ import app.posato.core.designsystem.platformDevice
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.designsystem.windowNavigationPlacement
 import app.posato.core.navigation.PosatoNavStack
+import app.posato.feature.about.AboutHosting
 import app.posato.feature.about.AboutScreen
+import app.posato.feature.about.ApplicationResidence
 import app.posato.feature.about.ApplicationUpdates
 import app.posato.feature.licenses.LicenseDocument
 import app.posato.feature.licenses.LicensesScreen
@@ -131,6 +133,7 @@ class PosatoApplication internal constructor(
         highContrast: Boolean? = null,
         onAnnouncement: (String) -> Unit = {},
         updates: ApplicationUpdates? = null,
+        residence: ApplicationResidence? = null,
         hostsSession: Boolean = true,
         windowRequests: Flow<SessionWindowRequest> = emptyFlow(),
         navigation: ApplicationNavigation = remember { ApplicationNavigation() },
@@ -183,7 +186,7 @@ class PosatoApplication internal constructor(
                     onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     device = device,
-                    updates = updates,
+                    about = AboutHosting(updates, residence),
                     navigation = navigation,
                     windowRequests = windowRequests,
                     modifier = modifier,
@@ -221,7 +224,7 @@ class PosatoApplication internal constructor(
         macSetupState: MacHelperSetupUiState?,
         onMacSetupAnnouncement: (String) -> Unit,
         device: PosatoDevice,
-        updates: ApplicationUpdates?,
+        about: AboutHosting,
         navigation: ApplicationNavigation,
         windowRequests: Flow<SessionWindowRequest>,
         modifier: Modifier = Modifier,
@@ -238,7 +241,7 @@ class PosatoApplication internal constructor(
                 macSetupState,
                 onMacSetupAnnouncement,
                 pendingRequest,
-                updates,
+                about,
                 onConsumeWindowRequest = { pendingRequest = null },
                 modifier = modifier,
             )
@@ -277,7 +280,7 @@ class PosatoApplication internal constructor(
                             }
 
                             ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
-                                InformationContent(route, navigation, updates, contentModifier.padding(layout.inset))
+                                InformationContent(route, navigation, about, contentModifier.padding(layout.inset))
                             }
                         }
                     }
@@ -313,7 +316,7 @@ class PosatoApplication internal constructor(
         macSetupState: MacHelperSetupUiState?,
         onMacSetupAnnouncement: (String) -> Unit,
         windowRequest: SessionWindowRequest?,
-        updates: ApplicationUpdates?,
+        about: AboutHosting,
         onConsumeWindowRequest: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
@@ -340,7 +343,7 @@ class PosatoApplication internal constructor(
                 macSetupState,
                 onMacSetupAnnouncement,
                 windowRequest,
-                updates,
+                about,
                 onConsumeWindowRequest,
                 sidebar,
                 openAbout,
@@ -358,7 +361,7 @@ class PosatoApplication internal constructor(
         macSetupState: MacHelperSetupUiState?,
         onMacSetupAnnouncement: (String) -> Unit,
         windowRequest: SessionWindowRequest?,
-        updates: ApplicationUpdates?,
+        about: AboutHosting,
         onConsumeWindowRequest: () -> Unit,
         sidebar: Boolean,
         onOpenAbout: () -> Unit,
@@ -405,7 +408,7 @@ class PosatoApplication internal constructor(
                         InformationContent(
                             route,
                             navigation,
-                            updates,
+                            about,
                             contentModifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
                             cupertinoBackLabel = backLabel,
                             cupertinoRoot = sidebar && route == ShellRoute.About,
@@ -482,7 +485,7 @@ class PosatoApplication internal constructor(
     private fun InformationContent(
         route: ShellRoute,
         navigation: ApplicationNavigation,
-        updates: ApplicationUpdates?,
+        about: AboutHosting,
         modifier: Modifier = Modifier,
         cupertinoBackLabel: String? = null,
         cupertinoRoot: Boolean = false,
@@ -492,7 +495,8 @@ class PosatoApplication internal constructor(
                 onOpenLicenses = { navigation.showInformation(ApplicationInformationPage.LICENSES) },
                 onBack = navigation::back,
                 modifier = modifier,
-                updates = updates,
+                updates = about.updates,
+                residence = about.residence,
                 notifications = notifier.takeIf { it.available },
                 barBackLabel = cupertinoBackLabel,
                 barRoot = cupertinoRoot,

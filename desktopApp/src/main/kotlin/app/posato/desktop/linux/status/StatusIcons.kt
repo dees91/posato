@@ -39,7 +39,10 @@ internal class StatusIcons(
         val bytes = ByteArray(size * size * BYTES_PER_PIXEL)
         image.getRGB(0, 0, size, size, null, 0, size).forEachIndexed { index, argb ->
             // ARGB32 in network byte order, as the StatusNotifierItem specification asks.
-            for (shift in 0 until BYTES_PER_PIXEL) bytes[index * BYTES_PER_PIXEL + shift] = (argb ushr (BITS * (BYTES_PER_PIXEL - 1 - shift))).toByte()
+            for (shift in 0 until BYTES_PER_PIXEL) {
+                val bits = BITS * (BYTES_PER_PIXEL - 1 - shift)
+                bytes[index * BYTES_PER_PIXEL + shift] = (argb ushr bits).toByte()
+            }
         }
         return IconPixmap(size, size, bytes)
     }
@@ -58,3 +61,6 @@ internal class StatusIcons(
         const val BITS = 8
     }
 }
+
+/** Where the package installs the symbolic icons (jpackage copies `linux/` into the application directory). */
+internal const val LINUX_ICON_THEME_PATH = "/opt/posato/lib/app/icons"
