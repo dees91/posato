@@ -320,7 +320,7 @@ class SyncReducerPauseSetTest {
     }
 
     @Test
-    fun `given any applied set-default when reduced then the workspace counts a default as chosen, even for a removed set`() {
+    fun `given any applied set-default when reduced then a default counts as chosen even for a removed set`() {
         val none = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetPut(set(80), "Work")))
         val live = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetPut(set(80), "Work"), SyncOperationPayload.PauseSetDefault(set(80))))
         val firstChosen = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetDefault(first)))

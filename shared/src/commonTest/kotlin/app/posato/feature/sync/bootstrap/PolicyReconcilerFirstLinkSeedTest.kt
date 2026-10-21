@@ -51,7 +51,11 @@ class PolicyReconcilerFirstLinkSeedTest {
             store.replaceLocal(sets(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), default = evening, extra = evening))
             seed(store, reduce())
             assertEquals(
-                listOf(StoredPolicyIntent.PutSet(PauseSetId.FIRST, "Focus"), StoredPolicyIntent.PutSet(evening, "Evening"), StoredPolicyIntent.ChooseDefault(evening)),
+                listOf(
+                    StoredPolicyIntent.PutSet(PauseSetId.FIRST, "Focus"),
+                    StoredPolicyIntent.PutSet(evening, "Evening"),
+                    StoredPolicyIntent.ChooseDefault(evening),
+                ),
                 store.pending(),
             )
             assertIs<LocalPolicyResult.Success<Unit>>(store.clearIntents())

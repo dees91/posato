@@ -27,7 +27,7 @@ class AppleSyncFirstSetNameTest {
     private val evening = checkNotNull(PauseSetId.of(testIdentifier(82)))
 
     @Test
-    fun `given a renamed first set and another default when this device creates the workspace then both are kept and a later device receives them`() = runTest {
+    fun `given a renamed first set and another default when this device creates the workspace then a later device receives both`() = runTest {
         val (creator, joiner) = pair("first-set-create")
         try {
             creator.replaceLocal(focusWithEveningDefault())
@@ -91,7 +91,7 @@ class AppleSyncFirstSetNameTest {
     }
 
     @Test
-    fun `given a workspace that never named its first set when a renamed device joins then it publishes its name and default to the member`() = runTest {
+    fun `given a workspace that never named its first set when a renamed device joins then the member receives its choices`() = runTest {
         val (member, joiner) = pair("first-set-join-unnamed")
         try {
             member.establish()

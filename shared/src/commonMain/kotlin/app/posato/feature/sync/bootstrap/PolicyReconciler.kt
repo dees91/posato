@@ -56,12 +56,11 @@ internal class PolicyReconciler(
                 is LocalPolicyResult.Success -> read.value.sets
                 is LocalPolicyResult.Failure -> return@withWriteGate read
             }
-            val pending = when (val read = policies.readIntents()) {
+            val rows = when (val read = policies.readIntents()) {
                 is LocalPolicyResult.Success -> read.value
-                    .filter { row -> row.workspaceId.contentEquals(workspaceId) }
-                    .map(SequencedPolicyIntent::intent)
                 is LocalPolicyResult.Failure -> return@withWriteGate read
             }
+            val pending = rows.filter { row -> row.workspaceId.contentEquals(workspaceId) }.map(SequencedPolicyIntent::intent)
             val sets = local.sets.filter { set -> projection.pauseSetStatus(set.id) != PauseSetStatus.REMOVED }
             val puts = sets.flatMap { set -> seedsFor(set, projection, pending) }
             val seeds = puts + listOfNotNull(seededDefault(local, projection, pending, puts))

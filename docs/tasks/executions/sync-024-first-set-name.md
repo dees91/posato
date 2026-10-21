@@ -47,14 +47,29 @@
 
 ## Result
 
-Pending.
+- `SyncReducer` exposes `defaultChosen`: any applicable `set-default`
+  counts, also one naming a removed set; the projection digest includes it.
+- `seedsFor` queues the first set's name while the workspace's first set
+  is unnamed; `seededDefault` queues the local resolved default under the
+  R2 conditions, after every put; `seedLocalExtras` reads only the current
+  workspace's queued changes.
+- ADR 0006 "Migration identity" states the rule and its known limits.
+- `posato-control flow set` gains `--rename-from` and `--make-default`.
+- Android (Galaxy XCover7, fresh install from this branch): renamed the
+  first set "Focus", made "Evening" the default, then created a folder
+  workspace in `/sdcard/Sync/Posato-024`; Pause sets still shows "Focus"
+  and "Evening" as Default.
 
 ## Review
 
-- Plan review: pending.
+- Plan review, 2026-10-21: no Critical; seven Required, folded as R1 to R7.
 
 ## Checks
 
 | Check | Result |
 | --- | --- |
-| `AppleSyncFirstSetNameTest` on `main` `305d5bd7` | create case fails (`expected:<Focus> but was:<null>`), join case passes |
+| Failing tests on `43c61ae4` (before the fix) | create, join unnamed, concurrent, the updated old-rule case, drain, double seed, stale rows, and the reducer flag fail; guards pass |
+| `:shared:jvmTest` sync tests after `7ad40c41` | pass |
+| Android runs | `20261021-121555-8c67` reset to `20261021-121601-4745` onboard; `-121701-c7bb` rename, `-121729-843f` Evening, `-121808-b14e` default, `-122009-633a` folder link, `-122306-cc82` snapshot, `-122309-5164` screenshot |
+| `./gradlew quality` | passed after the line-length and style fixes |
+| Linux join and iCloud create on Tart clones | pending, waits for the coordinator |
