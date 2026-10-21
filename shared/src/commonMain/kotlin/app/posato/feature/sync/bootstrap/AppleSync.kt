@@ -59,6 +59,8 @@ internal data class AppleSyncState(
     val removing: Boolean = false,
     /** When this device last completed an exchange with the linked workspace; kept on the device, never synchronized. */
     val lastSyncedEpochMillis: Long? = null,
+    /** The chosen folder or zone holds a workspace this device removed, so retrying it can never link. */
+    val removedWorkspaceCopy: Boolean = false,
 )
 
 internal class AppleSync(
@@ -82,7 +84,9 @@ internal class AppleSync(
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
     private val mutableState = MutableStateFlow(AppleSyncState())
-    private val publish: (SyncStatus) -> Unit = { status -> mutableState.update { it.copy(status = status, reason = null) } }
+    private val publish: (SyncStatus) -> Unit = { status ->
+        mutableState.update { it.copy(status = status, reason = null, removedWorkspaceCopy = false) }
+    }
     private val lastSync = LastSyncTracker(lastSyncStore, core.wallClock, mutableState)
     private val writers = AppleSyncWriter(coordinator, core, publish)
     private val authoring = AppleSyncAuthoring(store, policySync, publish)
@@ -149,6 +153,7 @@ internal class AppleSync(
                     } else {
                         val result = coordinator.bootstrap()
                         publish(result.toSyncStatus())
+                        mutableState.update { it.copy(removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace) }
                         mutableState.refreshLinked(coordinator, lastSync)
                         if (result is BootstrapResult.Ready) syncNow()
                     }
@@ -472,7 +477,7 @@ private fun BootstrapResult.toSyncStatus(): SyncStatus {
     return when (this) {
         is BootstrapResult.Ready -> SyncStatus.SYNCING
         BootstrapResult.WaitingForWorkspaceKey -> SyncStatus.WAITING_FOR_KEY
-        BootstrapResult.Retryable -> SyncStatus.RETRYABLE
+        BootstrapResult.Retryable, BootstrapResult.RemovedWorkspace -> SyncStatus.RETRYABLE
         BootstrapResult.ActionRequired -> SyncStatus.ACTION_REQUIRED
     }
 }

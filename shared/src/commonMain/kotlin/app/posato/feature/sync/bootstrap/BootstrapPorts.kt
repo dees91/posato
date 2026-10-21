@@ -295,5 +295,8 @@ internal sealed interface BootstrapResult {
 
     data object Retryable : BootstrapResult
 
+    /** The anchor names a workspace this device removed; retrying cannot link to it, and the person chooses again. */
+    data object RemovedWorkspace : BootstrapResult
+
     data object ActionRequired : BootstrapResult
 }

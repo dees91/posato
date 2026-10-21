@@ -35,6 +35,7 @@ import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.feature.sync.bootstrap.AppleSyncState
+import app.posato.feature.sync.bootstrap.SyncAttentionReason
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.folder.LinkSharing
 import app.posato.feature.sync.folder.PairingAcceptResult
@@ -69,12 +70,16 @@ import app.posato.generated.resources.sync_folder_link_received
 import app.posato.generated.resources.sync_folder_linking
 import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
+import app.posato.generated.resources.sync_folder_removed_copy
+import app.posato.generated.resources.sync_folder_retryable
+import app.posato.generated.resources.sync_folder_running
 import app.posato.generated.resources.sync_folder_share_link
 import app.posato.generated.resources.sync_folder_use
 import app.posato.generated.resources.sync_folder_waiting_for_key
 import app.posato.generated.resources.sync_remove_workspace
 import app.posato.generated.resources.sync_removing_note
 import app.posato.generated.resources.sync_removing_workspace
+import app.posato.generated.resources.sync_retryable
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -125,7 +130,21 @@ private fun folderMessage(
         folder == null || (snapshot.status == SyncStatus.LOCAL_ONLY && !snapshot.linked) -> Res.string.sync_folder_description
         snapshot.status == SyncStatus.WAITING_FOR_KEY -> Res.string.sync_folder_waiting_for_key
         snapshot.status == SyncStatus.ACTION_REQUIRED && snapshot.reason == null -> Res.string.sync_folder_action_required
-        else -> snapshot.status.message(snapshot.linked, snapshot.reason)
+        snapshot.removedWorkspaceCopy && !snapshot.linked -> Res.string.sync_folder_removed_copy
+        else -> snapshot.status.folderMessage(snapshot.linked, snapshot.reason)
+    }
+}
+
+/** The folder counterparts of the iCloud sentences; the rest of [message] names no transport. */
+private fun SyncStatus.folderMessage(
+    linked: Boolean,
+    reason: SyncAttentionReason?,
+): StringResource {
+    return when (this) {
+        SyncStatus.LOCAL_ONLY -> Res.string.sync_folder_description
+        SyncStatus.SYNCING -> Res.string.sync_folder_running
+        SyncStatus.RETRYABLE -> if (linked) Res.string.sync_retryable else Res.string.sync_folder_retryable
+        else -> message(linked, reason)
     }
 }
 

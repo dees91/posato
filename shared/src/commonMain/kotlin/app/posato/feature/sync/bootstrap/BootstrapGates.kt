@@ -65,7 +65,7 @@ internal suspend fun refuseIfRemoved(
         is BootstrapStoreResult.Failure -> mapStoreFailure(removed.reason)
 
         is BootstrapStoreResult.Success -> if (removed.value) {
-            BootstrapResult.Retryable
+            BootstrapResult.RemovedWorkspace
         } else {
             null
         }

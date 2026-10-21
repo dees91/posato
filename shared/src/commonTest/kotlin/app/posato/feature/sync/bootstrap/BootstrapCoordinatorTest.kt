@@ -747,7 +747,7 @@ class BootstrapCoordinatorTest {
 
             val result = harness.coordinator.bootstrap()
 
-            assertEquals(BootstrapResult.Retryable, result)
+            assertEquals(BootstrapResult.RemovedWorkspace, result)
             assertEquals(1, harness.cloud.zoneSaveCalls)
             assertEquals(0, harness.store.persistCalls)
             assertEquals(0, harness.cloud.anchorCreateCalls)
@@ -769,7 +769,7 @@ class BootstrapCoordinatorTest {
 
         val result = harness.coordinator.bootstrap()
 
-        assertEquals(BootstrapResult.Retryable, result)
+        assertEquals(BootstrapResult.RemovedWorkspace, result)
         assertEquals(0, harness.cloud.zoneSaveCalls)
         assertEquals(0, harness.store.persistCalls)
         assertEquals(0, harness.cloud.anchorCreateCalls)
@@ -786,7 +786,7 @@ class BootstrapCoordinatorTest {
         harness.store.recordRemoved(removed.workspaceId)
         harness.cloud.storedAnchor = removed
 
-        assertEquals(BootstrapResult.Retryable, harness.coordinator.bootstrap())
+        assertEquals(BootstrapResult.RemovedWorkspace, harness.coordinator.bootstrap())
         harness.cloud.storedAnchor = null
 
         val ready = assertIs<BootstrapResult.Ready>(harness.coordinator.bootstrap())
@@ -805,7 +805,7 @@ class BootstrapCoordinatorTest {
         harness.store.recordRemoved(removed.workspaceId)
         harness.cloud.storedAnchor = removed
 
-        assertEquals(BootstrapResult.Retryable, harness.coordinator.bootstrap())
+        assertEquals(BootstrapResult.RemovedWorkspace, harness.coordinator.bootstrap())
         harness.cloud.storedAnchor = winner
         seedValidItem(harness.keys, winner)
 
@@ -829,7 +829,7 @@ class BootstrapCoordinatorTest {
 
         val result = harness.coordinator.bootstrap()
 
-        assertEquals(BootstrapResult.Retryable, result)
+        assertEquals(BootstrapResult.RemovedWorkspace, result)
         assertEquals(0, harness.keys.deleteCalls)
         assertTrue(harness.keys.items.containsKey(accountTextOf(own)))
         val candidate = assertIs<BootstrapState.Candidate>(harness.store.state).candidate
@@ -848,7 +848,7 @@ class BootstrapCoordinatorTest {
 
         val result = harness.coordinator.bootstrap()
 
-        assertEquals(BootstrapResult.Retryable, result)
+        assertEquals(BootstrapResult.RemovedWorkspace, result)
         val candidate = assertIs<BootstrapState.Candidate>(harness.store.state).candidate
         assertEquals(1, harness.store.persistCalls)
         assertEquals(0, harness.keys.deleteCalls)
