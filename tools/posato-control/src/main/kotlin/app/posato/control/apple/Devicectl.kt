@@ -170,6 +170,31 @@ class Devicectl(
         )
     }
 
+    /** Copies a file between [host] on this Mac and [inContainer], a path inside [bundleId]'s data container. */
+    fun copyAppData(
+        udid: String,
+        bundleId: String,
+        toDevice: Boolean,
+        host: Path,
+        inContainer: String
+    ) {
+        val (direction, source, destination) = if (toDevice) {
+            Triple(
+                "to",
+                host.toString(),
+                inContainer,
+            )
+        } else {
+            Triple("from", inContainer, host.toString())
+        }
+        json(
+            listOf("device", "copy", direction, "--device", udid, "--source", source, "--destination", destination) +
+                listOf("--domain-type", "appDataContainer", "--domain-identifier", bundleId),
+            ErrorCode.COMMAND_FAILED,
+            "Copying a file $direction the device",
+        )
+    }
+
     private fun json(
         arguments: List<String>,
         code: ErrorCode,
