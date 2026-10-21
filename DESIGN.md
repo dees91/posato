@@ -25,7 +25,7 @@ confidence:
   accessibility: medium
 tokens:
   colors:
-    light-surface: "#FFFEFA"
+    light-surface: "#F4F3EB"
     light-ink: "#18231F"
     light-primary: "#2E5D50"
     light-container: "#E4EBE5"
@@ -253,22 +253,30 @@ brand provenance, not replacements for the current application colors.
 
 | Role | Light | Dark |
 | --- | --- | --- |
-| surface | `#FFFEFA` | `#1C2520` |
+| surface | `#F4F3EB` | `#1C2520` |
 | onSurface | `#18231F` | `#F2F2E9` |
 | primary / secondary | `#2E5D50` | `#A7C3A2` |
 | onPrimary / onSecondary | `#FFFFFF` | `#18231F` |
 | primaryContainer | `#E4EBE5` | `#334436` |
 | secondaryContainer | `#EDF2EA` | `#2A3A2E` |
 | onSurfaceVariant | `#626B63` | `#AFB9AE` |
-| surfaceContainer / surfaceVariant | `#F6F6F0` | `#232E26` |
-| surfaceContainerLow | `#F8F8F2` | `#202A23` |
+| surfaceContainer / surfaceVariant | `#EBEAE1` | `#232E26` |
+| surfaceContainerLow | `#EFEEE6` | `#202A23` |
+| surfaceContainerLowest / High / Highest | `#FBFAF4` / `#E6E5DC` / `#E1E0D6` | see PosatoPalette.kt |
 | outline | `#A3AFA2` | `#6D816E` |
-| outlineVariant | `#DEDFD5` | `#39453B` |
+| outlineVariant | `#D8D8CD` | `#39453B` |
 | tertiary (caution) | `#805811` | `#EDC780` |
 | tertiaryContainer | `#FBF3DF` | `#352E20` |
 | error | `#A93228` | `#FFA69B` |
 | errorContainer | `#FFF0EC` | `#392823` |
-| background (outer canvas) | `#EEEEE8` | `#141B17` |
+| background (outer canvas) | `#E9E8DF` | `#141B17` |
+
+The light surface is a warm `#F4F3EB` rather than near-white `#FFFEFA`, with
+the container, outline, and canvas tones shifted so they still read against
+it (`user-confirmed` 2026-10-21, idea 51, `DESIGN-005`, after a test on a Mac
+and an iPhone). Muted text (`#626B63`) keeps WCAG AA on the surface (4.96:1)
+and on surfaceContainer (4.57:1). posato.app's light theme, the macOS pause
+page, and the Android block screen's window use the same surface.
 
 The complete ColorScheme mapping is in
 [PosatoPalette.kt](shared/src/commonMain/kotlin/app/posato/core/designsystem/PosatoPalette.kt).

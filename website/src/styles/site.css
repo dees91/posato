@@ -1,12 +1,12 @@
 /* Tokens follow DESIGN.md "Semantic palette" and the macOS pause page. */
 :root {
   color-scheme: light dark;
-  --surface: #fffefa;
+  --surface: #f4f3eb;
   --ink: #18231f;
   --primary: #2e5d50;
   --muted: #626b63;
-  --container: #f6f6f0;
-  --outline-variant: #dedfd5;
+  --container: #ecebe2;
+  --outline-variant: #d8d8cd;
   --outline: #a3afa2;
   --bezel: #0f1411;
   --content-max: 76rem;

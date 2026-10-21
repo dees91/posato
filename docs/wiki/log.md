@@ -2993,3 +2993,11 @@ first removal attempt that does not finish, not to a paused keychain.
   waits while the code has not reached the folder; an empty folder offers
   Create workspace. `observed` on a Galaxy XCover7: scan first, folder
   first, a late offer, and an expired code.
+## [2026-10-21] design | DESIGN-005: a warmer light palette
+
+- `user-confirmed` (idea 51): the light surface becomes `#F4F3EB` with the
+  container, outline, and canvas tones shifted (`PosatoPalette.kt`,
+  `DESIGN.md` "Semantic palette"); posato.app's light theme, the macOS pause
+  page, and the Android block screen's window follow. Muted text keeps AA on
+  the surface (4.96:1) and surfaceContainer (4.57:1); dark and high
+  contrast are unchanged.
