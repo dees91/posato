@@ -1,6 +1,9 @@
 package app.posato.feature.transfer.domain
 
+import app.posato.feature.schedules.data.StoredSchedule
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 
 /**
  * What an export file holds: pause sets with their websites, the default set, and schedules. Sets are
@@ -62,4 +65,26 @@ internal object PauseSetFileLimits {
     const val FILE_EXTENSION: String = "posato"
 
     const val MEDIA_TYPE: String = "application/vnd.posato.pause-sets"
+}
+
+/**
+ * What this device exports: its live sets, the first set first, the default it resolves to, and the live
+ * schedules of those sets. Refused sets and schedules wait for a slot in the workspace and stay here.
+ */
+internal fun exportFile(
+    sets: PauseSets,
+    schedules: List<StoredSchedule>,
+): PauseSetFile {
+    val live = sets.sets.filterNot { set -> set.refused }
+        .sortedBy { set -> if (set.id == PauseSetId.FIRST) 0 else 1 }
+    val refs = live.mapIndexed { index, set -> set.id to "s${index + 1}" }.toMap()
+    return PauseSetFile(
+        sets = live.map { set -> FileSet(checkNotNull(refs[set.id]), set.name, set.id == PauseSetId.FIRST, set.domains) },
+        defaultSet = sets.resolvedDefault()?.let(refs::get),
+        schedules = schedules.filterNot { schedule -> schedule.refused }.mapNotNull { schedule ->
+            refs[schedule.plan.setId]?.let { ref ->
+                FileSchedule(schedule.plan.name, schedule.plan.weekdays, schedule.plan.startMinute, schedule.plan.endMinute, ref)
+            }
+        },
+    )
 }
