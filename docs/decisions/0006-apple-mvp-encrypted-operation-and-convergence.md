@@ -132,8 +132,9 @@ product rules are in [pause set rules](../product/pause-sets-decisions.md).
   workspace does not know, and for the first set only while the
   workspace's first set has no name; it authors one `set-default`, after
   those puts, only while the workspace holds no `set-default` at all and
-  its own resolved default differs from the workspace's, survives the
-  link, and would not be refused at the set cap. So a device that renamed
+  its own resolved default differs from the workspace's, names a set that
+  is not removed or refused in the workspace, and would not be refused at
+  the set cap. So a device that renamed
   its first set or chose another default before it linked keeps them
   (`user-confirmed` 2026-10-21, `SYNC-024`; until then the first set's name
   and the default were never authored at first link). Known limits,

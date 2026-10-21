@@ -72,6 +72,8 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         from: String,
         labels: List<String>,
     ) {
+        // A rerun after a rename that went through finds the new name and has nothing left to do.
+        if (!hasSetNamed(labels, from) && hasSetNamed(labels, name)) return
         if (!hasSetNamed(labels, from)) {
             throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "Pause sets shows no set named $from.", "Check --rename-from.")
         }

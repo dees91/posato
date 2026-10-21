@@ -107,9 +107,11 @@ internal fun seededDefault(
     seeds: List<StoredPolicyIntent>,
 ): StoredPolicyIntent.ChooseDefault? {
     val chosen = local.resolvedDefault() ?: return null
-    val newSets = seeds.filterIsInstance<StoredPolicyIntent.PutSet>()
+    // Queued puts drain before the seeds, so they take the free slots first.
+    val newSets = (pending + seeds).filterIsInstance<StoredPolicyIntent.PutSet>()
         .filter { put -> projection.pauseSetStatus(put.setId) == PauseSetStatus.UNKNOWN }
         .map(StoredPolicyIntent.PutSet::setId)
+        .distinct()
     val fits = when (projection.pauseSetStatus(chosen)) {
         PauseSetStatus.LIVE -> true
         PauseSetStatus.UNKNOWN -> chosen in newSets && projection.pauseSets.size + newSets.indexOf(chosen) < SyncFormatLimits.MAX_PAUSE_SETS

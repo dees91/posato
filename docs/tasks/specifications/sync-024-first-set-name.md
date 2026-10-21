@@ -68,8 +68,9 @@ first set or chose a default publishes its own (`user-confirmed`
 
 ## Verification
 
-- `shared` tests `AppleSyncFirstSetNameTest` (create and join) and the
-  first-link seed cases in `PolicyReconcilerPauseSetTest`, then
+- `shared` tests `AppleSyncFirstSetNameTest` (create, join, concurrent
+  links) and `PolicyReconcilerFirstLinkSeedTest` (first-link seed cases),
+  then
   `./gradlew quality`.
 - `posato-control`: on the phone `flow set` renames the first set, then
   `flow folder link`; `snapshot` shows "Focus". The Linux clone joins with
