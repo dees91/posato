@@ -170,26 +170,27 @@ class Devicectl(
         )
     }
 
-    /** Copies a file between [host] on this Mac and [inContainer], a path inside [bundleId]'s data container. */
+    /**
+     * Copies a file or folder between [host] on this Mac and [inContainer], a path inside [bundleId]'s data
+     * container. With [replaceFolder], a folder copied to the device replaces what the folder there held.
+     */
     fun copyAppData(
         udid: String,
         bundleId: String,
         toDevice: Boolean,
         host: Path,
-        inContainer: String
+        inContainer: String,
+        replaceFolder: Boolean = false
     ) {
         val (direction, source, destination) = if (toDevice) {
-            Triple(
-                "to",
-                host.toString(),
-                inContainer,
-            )
+            Triple("to", host.toString(), inContainer)
         } else {
             Triple("from", inContainer, host.toString())
         }
         json(
             listOf("device", "copy", direction, "--device", udid, "--source", source, "--destination", destination) +
-                listOf("--domain-type", "appDataContainer", "--domain-identifier", bundleId),
+                listOf("--domain-type", "appDataContainer", "--domain-identifier", bundleId) +
+                (if (replaceFolder) listOf("--remove-existing-content", "true") else emptyList()),
             ErrorCode.COMMAND_FAILED,
             "Copying a file $direction the device",
         )

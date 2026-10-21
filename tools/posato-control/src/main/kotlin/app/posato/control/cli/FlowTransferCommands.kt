@@ -3,11 +3,13 @@ package app.posato.control.cli
 import app.posato.control.android.AndroidDevice
 import app.posato.control.apple.DeviceSession
 import app.posato.control.apple.Devicectl
+import app.posato.control.apple.XcodeBuild
 import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
 import app.posato.control.model.Query
+import app.posato.control.model.States
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -37,9 +39,14 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
         val shown = if (code) TransferScreens.protect(backend) else null
         FlowSteps.run(backend, listOf(FlowSteps.button("Export file…")))
         files.save(backend)
-        if (shown != null) {
-            FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(text = "Exported")), FlowSteps.button("OK")))
+        // The app confirms a saved coded file with its code and closes the dialog after a saved plain one; a
+        // cancelled or failed save leaves the dialog open, so an older file is never fetched as this run's.
+        val saved = if (shown != null) {
+            listOf(FlowSteps.waitFor(Query(text = "Exported")), FlowSteps.button("OK"))
+        } else {
+            listOf(FlowSteps.waitFor(Query(text = "Export file…", role = FlowSteps.ROLE_BUTTON), States.ABSENT))
         }
+        FlowSteps.run(backend, saved)
         val target = Path.of(out).toAbsolutePath()
         files.fetch(target)
         return buildJsonObject {
@@ -173,7 +180,9 @@ private fun transferFiles(session: Session): TransferFiles {
         Target.ANDROID -> AndroidTransferFiles(AndroidDevice(session.context, session.options.udid).also(AndroidDevice::requireReady))
 
         Target.DEVICE -> DeviceSession(session.context, Devicectl(session.context), session.options.udid).let { device ->
-            IphoneTransferFiles(device.devicectl, device.udid())
+            IphoneTransferFiles(device.devicectl, device.udid(), session.context::log).also { files ->
+                files.installHost(XcodeBuild(session.context))
+            }
         }
 
         else -> throw ControlException(
@@ -269,29 +278,70 @@ private class AndroidTransferFiles(
 private class IphoneTransferFiles(
     private val devicectl: Devicectl,
     private val udid: String,
+    private val log: (String) -> Unit,
 ) : TransferFiles {
-    override fun clear() = Unit
+    /** Installs the driver host, whose folder the files pass through; installing again keeps that folder. */
+    fun installHost(xcodeBuild: XcodeBuild) {
+        if (xcodeBuild.driverState(Target.DEVICE) != XcodeBuild.DriverState.FRESH) xcodeBuild.buildDriver(Target.DEVICE, udid)
+        val host = xcodeBuild.driverDerivedData(Target.DEVICE).resolve("Build/Products/Debug-iphoneos/$HOST_FOLDER.app")
+        devicectl.install(udid, host)
+    }
 
+    /**
+     * Clears the host's folder, so Files never asks to replace an older export and the one fetched is new. A note
+     * stays in it, since Files hides an app's empty folder.
+     */
+    override fun clear() {
+        val folder = Files.createDirectories(Files.createTempDirectory("posato-control-transfer").resolve(HOST_DOCUMENTS))
+        Files.writeString(folder.resolve("posato-control.txt"), "Files that posato-control passes to and from Posato.\n")
+        devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = true, folder, HOST_DOCUMENTS, replaceFolder = true)
+    }
+
+    /**
+     * Save to Files runs in its own extension, so its sheet is addressed by that extension's bundle, and a query
+     * binds to that process when its scenario starts, so the sheet is read in a scenario after the tap. The share
+     * sheet swallows the first tap on Save to Files at times, so a second one follows when no sheet came up.
+     */
     override fun save(backend: Backend) {
+        val sheet = FlowSteps.waitFor(Query(role = FlowSteps.ROLE_BUTTON, text = "Save", scope = SAVE_SHEET), timeoutSeconds = SHEET_SECONDS)
+        FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(text = "Save to Files")), FlowSteps.tap(Query(text = "Save to Files"))))
+        try {
+            FlowSteps.run(backend, listOf(sheet))
+        } catch (missing: ControlException) {
+            log("Save to Files did not open on the first tap: ${missing.message}")
+            FlowSteps.run(backend, listOf(FlowSteps.tap(Query(text = "Save to Files"))))
+            FlowSteps.run(backend, listOf(sheet))
+        }
         FlowSteps.run(
             backend,
             listOf(
-                FlowSteps.tap(Query(text = "Save to Files")),
-                FlowSteps.tap(Query(text = "On My iPhone"), optional = true, timeoutSeconds = SHORT_SECONDS),
-                FlowSteps.tap(Query(text = HOST_FOLDER)),
-                FlowSteps.tap(Query(text = "Save", role = FlowSteps.ROLE_BUTTON)),
-                FlowSteps.tap(Query(text = "Replace"), optional = true, timeoutSeconds = SHORT_SECONDS),
+                FlowSteps.tap(
+                    Query(role = FlowSteps.ROLE_BUTTON, text = "Back", scope = SAVE_SHEET),
+                    optional = true,
+                    timeoutSeconds = SHORT_SECONDS,
+                ),
+                FlowSteps.tap(Query(text = "On My iPhone", scope = SAVE_SHEET)),
+                FlowSteps.tap(Query(textContains = HOST_FOLDER.take(FOLDER_PREFIX), scope = SAVE_SHEET)),
+            ),
+        )
+        // Save pressed while the folder slides in is lost, so it waits for the folder in a scenario of its own.
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.waitFor(Query(textContains = HOST_FOLDER.take(FOLDER_PREFIX), scope = SAVE_SHEET)),
+                FlowSteps.sleep(SETTLE_SECONDS),
+                FlowSteps.tap(Query(role = FlowSteps.ROLE_BUTTON, text = "Save", scope = SAVE_SHEET)),
             ),
         )
     }
 
     override fun fetch(destination: Path) {
         Files.createDirectories(destination.toAbsolutePath().parent)
-        devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = false, destination, "Documents/$EXPORT_NAME")
+        devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = false, destination, "$HOST_DOCUMENTS/$EXPORT_NAME")
     }
 
     override fun place(source: Path) {
-        devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = true, source, "Documents/${source.fileName}")
+        devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = true, source, "$HOST_DOCUMENTS/${source.fileName}")
     }
 
     override fun choose(
@@ -314,7 +364,15 @@ private class IphoneTransferFiles(
     private companion object {
         const val HOST_BUNDLE = "app.posato.ios.driverhost"
         const val HOST_FOLDER = "PosatoDriverHost"
+        const val SAVE_SHEET = "com.apple.DocumentManagerUICore.SaveToFiles"
+
+        // Files wraps the folder name, so its label may break inside it.
+        const val FOLDER_PREFIX = 12
         const val SHORT_SECONDS = 4.0
+
+        const val SHEET_SECONDS = 8.0
+        const val SETTLE_SECONDS = 1.0
+        const val HOST_DOCUMENTS = "Documents"
     }
 }
 
