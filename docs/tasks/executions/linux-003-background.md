@@ -37,57 +37,64 @@ and `gnome-shell-extension-appindicator` installed, logged in to
 
 ## Plan
 
-1. **Tool first** (`posato-control`, its README, and the unattended
-   verification guide): `linux create --session gnome` (installs and
-   selects the GNOME session in the clone, or a new golden line if the
-   install is too slow); `launch -t linux` on the session bus when the
-   session has one; `tray -t linux [--activate LABEL]` that reads the
-   StatusNotifierItem and its dbusmenu layout with `gdbus` and sends the
-   `clicked` event; `linux screen` for a whole-screen capture;
-   `linux relogin` that restarts the display manager and waits for the
-   session.
-2. **Tests first** (`desktopApp` jvmTest): the dbusmenu layout built from a
-   `PresenceMenu` for each `DESIGN.md` menu state, ids stable across
-   refreshes; the autostart entry's contents (`Exec`, `TryExec`, hidden
-   flag) and its removal. These exist because E2E sees only the shell's
-   rendering, not the ids or a stale entry.
-3. **Shared residency:** move the platform-neutral parts of
-   `ResidentPosato` (window visibility, first close, quit confirmation,
-   menu refresh and actions) behind small ports so the Mac keeps its native
-   code and Linux supplies its own: status area, alerts as Compose dialogs,
-   the first-close marker under `$XDG_DATA_HOME/Posato`, and the
-   login-item switch.
-4. **Linux status area:** `dbus-java-core` 5.2.2 with
-   `dbus-java-transport-native-unixsocket` (MIT; about 400 KB, plus
-   `slf4j-api`, MIT): export `org.kde.StatusNotifierItem` (Id, Category,
-   Status, Title, IconPixmap of the Posato mark at 22 and 44 pixels,
-   ToolTip, Menu, `Activate` opens the window) and
-   `com.canonical.dbusmenu` (`GetLayout`, `GetGroupProperties`, `Event`,
-   `AboutToShow`, `LayoutUpdated`), register with the watcher, and
-   re-register when the watcher restarts. Without a watcher, no icon.
-5. **Lifecycle:** `LinuxMain` owns `app.posato.Posato` on the session bus;
-   a second process calls its `Show` and exits. `--hidden` starts without a
-   window. Closing hides; quitting goes through the confirmation.
-6. **Open at login:** the switch in "On this computer" writes or removes the
-   autostart entry with `Exec=/opt/posato/bin/posato --hidden` and
-   `TryExec`; onboarding's Linux steps stay unchanged.
-7. **Notices:** `THIRD_PARTY_NOTICES.md` (dbus-java, slf4j), the limits
-   page (no icon on GNOME without the AppIndicator extension), and a
-   `DESIGN.md` Linux paragraph after the maintainer confirms it.
-8. **Verify** `AC-01` to `AC-06` in GNOME clones and `AC-06` in the
-   Openbox golden; `./gradlew quality`; independent review.
+Folded after the independent plan review (4 Critical, 9 Required; the
+maintainer decided C2, C4, R6, and R9, `user-confirmed` 2026-10-21).
+
+1. **GNOME golden** (own step, after the plan check): a second line
+   `posato.vm.linuxGnomeGolden` with GDM and the `ubuntu` session, in the
+   unattended verification guide and `~/machine-wiki`, with a
+   `machine-ledger` claim.
+2. **Tool first** (`posato-control`, README, the skill's
+   `features/linux-and-android.md`, auditing scenarios that assume closing
+   quits): a GNOME launch mode that joins the session bus through
+   `/tmp/posato-dbus`, keeps the shell's AT-SPI bus, and turns toolkit
+   accessibility on (an autostarted process gets the ATK setting through
+   `~/.config/environment.d` on the golden); `tray -t linux [--activate
+   LABEL]` over `gdbus` (layout and `clicked` event); `linux screen`;
+   `linux relogin`.
+3. **Package smoke first:** merge `META-INF/services` in `linuxAppJar`,
+   run `jdeps` on the jar and add `jdk.security.auth` to the jlink modules if
+   it is needed, then in a clone install the `.deb` and check that it
+   connects, exports the item, and registers with the watcher.
+4. **Tests first** (`desktopApp` jvmTest): dbusmenu layout per `DESIGN.md`
+   state with stable ids; autostart entry contents, atomic write, removal,
+   and Tweaks-written `Hidden=true` and `X-GNOME-Autostart-enabled=false`
+   read as off; file-lock contention (lock held and name unreachable: the
+   second process exits without opening the database).
+5. **Linux resident composable** (no Mac file changes): file lock, then the
+   graph with `hostsSession = false`, `presence.runWhileResident()` at
+   application level, window visibility, the first-close rule with a
+   marker under `$XDG_DATA_HOME/Posato` and a Compose alert, quit through
+   `quitPromptFor` with the Linux schedule-only prompt in a focused
+   `DialogWindow`, Ctrl+Q, `--background`, surfaces released when hidden,
+   exit on bus disconnect.
+6. **Status area:** `dbus-java-core` and
+   `dbus-java-transport-native-unixsocket`, pinned at 5.2.2 (MIT, about
+   400 KB, with `slf4j-api` MIT): the item, the menu, `Show` with the
+   activation token, watcher tracking through `NameOwnerChanged`, refresh
+   on `AboutToShow` bounded to once a minute while open.
+7. **Login item:** a platform-neutral port with the Linux row in "On this
+   computer" and the rules in the brief; `prerm` removes the installing
+   user's entry.
+8. **Text:** the Linux strings and the `DESIGN.md` Linux paragraph,
+   `THIRD_PARTY_NOTICES.md` and the package notices, and the limits page
+   (no icon on GNOME without the AppIndicator extension).
+9. **Verify** `AC-01` to `AC-07` (Wayland once for `AC-01` and `AC-04`),
+   `./gradlew quality`, independent review. Rebase after #184 merges.
 
 ## Decisions
 
-Agent decisions under the delegation of 2026-10-21 unless marked.
-
-- StatusNotifierItem over AWT `SystemTray`: native menu, no transparency
-  fault, works on KDE, Xfce, and MATE, and does not depend on X11.
-- `dbus-java` over a Python or `gdbus` helper process: no extra system
-  packages, one process, and the same connection serves the single-instance
-  name.
+- StatusNotifierItem over AWT `SystemTray` (spike): native menu, no
+  transparency fault, works on KDE, Xfce, and MATE, independent of X11.
+- `dbus-java` over a helper process: no extra system packages, one process.
 - A per-user autostart entry over `/etc/xdg/autostart`: login launch is a
   person's choice, off by default, as on the Mac.
+- `user-confirmed` 2026-10-21: Mac code untouched (C4); quit asks only while
+  a schedule is enabled (C2); without a watcher Posato stays only for a pause
+  or an enabled schedule (R6); a GDM GNOME golden line (R9); the `DESIGN.md`
+  Linux paragraph is accepted, its wording is reviewed in the PR.
+- Plan-review recommendations not taken now are listed in the review
+  section with their reason.
 
 ## Result
 
@@ -95,7 +102,11 @@ Not started.
 
 ## Review
 
-Plan review: pending.
+Plan review 2026-10-21 (independent agent): 4 Critical and 9 Required,
+all folded above; recommendations taken: activation token and Show
+retry, minimal bus surface, symbolic icon with fallback and change
+signals, `prerm` autostart removal, exact pins and package notices,
+lock and Tweaks tests, rebase after #184. A shorter recheck follows.
 
 ## Checks
 
