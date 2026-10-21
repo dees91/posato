@@ -1286,6 +1286,18 @@ below. This queue retains idea provenance without expanding the original MVP.
     like GitHub's contribution graph of days kept as planned, chosen in a
     calm form without streaks, scores, or shame (the `DESIGN.md` brand
     rule). Owner: `HISTORY-001` (candidate for 1.6).
+48. **A simpler way to join a folder workspace.** `user-confirmed`
+    (2026-10-21): the expanded Folder sync row becomes two steps that can be
+    done in either order, choose the shared folder and scan the QR code or
+    type the code, and the device joins as soon as both are done; scanning
+    stays a hint to use the phone's own camera. Owner: `SYNC-026` (1.5).
+49. **Linux follows the desktop's light or dark setting.** `user-confirmed`
+    (2026-10-21): read Ubuntu's color scheme instead of a new setting.
+    Owner: `LINUX-002` (1.5).
+50. **Posato on Linux keeps running in the background.** `user-confirmed`
+    (2026-10-21): an icon in the status area like the Mac menu bar and a
+    start at login, so schedules start with the window closed. Owner:
+    `LINUX-003` (1.5).
 
 ## Later platform questions
 

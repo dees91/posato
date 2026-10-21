@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 24 (2026-10-20: four maintainer ideas join release 1.5, four more are 1.6 candidates)
+- **Revision:** 25 (2026-10-21: release 1.5 waits for six fixes and improvements found while preparing its packaging)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-20
@@ -199,6 +199,14 @@
   `SCHEDULE-007` (a break in a scheduled pause), `TARGETS-013` (a website
   opened briefly every N minutes), and `HISTORY-001` (a calm history of
   pauses kept as planned).
+  Revision 25 holds release 1.5 for six rows found while `DOCS-006`
+  captured the final interface (`user-confirmed`, 2026-10-21): `SYNC-024`
+  (a renamed first set lost its name when the device created a workspace),
+  `SYNC-025` (iCloud wording in folder mode), `SYNC-026` (a simpler way to
+  join a folder workspace, idea 48), `ANDROID-002` (the block screen in
+  Dark Mode), `LINUX-002` (Linux follows the desktop's light or dark
+  setting, idea 49), and `LINUX-003` (Posato on Linux keeps running in the
+  background, idea 50). `DOCS-006` recaptures after them.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -483,6 +491,9 @@ last.
 Revision 24 adds `TARGETS-011`, `MACOS-028`, `SYNC-023`, and
 `TARGETS-012` to wave 4 as separate lightweight or recorded pull requests;
 `DOCS-006` waits for them too.
+Revision 25 adds wave 4b: six rows found while preparing the packaging,
+each its own pull request; `SYNC-025` lands before `SYNC-026`, which
+rebuilds the same section.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -496,8 +507,14 @@ Revision 24 adds `TARGETS-011`, `MACOS-028`, `SYNC-023`, and
 | `MACOS-028` | Open the Mac window at its normal size every time: reproduce in a Tart clone when Posato shows a tiny window with only its toolbar (a launch, a login launch, reopening from the menu bar, or a restore after the window was closed), fix it test first, and verify each opening path. | Platform coverage | delivery | R1.5/W4 | None | PR-MAC-WINDOW-SIZE |
 | `SYNC-023` | Show when this device last synchronized: the date and time of the last completed exchange in the synchronization section on every platform, for iCloud and folder workspaces, kept on the device and never synchronized; the state for no sync yet and for a failing sync stays as it is. | Portable synchronization | delivery | R1.5/W4 | `SYNC-018` | PR-LAST-SYNC |
 | `TARGETS-012` | Duplicate a pause set from its menu: a new set named "<name> (copy)" with the same websites through the existing set authoring and its limit of 10, and this device's chosen apps copied locally; other devices choose their own apps as for any new set. | Target management | delivery | R1.5/W4 | `ANDROID-001` | PR-SET-DUPLICATE |
-| `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012` | PR-RELEASE-1-5-MEDIA |
-| `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `DOCS-006` | PR-RELEASE-1-5 |
+| `SYNC-024` | Keep the first pause set's name and the default set when this device creates a new workspace: a rename made before linking was never recorded as a change, and linking deliberately skips the first set's name, so the merge replaced "Focus" with the unnamed "My set" (observed on Android, shared code for iCloud and folder links). Write the failing link test first; joining an existing workspace keeps today's rule. | Portable synchronization | delivery | R1.5/W4b | `SYNC-018` | PR-FIRST-SET-NAME |
+| `SYNC-025` | Say "folder" instead of "iCloud" in folder mode: the retry, running, and connected messages fall through to iCloud wording, and a folder holding a copy of a workspace this device removed shows "Sync with iCloud didn't finish." instead of a lasting explanation. | Portable synchronization | delivery | R1.5/W4b | `SYNC-018` | PR-FOLDER-WORDING |
+| `SYNC-026` | Rebuild the expanded Folder sync row around two steps done in either order, choose the shared folder and scan the QR code with the phone's camera or type the code, joining as soon as both are done and waiting with an explanation while the folder catches up; the linked state keeps one primary action (idea 48, clickable mockup accepted 2026-10-21). | Portable synchronization | delivery | R1.5/W4b | `SYNC-025` | PR-FOLDER-JOIN |
+| `ANDROID-002` | Show the Android block screen in the system's Dark Mode with Posato's dark palette instead of fixed light colors. | Platform coverage | delivery | R1.5/W4b | `ANDROID-001` | PR-ANDROID-BLOCK-DARK |
+| `LINUX-002` | Follow the desktop's light or dark setting on Linux by reading the GNOME color scheme, live, without a new setting (idea 49). | Platform coverage | delivery | R1.5/W4b | `LINUX-001` | PR-LINUX-THEME |
+| `LINUX-003` | Keep Posato for Linux running after its window closes, with an icon in the status area like the Mac menu bar and a start at login, so schedules start while the window is closed; verified on Ubuntu 24.04 (idea 50). | Platform coverage | delivery | R1.5/W4b | `LINUX-001` | PR-LINUX-BACKGROUND |
+| `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003` | PR-RELEASE-1-5-MEDIA |
+| `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003`, `DOCS-006` | PR-RELEASE-1-5 |
 
 ## Backlog
 
@@ -565,6 +582,7 @@ The idea numbers refer to the wiki idea queue.
 | A device that joins during a pause enforces it | `SESSION-010` | The failing exchange test first; a device linked during another device's pause blocks the set's websites without waiting for the next pause |
 | Pause set summaries refreshed at once | `TARGETS-010` | The summary changes right after apps are chosen, removed, or cleared, in a Mac VM, on the test iPhone, and on Android |
 | Smaller frictions before 1.5 | `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012` | A set without apps shows no warning; the Mac window opens at its size on every path in a Tart clone; the last sync time on each platform; a duplicated set with its websites and this device's apps |
+| Fixes and improvements found while packaging 1.5 | `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003` | A renamed first set keeps its name when a device creates a workspace; folder wording without iCloud; joining in either order on a phone and a computer; the block screen in Dark Mode; Linux in light and dark; Linux schedules starting with the window closed in a Tart Ubuntu clone |
 | Public packaging for 1.5 | `DOCS-006` | Limits page and README updated, site built, Android and Linux screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
