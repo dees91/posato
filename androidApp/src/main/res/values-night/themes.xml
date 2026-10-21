@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- In Dark Mode the block screen's window starts on Posato's dark surface. Mirrors PosatoPalette.Dark.surface. -->
+    <style name="Theme.Posato.Block" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/posato_block_surface</item>
+    </style>
+    <color name="posato_block_surface">#1C2520</color>
+</resources>
