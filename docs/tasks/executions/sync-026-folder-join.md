@@ -1,7 +1,7 @@
 # Execution: `SYNC-026`
 
 - **Brief:** [Join a folder workspace in two steps, in either order](../specifications/sync-026-folder-join.md)
-- **Status:** `in progress`
+- **Status:** `done`; ready for review
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `sync-026-folder-join`, rebased onto `main` `31063a8c` after #183 merged
