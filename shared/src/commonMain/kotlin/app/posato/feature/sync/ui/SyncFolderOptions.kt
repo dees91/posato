@@ -44,7 +44,6 @@ import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
 import app.posato.generated.resources.action_sync_with_folder
 import app.posato.generated.resources.sync_checking_key
-import app.posato.generated.resources.sync_folder_action_required
 import app.posato.generated.resources.sync_folder_add_device
 import app.posato.generated.resources.sync_folder_browse
 import app.posato.generated.resources.sync_folder_change
@@ -71,7 +70,6 @@ import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
 import app.posato.generated.resources.sync_folder_share_link
 import app.posato.generated.resources.sync_folder_use
-import app.posato.generated.resources.sync_folder_waiting_for_key
 import app.posato.generated.resources.sync_remove_workspace
 import app.posato.generated.resources.sync_removing_note
 import app.posato.generated.resources.sync_removing_workspace
@@ -122,10 +120,8 @@ private fun folderMessage(
     return when {
         checking -> Res.string.sync_checking_key
         removing -> Res.string.sync_removing_workspace
-        folder == null || (snapshot.status == SyncStatus.LOCAL_ONLY && !snapshot.linked) -> Res.string.sync_folder_description
-        snapshot.status == SyncStatus.WAITING_FOR_KEY -> Res.string.sync_folder_waiting_for_key
-        snapshot.status == SyncStatus.ACTION_REQUIRED && snapshot.reason == null -> Res.string.sync_folder_action_required
-        else -> snapshot.status.message(snapshot.linked, snapshot.reason)
+        folder == null -> Res.string.sync_folder_description
+        else -> snapshot.statusMessage(folderMode = true)
     }
 }
 

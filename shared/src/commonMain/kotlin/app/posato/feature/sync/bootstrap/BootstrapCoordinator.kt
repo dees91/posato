@@ -75,7 +75,7 @@ internal class BootstrapCoordinator(
             is BindingGate.Stop -> when (gate.result) {
                 is BootstrapResult.Ready -> WorkspaceKeyRead.ActionRequired
                 is BootstrapResult.WaitingForWorkspaceKey -> WorkspaceKeyRead.WaitingForWorkspaceKey
-                is BootstrapResult.Retryable -> WorkspaceKeyRead.Retryable
+                is BootstrapResult.Retryable, BootstrapResult.RemovedWorkspace -> WorkspaceKeyRead.Retryable
                 is BootstrapResult.ActionRequired -> WorkspaceKeyRead.ActionRequired
             }
 

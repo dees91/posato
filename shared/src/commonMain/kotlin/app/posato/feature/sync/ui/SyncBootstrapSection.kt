@@ -61,8 +61,10 @@ import app.posato.generated.resources.sync_action_required_shared_capacity
 import app.posato.generated.resources.sync_cancel_removal
 import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_completed
+import app.posato.generated.resources.sync_folder_connected
 import app.posato.generated.resources.sync_folder_or
 import app.posato.generated.resources.sync_folder_remove_confirmation
+import app.posato.generated.resources.sync_folder_removed_copy_summary
 import app.posato.generated.resources.sync_folder_title
 import app.posato.generated.resources.sync_icloud_description
 import app.posato.generated.resources.sync_icloud_retryable
@@ -92,10 +94,10 @@ internal fun SyncBootstrapSection(
     val removingHere = showsRemovalProgress && snapshot.removing
     val checking = state.checking
     val controls = state.folderControls
-    val folderMode = controls.supported && (folder != null || !controls.icloudSupported)
+    val folderMode = state.folderMode(folder)
     LinkCodeEffects(state, snapshot) { expanded = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-        SyncRow(expanded, folderMode, rowSummary(snapshot, checking, removingHere, state.running)) { expanded = !expanded }
+        SyncRow(expanded, folderMode, rowSummary(snapshot, folderMode, checking, removingHere, state.running)) { expanded = !expanded }
         if (expanded && snapshot.linked) {
             LastSync(snapshot.lastSyncedEpochMillis, state.formatLastSync)
         }
@@ -165,6 +167,7 @@ private fun IcloudAndFolderOptions(
 /** The collapsed row's line: the current activity first, then the outcome of the latest attempt. */
 private fun rowSummary(
     snapshot: AppleSyncState,
+    folderMode: Boolean,
     checking: Boolean,
     removingHere: Boolean,
     running: Boolean,
@@ -173,6 +176,8 @@ private fun rowSummary(
         checking -> Res.string.sync_checking_key
         removingHere -> Res.string.sync_removing_workspace
         running || snapshot.status == SyncStatus.SYNCING -> Res.string.session_icloud_running
+        folderMode && snapshot.removedWorkspaceCopy && !snapshot.linked -> Res.string.sync_folder_removed_copy_summary
+        folderMode && snapshot.linked && snapshot.status == SyncStatus.LOCAL_ONLY -> Res.string.sync_folder_connected
         else -> snapshot.status.summary(snapshot.linked)
     }
 }

@@ -151,4 +151,35 @@ class FolderWorkspaceTest {
             device.close()
         }
     }
+
+    @Test
+    fun `given a copy of a workspace this device removed when it syncs with that folder then it reports the removed workspace`() = runBlocking {
+        val root = Files.createTempDirectory("posato-folder")
+        val copy = Files.createTempDirectory("posato-copy")
+        val device = Device(root, "device")
+        try {
+            device.sync.syncWithIcloud()
+            assertEquals(SyncStatus.COMPLETED, device.settle())
+            copyTree(root.resolve("Posato"), copy.resolve("Posato"))
+            device.sync.removeWorkspace()
+            device.folder.choose(copy.toString())
+
+            device.sync.syncWithIcloud()
+            device.settle()
+
+            assertEquals(false, device.sync.state.value.linked)
+            assertEquals(true, device.sync.state.value.removedWorkspaceCopy)
+        } finally {
+            device.close()
+        }
+    }
+
+    private fun copyTree(
+        from: Path,
+        to: Path,
+    ) {
+        Files.walk(from).use { paths ->
+            paths.forEach { path -> Files.copy(path, to.resolve(from.relativize(path).toString())) }
+        }
+    }
 }

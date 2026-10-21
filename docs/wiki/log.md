@@ -2940,6 +2940,12 @@ first removal attempt that does not finish, not to a paused keychain.
   `ANDROID-002`, `LINUX-002` (idea 49), and `LINUX-003` (idea 50) join
   release 1.5 before `DOCS-006` recaptures and `RELEASE-007` publishes.
 
+## [2026-10-21] fix | SYNC-025: folder mode never names iCloud
+
+- `observed` on a Galaxy XCover7: a folder holding a copy of a workspace this
+  device removed now says so instead of "Sync with iCloud didn't finish.";
+  folder-mode messages and announcements name the folder. The removed-copy
+  state is not stored across restarts (`SYNC-026` owns the rebuilt section).
 ## [2026-10-21] fix | LINUX-002: Linux follows the desktop's light or dark setting
 
 - `observed` in a Tart Ubuntu 24.04 clone: Posato reads
