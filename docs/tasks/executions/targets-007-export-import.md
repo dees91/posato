@@ -117,5 +117,4 @@
 
 ## Notes
 
-- `PRIVACY.md` is rewritten for 1.5 in `DOCS-006` (#178); whichever lands
-  second rebases the new section.
+- `PRIVACY.md` is rewritten for 1.5 in #178; the second to land rebases.
