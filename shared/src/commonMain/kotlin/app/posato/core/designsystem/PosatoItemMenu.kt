@@ -67,6 +67,8 @@ internal enum class PosatoMenuSymbol(
     Duplicate(PosatoIcons.Duplicate, "plus.square.on.square"),
     Skip(PosatoIcons.Arrow, "forward.end"),
     Remove(PosatoIcons.Remove, "trash"),
+    Export(PosatoIcons.Export, "square.and.arrow.up"),
+    Import(PosatoIcons.Import, "square.and.arrow.down"),
 }
 
 /** The "…" button that opens an item's actions: the system menu on iOS, a menu drawn in the app's palette elsewhere. */

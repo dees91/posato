@@ -28,6 +28,7 @@ private struct ComposeRoot: UIViewControllerRepresentable {
             backend: DeferredCloudKitMailboxBackend { CloudKitMailboxLiveBackend() }
         )
         let folderPicker = FilesFolderPicker()
+        let pauseSetPicker = FilesPauseSetPicker()
         let controller = MainViewControllerKt.mainViewController(
             cryptoProvider: CryptoKitSyncProvider(),
             applicationMappingsProvider: applicationMappingsProvider,
@@ -43,10 +44,12 @@ private struct ComposeRoot: UIViewControllerRepresentable {
                 ManagedSettingsStore(named: ScheduleMonitor.storeName)
             }),
             scheduleMonitorProvider: IosScheduleMonitorPublisher(),
-            folderPicker: folderPicker
+            folderPicker: folderPicker,
+            pauseSetFilePicker: pauseSetPicker
         )
         applicationMappingsProvider.presenter = controller
         folderPicker.presenter = controller
+        pauseSetPicker.presenter = controller
         return controller
     }
 

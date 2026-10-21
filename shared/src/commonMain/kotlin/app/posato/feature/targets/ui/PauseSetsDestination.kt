@@ -1,5 +1,7 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.transfer.ui.PauseSetTransferUiState
+
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,6 +32,7 @@ internal fun PauseSetsDestination(
     deviceNoun: String,
     modifier: Modifier = Modifier,
     entryModifier: Modifier = Modifier,
+    transfer: PauseSetTransferUiState? = null,
     viewModel: PauseSetsViewModel = viewModel { PauseSetsViewModel(inputs) },
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -50,6 +53,7 @@ internal fun PauseSetsDestination(
                 onDuplicate = viewModel::duplicate,
                 onDelete = viewModel::delete,
                 onRetry = viewModel::retry,
+                transfer = transfer,
             )
 
             is PauseSetsRoute.Set -> PauseSetScreen(

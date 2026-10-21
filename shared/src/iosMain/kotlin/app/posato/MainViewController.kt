@@ -16,6 +16,7 @@ import app.posato.feature.sync.folder.IosFolderPicker
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import kotlinx.coroutines.runBlocking
 import platform.UIKit.UIViewController
+import app.posato.feature.transfer.IosPauseSetFilePicker
 
 fun mainViewController(
     cryptoProvider: IosCryptoProvider,
@@ -28,6 +29,7 @@ fun mainViewController(
     scheduleEnforcementProvider: IosEnforcementProvider,
     scheduleMonitorProvider: IosScheduleMonitorProvider,
     folderPicker: IosFolderPicker,
+    pauseSetFilePicker: IosPauseSetFilePicker,
 ): UIViewController {
     val runtime = createIosApplicationRuntime(
         cryptoProvider,
@@ -39,6 +41,7 @@ fun mainViewController(
         notificationProvider,
         IosScheduleBridge(IosEnforcement(scheduleEnforcementProvider), scheduleMonitorProvider),
         folderPicker,
+        pauseSetFilePicker,
     )
 
     // The one-time pause set upgrade runs before any host starts; a failure stays pending for the next launch.

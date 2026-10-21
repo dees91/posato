@@ -153,3 +153,16 @@ internal class ImportWriter(
         )
     }
 }
+
+/** The stores an import writes, bound once per app; the running pause is read at the moment of each import. */
+internal class TransferStorage(
+    private val database: PosatoDatabase,
+    private val databaseDispatcher: CoroutineDispatcher,
+    private val policy: LocalTargetPolicyStore,
+    private val schedules: LocalScheduleStore,
+    private val link: ScheduleSyncLink,
+) {
+    fun writer(running: () -> Pair<Set<PauseSetId>, Set<ScheduleId>>): ImportWriter {
+        return ImportWriter(database, databaseDispatcher, policy, schedules, link, running)
+    }
+}

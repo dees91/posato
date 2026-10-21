@@ -51,7 +51,7 @@ class PauseSetTransferTest {
             source.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", domains("example.com")), LocalPauseSet(work, "Work", domains("example.net"))), work)))
             assertIs<ScheduleResult.Success<*>>(source.schedules.save(SchedulePlan(ScheduleId("00000000000040008000000000000001"), "Deep work", 0b11111, 540, 660, enabled = true, setId = work), null))
 
-            val exported = assertNotNull(source.transfer().export(protect = true))
+            val exported = assertNotNull(source.transfer().let { transfer -> transfer.export(transfer.newCode()) })
             val code = assertNotNull(exported.code)
             assertIs<TransferRead.CodeNeeded>(target.transfer().read(exported.bytes, null))
             val file = assertIs<TransferRead.File>(target.transfer().read(exported.bytes, code)).file
@@ -77,7 +77,7 @@ class PauseSetTransferTest {
         val mappings = FakeSessionMappings()
         try {
             target.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(evening, "Evening", emptyList())), null)))
-            val exported = assertNotNull(target.transfer(mappings).export(protect = false))
+            val exported = assertNotNull(target.transfer(mappings).export(code = null))
             assertNull(exported.code)
             target.replaceLocal(checkNotNull(PauseSets.of(listOf(LocalPauseSet(PauseSetId.FIRST, "Focus", emptyList()), LocalPauseSet(work, "Work", emptyList())), null)))
             val file = assertIs<TransferRead.File>(target.transfer(mappings).read(exported.bytes, null)).file

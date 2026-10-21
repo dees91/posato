@@ -42,6 +42,10 @@ import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.IosMailboxAdapter
 import app.posato.feature.sync.data.IosSyncCryptoProvider
+import app.posato.feature.transfer.IosPauseSetFilePicker
+import app.posato.feature.transfer.IosPauseSetFiles
+import app.posato.feature.transfer.NoPauseSetFilePicker
+import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
@@ -102,7 +106,17 @@ internal interface IosApplicationGraph :
             @Provides notifications: SessionNotificationPlatform,
             @Provides schedules: IosScheduleBridge,
             @Provides folderPicker: IosFolderPicker,
+            @Provides pauseSetFilePicker: IosPauseSetFilePicker,
         ): IosApplicationGraph
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferPlatform(
+        pauseSetFilePicker: IosPauseSetFilePicker,
+        cryptoProvider: IosCryptoProvider,
+    ): TransferPlatform {
+        return TransferPlatform(IosPauseSetFiles(pauseSetFilePicker), IosSyncCryptoProvider(cryptoProvider))
     }
 
     @Provides
@@ -266,6 +280,7 @@ internal fun createIosApplicationRuntime(
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
     folderPicker: IosFolderPicker = NoFolderPicker,
+    pauseSetFilePicker: IosPauseSetFilePicker = NoPauseSetFilePicker,
 ): IosApplicationRuntime {
     runtimeLock.lock()
     try {
@@ -280,6 +295,7 @@ internal fun createIosApplicationRuntime(
             notifications,
             schedules,
             folderPicker,
+            pauseSetFilePicker,
         ).also { processRuntime = it }
     } finally {
         runtimeLock.unlock()
@@ -296,6 +312,7 @@ private fun buildIosApplicationRuntime(
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
     folderPicker: IosFolderPicker,
+    pauseSetFilePicker: IosPauseSetFilePicker,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
     val enforcement = IosSessionEnforcement(
@@ -312,6 +329,7 @@ private fun buildIosApplicationRuntime(
         notifications,
         schedules,
         folderPicker,
+        pauseSetFilePicker,
     )
     return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }

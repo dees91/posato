@@ -38,6 +38,8 @@ internal object PosatoIcons {
     val Edit = lineIcon("Edit", "M15 4L20 9M4 15L15 4Q17 2 19 4L20 5Q22 7 20 9L9 20L3 21ZM4 15L9 20")
     val Duplicate = lineIcon("Duplicate", "M8 8H20V20H8ZM4 16V4H16")
     val Remove = lineIcon("Remove", "M4 6H20M9 6V3H15V6M6 6L7 21H17L18 6M10 10V17M14 10V17")
+    val Export = lineIcon("Export", "M12 15V3M7 8L12 3L17 8M5 13V20H19V13")
+    val Import = lineIcon("Import", "M12 3V15M7 10L12 15L17 10M5 17V20H19V17")
     val More = ImageVector.Builder("More", ICON_VIEWPORT.dp, ICON_VIEWPORT.dp, ICON_VIEWPORT, ICON_VIEWPORT)
         .addPath(
             pathData = PathParser().parsePathString(
@@ -98,6 +100,8 @@ private fun PosatoIconsPreview() {
         PosatoIcons.Close,
         PosatoIcons.Edit,
         PosatoIcons.Remove,
+        PosatoIcons.Export,
+        PosatoIcons.Import,
         PosatoIcons.More,
     )
     PosatoComponentPreview {

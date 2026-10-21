@@ -33,6 +33,8 @@ import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.bootstrap.SqlLastSyncStore
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
+import app.posato.feature.transfer.DesktopPauseSetFiles
+import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
@@ -97,6 +99,12 @@ internal interface DesktopApplicationGraph :
     @SingleIn(AppScope::class)
     fun provideDatabaseDispatcher(): CoroutineDispatcher {
         return Dispatchers.IO
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferPlatform(): TransferPlatform {
+        return TransferPlatform(DesktopPauseSetFiles, JdkSyncCryptoProvider())
     }
 
     @Provides

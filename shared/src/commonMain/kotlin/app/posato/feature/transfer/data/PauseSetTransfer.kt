@@ -101,13 +101,18 @@ internal class PauseSetTransfer(
         return exportFile(sets, stored)
     }
 
-    suspend fun export(protect: Boolean): ExportedFile? {
+    /** A new code for a protected export; it is shown before the file is made and never stored. */
+    fun newCode(): String? {
+        return ExportCode.generate(crypto)
+    }
+
+    /** The export file, sealed with [code] when one is given. */
+    suspend fun export(code: String?): ExportedFile? {
         val json = PauseSetFileJson.encode(exportContents() ?: return null)
-        if (!protect) {
+        if (code == null) {
             return ExportedFile(json, null)
         }
         return withContext(computation) {
-            val code = ExportCode.generate(crypto) ?: return@withContext null
             PauseSetFileSeal(crypto).seal(json, code)?.let { sealed -> ExportedFile(sealed, code) }.also { json.fill(0) }
         }
     }

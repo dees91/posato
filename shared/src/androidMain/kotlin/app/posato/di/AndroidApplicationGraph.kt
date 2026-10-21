@@ -41,6 +41,8 @@ import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.bootstrap.SqlLastSyncStore
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
+import app.posato.feature.transfer.data.PauseSetFilePorts
+import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
@@ -93,7 +95,14 @@ internal interface AndroidApplicationGraph :
             @Provides notifications: SessionNotificationPlatform,
             @Provides applicationAccess: ApplicationAccessPort,
             @Provides folderSync: FolderSync,
+            @Provides pauseSetFiles: PauseSetFilePorts,
         ): AndroidApplicationGraph
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferPlatform(pauseSetFiles: PauseSetFilePorts): TransferPlatform {
+        return TransferPlatform(pauseSetFiles, JdkSyncCryptoProvider())
     }
 
     @Provides
@@ -257,6 +266,7 @@ public fun createAndroidApplicationRuntime(
     localDirectory: String,
     browseFolder: suspend () -> String?,
     linkSharing: LinkSharing,
+    pauseSetFiles: PauseSetFilePorts,
 ): AndroidApplicationRuntime {
     val folderSync = FolderSync(
         localDirectory = localDirectory,
@@ -276,6 +286,7 @@ public fun createAndroidApplicationRuntime(
         notifications,
         applicationAccess,
         folderSync,
+        pauseSetFiles,
     )
     (applicationMappings as? CatalogApplicationMappings)?.keptTargets = graph.keptApplicationRequirements::of
     return AndroidApplicationRuntime(graph.application, graph)
