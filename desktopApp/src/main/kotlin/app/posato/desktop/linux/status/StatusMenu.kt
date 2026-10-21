@@ -1,0 +1,96 @@
+package app.posato.desktop.linux.status
+
+import app.posato.desktop.PresenceMenuActionId
+import org.freedesktop.dbus.types.UInt32
+import org.freedesktop.dbus.types.Variant
+
+/**
+ * The status icon's menu over com.canonical.dbusmenu. A change reaches the panel with LayoutUpdated only while the
+ * menu is open; a closed menu just answers AboutToShow with "update needed", so an idle icon sends nothing.
+ */
+internal class StatusMenu(
+    private val entries: () -> List<StatusMenuEntry>,
+    private val onAction: (PresenceMenuActionId) -> Unit,
+    private val onOpened: () -> Unit,
+) : DbusMenu {
+    @Volatile private var revision = 1L
+
+    @Volatile private var open = false
+
+    @Volatile private var stale = false
+
+    /** The LayoutUpdated signal to send now, or null when the menu is closed and the change waits for AboutToShow. */
+    fun layoutChanged(): LayoutUpdated? {
+        revision++
+        if (!open) {
+            stale = true
+            return null
+        }
+        return DbusMenu.LayoutUpdated(LinuxStatusArea.MENU_PATH, UInt32(revision), ROOT)
+    }
+
+    override fun getVersion(): UInt32 = UInt32(VERSION)
+
+    override fun getTextDirection(): String = "ltr"
+
+    override fun getStatus(): String = "normal"
+
+    override fun getIconThemePath(): List<String> = emptyList()
+
+    override fun getLayout(
+        parentId: Int,
+        recursionDepth: Int,
+        propertyNames: List<String>,
+    ): MenuLayoutReply<UInt32, MenuLayout> {
+        val children = entries().map { entry -> Variant(MenuLayout(entry.id, propertiesOf(entry), emptyList()), NODE) }
+        val root = MenuLayout(ROOT, mapOf("children-display" to Variant("submenu")), if (parentId == ROOT) children else emptyList())
+        return MenuLayoutReply(UInt32(revision), root)
+    }
+
+    override fun getGroupProperties(
+        ids: List<Int>,
+        propertyNames: List<String>,
+    ): List<MenuItemProperties> = entries().filter { it.id in ids }.map { MenuItemProperties(it.id, propertiesOf(it)) }
+
+    override fun getProperty(
+        id: Int,
+        name: String,
+    ): Variant<*> = entries().firstOrNull { it.id == id }?.let { propertiesOf(it)[name] } ?: Variant("")
+
+    override fun event(
+        id: Int,
+        eventId: String,
+        data: Variant<*>,
+        timestamp: UInt32,
+    ) {
+        when (eventId) {
+            "opened" -> open = id == ROOT || open
+            "closed" -> if (id == ROOT) open = false
+            "clicked" -> entries().firstOrNull { it.id == id && it.enabled }?.action?.let(onAction)
+        }
+    }
+
+    override fun aboutToShow(id: Int): Boolean {
+        if (id != ROOT) return false
+        open = true
+        onOpened()
+        val update = stale
+        stale = false
+        return update
+    }
+
+    override fun getObjectPath(): String = LinuxStatusArea.MENU_PATH
+
+    private fun propertiesOf(entry: StatusMenuEntry): Map<String, Variant<*>> {
+        if (entry.separator) return mapOf("type" to Variant("separator"))
+        return mapOf("label" to Variant(entry.label), "enabled" to Variant(entry.enabled), "visible" to Variant(true))
+    }
+
+    private companion object {
+        const val ROOT = 0
+        const val VERSION = 3L
+        const val NODE = "(ia{sv}av)"
+    }
+}
+
+private typealias LayoutUpdated = DbusMenu.LayoutUpdated

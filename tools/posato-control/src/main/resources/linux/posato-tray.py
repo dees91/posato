@@ -38,9 +38,12 @@ def items(connection):
 
 def posato_item(connection):
     for entry in items(connection):
-        # An entry is "<bus name>/<object path>" or a bare bus name for the default path.
-        name, _, path = entry.partition("/")
-        path = "/" + path if path else "/StatusNotifierItem"
+        # An entry is "<bus name>@<object path>" (the AppIndicator extension), "<bus name>/<path>", or a bare name.
+        if "@" in entry:
+            name, _, path = entry.partition("@")
+        else:
+            name, _, rest = entry.partition("/")
+            path = "/" + rest if rest else "/StatusNotifierItem"
         try:
             if get(connection, name, path, ITEM, "Id") == "posato":
                 return name, path

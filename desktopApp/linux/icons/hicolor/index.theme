@@ -1,0 +1,11 @@
+[Icon Theme]
+Name=Hicolor
+Comment=Posato status icons
+Directories=scalable/apps
+
+[scalable/apps]
+Size=16
+MinSize=8
+MaxSize=512
+Type=Scalable
+Context=Applications
