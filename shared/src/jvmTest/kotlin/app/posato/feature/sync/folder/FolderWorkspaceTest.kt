@@ -174,7 +174,10 @@ class FolderWorkspaceTest {
         }
     }
 
-    private fun copyTree(from: Path, to: Path) {
+    private fun copyTree(
+        from: Path,
+        to: Path,
+    ) {
         Files.walk(from).use { paths ->
             paths.forEach { path -> Files.copy(path, to.resolve(from.relativize(path).toString())) }
         }
