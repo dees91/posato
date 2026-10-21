@@ -2946,3 +2946,13 @@ first removal attempt that does not finish, not to a paused keychain.
   device removed now says so instead of "Sync with iCloud didn't finish.";
   folder-mode messages and announcements name the folder. The removed-copy
   state is not stored across restarts (`SYNC-026` owns the rebuilt section).
+## [2026-10-21] fix | ANDROID-002: the block screen follows Dark Mode
+
+- `observed` on a Galaxy XCover7 (Android 14) on `bb1a9e3f`: "Paused by
+  Posato" over Calculator shows Posato's dark palette in Dark Mode (run
+  `20261021-141029-7af5`) and the light palette in Light (run
+  `20261021-141041-dbc3`). The block screen now uses the shared theme
+  through `PosatoAndroidTheme`; its window background mirrors the matching
+  surface (`inferred` to avoid a flash; the first frame was not captured).
+  Blocked by a running 45-minute pause with Calculator in its set; the
+  theme was switched with `cmd uimode night yes|no`.
