@@ -171,7 +171,7 @@ private fun CodeStepView(
 }
 
 @Composable
-private fun CodeEntry(
+private fun ColumnScope.CodeEntry(
     state: SyncBootstrapUiState,
     step: CodeStep.Enter,
     scans: Boolean,
@@ -213,7 +213,7 @@ private fun CodeEntry(
 }
 
 @Composable
-private fun ReadyCode(
+private fun ColumnScope.ReadyCode(
     state: SyncBootstrapUiState,
     step: CodeStep.Ready,
     folderChosen: Boolean,

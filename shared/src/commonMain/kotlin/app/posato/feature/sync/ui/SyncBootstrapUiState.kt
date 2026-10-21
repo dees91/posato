@@ -145,7 +145,7 @@ internal class SyncBootstrapUiState(
 
     /** Reads the chosen folder; one whose key this device already holds while nothing is linked links at once. */
     suspend fun readFolder() {
-        joining.readFolder(syncState.value.linked, sync::isRemovedWorkspace, linkWithStoredKey)
+        joining.readFolder(syncState.value.linked, sync.removedWorkspaces::contains, linkWithStoredKey)
     }
 
     /** Links with the key a join stored; shown as a check, like a press of Sync. */
@@ -153,7 +153,7 @@ internal class SyncBootstrapUiState(
         running = true
         checking = true
         try {
-            sync.linkWithStoredKey()
+            sync.syncWithIcloud(waitForRunning = true)
             completedChecks += 1
         } finally {
             checking = false

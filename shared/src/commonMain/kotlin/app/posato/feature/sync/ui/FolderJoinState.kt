@@ -113,7 +113,8 @@ internal class FolderJoinState(
         val reading = controls.read()
         val removed = reading.workspaceId?.let { isRemoved(it) } == true
         folderContents = if (removed) FolderContents.REMOVED_COPY else reading.contents
-        if (!linked && !removed && reading.contents == FolderContents.WORKSPACE && reading.keyHere) onLinkable()
+        val keyHeld = reading.contents == FolderContents.WORKSPACE && reading.keyHere
+        if (!linked && !removed && keyHeld) onLinkable()
     }
 
     /**

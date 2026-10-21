@@ -93,7 +93,9 @@ internal class AppleSync(
     private val authoring = AppleSyncAuthoring(store, policySync, publish)
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
-    private val removedWorkspaces = store
+
+    /** Whether this device removed a workspace, so a folder holding a copy of it cannot link. Nothing is written. */
+    internal val removedWorkspaces = RemovedWorkspaces(store)
     internal val sessionTriggers: SessionSyncTriggers = object : SessionSyncTriggers {
         override suspend fun captureWorkspace(): SessionWorkspaceCapture {
             return when (val captured = this@AppleSync.captureWorkspace()) {
@@ -145,44 +147,35 @@ internal class AppleSync(
     }
     val state = mutableState.asStateFlow()
 
-    suspend fun syncWithIcloud() {
+    /**
+     * Links or continues a join. A press skips while an attempt runs; [waitForRunning] waits for it instead, so a key
+     * a pairing code just stored is used even when a foreground check (the camera opened Posato) is running.
+     */
+    suspend fun syncWithIcloud(waitForRunning: Boolean = false) {
         scope.async {
-            if (!joinFlight.tryLock()) return@async
+            if (waitForRunning) {
+                joinFlight.lock()
+            } else if (!joinFlight.tryLock()) {
+                return@async
+            }
             try {
-                linkAttempt()
+                guarded {
+                    if (coordinator.joins.hasPending()) {
+                        continueJoin()
+                    } else {
+                        val result = coordinator.bootstrap()
+                        // One update, so an announcement never speaks a passing retry before the removed copy.
+                        mutableState.update {
+                            it.copy(status = result.toSyncStatus(), reason = null, removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace)
+                        }
+                        mutableState.refreshLinked(coordinator, lastSync)
+                        if (result is BootstrapResult.Ready) syncNow()
+                    }
+                }
             } finally {
                 joinFlight.unlock()
             }
         }.await()
-    }
-
-    /**
-     * Links after a pairing code stored the workspace key. Unlike [syncWithIcloud], it waits for an attempt already
-     * running (a foreground check after the camera opened Posato) instead of skipping, so the stored key is used.
-     */
-    suspend fun linkWithStoredKey() {
-        scope.async { joinFlight.withLock { linkAttempt() } }.await()
-    }
-
-    /** Whether this device removed [workspaceId], so a folder holding a copy of it cannot link. Nothing is written. */
-    suspend fun isRemovedWorkspace(workspaceId: WorkspaceId): Boolean {
-        return (removedWorkspaces.containsRemoved(workspaceId) as? BootstrapStoreResult.Success)?.value == true
-    }
-
-    private suspend fun linkAttempt() {
-        guarded {
-            if (coordinator.joins.hasPending()) {
-                continueJoin()
-            } else {
-                val result = coordinator.bootstrap()
-                // One update, so an announcement never speaks a passing retry before the removed copy.
-                mutableState.update {
-                    it.copy(status = result.toSyncStatus(), reason = null, removedWorkspaceCopy = result == BootstrapResult.RemovedWorkspace)
-                }
-                mutableState.refreshLinked(coordinator, lastSync)
-                if (result is BootstrapResult.Ready) syncNow()
-            }
-        }
     }
 
     suspend fun onForeground() {
@@ -512,4 +505,13 @@ private suspend fun MutableStateFlow<AppleSyncState>.refreshLinked(
     update { it.copy(linked = context != null, joinPending = joinPending) }
     // Read from this device, so a restart that cannot reach the workspace still shows the earlier time.
     lastSync.show(context?.workspaceId)
+}
+
+/** Reads the list of workspaces this device removed, for the folder section; nothing is written. */
+internal class RemovedWorkspaces(
+    private val store: BootstrapStore,
+) {
+    suspend fun contains(workspaceId: WorkspaceId): Boolean {
+        return (store.containsRemoved(workspaceId) as? BootstrapStoreResult.Success)?.value == true
+    }
 }
