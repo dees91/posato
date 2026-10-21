@@ -1,7 +1,7 @@
 # Execution: `LINUX-003`
 
 - **Brief:** [Posato for Linux keeps running in the background](../specifications/linux-003-background.md)
-- **Status:** `planned`; waiting for the independent plan review
+- **Status:** `in progress`; plan reviewed and rechecked, GNOME golden built
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `linux-003-background`
@@ -40,28 +40,37 @@ and `gnome-shell-extension-appindicator` installed, logged in to
 Folded after the independent plan review (4 Critical, 9 Required; the
 maintainer decided C2, C4, R6, and R9, `user-confirmed` 2026-10-21).
 
-1. **GNOME golden** (own step, after the plan check): a second line
-   `posato.vm.linuxGnomeGolden` with GDM and the `ubuntu` session, in the
-   unattended verification guide and `~/machine-wiki`, with a
-   `machine-ledger` claim.
+1. **GNOME golden** (done 2026-10-21, `b0ebacce`): `posato-golden-linux-gnome`
+   with GDM and `ubuntu-desktop-minimal`, in the unattended verification
+   guide and `~/machine-wiki`, claimed in `machine-ledger` first. The stored
+   session is Xorg (`ubuntu-xorg`), for `xdotool` and `import -window root`;
+   `linux create --golden gnome --session wayland` switches GDM's
+   `DefaultSession` and AccountsService to `ubuntu`, and GNOME runs on
+   Wayland under Tart's virtio GPU (`observed`, run
+   `20261021-145024-9768`), where `linux screen` uses `gnome-screenshot -f`
+   (GNOME Shell's `Screenshot` D-Bus method answers `AccessDenied`).
 2. **Tool first** (`posato-control`, README, the skill's
    `features/linux-and-android.md`, auditing scenarios that assume closing
-   quits): a GNOME launch mode that joins the session bus through
-   `/tmp/posato-dbus`, keeps the shell's AT-SPI bus, and turns toolkit
+   quits): a GNOME launch mode in which `/tmp/posato-dbus` holds the
+   session bus's address instead of a private bus, so the item reaches the
+   watcher and the shell's AT-SPI bus stays in use, with toolkit
    accessibility on (an autostarted process gets the ATK setting through
    `~/.config/environment.d` on the golden); `tray -t linux [--activate
    LABEL]` over `gdbus` (layout and `clicked` event); `linux screen`;
    `linux relogin`.
-3. **Package smoke first:** merge `META-INF/services` in `linuxAppJar`,
-   run `jdeps` on the jar and add `jdk.security.auth` to the jlink modules if
-   it is needed, then in a clone install the `.deb` and check that it
-   connects, exports the item, and registers with the watcher.
+3. **D-Bus probe in the real package first:** merge `META-INF/services` in
+   `linuxAppJar`, run `jdeps` on the jar and add `jdk.security.auth` to the
+   jlink modules if it is needed, then install the `.deb` in a GNOME clone
+   with a minimal probe that connects to the session bus, owns
+   `app.posato.Posato`, exports a stub item, and registers it with the
+   watcher; step 6 builds the real item on it.
 4. **Tests first** (`desktopApp` jvmTest): dbusmenu layout per `DESIGN.md`
    state with stable ids; autostart entry contents, atomic write, removal,
    and Tweaks-written `Hidden=true` and `X-GNOME-Autostart-enabled=false`
    read as off; file-lock contention (lock held and name unreachable: the
    second process exits without opening the database).
-5. **Linux resident composable** (no Mac file changes): file lock, then the
+5. **Linux resident composable** (no Mac file changes): the new Linux
+   exclusive lock next to the database, then the
    graph with `hostsSession = false`, `presence.runWhileResident()` at
    application level, window visibility, the first-close rule with a
    marker under `$XDG_DATA_HOME/Posato` and a Compose alert, quit through
@@ -102,7 +111,8 @@ Not started.
 
 ## Review
 
-Plan review 2026-10-21 (independent agent): 4 Critical and 9 Required,
+Plan recheck of `0ea7fffa`: 3 Required (lock path, Wayland unattended,
+explicit D-Bus probe), folded above. Plan review 2026-10-21 (independent agent): 4 Critical and 9 Required,
 all folded above; recommendations taken: activation token and Show
 retry, minimal bus surface, symbolic icon with fallback and change
 signals, `prerm` autostart removal, exact pins and package notices,

@@ -35,8 +35,11 @@ the window is closed, and a running pause can be ended from the icon.
   `quitPromptFor`, and the first-close rule with an injected marker path and
   alert. A shared core is extracted only when Windows arrives.
 - **One instance:** before the graph or the database opens, `LinuxMain`
-  takes an exclusive file lock (`$XDG_RUNTIME_DIR/posato.lock`, else
-  `$XDG_DATA_HOME/Posato/instance.lock`). A second process that cannot take
+  takes a new, Linux-only exclusive file lock, `instance.lock` next to the
+  database in the directory `LinuxMain.dataDirectory()` resolves
+  (`$XDG_DATA_HOME/Posato`, else `~/.local/share/Posato`), never in
+  `$XDG_RUNTIME_DIR`; the Mac's `FileInstanceLock` stays untouched. A second
+  process that cannot take
   it forwards **Show** over the bus name `app.posato.Posato` (with the
   activation token, retried briefly) and exits without opening the
   database. Without a session bus there is no icon and no forwarding; the
@@ -56,7 +59,9 @@ the window is closed, and a running pause can be ended from the icon.
   its name, closing the window keeps Posato in the background only while a
   pause runs or a schedule is enabled, and the one-time notice says how to
   open it again from the applications menu; otherwise closing quits. The
-  watcher is followed through `NameOwnerChanged`, never latched.
+  watcher is followed through `NameOwnerChanged`, never latched, and the
+  same rule applies live: if the watcher goes away while the window is
+  hidden and neither a pause runs nor a schedule is enabled, Posato quits.
 - **Quit** (`user-confirmed`): **Quit Posato** in the icon menu, Ctrl+Q, and a
   **Quit Posato** row in the Linux options. It asks only while a schedule is
   enabled, in a focused standalone dialog even with the window hidden. A
@@ -94,7 +99,8 @@ the window is closed, and a running pause can be ended from the icon.
 
 - `AC-01`: In the GNOME golden clone, closing the window during a pause
   keeps Posato running with its icon; the menu names the session and ends it
-  early through the window. Once also on Wayland.
+  early through the window. Once also on Wayland (`--session wayland`,
+  whole-screen capture with `gnome-screenshot`).
 - `AC-02`: Window closed, no pause: a schedule a minute ahead starts once
   (one start in the log and one occurrence row in the database), its website
   is observed blocked, and it ends on time.
