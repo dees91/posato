@@ -26,7 +26,10 @@ When the maintainer gives the go for 1.5, `RELEASE-007` can publish without
 writing or capturing anything: the limits page, the README, `posato.app`,
 the App Store description and What's New, and the GitHub release notes
 describe Posato 1.5, Linux, Android, and folder sync, with install steps for
-the `.deb` and the APK and real Linux and Android screenshots.
+the `.deb` and the APK and real Linux and Android screenshots. Amended
+2026-10-21 (`user-confirmed`): Linux and Android stand level with the Mac and
+iPhone everywhere, from the download buttons to the hero video, and the
+privacy policy covers 1.5.
 
 ## Boundaries
 
@@ -38,16 +41,18 @@ the `.deb` and the APK and real Linux and Android screenshots.
   Windows planned. The ADR then points to the page.
 - **Captures.** Real applications driven by `posato-control` without the
   maintainer: Linux in a Tart Ubuntu clone, Android on the Posato emulator or
-  the test phone. Synthetic content only; no account, device name,
-  identifier, folder path, pairing code, or home path.
+  the test phone, and fresh Mac and iPhone captures of the 1.5 interface.
+  Synthetic content only; no account, device name, identifier, personal
+  folder path, live pairing code, or home path. A synthetic sync folder and
+  a pairing code that expired with its workspace may appear.
 - **Copy.** The 1.5 text covers Linux and Android, folder sync, joining by
   pairing code, QR code, or link, and the smaller 1.5 changes. The App Store
   text names no other mobile platform. Clarity review, no em or en dashes, no
   claim beyond verified behavior and stated limits.
 - **Non-goals:** product or in-app copy, the Polish listing (`I18N-001`), new
   App Store screenshots (the iPhone and iPad screens they show did not
-  change), the privacy policy, and the platform matrix, which `RELEASE-007`
-  updates from its own checks.
+  change), and the platform matrix, which `RELEASE-007` updates from its own
+  checks.
 
 ## Acceptance
 
@@ -63,6 +68,12 @@ the `.deb` and the APK and real Linux and Android screenshots.
   for `posato-provisioning store prepare`.
 - `AC-05`: the update feed notes and the GitHub release notes for 1.5 are
   ready, the latter in the execution record.
+- `AC-06` (2026-10-21): the README and `posato.app` give the four platforms
+  equal download buttons and install steps; each "How it works" step pairs
+  a computer with a phone so every platform appears; the hero video, the
+  README GIF, and the social preview name and show all four.
+- `AC-07` (2026-10-21): `PRIVACY.md` covers folder sync, the key file, the
+  pairing code, and blocking on Linux and Android, from the code.
 
 ## Verification
 

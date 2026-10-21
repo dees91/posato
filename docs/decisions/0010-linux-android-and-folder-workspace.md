@@ -173,7 +173,10 @@ Android application, the Linux desktop target, and the Linux helper. ADR
 
 This text is accepted with this ADR. `DOCS-006` moved it to the
 [limits page](../product/limits-and-platforms.md#limits), which now owns it;
-`RELEASE-007` publishes it with release 1.5.
+`RELEASE-007` publishes it with release 1.5. At the maintainer's request
+(`user-confirmed` 2026-10-21), `DOCS-006` also moved the Linux sentence about
+apps that cannot be paused out of the Android bullet, so each platform's
+limits read on their own; the limits are unchanged.
 
 - On Linux, website blocking maps each paused website and its `www` name to
   `0.0.0.0` and `::` in `/etc/hosts`, so connections to it fail. There is no pause
@@ -182,15 +185,15 @@ This text is accepted with this ADR. `DOCS-006` moved it to the
 - On Linux, Posato installs a system service once, with your password. While
   a pause runs, the service ends the paused apps you chose, so unsaved work in
   them can be lost. It clears the pause at its end time even when Posato is
-  closed. Removing the package clears an active pause.
+  closed. Removing the package clears an active pause. An app whose desktop
+  entry starts a script, an interpreter, or Flatpak cannot be paused.
 - On Android, website blocking runs as a local VPN that only answers name
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
   filtered. There is no pause page.
 - On Android, a paused app is covered by a block screen; it can be visible
-  for up to about a second before the screen appears. On Linux, an app whose
-  desktop entry starts a script, an interpreter, or Flatpak cannot be paused. The launcher,
-  Settings, the phone, and Posato cannot be paused. Posato needs usage access,
+  for up to about a second before the screen appears. The launcher, Settings,
+  the phone app, and Posato cannot be paused. Posato needs usage access,
   display over other apps, notifications, exact alarms, and to be excluded
   from battery optimization; without them, blocking or schedules may not run.
 - Folder sync works through a folder that a service you already use keeps in

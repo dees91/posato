@@ -8,68 +8,67 @@
 
 ## Plan
 
-1. The 1.5 copy without devices: the limits page with ADR 0010's limits,
-   the README, `posato.app`, the store text, the update feed notes, and the
-   release notes; 2. capture Linux and Android screenshots and place them in
-   the README and on the site; 3. independent review and closeout.
+1. The 1.5 copy without devices; 2. Linux and Android captures; 3. review.
+On 2026-10-21 the maintainer widened the row (`user-confirmed`): four
+equal platforms, fresh captures of all four, `PRIVACY.md`, the ADR 0010
+split, and a `/visual-pr` description with light and dark screenshots.
 
 ## Decisions
 
-Decided by the agent under the maintainer's delegation of 2026-10-09 unless
+Agent decisions under the delegations of 2026-10-09 and 2026-10-21 unless
 marked otherwise.
 
-- The App Store description and What's New name Linux but not Android: App
-  Review guideline 2.3.10 does not allow other mobile platforms in the
-  metadata. The README, the site, and the release notes name both.
-- No new App Store screenshots: the four iPhone and iPad screens show
-  websites, the duration, schedules, and About, which 1.5 did not change
-  apart from the version on About. `RELEASE-007` decides whether About needs
-  a recapture.
-- The package names follow the build: jpackage writes
-  `posato_<version>_<arch>.deb`, with `arm64` and `amd64` as Debian names
-  the architectures. The APK name `Posato-1.5.0.apk` follows the DMG names;
-  `RELEASE-007` keeps it or corrects every mention.
-- Linux and Android have no updater (only the Mac reads an update feed), so
-  the README and the site tell people to install the newer package the same
-  way.
-- **Blocker for `RELEASE-007`:** `PRIVACY.md` covers only iCloud. It says
-  nothing about folder sync, the workspace key kept in a file, the Android
-  local VPN and usage access, or the Linux root service. A published policy
-  is the maintainer's decision, so this row leaves it unchanged, and 1.5 is
-  not published until the maintainer updates it.
-- ADR 0010's limit bullet that runs Android, Linux, Android reads as if the
-  launcher and permission sentences were about Linux. It is accepted text,
-  copied word for word, so a split is left to the maintainer.
+- App Store text names Linux but not Android (guideline 2.3.10); no new
+  App Store screenshots. Package names follow the build; the APK name
+  `Posato-1.5.0.apk` is `user-confirmed`.
+- `user-confirmed`: each "How it works" step pairs a generic computer with a
+  phone instead of repeating near-identical screens: websites on the Mac and
+  Android, the 45-minute setup on Linux and the iPhone, schedules on the Mac
+  and the iPhone, folder pairing on Linux and Android. The separate Linux and
+  Android section became an "Install Posato" section for all four.
+- The new Linux and Android badges and the Mac badge's text are outlined
+  from Inter (OFL) with Simple Icons (CC0) marks; the App Store badge is
+  Apple's.
+- The site, README, and video keep dark captures; Linux is light because
+  Posato on Linux has no dark palette. Light Android and Linux sets are only
+  in the pull request.
+- `user-confirmed`: ADR 0010's limit bullet that ran Android, Linux, Android
+  is split by platform on the limits page and in the ADR, meaning unchanged.
 
 ## Result
 
-- **Limits page.** Linux (Ubuntu 24.04 or later, arm64 and x86-64 `.deb`)
-  and Android (13 or later, APK) are available from GitHub Releases and
-  listed under Supported platforms; every ADR 0010 limit is on the page; only
-  Windows stays planned. ADR 0010 now points to the page.
-- **Text.** The README and `posato.app` describe 1.5, folder sync, and
-  install steps for the `.deb` and the APK, and add a Linux and Android line
-  to the short limits; the update feed notes are
-  [`1.5.0-appcast-notes.txt`](../../releases/1.5.0-appcast-notes.txt); the
-  App Store [description](../../store/en-US/description.txt) and
-  [What's New](../../store/en-US/whats-new-1.5.0.txt) cover folder sync and
-  joining by QR code or link.
-- **Captures.** A 45-minute pause with example.com from `main` `305d5bd7`
-  on the Linux clone (Europe/Warsaw time zone) and on the Galaxy XCover7,
-  with its status bar cropped off. They are stored as
-  `video/public/linux-session.png` and `android-session.png` for the site,
-  and as the framed `.github/assets/step-linux-android.png` for the README.
+- **Limits page and copy** as before, plus the split limits.
+- **Equal platforms.** Hero and install section: four badges and one
+  requirements line; README Quick start the same. Hero video: the sync scene
+  shows a Mac, Linux, an iPhone, and Android with "Sync through iCloud or a
+  folder you choose", privacy reads "Your cloud. Your data.", the close names
+  the four platforms; the social preview shows an iPhone and Android.
+- **Privacy policy** for 1.5 from the code: folder files and what the folder
+  service sees, the key file (Android Keystore sealed), the pairing code and
+  link, the Linux service, the Android VPN (Google Public DNS fallback when
+  the network offers none), usage access, and permissions.
+- **Captures** from `305d5bd7`: all Mac frames in a Tart VM, all iPhone
+  frames on the test iPhone, Linux in a Tart Ubuntu clone, Android on the
+  Galaxy XCover7, with the Focus and Evening fixture; new
+  `linux-captures.sh` and `android-captures.sh`.
+
+## Findings for the maintainer
+
+`observed` during the captures, not fixed here:
+
+- Android: linking a folder workspace renamed the renamed default set back
+  to "My set" (twice), once with an "Update Posato on your other devices"
+  notice on a single device.
+- Android: "Sync with iCloud didn't finish." shown in folder mode.
+- Posato on Linux ignores the desktop's dark theme; the Android block
+  screen ignores Dark Mode.
+- Android: the pairing-code step is lost when the screen is recreated.
 
 ## Review
 
-- Independent agent, 2026-10-21: no Critical; two Required. The privacy
-  policy gap is now a recorded blocker for `RELEASE-007`. The site's alt
-  text claimed one pause on both devices; it now names the phone's pause.
-  Recommended taken: each join description says to choose the same folder
-  on the new device, the README image moved under the install steps, and
-  the store description names Linux computers. Left to `RELEASE-007`: the
-  APK file name and the x86-64 `.deb` name, which only the release build
-  fixes.
+- Independent agent, 2026-10-21 (first pass): no Critical; two Required
+  fixed (privacy gap recorded, then closed by `AC-07`; alt text).
+- Second pass on the widened row: see below.
 
 ## GitHub release notes for 1.5.0
 

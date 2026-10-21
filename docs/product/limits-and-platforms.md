@@ -91,15 +91,15 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On Linux, Posato installs a system service once, with your password. While
   a pause runs, the service ends the paused apps you chose, so unsaved work in
   them can be lost. It clears the pause at its end time even when Posato is
-  closed. Removing the package clears an active pause.
+  closed. Removing the package clears an active pause. An app whose desktop
+  entry starts a script, an interpreter, or Flatpak cannot be paused.
 - On Android, website blocking runs as a local VPN that only answers name
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
   filtered. There is no pause page.
 - On Android, a paused app is covered by a block screen; it can be visible
-  for up to about a second before the screen appears. On Linux, an app whose
-  desktop entry starts a script, an interpreter, or Flatpak cannot be paused. The launcher,
-  Settings, the phone, and Posato cannot be paused. Posato needs usage access,
+  for up to about a second before the screen appears. The launcher, Settings,
+  the phone app, and Posato cannot be paused. Posato needs usage access,
   display over other apps, notifications, exact alarms, and to be excluded
   from battery optimization; without them, blocking or schedules may not run.
 - Schedule times follow each device's own clock. A schedule is at least 15

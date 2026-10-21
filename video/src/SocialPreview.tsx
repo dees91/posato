@@ -16,6 +16,8 @@ export const SocialPreview: React.FC = () => (
       <div style={{ color: colors.muted, fontSize: 26, lineHeight: 1.4, maxWidth: 640 }}>{SOCIAL_PREVIEW.copy.support}</div>
       <div style={{ color: colors.muted, fontSize: 20, marginTop: 8 }}>{SOCIAL_PREVIEW.copy.footer}</div>
     </div>
-    <DeviceFrame spec={{ device: "iphone", left: 960, top: 78, width: 232 }} captures={[SOCIAL_PREVIEW.iphone]} opacities={[1]} />
+    {SOCIAL_PREVIEW.phones.map((capture, index) => (
+      <DeviceFrame key={capture} spec={{ device: "iphone", left: 880 + index * 192, top: 92 + index * 36, width: 182 }} captures={[capture]} opacities={[1]} />
+    ))}
   </AbsoluteFill>
 );

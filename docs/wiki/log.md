@@ -3050,3 +3050,10 @@ first removal attempt that does not finish, not to a paused keychain.
   Android as supported and keeps only Windows planned. The README, the site,
   the App Store text, the update feed notes, and the release notes draft
   describe 1.5; the App Store text names no other mobile platform.
+- `user-confirmed` 2026-10-21: Linux and Android stand level with the Mac and
+  iPhone (four download buttons, steps that pair a computer with a phone,
+  a hero that shows all four); `PRIVACY.md` covers 1.5; ADR 0010's mixed
+  Android and Linux limit bullet is split by platform.
+- `observed` in the 1.5 captures: Posato on Linux draws only its light
+  palette; Android's block screen ignores Dark Mode; linking a folder
+  workspace on Android renamed the default set back to "My set" twice.

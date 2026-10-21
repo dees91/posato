@@ -1,14 +1,17 @@
 ---
 import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
-import androidSession from "../../../video/public/android-session.png";
+import androidJoin from "../../../video/public/android-join.png";
+import androidWebsites from "../../../video/public/android-websites.png";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
-import iphoneWebsites from "../../../video/public/iphone-websites.png";
-import macDuration from "../../../video/public/mac-duration-45.png";
+import linuxAddDevice from "../../../video/public/linux-add-device.png";
+import linuxDuration from "../../../video/public/linux-duration-45.png";
 import macSchedules from "../../../video/public/mac-schedules.png";
-import linuxSession from "../../../video/public/linux-session.png";
 import macWebsites from "../../../video/public/mac-websites.png";
+
+const releases = "https://github.com/dees91/posato/releases/latest";
+const appStore = "https://apps.apple.com/app/posato/id6812237585";
 ---
 
 <Base description="Posato blocks the websites and apps you choose for a timed pause on your Mac, iPhone, Linux computer, or Android phone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
@@ -22,11 +25,12 @@ import macWebsites from "../../../video/public/mac-websites.png";
       </p>
       <p class="muted">No Posato account, no analytics, and no Posato-operated server.</p>
       <p class="download">
-        <a href="https://github.com/dees91/posato/releases/latest"><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
-        <a href="https://apps.apple.com/app/posato/id6812237585"><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
+        <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
+        <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
+        <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux" /></a>
+        <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android" /></a>
       </p>
-      <p class="platforms">For Mac with macOS 13 or later, Apple silicon or Intel, and iPhone with iOS 18 or later</p>
-      <p class="platforms">New in 1.5: <a href="#linux-android">Linux and Android</a>, from <a href="https://github.com/dees91/posato/releases/latest">GitHub Releases</a></p>
+      <p class="platforms">macOS 13 or later on Apple silicon or Intel, iOS 18 or later, Ubuntu 24.04 or later, and Android 13 or later. <a href="#install">How to install</a></p>
       </div>
     </div>
     <div class="hero-demo">
@@ -41,7 +45,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
         width="1600"
         height="1000"
         poster="/media/hero-poster.jpg"
-        aria-label="Posato demo: choose websites, pick 45 minutes, start a pause on a Mac, and optionally sync pause sets, sessions, and schedules with iPhone, encrypted on your device and stored in your private iCloud database"
+        aria-label="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; the same websites on a Mac, a Linux computer, an iPhone, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device"
       >
         <source src="/media/hero.mp4" type="video/mp4" media="(min-width: 701px)" />
       </video>
@@ -67,23 +71,23 @@ import macWebsites from "../../../video/public/mac-websites.png";
     </p>
     </div>
     <div class="shots">
-      <div class="device device-mac shot-mac">
+      <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
             src={macWebsites}
             widths={[480, 636, 960, 1272]}
             sizes="(max-width: 600px) 70vw, 36rem"
-            alt="Mac pause set named Focus showing the sample domains example.com and example.net"
+            alt="Mac showing the pause set Focus with the sample domains example.com and example.net"
           />
         </div>
       </div>
-      <div class="device device-iphone shot-iphone">
+      <div class="device device-phone shot-phone">
         <div class="device-screen">
           <Image
-            src={iphoneWebsites}
+            src={androidWebsites}
             widths={[160, 330, 660]}
             sizes="(max-width: 600px) 24vw, 12rem"
-            alt="iPhone pause set named Focus with sample website choices"
+            alt="Android phone showing the pause set Focus with the sample domains example.com and example.net"
           />
         </div>
       </div>
@@ -103,23 +107,23 @@ import macWebsites from "../../../video/public/mac-websites.png";
     </p>
     </div>
     <div class="shots">
-      <div class="device device-mac shot-mac">
+      <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
-            src={macDuration}
+            src={linuxDuration}
             widths={[480, 636, 960, 1272]}
             sizes="(max-width: 600px) 70vw, 36rem"
-            alt="Mac session setup with the pause set Focus and a 45-minute pause selected"
+            alt="Session setup on a Linux computer with the pause set Focus and a 45-minute pause selected"
           />
         </div>
       </div>
-      <div class="device device-iphone shot-iphone">
+      <div class="device device-phone shot-phone">
         <div class="device-screen">
           <Image
             src={iphoneDuration}
             widths={[160, 330, 660]}
             sizes="(max-width: 600px) 24vw, 12rem"
-            alt="iPhone session duration picker"
+            alt="Session setup on an iPhone with a 45-minute pause selected"
           />
         </div>
       </div>
@@ -138,7 +142,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
     </p>
     </div>
     <div class="shots">
-      <div class="device device-mac shot-mac">
+      <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
             src={macSchedules}
@@ -148,7 +152,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
           />
         </div>
       </div>
-      <div class="device device-iphone shot-iphone">
+      <div class="device device-phone shot-phone">
         <div class="device-screen">
           <Image
             src={iphoneSchedules}
@@ -175,57 +179,41 @@ import macWebsites from "../../../video/public/mac-websites.png";
   </section>
 
   <section class="step" aria-labelledby="folder">
+    <div class="step-copy">
     <h2 id="folder">Sync through a folder</h2>
     <p class="prose">
-      To link Linux, Android, or any mix of devices, keep the workspace in a folder that Dropbox,
+      To link any mix of Mac, iPhone, Linux, and Android, keep the workspace in a folder that Dropbox,
       OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted
-      files there. The Mac and iPhone can use a folder instead of iCloud; a workspace uses one or the
-      other. Create the workspace on one device, then choose <strong>Add a device</strong> there. On the
-      other device, choose its copy of the same folder, then scan the QR code with its camera, open the
-      shared link, or type the pairing code. The code works for 10 minutes. A device that joins during a pause starts pausing right away. You
-      cannot remove a single device; to stop sharing with one, remove the workspace and create a new
-      one in another folder.
+      files there. A workspace uses iCloud or one folder, never both. Create the workspace on one
+      device, then choose <strong>Add a device</strong> there. On the other device, choose its copy of
+      the same folder, then scan the QR code with its camera, open the shared link, or type the pairing
+      code. The code works for 10 minutes. A device that joins during a pause starts pausing right away.
+      You cannot remove a single device; to stop sharing with one, remove the workspace and create a
+      new one in another folder.
     </p>
-  </section>
-
-  <section class="step" aria-labelledby="linux-android">
-    <h2 id="linux-android">Linux and Android</h2>
+    </div>
     <div class="shots">
-      <div class="device device-mac shot-mac">
+      <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
-            src={linuxSession}
-            widths={[480, 640, 960, 1280]}
+            src={linuxAddDevice}
+            widths={[480, 636, 960, 1272]}
             sizes="(max-width: 600px) 70vw, 36rem"
-            alt="Posato on Linux with a 45-minute pause running and restrictions active"
+            alt="Add a device on a Linux computer, with a QR code and a one-time pairing code"
           />
         </div>
       </div>
-      <div class="device device-iphone shot-iphone">
+      <div class="device device-phone shot-phone">
         <div class="device-screen">
           <Image
-            src={androidSession}
-            widths={[240, 360, 540, 720]}
-            sizes="(max-width: 600px) 40vw, 14rem"
-            alt="Posato on an Android phone with a 45-minute pause running"
+            src={androidJoin}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="An Android phone joining the folder workspace with a pairing code"
           />
         </div>
       </div>
     </div>
-    <p class="prose">
-      <strong>Linux:</strong> Posato runs on Ubuntu 24.04 or later. Download
-      <code>posato_1.5.0_arm64.deb</code> for arm64 or <code>posato_1.5.0_amd64.deb</code> for x86-64
-      from <a href="https://github.com/dees91/posato/releases/latest">GitHub Releases</a> and install it
-      with <code>sudo apt install ./posato_1.5.0_&lt;arch&gt;.deb</code>. Then open Posato and follow
-      the first run; it asks for your password once to install the pausing service.
-    </p>
-    <p class="prose">
-      <strong>Android:</strong> Posato runs on Android 13 or later. On the phone, download
-      <code>Posato-1.5.0.apk</code> from <a href="https://github.com/dees91/posato/releases/latest">GitHub Releases</a>
-      and open it. When Android asks, allow installing apps from this source, then install, open
-      Posato, and follow the first run, which asks for the permissions Posato needs to pause.
-    </p>
-    <p class="prose">To update on Linux or Android, install the newer package the same way.</p>
   </section>
 
   <section aria-labelledby="limits">
@@ -244,9 +232,15 @@ import macWebsites from "../../../video/public/mac-websites.png";
         minutes, they clear only when Posato is open at the end or the next time you open it.
       </li>
       <li>
-        <strong>Linux and Android:</strong> websites are blocked by name, with no pause page; a browser
-        with its own DNS over HTTPS bypasses it. On Linux, paused apps are ended. On Android, another
-        VPN cannot run during a pause, and a paused app is covered by a block screen.
+        <strong>Linux:</strong> websites are blocked by name through <code>/etc/hosts</code>, with no
+        pause page; a browser with its own DNS over HTTPS bypasses it. Paused apps are ended, so save
+        your work before a session starts. A system service, installed once with your password, ends
+        the pause on time even when Posato is closed.
+      </li>
+      <li>
+        <strong>Android:</strong> websites are blocked by name through a local VPN, with no pause page;
+        another VPN cannot run during a pause, and strict Private DNS or a browser with its own DNS over
+        HTTPS bypasses it. A paused app is covered by a block screen.
       </li>
       <li>
         <strong>Sync:</strong> Sync is best effort; a change may arrive late or not at all. If every copy of your workspace key is lost,
@@ -268,17 +262,52 @@ import macWebsites from "../../../video/public/mac-websites.png";
     </p>
   </section>
 
-  <section class="note" aria-labelledby="availability">
-    <h2 id="availability">Availability</h2>
-    <p>
-      Posato 1.5 for Mac is a signed and notarized download from <a href="https://github.com/dees91/posato/releases/latest">GitHub Releases</a>:
-      <code>Posato-1.5.0.dmg</code> for Apple silicon and <code>Posato-1.5.0-intel.dmg</code> for an Intel Mac.
-      It can check for new releases after you agree, and installing an update waits until your session has ended. To move from Posato 1.0,
-      download the new version, quit Posato, and replace the application. The iPhone app is on the <a href="https://apps.apple.com/app/posato/id6812237585">App Store</a>. The Linux <code>.deb</code> packages and the Android APK are on <a href="https://github.com/dees91/posato/releases/latest">GitHub Releases</a> too. Posato targets macOS 13 or later on Apple silicon and Intel Macs, iOS 18 or later, Ubuntu 24.04 or later, and Android 13 or later; the <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a> records what was checked, including that the Intel build was checked under Rosetta, not on an Intel Mac.
+  <section class="note" aria-labelledby="install">
+    <h2 id="install">Install Posato</h2>
+    <p class="download download-row">
+      <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
+      <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
+      <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux" /></a>
+      <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android" /></a>
     </p>
-    <p class="download">
-      <a href="https://github.com/dees91/posato/releases/latest"><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
-      <a href="https://apps.apple.com/app/posato/id6812237585"><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
+    <ul class="install">
+      <li>
+        <h3>Mac</h3>
+        <p>
+          macOS 13 or later. Download <code>Posato-1.5.0.dmg</code> for Apple silicon or
+          <code>Posato-1.5.0-intel.dmg</code> for an Intel Mac from <a href={releases}>GitHub Releases</a>,
+          signed and notarized, and move Posato to Applications. It can check for new releases after you
+          agree, and installing an update waits until your session has ended. To move from Posato 1.0,
+          quit Posato and replace the application.
+        </p>
+      </li>
+      <li>
+        <h3>iPhone</h3>
+        <p>iOS 18 or later. Install Posato from the <a href={appStore}>App Store</a>; it updates there.</p>
+      </li>
+      <li>
+        <h3>Linux</h3>
+        <p>
+          Ubuntu 24.04 or later. Download <code>posato_1.5.0_arm64.deb</code> for arm64 or
+          <code>posato_1.5.0_amd64.deb</code> for x86-64 from <a href={releases}>GitHub Releases</a> and
+          install it with <code>sudo apt install ./posato_1.5.0_&lt;arch&gt;.deb</code>. Then open Posato
+          and follow the first run; it asks for your password once to install the pausing service.
+        </p>
+      </li>
+      <li>
+        <h3>Android</h3>
+        <p>
+          Android 13 or later. On the phone, download <code>Posato-1.5.0.apk</code> from
+          <a href={releases}>GitHub Releases</a> and open it. When Android asks, allow installing apps from
+          this source, then install, open Posato, and follow the first run, which asks for the permissions
+          Posato needs to pause.
+        </p>
+      </li>
+    </ul>
+    <p class="muted">
+      To update on Linux or Android, install the newer package the same way. The
+      <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a>
+      records what was checked on each platform, including that the Intel build was checked under Rosetta, not on an Intel Mac.
     </p>
   </section>
 </Base>

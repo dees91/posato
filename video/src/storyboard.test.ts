@@ -89,10 +89,10 @@ for (const [name, scenes, minSeconds, maxSeconds] of stories) {
 
 test("stills and the social preview reference tracked captures", () => {
   for (const still of Object.values(STILLS)) {
-    assert.ok(existsSync(publicFile(still.mac)), `missing ${still.mac}`);
-    assert.ok(existsSync(publicFile(still.iphone)), `missing ${still.iphone}`);
+    assert.ok(existsSync(publicFile(still.desktop)), `missing ${still.desktop}`);
+    assert.ok(existsSync(publicFile(still.phone)), `missing ${still.phone}`);
   }
-  assert.ok(existsSync(publicFile(SOCIAL_PREVIEW.iphone)));
+  for (const phone of SOCIAL_PREVIEW.phones) assert.ok(existsSync(publicFile(phone)), `missing ${phone}`);
   assert.ok(existsSync(publicFile("forest.svg")));
   assert.equal(SOCIAL_PREVIEW.width, 1280);
   assert.equal(SOCIAL_PREVIEW.height, 640);

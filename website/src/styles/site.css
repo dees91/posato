@@ -303,12 +303,17 @@ main:has(> .hero) {
   max-width: 34ch;
 }
 
+/* Four equal badges: two by two beside the hero heading, one row where the page is wide. */
 .download {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 186px));
+  align-items: start;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.download-row {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 186px));
 }
 
 .download a {
@@ -424,14 +429,14 @@ section[aria-labelledby="limits"] .prose {
   height: auto;
 }
 
-.device-iphone .device-screen {
+.device-phone .device-screen {
   overflow: hidden;
   border: 3.5cqi solid var(--bezel);
   border-radius: 15cqi;
   outline: 1px solid var(--outline);
 }
 
-.device-mac .device-screen {
+.device-desktop .device-screen {
   padding: 5cqi 6cqi;
   border: 1.8cqi solid var(--bezel);
   border-radius: 2.6cqi;
@@ -439,11 +444,11 @@ section[aria-labelledby="limits"] .prose {
   background: linear-gradient(160deg, #a7c3a2, #2e5d50);
 }
 
-.shot-mac {
+.shot-desktop {
   flex: 3 1 0;
 }
 
-.shot-iphone {
+.shot-phone {
   flex: 1 1 0;
   max-width: 13rem;
 }
@@ -457,6 +462,38 @@ section[aria-labelledby="limits"] .prose {
 .note p:last-child,
 .note ul:last-child {
   margin-bottom: 0;
+}
+
+.install {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 3rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.install li {
+  margin: 0;
+}
+
+.install + .muted {
+  margin-top: 1.5rem;
+}
+
+.install h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+}
+
+.install p {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .install {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1000px) {
