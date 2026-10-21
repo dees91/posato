@@ -1391,6 +1391,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.navigationevent.compose)
     implementation(libs.sqldelight.sqlite.driver)
+    // Linux only (LINUX-003): the status icon and the single-instance name on the session bus. The Mac never loads
+    // these classes, so they compile here and ship only in the Linux jar (linuxDesktopRuntime below).
+    compileOnly(libs.dbus.java.core)
+    testImplementation(libs.dbus.java.core)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
 }
@@ -1406,6 +1410,30 @@ dependencies {
     linuxDesktopRuntime(libs.compose.desktop.linux.arm64)
     linuxDesktopRuntime(libs.compose.desktop.linux.x64)
     linuxDesktopRuntime(project(":linuxHelper"))
+    linuxDesktopRuntime(libs.dbus.java.core)
+    linuxDesktopRuntime(libs.dbus.java.transport.native.unixsocket)
+}
+
+// The jar flattens every dependency, so service-loader files with the same name are concatenated here first;
+// dbus-java finds its transport this way, and the first copy of a file wins in linuxAppJar.
+val linuxServiceFiles by tasks.registering {
+    val runtime = configurations.runtimeClasspath
+    val jars = files({ (runtime.get() + linuxDesktopRuntime).filter { it.name.endsWith(".jar") } })
+    val output = layout.buildDirectory.dir("linux/services")
+    inputs.files(jars)
+    outputs.dir(output)
+    doLast {
+        val merged = sortedMapOf<String, MutableList<String>>()
+        jars.forEach { jar ->
+            ZipFile(jar).use { zip ->
+                zip.entries().asSequence()
+                    .filter { !it.isDirectory && it.name.startsWith("META-INF/services/") }
+                    .forEach { entry -> merged.getOrPut(entry.name) { mutableListOf() } += zip.getInputStream(entry).bufferedReader().readText() }
+            }
+        }
+        val root = output.get().asFile.apply { deleteRecursively() }
+        merged.forEach { (name, parts) -> root.resolve(name).apply { parentFile.mkdirs() }.writeText(parts.joinToString("\n")) }
+    }
 }
 
 val linuxAppJar by tasks.registering(Jar::class) {
@@ -1417,6 +1445,8 @@ val linuxAppJar by tasks.registering(Jar::class) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     val runtime = configurations.runtimeClasspath
     dependsOn(runtime, linuxDesktopRuntime)
+    dependsOn(linuxServiceFiles)
+    from(linuxServiceFiles)
     from(sourceSets.main.map { it.output })
     from({ (runtime.get() + linuxDesktopRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")

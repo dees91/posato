@@ -1,4 +1,5 @@
 [versions]
+dbus-java = "5.2.2"
 qrose = "1.1.2"
 agp = "9.0.1"
 androidCompileSdk = "36"
@@ -24,6 +25,8 @@ sqldelight = "2.3.2"
 slf4j = "2.0.17"
 
 [libraries]
+dbus-java-core = { module = "com.github.hypfvieh:dbus-java-core", version.ref = "dbus-java" }
+dbus-java-transport-native-unixsocket = { module = "com.github.hypfvieh:dbus-java-transport-native-unixsocket", version.ref = "dbus-java" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version = "1.10.1" }
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
