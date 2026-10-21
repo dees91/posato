@@ -36,6 +36,19 @@ internal interface SyncCryptoProvider {
 
     fun createSigningKey(): SyncSigningKey?
 
+    /**
+     * PBKDF2 with HMAC-SHA256 (RFC 8018). Providers with a native implementation override it; this one is
+     * the reference the vectors pin and the fallback for any other provider.
+     */
+    fun pbkdf2HmacSha256(
+        password: ByteArray,
+        salt: ByteArray,
+        iterations: Int,
+        length: Int,
+    ): ByteArray? {
+        return commonPbkdf2HmacSha256(password, salt, iterations, length)
+    }
+
     fun verifyEd25519(
         publicKey: PublicSigningKey,
         message: ByteArray,
@@ -55,4 +68,42 @@ internal fun SyncCryptoProvider.hkdfSha256(
     } finally {
         pseudorandomKey.fill(0)
     }
+}
+
+private const val SHA256_BYTES: Int = 32
+
+/** RFC 8018 PBKDF2 over this provider's HMAC-SHA256; every intermediate is zeroed before it returns. */
+internal fun SyncCryptoProvider.commonPbkdf2HmacSha256(
+    password: ByteArray,
+    salt: ByteArray,
+    iterations: Int,
+    length: Int,
+): ByteArray? {
+    if (iterations < 1 || length < 1) {
+        return null
+    }
+    val output = ByteArray(length)
+    val blocks = (length + SHA256_BYTES - 1) / SHA256_BYTES
+    for (block in 1..blocks) {
+        val index = byteArrayOf((block ushr 24).toByte(), (block ushr 16).toByte(), (block ushr 8).toByte(), block.toByte())
+        var round = hmacSha256(password, salt + index) ?: return null.also { output.fill(0) }
+        val sum = round.copyOf()
+        repeat(iterations - 1) {
+            val next = hmacSha256(password, round) ?: return null.also {
+                output.fill(0)
+                sum.fill(0)
+                round.fill(0)
+            }
+            round.fill(0)
+            round = next
+            for (position in sum.indices) {
+                sum[position] = (sum[position].toInt() xor round[position].toInt()).toByte()
+            }
+        }
+        round.fill(0)
+        val offset = (block - 1) * SHA256_BYTES
+        sum.copyInto(output, offset, 0, minOf(SHA256_BYTES, length - offset))
+        sum.fill(0)
+    }
+    return output
 }
