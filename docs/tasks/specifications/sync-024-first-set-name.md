@@ -22,7 +22,9 @@ A device that renamed its first set, or made another set the default,
 before it linked keeps that name and default when it creates a new
 workspace, and every device that joins later receives them. A device that
 joins a workspace where a name or default was already chosen still takes
-the workspace's choice.
+the workspace's choice; one that joins a workspace where nobody named the
+first set or chose a default publishes its own (`user-confirmed`
+2026-10-21).
 
 ## Boundaries
 
@@ -52,13 +54,15 @@ the workspace's choice.
   device with the first set renamed "Focus" and another set as default
   creates a workspace; after one pass both are kept locally and published
   as `set-put` and `set-default`.
-- `AC-02`: A device that joins a workspace whose first set is already named
-  keeps the workspace's name and publishes none of its own (passes today
-  and keeps passing).
+- `AC-02` (guard, passes today): a device that joins a workspace whose
+  first set is named and whose default is chosen keeps the workspace's
+  choices and publishes none of its own.
 - `AC-03`: On real devices: the Android phone renames the first set
-  "Focus", creates a folder workspace, and still shows "Focus"; a Linux
-  clone that joins shows "Focus" too. A Mac VM that renames and creates an
-  iCloud or folder workspace keeps its name.
+  "Focus", makes "Evening" the default, and creates a folder workspace; it
+  keeps both, and a Linux clone that joins shows "Focus" and the default
+  "Evening". A Linux clone renamed "Other" that joins a workspace named
+  "Focus" shows "Focus". A Tart Mac that renames and creates an iCloud
+  workspace keeps its name.
 - `AC-04`: ADR 0006's first-link sentence states the new rule, accepted by
   the maintainer.
 
@@ -74,6 +78,6 @@ the workspace's choice.
 
 ## Decisions or blockers
 
-- **D1 (maintainer):** how a replica knows it may publish its first-set
-  name and default. The plan recommends one; ADR 0006's sentence changes
-  either way and needs acceptance (`AC-04`).
+- **D1, decided** (`user-confirmed` 2026-10-21): publish at first link
+  only while the workspace has not chosen (plan option A), with the known
+  limits recorded in ADR 0006.

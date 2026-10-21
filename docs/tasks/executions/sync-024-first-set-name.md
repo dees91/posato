@@ -12,33 +12,38 @@
    the create case fails with `expected:<Focus> but was:<null>`, and with
    the assertions swapped the default fails too (the first set comes back
    as default). The join case passes.
-2. D1, how a replica knows it may publish. Two options:
-   - **A. "The workspace has not chosen yet" (recommended).** At first link
-     (no base yet) `seedsFor` also queues `set-put` for the first set when
-     the workspace's first set has no name, and `seedLocalExtras` queues
-     `set-default` when the workspace holds no `set-default` and the local
-     default differs from the resolved one. The projection gains one
-     derived value, whether any `set-default` was applied, computed by the
-     reducer from operations it already holds (no format change). No
-     persisted flag, so a crash between establishing and seeding needs
-     nothing new: the seed reruns while there is no base, and an
-     existing pending `set-put` or `set-default` suppresses a second one.
-     It also keeps the name of a device that joins a workspace where nobody
-     named the first set. Known race: a join whose projection has not yet
-     received another device's earlier name or default can publish its
-     own, and the greater total order then wins; folder sync delivers the
-     pairing offer after the earlier bundles in practice.
-   - **B. "This device created the workspace."** Carry created or joined on
-     `BootstrapResult.Ready` and persist it until the first seed (a
-     bootstrap-store column and migration), then publish only when created.
-     Closer to the roadmap wording, but a schema change, and a device that
-     loses an iCloud anchor race and joins still loses its name.
-3. Implement D1 test first for the unit cases beside
-   `PolicyReconcilerPauseSetTest` (the existing first-link case asserts the
-   old rule and changes with D1); update ADR 0006 "Migration identity" and
-   the `PolicyReconciler.seedLocalExtras` comment.
-4. Device runs (`AC-03`), independent review, `./gradlew quality`, then the
-   pull request to babysit-pr.
+2. D1 = option A (`user-confirmed` 2026-10-21): at first link, publish
+   only what the workspace has not chosen. The maintainer accepted that a
+   stale joiner can overwrite an undelivered choice (the greater total
+   order wins) and that joining an unnamed workspace publishes the
+   joiner's name. Option B (persisted "created") was not taken.
+3. The independent plan review (no Critical, seven Required) is folded in:
+   - R1: queue the first set's `set-put` only while the workspace's first
+     set has no name; never because the local name differs.
+   - R2: queue `set-default` only when no `set-default` was ever applied,
+     the local resolved default differs from the projection's resolved
+     default, survives the seed filter (not removed), and would not be
+     refused at the 10-set cap; queue it after every `set-put`.
+   - R3: `seedLocalExtras` reads only the pending changes of the current
+     workspace, for names, the default, and websites.
+   - R4: ADR 0006 "Migration identity" states the new rule, its known
+     limits (concurrent first links, an iCloud anchor race, and folder
+     file order: the greater HLC, author, operation wins), that a joiner of
+     an unnamed or undefaulted workspace changes it for every member, and
+     compatibility (kinds 12 and 16 are mandatory since 1.3, no gate).
+   - R5: failing tests first (list in Checks): create received by a second
+     replica, join guard, join unnamed, default edge cases, retries, two
+     concurrent links, stale workspace rows, the old-rule case in
+     `PolicyReconcilerPauseSetTest`, and "a default was chosen" (any
+     applied `set-default` counts) in the reducer and the projection
+     digest.
+   - R6: `posato-control flow set` gains `--rename-from` and
+     `--make-default` before the device runs.
+   - R7: device runs as in `AC-03`.
+4. Implement in `SyncReducer` (derived `defaultChosen`),
+   `PauseSetMerge.seedsFor`, and `PolicyReconciler.seedLocalExtras`.
+5. Device runs, independent review, `./gradlew quality`, pull request to
+   babysit-pr.
 
 ## Result
 
