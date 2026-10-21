@@ -33,11 +33,10 @@
 
 ## Verification
 
-- Verified b9c405a2 on the Galaxy XCover7 (Android 14), APK from this tree, run 20261021-135649-4ec0: fresh install and onboarding (`-135545-efb8` to `-135551-7448`), folder workspace created in `/sdcard/PosatoSync025`.
-- Verified b9c405a2: its `Posato` folder copied to `/sdcard/PosatoCopy025`, then **Remove workspace**, run 20261021-135929-cebc; the source folder is empty and the copy keeps `workspace` and `bundles`.
-- Verified b9c405a2: linking to the copy stays unlinked; the row reads "Holds a workspace you removed" and the section shows the removed-copy text, run 20261021-140318-bb62 (screenshot `-140321-7ab7`); no element contains "iCloud", run 20261021-140330-323b.
-- An earlier attempt on the same tree was interrupted by another session driving the phone; its runs are not evidence. Both folders were deleted afterwards and the lease released.
-- `posato-control flow folder link` waits for **Add a device** or **Join**, so on the removed copy it times out by design (`-140032-e945`, its message quotes the new row text).
+- Verified 72dd5cd4 on the Galaxy XCover7 (Android 14), APK from this tree, run 20261021-142040-c33b: fresh install and onboarding (`-141937-d8f9` to `-141943-f4b2`), folder workspace created in `/sdcard/PosatoSync025`.
+- Verified 72dd5cd4: the workspace's `Posato` folder copied to `/sdcard/PosatoCopy025`, then **Remove workspace**, run 20261021-142320-8c4b; the source is empty, the copy keeps `workspace` and `bundles`.
+- Verified 72dd5cd4: linking to the copy stays unlinked; the removed-copy text shows, run 20261021-142702-7138; the row reads "Folder holds a removed workspace", run 20261021-142705-ce13; no element contains "iCloud", run 20261021-142708-9494 (screenshot `-142710-fdff`).
+- `flow folder link` waits for **Add a device** or **Join**, so on the copy it times out by design (`-142415-f51c`, quoting the new row). Both folders deleted afterwards and the phone lease released. Earlier runs on pre-review trees are superseded.
 
 ## Review
 
