@@ -4,7 +4,7 @@
 - **Status:** `in progress`
 - **Review tier:** `standard`
 - **Implementer:** Claude
-- **Branch:** `sync-026-folder-join`, from `sync-025-folder-wording` (#183)
+- **Branch:** `sync-026-folder-join`, rebased onto `main` `31063a8c` after #183 merged
 
 ## Plan
 
@@ -59,11 +59,45 @@ Agent decisions under the maintainer's delegation unless marked otherwise.
 - **Limits:** a typed code is not kept when Android rebuilds the screen (a
   theme change); a scanned code is.
 
+## Review
+
+- Independent agent, 2026-10-21: no Critical; four Required, all fixed test
+  first: a removed workspace's copy reads as such before any code is used;
+  a key a join stored links (the link waits for a running attempt, and a
+  folder whose key is already here links when read); a code can be typed
+  before the folder; the scan-first and expired runs are on the final head.
+  Recommended taken: a reading state without **Join**, a re-read while
+  Create is shown and after an unlinked sync, the join only while Posato is
+  in front, one live container and spoken errors, the code and draft kept
+  across a rebuilt screen (and the row kept open), dead strings removed, the
+  linking sentence in Create, `Step n` marker labels.
+
 ## Checks
+
+Product head `e8adff8d` (later commits change only `posato-control` and
+this record).
 
 | Check | Result |
 | --- | --- |
-| `./gradlew quality` | passed on the implementation |
-| Android, Galaxy XCover7 (all runs `20261021-`) | create `144556-cc6b`; scan first, then folder: joined `145011-cdf6`; folder first, code typed while its offer was missing: waited (`151221-60bd`), joined after the offer arrived (`151150-2059`); expired code `150329-7313`; remove `151309-6fa7`, `151631-f398` |
-| Light and dark screenshots | scan first `144928-6b4e`/`144935-42a4`; code step `145758-6b1f`/`145805-c277`; expired `150415-12fb`/`150421-4b1c`; create `144531-c71b`/`151947-534f`; linked `145106-5743`/`145120-6cee`; waiting (light only) `151221-60bd` |
-| Linux clone, join by typed code (`AC-03`) | open: waits for a Linux VM |
+| `./gradlew quality` | passed on the review fixes; `qualityLint` on `e8adff8d` |
+| `FolderJoinFlowTest`, `FolderJoinStateTest` | failed on `cc3e9d7a` (6 of 15), pass after |
+
+Verified e8adff8d Android create run 20261021-194539-7e2b (Galaxy XCover7, empty folder, Create workspace, linked).
+Verified e8adff8d Android scan first run 20261021-195033-0b84 (link opened before the folder; joined once the folder was chosen).
+Verified e8adff8d Android typed first run 20261021-195325-f35c (code typed before the folder, offer held back: waiting kept across two theme changes, joined once it arrived).
+Verified e8adff8d Android removed copy run 20261021-195834-8ddb (step 2 explains, no Join).
+Verified e8adff8d Android expired code run 20261021-200020-856e (error under the field).
+Verified e8adff8d iPhone scan first run 20261021-200427-bce3 (test iPhone, step 2 received with step 1 open).
+
+Earlier iPhone runs on `3c6cfe7c`, before the review: waiting
+`20261021-153124-5f55`, create `20261021-153201-37bd`, code step
+`20261021-153700-d8ce`, typed join `20261021-153743-5b59`, linked row
+`20261021-153805-04e1`.
+
+Screenshots (light / dark): scan first `195023-4102` / `195029-e26e`;
+waiting `195436-c83d` / `195442-23d0`; removed copy `195810-d712`; expired
+`200107-bcf6`; earlier code step, create, and linked frames in the table of
+the first pass.
+
+`AC-03` (a Linux clone joining by a typed code) and the desktop flow runs
+wait for a VM.
