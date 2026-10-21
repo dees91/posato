@@ -14,26 +14,17 @@ and `gnome-shell-extension-appindicator` installed, logged in to
 `ubuntu-appindicators@ubuntu.com`). Screens are in the ignored
 `build/verification/linux-003-spike/`. `observed` unless marked.
 
-- **AWT `SystemTray`** (JDK 21, a 22-pixel icon and a `PopupMenu`):
-  `isSupported()` is true and the extension shows the icon at the right of
-  the top bar through its legacy XEmbed support (`01-awt-tray.png`). The
-  right-click menu is an unthemed AWT window with a small bitmap font, and
-  the icon shows a white corner where it should be transparent
-  (`03-awt-rclick.png`). Compose Desktop's `Tray` wraps the same AWT API.
-- **StatusNotifierItem** (a Python AyatanaAppIndicator3 probe with four
-  items): the shell draws the menu itself, in its own style, with a
-  disabled first line, as the Mac menu does (`05-sni-menu.png`).
-  `org.kde.StatusNotifierWatcher` answers on the session bus. The probe's
-  named icon was blank because the guest has no icon theme; Posato sends
-  its own pixmap.
+- **AWT `SystemTray`:** supported; the extension shows the icon through
+  legacy XEmbed, but the menu is an unthemed AWT window and the icon has a
+  white corner (`01-awt-tray.png`, `03-awt-rclick.png`). Compose's `Tray`
+  wraps the same API.
+- **StatusNotifierItem** (a Python AyatanaAppIndicator3 probe): the shell
+  draws the menu itself, with a disabled first line (`05-sni-menu.png`);
+  `org.kde.StatusNotifierWatcher` answers on the session bus.
 - **Autostart:** `~/.config/autostart/<name>.desktop` ran at the next
-  login, on the real session bus `unix:path=/run/user/1000/bus`.
-- **Bus:** `posato-control launch -t linux` starts Posato on a private bus
-  in `/tmp/posato-dbus` for AT-SPI. A StatusNotifierItem registered there
-  reaches no watcher, so verification must launch on the session's bus.
-- **Not covered:** a Wayland GNOME session (the golden uses LightDM, which
-  starts Xorg); `inferred` that the StatusNotifierItem behaves the same,
-  because it goes over D-Bus, not the display server.
+  login, on the real session bus.
+- **Bus:** `launch -t linux` uses a private bus in `/tmp/posato-dbus`
+  for AT-SPI, which no watcher listens on.
 
 ## Plan
 
