@@ -99,5 +99,13 @@ waiting `195436-c83d` / `195442-23d0`; removed copy `195810-d712`; expired
 `200107-bcf6`; earlier code step, create, and linked frames in the table of
 the first pass.
 
-`AC-03` (a Linux clone joining by a typed code) and the desktop flow runs
-wait for a VM.
+Verified e8adff8d Linux typed join run 20261021-203038-ee63 (Tart Ubuntu clone joins by a typed code, `AC-03`; the code step `20261021-203012-7d35`).
+Verified e8adff8d Linux late offer run 20261021-202731-e79c (waiting with the offer held back, then linked, screenshot `20261021-202742-63f9`).
+Verified e8adff8d Linux flows: create `20261021-202403-9d86`, offer `20261021-202756-4a3a`, done `20261021-202802-b132`, remove `20261021-202804-74fc`.
+Verified e8adff8d Mac flows run 20261021-203528-b76a (Tart clone: create linked; offer `20261021-203551-766a`, done `20261021-203559-3f03`, remove `20261021-203806-0879`).
+Verified e8adff8d Mac stored key run 20261021-203726-8f76 (after the app's state was reset the key file stayed; choosing the folder linked at once, the `R2` path).
+
+A `posato-control` read of the Linux tree failed once mid-wait
+(`/tmp/posato-dbus` missing after `reset`), so the late-offer run's own
+outcome is the screenshot; `reset` on Linux loses the session bus and a new
+clone was used for the joining device.

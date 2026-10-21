@@ -77,7 +77,8 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
                     created = true
                 }
 
-                JOIN_LABEL in labels -> "waitingForCode"
+                // The code field also shows before a folder is chosen, so it counts only once the folder is chosen and read.
+                JOIN_LABEL in labels && CHANGE in labels && READING !in labels -> "waitingForCode"
 
                 else -> null
             }
@@ -201,6 +202,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val DONE_ACTION = "done"
         const val USE_FOLDER = "Use this folder"
         const val CREATE = "Create workspace"
+        const val READING = "Reading the folder…"
         const val REMOVED_COPY = "This folder holds a copy of a workspace you removed"
         const val CHANGE = "Change"
         const val BROWSE = "Choose folder…"
