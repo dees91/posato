@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The block screen's window before Compose draws: Posato's light surface, so it never flashes another color. -->
+    <style name="Theme.Posato.Block" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/posato_block_surface</item>
+    </style>
+    <color name="posato_block_surface">#FFFEFA</color>
+</resources>
