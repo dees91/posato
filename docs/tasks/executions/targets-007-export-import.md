@@ -1,7 +1,7 @@
 # Execution: `TARGETS-007`
 
 - **Brief:** [Export pause sets and schedules to a file and import them on any device](../specifications/targets-007-export-import.md)
-- **Status:** `in-progress` (shared code, UI, and platform panels done; device runs pending)
+- **Status:** `in-progress` (Android and iPhone runs done; Mac and Linux VM runs pending)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `targets-007-export-import` (rebase after #182, roadmap revision 26)
@@ -79,23 +79,17 @@
    open now (it would start a pause at once). Each can also be turned on
    later in Schedules. `DESIGN.md` gets this step.
 7. **Files, code handling, JSON, apps:** as in the brief's "Implementation
-   constraints" (pickers per platform, temporary files deleted, typed-code
-   normalization and zeroing, JSON field types, app choices on replace).
+   constraints".
 8. **UI from the mockup:** menu items, export dialog, import dialog with the
    code step, two radio cards, add's two options, preview, Import or
    destructive Replace, the linked-device warning, and the result screen.
-9. **Measure first:** PBKDF2 latency on the XCover7 and iPhone 13 mini; the
-   highest count within 2 s on the slower one, derived off the main thread.
-10. **Tests first:** RFC 7914 PBKDF2-SHA256 vectors and one pinned
-    end-to-end coded file in the JVM and Swift provider tests; codec and
-    validation incl. nested unknown fields on JVM and Native (AC-01);
-    planner cases for each matching, replace, pause, and limit rule
-    (AC-02); convergence of two exchanging stores after an import (AC-03).
-11. **Tool first:** `posato-control flow export --out PATH [--code]` and
-    `flow import --file PATH [--code C] --mode combine|separate|replace`
-    on every target, driving the real dialogs (Mac Go to folder, Linux
-    Ctrl+L fallback, the iOS picker like `flow folder`), proven in the tool
-    before the feature; the host moves files (`vm`, `linux exec`, `adb`).
+9. **Measure first:** PBKDF2 latency on the XCover7 and iPhone 13 mini; a
+   count within 2 s on the slower one, derived off the main thread.
+10. **Tests first:** RFC 7914 vectors and a pinned coded file; codec and
+    validation on JVM and Native (AC-01); planner rules (AC-02); convergence
+    of two exchanging stores after an import (AC-03).
+11. **Tool first:** `flow export` and `flow import` (driver README), proven
+    on each target before its feature runs; the host moves the files.
 12. **Devices, one target at a time:** each platform exports and imports
     once; Mac primary to peer with add and replace; iPhone to Android; Android
     to Linux combine and separate; Linux to Android replace; Mac coded to
@@ -114,7 +108,13 @@
 
 ## Progress
 
-- Failing first, then green: the codec, seal, planner, writer, export, and
-  service tests (common), `PauseSetFileVectorTest` (JVM; RFC 7914 and a
-  file pinned with Python), `IosPbkdf2Test` (iOS; native, so in Kotlin
-  `iosTest`, not the Swift provider). Count provisionally 600,000 (step 9).
+- Failing first, then green: codec, seal, planner, writer, export, service
+  (common), `PauseSetFileVectorTest` (JVM; RFC 7914, a file pinned with
+  Python), `IosPbkdf2Test` (iOS). Count 1,000,000: 1.43 s on the XCover7,
+  0.15 s on the iPhone 13 mini (`observed`).
+- Devices, through `flow export`/`flow import` (runs `20261021-201948` to
+  `-210500`): a coded Android export opened by Python with its code; combine,
+  replace both ways, replace refused during a pause and keep separate
+  accepted; a coded Android file combined on the iPhone; coded and plain iPhone
+  exports imported on Android with **Turn on imported schedules**. Fixed from
+  the runs: what replace removes, the schedule-only result, the switch label.
