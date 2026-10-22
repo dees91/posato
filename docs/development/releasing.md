@@ -1,8 +1,10 @@
 # Releasing Posato
 
 The standing route for a release: notarized macOS builds for arm64 and
-x86-64 with two update feeds on GitHub Releases, and the iOS build through
-App Review. It condenses what `RELEASE-003` to `RELEASE-005` proved. Command
+x86-64 with two update feeds on GitHub Releases, the Linux `.deb` packages
+for arm64 and x86-64 and a release-signed Android APK beside them, and the
+iOS build through App Review. It condenses what `RELEASE-003` to
+`RELEASE-007` proved; Linux and Android joined in `RELEASE-007`. Command
 syntax lives in the linked authorities; this page orders the work and keeps
 each trap next to the step it affects.
 
@@ -34,8 +36,20 @@ Composition and the release guard come from the
 - **Verification:** the `primary`, `peer`, `legacy`, and `ventura` golden
   VMs, the test iPhone, and their `local.properties` keys
   ([unattended verification](unattended-verification.md)).
+- **Android signing:** the release keystore outside the checkout, its
+  password in the login Keychain, and four keys in the ignored
+  `local.properties`: `posato.android.releaseKeystorePath`,
+  `posato.android.releaseKeystoreKeychainService`,
+  `posato.android.releaseKeystoreKeychainAccount`, and
+  `posato.android.releaseKeyAlias`. The maintainer keeps a backup of both
+  outside the build Mac: every later APK must carry the same key, or
+  installations cannot update. Gradle never sees the key; `apksigner` from
+  the Android SDK build tools signs after the build.
+- **Linux packages:** the `Linux packages` GitHub Actions workflow
+  (`.github/workflows/linux-packages.yml`) builds both `.deb` files; it
+  needs no secrets.
 - **Tools:** `installDist` of `posato-control` and `posato-provisioning`;
-  `gh` with the `project` scope.
+  `gh` with the `project` and `workflow` scopes.
 
 **Who does what.** The agent does every step it can, including the merges
 after the publication go (since `RELEASE-005`; the maintainer merged in
@@ -113,8 +127,28 @@ nothing they guard changed.
    The `store` commands ran live in `RELEASE-004` and `RELEASE-005`
    (`observed`). Submit nothing yet.
 
-**Done when:** the record lists both DMG and feed hashes and the consumed
-build numbers, the iOS build is `VALID`, and a rerun of `store prepare`
+8. **Android:** `./gradlew :androidApp:assembleRelease` in a clean clone of
+   R (no signing configuration, no minification), then sign the unsigned
+   APK into `Posato-<version>.apk` with `apksigner sign --v2-signing-enabled
+   true --v3-signing-enabled true --ks <keystore> --ks-key-alias <alias>
+   --ks-pass stdin`, piping the password from `security
+   find-generic-password -s <service> -a <account> -w`; never put it on a
+   command line. Check `apksigner verify -v --print-certs` (the certificate
+   SHA-256 equals the one in the first Android release record; pass
+   `--min-sdk-version 24` to see the v2 block, which the default check for
+   minSdk 33 does not report), `aapt2 dump badging` (`versionName`, a
+   `versionCode` above the last published one, no `testOnly` or
+   `debuggable`), and that no file under the clone, `.gradle`, or
+   `~/.gradle` contains the password.
+9. **Linux:** `gh workflow run linux-packages.yml -f ref=<full R SHA>`.
+   Download both artifacts (retry with `curl --retry` on the artifact's zip
+   URL when `gh run download` stalls), check each `.commit` file equals R
+   and each `.sha256` with `shasum -a 256 -c`. The workflow already checked
+   the package fields, a clean `ubuntu:24.04` install and removal, and a
+   start under Xvfb on both architectures.
+
+**Done when:** the record lists both DMG and feed hashes, the APK and both
+`.deb` hashes, and the consumed build numbers, the iOS build is `VALID`, and a rerun of `store prepare`
 reports every item `unchanged` with `store status` at `PREPARE_FOR_SUBMISSION`.
 
 ## 4. Unattended verification
@@ -145,6 +179,21 @@ usual matrix, adjusted by the brief:
   editing right after a link.
 - Keep a `peer` clone running with the previous release set up (helper,
   websites, an application, a schedule, update consent answered) for step 7.
+- Linux clone, the workflow's arm64 `.deb` through `install -t linux
+  --package`: onboarding with the pausing service, a pause that writes four
+  lines per website to `/etc/hosts` and ends a chosen application, and the
+  file restored exactly after **End session early**. The x86-64 package has
+  only the workflow's checks; no x86-64 Linux machine runs the E2E.
+- Test Android phone, the signed APK through `install -t android
+  --package --grants settings` (it replaces a debug build after removing
+  it): onboarding as a person meets it, a pause that answers blocked names
+  with `127.0.0.1` and covers a chosen application, and release after the
+  end. A release APK is not debuggable, so assert through the interface.
+- Folder sync on the release builds: one device creates a folder workspace,
+  the others join by code through `posato-control relay`, and a pause
+  started on one is enforced on the others. Linux and a macOS clone never
+  run together, so chain them: Linux creates, the phone joins, then the
+  Linux clone goes and a Mac joins with a code from the phone.
 
 Gotchas:
 
@@ -160,6 +209,11 @@ Gotchas:
   PosatoMacOSHelper`, and its labels can differ from the current fixtures.
 - Release builds cannot pair with a development-signed iPhone (Production
   versus Development CloudKit); check that sync on development builds of R.
+- Clear `/sdcard/PosatoSync` on the phone and the relay hub before a folder
+  run; files left by an earlier test make the first device join an old
+  workspace instead of creating one.
+- A destroyed clone still linked to a folder workspace is refused like an
+  iCloud one; remove the workspace in the app first.
 - Never run `defaults find` in a guest (it raises blocking privacy prompts);
   `osascript` in a guest raises an Automation prompt for `tart-guest-agent`.
 
@@ -192,8 +246,9 @@ is ready for review.
 ## 7. GitHub Release and the in-app update
 
 1. Upload exactly `Posato-<version>.dmg`, `Posato-<version>-intel.dmg`,
-   `appcast.xml`, `appcast-intel.xml`, and the merged `SHA256SUMS` to a draft
-   release; download and compare them byte for byte with step 3; publish as
+   `appcast.xml`, `appcast-intel.xml`, `posato_<version>_arm64.deb`,
+   `posato_<version>_amd64.deb`, `Posato-<version>.apk`, and one
+   `SHA256SUMS` covering the other seven to a draft release; download and compare them byte for byte with step 3; publish as
    latest with the packaging row's notes. A release without the feeds uses
    `--latest=false`.
 2. `releases/latest/download/appcast.xml` and `appcast-intel.xml` resolve,
