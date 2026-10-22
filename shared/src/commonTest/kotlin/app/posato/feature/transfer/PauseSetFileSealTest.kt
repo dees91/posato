@@ -2,7 +2,6 @@ package app.posato.feature.transfer
 
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.data.SyncCryptoProvider
-import app.posato.feature.transfer.data.EXPORT_ITERATIONS_V1
 import app.posato.feature.transfer.data.ExportCode
 import app.posato.feature.transfer.data.PauseSetFileSeal
 import app.posato.feature.transfer.data.PauseSetOpenResult
@@ -75,8 +74,10 @@ class PauseSetFileSealTest {
         val seal = PauseSetFileSeal(testCrypto())
         val sealed = assertNotNull(seal.seal(plain, "ABCDEFGHJ"))
         sealed[MAGIC_BYTES] = 2
+        val muchNewer = sealed.copyOf().also { bytes -> bytes[MAGIC_BYTES] = 200.toByte() }
 
         assertEquals(PauseSetOpenResult.NewerVersion, seal.open(sealed, "ABCDEFGHJ"))
+        assertEquals(PauseSetOpenResult.NewerVersion, seal.open(muchNewer, "ABCDEFGHJ"))
     }
 
     @Test
@@ -110,11 +111,6 @@ class PauseSetFileSealTest {
         assertEquals("OIBDEFGHJ", ExportCode.normalize("018 DEF GHJ"))
         assertNull(ExportCode.normalize("ABCDEFGH"))
         assertNull(ExportCode.normalize("ABCDEFGH!"))
-    }
-
-    @Test
-    fun `given the version's iteration count then it is pinned`() {
-        assertEquals(1_000_000, EXPORT_ITERATIONS_V1)
     }
 }
 

@@ -76,10 +76,12 @@ internal class PauseSetFileSeal(
         if (bytes.size <= magic.size) {
             return PauseSetOpenResult.Damaged
         }
-        if (bytes[magic.size].toInt() > CONTAINER_VERSION) {
+        // The version byte is unsigned, so a version from 128 on is newer too, not damaged.
+        val version = bytes[magic.size].toInt() and BYTE_MASK
+        if (version > CONTAINER_VERSION) {
             return PauseSetOpenResult.NewerVersion
         }
-        if (bytes[magic.size].toInt() != CONTAINER_VERSION || bytes.size < headerBytes + SyncFormatLimits.AES_TAG_BYTES ||
+        if (version != CONTAINER_VERSION || bytes.size < headerBytes + SyncFormatLimits.AES_TAG_BYTES ||
             bytes.copyOfRange(magic.size + 1, magic.size + 1 + Int.SIZE_BYTES).toInt() != EXPORT_ITERATIONS_V1
         ) {
             return PauseSetOpenResult.Damaged
