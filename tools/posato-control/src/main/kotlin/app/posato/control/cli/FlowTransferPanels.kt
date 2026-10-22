@@ -71,6 +71,15 @@ internal class LinuxTransferFiles(
 
     override fun save(backend: Backend) = enter(backend, "$folder/$EXPORT_NAME", listOf("ctrl+a"))
 
+    /** Types the export's name without its extension, as a person who drops it would. */
+    fun saveWithoutExtension(backend: Backend) = enter(backend, "$folder/${EXPORT_NAME.removeSuffix(".posato")}", listOf("ctrl+a"))
+
+    /** The SHA-256 of the export in [folder], or null when there is none. */
+    fun exportDigest(): String? {
+        val output = guest.exec("sha256sum '$folder/$EXPORT_NAME'")
+        return if (output.succeeded) output.stdout.substringBefore(' ').trim() else null
+    }
+
     override fun fetch(destination: Path) {
         val encoded = guest.exec("base64 -w0 '$folder/$EXPORT_NAME'").requireSuccess(ErrorCode.COMMAND_FAILED, "Reading the export").stdout.trim()
         Files.write(destination, Base64.getDecoder().decode(encoded))

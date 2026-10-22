@@ -21,8 +21,7 @@ internal object DesktopPauseSetFiles : PauseSetFilePorts {
         bytes: ByteArray,
         fileName: String,
     ): Boolean {
-        val chosen = withContext(Dispatchers.Main) { choose("Export pause sets", FileDialog.SAVE, fileName) } ?: return false
-        val target = if (chosen.fileName.toString().endsWith(EXTENSION)) chosen else chosen.resolveSibling(chosen.fileName.toString() + EXTENSION)
+        val target = saveTarget(fileName, null) ?: return false
         return withContext(Dispatchers.IO) {
             try {
                 Files.write(target, bytes)
@@ -33,8 +32,25 @@ internal object DesktopPauseSetFiles : PauseSetFilePorts {
         }
     }
 
+    /**
+     * The chosen path with the extension. When adding it lands on an existing file, the panel approved a name it
+     * never checked, so it opens again on the full name and asks itself before an earlier export is replaced.
+     */
+    private suspend fun saveTarget(
+        fileName: String,
+        directory: String?,
+    ): Path? {
+        val chosen = withContext(Dispatchers.Main) { choose("Export pause sets", FileDialog.SAVE, fileName, directory) } ?: return null
+        val target = if (chosen.fileName.toString().endsWith(EXTENSION)) chosen else chosen.resolveSibling(chosen.fileName.toString() + EXTENSION)
+        return if (target != chosen && withContext(Dispatchers.IO) { Files.exists(target) }) {
+            saveTarget(target.fileName.toString(), target.parent?.toString())
+        } else {
+            target
+        }
+    }
+
     override suspend fun pick(limit: Int): ByteArray? {
-        val chosen = withContext(Dispatchers.Main) { choose("Import pause sets", FileDialog.LOAD, null) } ?: return null
+        val chosen = withContext(Dispatchers.Main) { choose("Import pause sets", FileDialog.LOAD, null, null) } ?: return null
         return withContext(Dispatchers.IO) {
             try {
                 Files.newInputStream(chosen).use { stream -> stream.readNBytes(limit + 1) }
@@ -50,10 +66,12 @@ internal object DesktopPauseSetFiles : PauseSetFilePorts {
         title: String,
         mode: Int,
         fileName: String?,
+        directory: String?,
     ): Path? {
         val owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow as? Frame
             ?: Frame.getFrames().firstOrNull { frame -> frame.isVisible }
         val dialog = FileDialog(owner, title, mode)
+        directory?.let { path -> dialog.directory = path }
         fileName?.let { name -> dialog.file = name }
         dialog.isVisible = true
         val file = dialog.file ?: return null

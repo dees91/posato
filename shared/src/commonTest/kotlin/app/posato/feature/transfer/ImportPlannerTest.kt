@@ -216,6 +216,21 @@ class ImportPlannerTest {
     }
 
     @Test
+    fun `given a file with the same schedule twice in another letter case then one is saved and it fits the last free place`() {
+        val existing = (1..9).map { index -> SchedulePlan(scheduleId(40 + index), "S$index", 0b1, 0, 60, enabled = false) }
+        val plan = planned(
+            current(sets(first(name = null)), schedules = existing),
+            file(
+                fileSet("x", null, first = true),
+                schedules = listOf(FileSchedule("Deep work", 0b11111, 540, 660, "x"), FileSchedule("deep work", 0b11111, 540, 660, "x")),
+            ),
+            ImportMode.COMBINE,
+        )
+
+        assertEquals(listOf("Deep work"), plan.schedulesToSave.map(SchedulePlan::name))
+    }
+
+    @Test
     fun `given replace then every schedule here is removed before the file's are saved`() {
         val existing = SchedulePlan(scheduleId(9), "Old", 0b1, 0, 60, enabled = true)
         val plan = planned(

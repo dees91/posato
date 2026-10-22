@@ -118,3 +118,9 @@
 - Fixed from runs and review: what replace removes, the schedule-only
   result, the switch label, focus after the Linux chooser, turn-on in one
   transaction and an import retry, the share sheet's single end.
+- Hosted review of `2b5dd451`: repeated file schedules now use the
+  case-insensitive rule of schedules already here (failing test first), and
+  a desktop name without the extension that lands on an earlier export opens
+  the panel again on the full name, so the panel asks before replacing it.
+  Linux `flow export --over-earlier`: chooser reopened, earlier file kept
+  (`20261022-111445-1785`).

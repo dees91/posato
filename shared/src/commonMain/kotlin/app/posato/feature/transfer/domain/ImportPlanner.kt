@@ -228,8 +228,9 @@ private fun importedSchedules(
     ids: ImportIds,
     mapping: Map<String, PauseSetId>,
 ): List<SchedulePlan> {
-    val kept = if (mode == ImportMode.REPLACE) emptyList() else current.schedules
-    return file.schedules.mapIndexedNotNull { index, schedule ->
+    val known = if (mode == ImportMode.REPLACE) mutableListOf() else current.schedules.toMutableList()
+    val saves = mutableListOf<SchedulePlan>()
+    file.schedules.forEachIndexed { index, schedule ->
         val plan = SchedulePlan(
             id = ids.schedules[index],
             name = schedule.name,
@@ -239,8 +240,13 @@ private fun importedSchedules(
             enabled = false,
             setId = checkNotNull(mapping[schedule.set]),
         )
-        plan.takeIf { kept.none { existing -> existing.sameAs(plan) } }
-    }.distinctBy { plan -> plan.copy(id = ScheduleId("")) }
+        // One rule for a schedule already here and one repeated in the file, so a repeat never costs a place.
+        if (known.none { existing -> existing.sameAs(plan) }) {
+            known += plan
+            saves += plan
+        }
+    }
+    return saves
 }
 
 private fun limitRefusal(

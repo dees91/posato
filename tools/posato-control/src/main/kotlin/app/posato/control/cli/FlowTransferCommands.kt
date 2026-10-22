@@ -10,8 +10,10 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
 import app.posato.control.desktop.AxBridge
 import app.posato.control.linux.LinuxGuest
+import app.posato.control.model.Actions
 import app.posato.control.model.Query
 import app.posato.control.model.States
+import app.posato.control.model.Step
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -33,9 +35,14 @@ import java.nio.file.StandardCopyOption
 class FlowExportCommand : ControlCommand("export", "Export the pause sets to a file and copy it to the host.") {
     private val out by option("--out", help = "Where else to put the exported file; in a VM a path in the guest.")
     private val code by option("--code", help = "Protect the file with a code and print the code.").flag()
+    private val overEarlier by option(
+        "--over-earlier",
+        help = "Linux: type the earlier export's name without its extension, cancel what follows, and assert the earlier file is unchanged.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
+        if (overEarlier) return overEarlier(session, backend)
         val files = transferFiles(session)
         files.clear()
         TransferScreens.openMenu(backend, session.target(), "Export pause sets…")
@@ -62,6 +69,57 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
             put("bytes", Files.size(kept))
             shown?.let { put("code", it) }
         }
+    }
+
+    /**
+     * Saves over an earlier export by its name without the extension. The chooser approves that name, as no such
+     * file exists, so Posato must ask again for the real one rather than replace the earlier file: whatever asks is
+     * cancelled, and the earlier file must be byte for byte what it was.
+     */
+    private fun overEarlier(
+        session: Session,
+        backend: Backend,
+    ): JsonElement {
+        val files = linuxFiles(session)
+        val before = files.exportDigest()
+            ?: throw ControlException(ErrorCode.ASSERTION_FAILED, "No earlier export to save over.", "Run flow export first.")
+        TransferScreens.openMenu(backend, session.target(), "Export pause sets…")
+        FlowSteps.run(backend, listOf(FlowSteps.button("Export file…")))
+        files.saveWithoutExtension(backend)
+        // A completion list can take the first Return; a second one confirms the chooser or, once Posato asked again,
+        // its full name, which brings up the chooser's own replace question.
+        val confirm = Step(action = Actions.PRESS, key = "return")
+        val escape = Step(action = Actions.PRESS, key = "escape")
+        FlowSteps.run(
+            backend,
+            listOf(
+                confirm,
+                FlowSteps.sleep(ASK_SECONDS),
+                FlowSteps.screenshot("asked-again"),
+                escape,
+                FlowSteps.sleep(CANCEL_SECONDS),
+                escape,
+                FlowSteps.sleep(CANCEL_SECONDS),
+            ),
+        )
+        val after = files.exportDigest()
+        if (after != before) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "The earlier export changed without a confirmed replace ($before -> $after).")
+        }
+        return buildJsonObject {
+            put("earlierKept", true)
+            put("sha256", before)
+        }
+    }
+
+    private fun linuxFiles(session: Session): LinuxTransferFiles {
+        return transferFiles(session) as? LinuxTransferFiles
+            ?: throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--over-earlier is driven in the Linux clone only.", "Use -t linux.")
+    }
+
+    private companion object {
+        const val ASK_SECONDS = 2.0
+        const val CANCEL_SECONDS = 1.0
     }
 }
 
