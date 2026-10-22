@@ -713,7 +713,9 @@ to the ink surface (`#18231F`) with a `#6D816E` outline and a 12-pixel radius,
 self-hosted and linked to the latest GitHub Release. The matching App Store
 badge sits beside it and links to the App Store listing since 2026-09-24; before
 that it was unlinked at reduced opacity with a "Coming soon" caption. Apple badge guidelines are not reviewed for now. The
-header ends with a GitHub mark linking to the public repository, and the support
+header ends with a GitHub mark linking to the public repository. `user-confirmed`
+(2026-10-22): below the hero's privacy line, one muted sentence asks visitors
+whom Posato helps to star the repository on GitHub, linked to it. The support
 page adds GitHub Issues and private vulnerability reporting. The hero plays the showcase demo rendered from `video/`
 as a silent, looping, self-hosted video in a plain outlined panel, with a
 poster for the first paint and under Reduce Motion; compact layouts omit it

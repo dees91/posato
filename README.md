@@ -19,6 +19,7 @@ ending a session early, and a schedule whose pause starts on its own.
 
 No Posato account, no analytics, and no Posato-operated server.
 Open source under the [Apache License 2.0](LICENSE).
+If Posato helps you, star it on GitHub so others can find it.
 
 ## Quick start
 
