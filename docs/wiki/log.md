@@ -3007,4 +3007,7 @@ first removal attempt that does not finish, not to a paused keychain.
   `-074435-a8b4`, `-074442-4963`); in Dark they stay `#1C2520` (runs
   `20261022-074531-9719` to `-074603-47ce`). On the test iPhone in Light the
   set, the pause-set list, and session setup draw on `#F4F3EB` (runs
-  `20261022-081446-15d0`, `-081535-f743`, `-081657-9662`). Mac run pending.
+  `20261022-081446-15d0`, `-081535-f743`, `-081657-9662`). In a Tart macOS
+  clone in Light the window draws on `#F4F3EB` with the sidebar on
+  `#EBEAE1` (runs `20261022-084638-8ec5`, `-084646-1e16`), and the pause page
+  in Safari on `#F4F3EB` (run `20261022-084657-5cc2`).
