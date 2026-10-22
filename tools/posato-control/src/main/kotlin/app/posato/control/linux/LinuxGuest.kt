@@ -143,7 +143,7 @@ class LinuxGuest(
             "rm -rf ~/posato-out && mkdir -p ~/posato-out && cat > ~/posato-out/${shellQuote(name)}",
             "Copying $name into $CLONE",
         )
-        val script = "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install --reinstall -y -q ~/posato-out/${shellQuote(name)} && ls ~/posato-out"
+        val script = "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install --reinstall --allow-downgrades -y -q ~/posato-out/${shellQuote(name)} && ls ~/posato-out"
         return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Installing $name in $CLONE").stdout.trim()
     }
 
