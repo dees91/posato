@@ -63,6 +63,10 @@ internal object DesktopPauseSetFiles : PauseSetFilePorts {
             null
         } finally {
             dialog.dispose()
+            // On Linux the window manager can leave keyboard focus nowhere after the chooser closes, so the code
+            // field that follows would take no typing until a click.
+            owner?.toFront()
+            owner?.requestFocus()
         }
     }
 
