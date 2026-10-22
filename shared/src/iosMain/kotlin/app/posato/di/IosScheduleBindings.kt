@@ -16,8 +16,13 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.loadSessionTargets
+import app.posato.feature.sync.data.IosCryptoProvider
+import app.posato.feature.sync.data.IosSyncCryptoProvider
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.transfer.IosPauseSetFilePicker
+import app.posato.feature.transfer.IosPauseSetFiles
+import app.posato.feature.transfer.data.TransferPlatform
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -66,5 +71,14 @@ internal interface IosScheduleBindings : ScheduleBindings {
     @Provides
     fun provideScheduledPauses(host: ScheduleHost): ScheduledPauses {
         return host
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferPlatform(
+        pauseSetFilePicker: IosPauseSetFilePicker,
+        cryptoProvider: IosCryptoProvider,
+    ): TransferPlatform {
+        return TransferPlatform(IosPauseSetFiles(pauseSetFilePicker), IosSyncCryptoProvider(cryptoProvider))
     }
 }

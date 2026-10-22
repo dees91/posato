@@ -3,8 +3,16 @@ package app.posato.feature.sync.data
 import app.posato.feature.sync.domain.PublicSigningKey
 import app.posato.feature.sync.domain.SyncFormatLimits
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
+import platform.CoreCrypto.CCKeyDerivationPBKDF
+import platform.CoreCrypto.kCCPBKDF2
+import platform.CoreCrypto.kCCPRFHmacAlgSHA256
+import platform.CoreCrypto.kCCSuccess
 import platform.Foundation.NSData
 import platform.Foundation.create
 import platform.posix.memcpy
@@ -70,6 +78,44 @@ internal class IosSyncCryptoProvider(
         message: ByteArray,
     ): ByteArray? {
         return provider.hmacSha256(key.toNSData(), message.toNSData())?.toByteArray(SHA256_BYTES)
+    }
+
+    /** CommonCrypto's PBKDF2, so a slow derivation runs natively instead of one Swift call per round. */
+    @OptIn(ExperimentalForeignApi::class)
+    override fun pbkdf2HmacSha256(
+        password: ByteArray,
+        salt: ByteArray,
+        iterations: Int,
+        length: Int,
+    ): ByteArray? {
+        // CommonCrypto takes the password as a C string, so only ASCII passes through unchanged.
+        val usable = password.isNotEmpty() && password.none { byte -> byte <= 0 } && salt.isNotEmpty()
+        if (iterations < 1 || length < 1 || !usable) {
+            return commonPbkdf2HmacSha256(password, salt, iterations, length)
+        }
+        val output = ByteArray(length)
+        val text = password.decodeToString()
+        val status = run {
+            salt.usePinned { pinnedSalt ->
+                output.usePinned { pinnedOutput ->
+                    CCKeyDerivationPBKDF(
+                        kCCPBKDF2,
+                        text,
+                        password.size.convert(),
+                        pinnedSalt.addressOf(0).reinterpret<UByteVar>(),
+                        salt.size.convert(),
+                        kCCPRFHmacAlgSHA256,
+                        iterations.convert(),
+                        pinnedOutput.addressOf(0).reinterpret<UByteVar>(),
+                        length.convert(),
+                    )
+                }
+            }
+        }
+        return output.takeIf { status == kCCSuccess } ?: run {
+            output.fill(0)
+            null
+        }
     }
 
     override fun sealAesGcm(

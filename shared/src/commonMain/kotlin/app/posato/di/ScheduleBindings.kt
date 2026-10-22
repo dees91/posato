@@ -8,6 +8,8 @@ import app.posato.feature.schedules.data.SyncScheduleStore
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.scheduleLink
+import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.transfer.data.TransferStorage
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
@@ -33,5 +35,17 @@ internal interface ScheduleBindings {
         zone: ScheduleZone,
     ): ScheduleDependencies {
         return ScheduleDependencies(SyncScheduleStore(schedules, sync.scheduleLink()), zone)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTransferStorage(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+        policy: LocalTargetPolicyStore,
+        schedules: ScheduleDependencies,
+        sync: AppleSync,
+    ): TransferStorage {
+        return TransferStorage(database, databaseDispatcher, policy, schedules.store, sync.scheduleLink())
     }
 }

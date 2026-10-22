@@ -33,6 +33,8 @@ internal class SqlLocalTargetPolicyStore(
     override val policyChanges: Flow<Unit>
         get() = changes
 
+    override val changeAnnouncer: () -> Unit = { changes.tryEmit(Unit) }
+
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return withContext(databaseDispatcher) {
             readResult(database)

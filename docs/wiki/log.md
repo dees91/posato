@@ -3022,3 +3022,14 @@ first removal attempt that does not finish, not to a paused keychain.
   a fresh driver read back the new mode, and the Home Screen widgets
   changed; `observed` on the Galaxy XCover7 too. Captures no longer need
   the maintainer to switch the phone by hand.
+
+## [2026-10-22] implementation | TARGETS-007 exports and imports pause sets
+
+- A `.posato` file carries the live pause sets, the default set, and the
+  schedules; an optional nine-character code seals it with PBKDF2 (1,000,000
+  rounds, measured: 1.43 s on the XCover7), HKDF, and AES-256-GCM. Import
+  combines, keeps separate, or replaces, and syncs like hand edits.
+- `observed` on the desktop: a store write that reads first fails at once
+  while another connection writes, so a multi-row change belongs in one
+  transaction. Mac file panels take no synthetic keys but are in Posato's
+  accessibility tree; the GTK chooser leaves keyboard focus nowhere.

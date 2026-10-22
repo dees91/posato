@@ -23,6 +23,17 @@ class MainActivity : ComponentActivity() {
         folderResult?.complete(uri?.let(::treePath))
     }
 
+    private var createResult: CompletableDeferred<Uri?>? = null
+    private var openResult: CompletableDeferred<Uri?>? = null
+
+    private val documentCreator = registerForActivityResult(ActivityResultContracts.CreateDocument(PAUSE_SET_FILE_TYPE)) { uri ->
+        createResult?.complete(uri)
+    }
+
+    private val documentOpener = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        openResult?.complete(uri)
+    }
+
     private val grantScreen = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         grantResult?.complete(Unit)
     }
@@ -56,6 +67,22 @@ class MainActivity : ComponentActivity() {
         return result.await()
     }
 
+    /** Where the person saves an export, from the system's document picker. */
+    suspend fun createDocument(fileName: String): Uri? {
+        val result = CompletableDeferred<Uri?>()
+        createResult = result
+        documentCreator.launch(fileName)
+        return result.await()
+    }
+
+    /** The file the person opens for an import; any type, since a file is recognized by its first bytes. */
+    suspend fun openDocument(): Uri? {
+        val result = CompletableDeferred<Uri?>()
+        openResult = result
+        documentOpener.launch(arrayOf("*/*"))
+        return result.await()
+    }
+
     /** Opens one grant screen and returns when the person comes back. */
     suspend fun openGrant(intent: Intent) {
         val result = CompletableDeferred<Unit>()
@@ -80,5 +107,6 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val PRIMARY = "primary"
+        const val PAUSE_SET_FILE_TYPE = "application/vnd.posato.pause-sets"
     }
 }

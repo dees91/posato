@@ -99,6 +99,28 @@ system can read. The record holds your Mac account's user number and system
 identifier and your Mac's hardware identifier. It never leaves your Mac and
 is deleted when you turn the option off or remove Posato from this Mac.
 
+## Export and import
+
+You can export your pause sets to a file and import it on another device.
+The file holds your pause sets' names and websites, which set is the
+default, and your schedules. It never holds app choices, sessions, history,
+device names, or sync keys. Posato writes the file only where you save or
+share it, and it sends nothing anywhere itself.
+
+- Without a code, anyone who gets the file can read your pause sets and
+  websites.
+- With **Protect with a code**, the file is encrypted with a key derived
+  from a nine-character code that Posato shows once and does not keep. The
+  code stops a casual reader of a file that reaches the wrong person, but
+  someone who has the file and spends a lot of computing power on guessing
+  could open it, so send the file and the code only where you trust them.
+- On iPhone, a shared file is a temporary copy that Posato deletes when the
+  share sheet closes, and an imported file is read from a temporary copy
+  that Posato deletes after reading it.
+
+An import changes your pause sets and schedules like edits made by hand; if
+sync is on, the changes reach your other devices.
+
 ## Notifications
 
 Posato can show local notices when a pause ends or starts on another device.

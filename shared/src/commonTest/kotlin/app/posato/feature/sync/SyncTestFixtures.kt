@@ -61,12 +61,15 @@ internal fun testOperation(
 internal class FakeSyncCryptoProvider(
     private val signingPublicKey: PublicSigningKey = testPublicKey,
     private val streamSeed: Int = 0,
+    /** When set, random bytes come from it, so two replicas that author many bundles never repeat an identifier. */
+    private val random: kotlin.random.Random? = null,
 ) : SyncCryptoProvider {
     private var nextByte = 1
     internal var signingKeyCloseCount = 0
         private set
 
     override fun randomBytes(count: Int): ByteArray {
+        random?.let { source -> return source.nextBytes(count) }
         return ByteArray(count) { (nextByte++.xor(streamSeed) and 0xFF).toByte() }
     }
 

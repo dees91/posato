@@ -10,7 +10,9 @@ import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.Mac
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 internal class JdkSyncCryptoProvider(
@@ -37,6 +39,26 @@ internal class JdkSyncCryptoProvider(
             val mac = Mac.getInstance("HmacSHA256")
             mac.init(SecretKeySpec(key, "HmacSHA256"))
             mac.doFinal(message)
+        }
+    }
+
+    override fun pbkdf2HmacSha256(
+        password: ByteArray,
+        salt: ByteArray,
+        iterations: Int,
+        length: Int,
+    ): ByteArray? {
+        // The JDK takes the password as characters and encodes them itself, so only ASCII passes through unchanged.
+        if (iterations < 1 || length < 1 || password.any { byte -> byte < 0 }) {
+            return commonPbkdf2HmacSha256(password, salt, iterations, length)
+        }
+        val characters = CharArray(password.size) { index -> password[index].toInt().toChar() }
+        val spec = PBEKeySpec(characters, salt, iterations, length * Byte.SIZE_BITS)
+        return try {
+            cryptographicCall { SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded }
+        } finally {
+            spec.clearPassword()
+            characters.fill(' ')
         }
     }
 

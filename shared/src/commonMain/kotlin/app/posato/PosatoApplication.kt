@@ -82,7 +82,12 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.PauseSetsDestination
 import app.posato.feature.targets.ui.PauseSetsInputs
 import app.posato.feature.targets.ui.PauseSetsNavigation
+import app.posato.feature.transfer.data.PauseSetTransfer
+import app.posato.feature.transfer.data.TransferPlatform
+import app.posato.feature.transfer.data.TransferStorage
+import app.posato.feature.transfer.ui.rememberPauseSetTransferUiState
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
@@ -103,6 +108,8 @@ class PosatoApplication internal constructor(
     private val scheduledPauses: ScheduledPauses,
     private val sessionComposition: SessionComposition,
     private val folderSync: FolderSyncControls,
+    private val transferStorage: TransferStorage,
+    private val transferPlatform: TransferPlatform,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -123,6 +130,19 @@ class PosatoApplication internal constructor(
         scheduledPause = scheduledPauses.pause,
         setupStore = onboardingDependencies.setupStore,
         linked = { bootstrap.state.value.linked },
+    )
+    private val transfer = PauseSetTransfer(
+        policy = store,
+        schedules = schedules.store,
+        writer = transferStorage.writer {
+            val session = (sessionOwner.status.value as? LocalSessionStatus.Active)?.record?.setId
+            setOfNotNull(session) to scheduledPauses.pause.value?.keys.orEmpty().mapTo(mutableSetOf()) { key -> key.schedule }
+        },
+        crypto = transferPlatform.crypto,
+        applicationMappings = applicationMappings,
+        zone = schedules.zone,
+        now = clock::currentEpochMillis,
+        computation = Dispatchers.Default,
     )
 
     @Composable
@@ -474,6 +494,7 @@ class PosatoApplication internal constructor(
                     modifier.padding(start = layout.inset, end = layout.inset, top = layout.inset, bottom = PosatoSpace.Medium)
                 },
                 entryModifier = Modifier,
+                transfer = rememberPauseSetTransferUiState(transfer, transferPlatform.files) { bootstrap.state.value.linked },
             )
         }
     }
