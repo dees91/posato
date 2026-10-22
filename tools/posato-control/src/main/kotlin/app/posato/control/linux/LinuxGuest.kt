@@ -131,6 +131,22 @@ class LinuxGuest(
         return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Packaging and installing Posato in $CLONE").stdout.trim()
     }
 
+    /** Copies a built `.deb` into the clone and installs it with apt. */
+    fun installPackage(file: Path): String {
+        if (!Files.isRegularFile(file) || !file.fileName.toString().endsWith(".deb")) {
+            throw ControlException(ErrorCode.APP_NOT_STAGED, "No .deb at $file.")
+        }
+        val name = file.fileName.toString()
+        tart.pipe(
+            CLONE,
+            "cat ${shellQuote(file.toString())}",
+            "rm -rf ~/posato-out && mkdir -p ~/posato-out && cat > ~/posato-out/${shellQuote(name)}",
+            "Copying $name into $CLONE",
+        )
+        val script = "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -q ~/posato-out/${shellQuote(name)} && ls ~/posato-out"
+        return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Installing $name in $CLONE").stdout.trim()
+    }
+
     fun terminate() {
         exec("pkill -x posato; true")
     }

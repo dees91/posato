@@ -130,13 +130,23 @@ class AndroidApp(
 
     fun pid(): Long? = device.shell("pidof ${AndroidDevice.PACKAGE}").stdout.trim().split(' ').firstOrNull()?.toLongOrNull()
 
-    fun install(grants: AndroidGrants) {
-        if (!Files.isRegularFile(apk)) {
-            throw ControlException(ErrorCode.APP_NOT_STAGED, "No APK at ${context.layout.relativize(apk)}.", "Run `build -t android`.")
+    fun install(
+        grants: AndroidGrants,
+        packageFile: Path? = null,
+    ) {
+        val file = packageFile ?: apk
+        if (!Files.isRegularFile(file)) {
+            throw ControlException(ErrorCode.APP_NOT_STAGED, "No APK at ${context.layout.relativize(file)}.", "Run `build -t android`.")
         }
         val runtimeGrants = if (grants == AndroidGrants.ALL) listOf("-g") else emptyList()
-        device.adb(*(listOf("install", "-r") + runtimeGrants + apk.toString()).toTypedArray())
-            .requireSuccess(ErrorCode.INSTALL_FAILED, "Installing Posato on ${device.serial}")
+        val arguments = (listOf("install", "-r") + runtimeGrants + file.toString()).toTypedArray()
+        var output = device.adb(*arguments)
+        // A build signed with another key (debug versus release) cannot replace the installed one; remove it first.
+        if (output.exitCode != 0 && SIGNATURE_MISMATCH in output.stdout + output.stderr) {
+            uninstall()
+            output = device.adb(*arguments)
+        }
+        output.requireSuccess(ErrorCode.INSTALL_FAILED, "Installing Posato on ${device.serial}")
         if (grants != AndroidGrants.NONE) grantOps(SETTINGS_OPS)
         if (grants == AndroidGrants.ALL) {
             grantOps(DIALOG_OPS)
@@ -169,6 +179,7 @@ class AndroidApp(
     }
 
     private companion object {
+        const val SIGNATURE_MISMATCH = "INSTALL_FAILED_UPDATE_INCOMPATIBLE"
         val SETTINGS_OPS = listOf("GET_USAGE_STATS", "SYSTEM_ALERT_WINDOW", "SCHEDULE_EXACT_ALARM", "MANAGE_EXTERNAL_STORAGE")
         val DIALOG_OPS = listOf("ACTIVATE_VPN")
     }

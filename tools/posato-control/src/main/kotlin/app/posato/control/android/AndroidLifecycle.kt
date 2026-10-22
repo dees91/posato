@@ -12,6 +12,7 @@ import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import java.nio.file.Path
 import java.time.Duration
 
 /** Builds, installs, and runs Posato on the Android target; `install` gives the grants chosen with `--grants`. */
@@ -21,6 +22,9 @@ class AndroidLifecycle(
     private val stateStore: RunStateStore,
 ) : Lifecycle {
     var grants: AndroidGrants = AndroidGrants.ALL
+
+    /** A built APK to install instead of the debug APK, such as a release-signed candidate. */
+    var packageFile: Path? = null
 
     override fun doctor() = AndroidDoctor(context, device).checks()
 
@@ -36,7 +40,7 @@ class AndroidLifecycle(
 
     override fun install(): StatusResult {
         device.requireReady()
-        device.app.install(grants)
+        device.app.install(grants, packageFile)
         return status()
     }
 

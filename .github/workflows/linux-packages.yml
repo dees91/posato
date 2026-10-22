@@ -1,0 +1,121 @@
+# Builds the Posato for Linux .deb packages for x86-64 and arm64 and checks that each installs and starts.
+# A release dispatches it on its release commit and publishes the uploaded packages (docs/development/releasing.md).
+name: Linux packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, branch, or tag to package
+        required: true
+  pull_request:
+    paths:
+      - .github/workflows/linux-packages.yml
+      - desktopApp/linux/**
+
+permissions:
+  contents: read
+
+jobs:
+  inputs:
+    name: Package inputs
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.source.outputs.version }}
+      commit: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Read the version and commit
+        id: source
+        run: |
+          version=$(sed -n 's/^MARKETING_VERSION *= *//p' Version.xcconfig)
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Build the application jar
+        run: ./gradlew :desktopApp:linuxPackageInputs --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-inputs
+          path: desktopApp/build/linux/package
+          if-no-files-found: error
+
+  deb:
+    name: .deb ${{ matrix.arch }}
+    needs: inputs
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.inputs.outputs.version }}
+      COMMIT: ${{ needs.inputs.outputs.commit }}
+      DEB: posato_${{ needs.inputs.outputs.version }}_${{ matrix.arch }}.deb
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: package-inputs
+          path: package
+      # The same JDK that packages Posato in the Tart verification guest (docs/development/unattended-verification.md).
+      - name: Install the packaging and smoke-test tools
+        run: |
+          sudo apt-get update -q
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q openjdk-21-jdk fakeroot dpkg-dev binutils xvfb xdotool dbus
+      - name: Package
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-${{ matrix.arch }}
+          export PATH="$JAVA_HOME/bin:$PATH"
+          sh package/package-deb.sh "$PWD/package" "$VERSION" "$PWD/out"
+          count=$(find out -name '*.deb' | wc -l)
+          [ "$count" -eq 1 ] || { echo "Expected one .deb, found $count"; exit 1; }
+          mv out/*.deb "$DEB"
+      - name: Check the package fields
+        run: |
+          [ "$(dpkg-deb -f "$DEB" Package)" = posato ]
+          [ "$(dpkg-deb -f "$DEB" Version)" = "$VERSION" ]
+          [ "$(dpkg-deb -f "$DEB" Architecture)" = "${{ matrix.arch }}" ]
+          dpkg-deb -c "$DEB" | grep -q './opt/posato/bin/posato$'
+          dpkg-deb -c "$DEB" | grep -q './opt/posato/lib/app/posato.jar$'
+      - name: Install in a clean Ubuntu 24.04 container
+        run: |
+          docker run --rm -v "$PWD:/work" ubuntu:24.04 sh -ec "
+            apt-get update -q
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -q /work/$DEB
+            test -x /opt/posato/bin/posato
+            test -f /usr/share/applications/posato.desktop
+            DEBIAN_FRONTEND=noninteractive apt-get remove -y -q posato
+            test ! -e /usr/share/applications/posato.desktop"
+      - name: Install and start Posato
+        run: |
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q "./$DEB"
+          dbus-run-session -- xvfb-run -a sh -ec '
+            /opt/posato/bin/posato > posato.log 2>&1 &
+            sleep 30
+            pgrep -x posato > /dev/null || { echo "Posato exited"; exit 1; }
+            xdotool search --name Posato > /dev/null || { echo "No Posato window"; exit 1; }
+            pkill -x posato'
+          if grep -E 'Exception|Error:' posato.log; then echo "Posato logged an error"; exit 1; fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y -q posato
+      - name: Record the checksum and the commit
+        run: |
+          sha256sum "$DEB" > "$DEB.sha256"
+          echo "$COMMIT" > "$DEB.commit"
+          cat "$DEB.sha256" "$DEB.commit"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.DEB }}
+          path: |
+            ${{ env.DEB }}
+            ${{ env.DEB }}.sha256
+            ${{ env.DEB }}.commit
+          if-no-files-found: error
