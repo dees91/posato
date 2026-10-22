@@ -1,12 +1,14 @@
 package app.posato.desktop.linux
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -17,6 +19,7 @@ import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.rememberDialogState
 import androidx.compose.ui.window.rememberWindowState
 import app.posato.ApplicationNavigation
@@ -47,38 +50,37 @@ internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
     val presence = host.graph.presence
     val menu by presence.menu.collectAsState(LOADING_MENU)
     val watcher by (host.statusArea?.watcherPresent ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }).collectAsState()
-    var visible by remember { mutableStateOf(!host.startHidden) }
+    val resident = rememberResidentWindow(!host.startHidden)
     var notice by remember { mutableStateOf<LinuxNotice?>(null) }
     val quit: () -> Unit = { if (menu.schedulesEnabled) notice = LinuxNotice.QUIT else exitApplication() }
     host.residence.onQuit = quit
 
     LaunchedEffect(Unit) { presence.runWhileResident() }
-    LaunchedEffect(Unit) { host.events.showRequests.collect { visible = true } }
+    LaunchedEffect(Unit) { host.events.showRequests.collect { resident.show() } }
     LaunchedEffect(Unit) { host.events.menuOpened.collect { presence.onMenuOpened() } }
     LaunchedEffect(Unit) {
         host.events.actions.collect { action ->
             if (action == PresenceMenuActionId.QUIT) return@collect quit()
-            visible = true
+            resident.show()
             windowRequestOf(action)?.let(presence::request)
         }
     }
     StatusIconEffect(host, menu)
     // Without a status icon, a hidden Posato stays only for a pause or an enabled schedule; a login launch waits for the
     // panel to come up first, and a panel that goes away is followed live.
-    LaunchedEffect(visible, watcher, menu) {
-        if (!hiddenWithNothingToDo(visible, watcher, menu)) return@LaunchedEffect
+    LaunchedEffect(resident.visible, watcher, menu) {
+        if (!hiddenWithNothingToDo(resident.visible, watcher, menu)) return@LaunchedEffect
         delay(WATCHER_GRACE_MILLIS)
         exitApplication()
     }
 
     val navigation = remember { ApplicationNavigation() }
-    val windowState = rememberWindowState(placement = WindowPlacement.Maximized, width = WINDOW_WIDTH.dp, height = WINDOW_HEIGHT.dp)
-    if (visible) {
+    if (resident.visible) {
         Window(
             onCloseRequest = {
                 when (closeOutcome(host.statusArea != null, watcher, menu)) {
                     CloseOutcome.HIDE -> {
-                        visible = false
+                        resident.visible = false
                         if (host.firstClose.firstTime()) notice = if (watcher) LinuxNotice.FIRST_CLOSE else LinuxNotice.FIRST_CLOSE_NO_ICON
                     }
 
@@ -92,9 +94,13 @@ internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
                 }
             },
             title = "Posato",
-            state = windowState,
+            state = resident.state,
             onPreviewKeyEvent = { event -> event.isQuitKey().also { quitKey -> if (quitKey) quit() } },
         ) {
+            DisposableEffect(window) {
+                resident.composed = window
+                onDispose { resident.composed = null }
+            }
             host.graph.application.Content(
                 hostsSession = false,
                 windowRequests = presence.windowRequests,
@@ -104,6 +110,31 @@ internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
         }
     }
     notice?.let { shown -> NoticeWindow(shown, host.copy, onDismiss = { notice = null }, onQuit = ::exitApplication) }
+}
+
+/** Posato's window, which comes and goes while Posato stays. */
+private class ResidentWindow(
+    val state: WindowState,
+    visible: Boolean,
+) {
+    var visible by mutableStateOf(visible)
+    var composed: ComposeWindow? = null
+
+    /** A minimized or buried window is still visible, so showing it also restores and raises it. */
+    fun show() {
+        visible = true
+        state.isMinimized = false
+        composed?.run {
+            toFront()
+            requestFocus()
+        }
+    }
+}
+
+@Composable
+private fun rememberResidentWindow(visible: Boolean): ResidentWindow {
+    val state = rememberWindowState(placement = WindowPlacement.Maximized, width = WINDOW_WIDTH.dp, height = WINDOW_HEIGHT.dp)
+    return remember { ResidentWindow(state, visible) }
 }
 
 @Composable
