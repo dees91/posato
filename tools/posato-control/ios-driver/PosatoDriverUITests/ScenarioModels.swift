@@ -100,6 +100,8 @@ struct Step: Codable {
   var maxDepth: Int?
   var seconds: Double?
   var orientation: String?
+  /// The system appearance `appearance` switches to, `light` or `dark`; absent only reads it.
+  var appearance: String?
   var bundleId: String?
   var url: String?
   /// Names a secret the host passes in `POSATO_SECRET_<NAME>`; the value never appears in the scenario.
