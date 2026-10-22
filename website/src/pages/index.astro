@@ -3,11 +3,13 @@ import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
 import androidJoin from "../../../video/public/android-join.png";
 import androidWebsites from "../../../video/public/android-websites.png";
+import iphoneIcloud from "../../../video/public/iphone-icloud.png";
 import iphoneImport from "../../../video/public/iphone-import.png";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
 import macAddDevice from "../../../video/public/mac-add-device.png";
 import macExport from "../../../video/public/mac-export.png";
+import macIcloud from "../../../video/public/mac-icloud.png";
 import macDuration from "../../../video/public/mac-duration-45.png";
 import macSchedules from "../../../video/public/mac-schedules.png";
 import macWebsites from "../../../video/public/mac-websites.png";
@@ -169,6 +171,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
   </section>
 
   <section class="step" aria-labelledby="sync">
+    <div class="step-copy">
     <h2 id="sync">Share the session with iCloud</h2>
     <p class="prose">
       Choose <strong>Sync with iCloud</strong> on one Mac and one iPhone signed in to the same Apple
@@ -178,6 +181,29 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       device: once one device runs Posato 1.3, devices on an earlier version stop syncing until they
       update.
     </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macIcloud}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="The iCloud row on a Mac, linked: the latest sync attempt completed, the time it last synced, Sync now, and Remove workspace"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneIcloud}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="The same iCloud workspace on an iPhone, with the time it last synced, Sync now, and Remove workspace"
+          />
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="step" aria-labelledby="folder">

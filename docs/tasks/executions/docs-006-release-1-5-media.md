@@ -113,4 +113,5 @@ the release commit signs, are
 | Captures (`build/verification/runs/`), 2026-10-22 | Mac `20261022-124124-44d8` to `-131644-748f`; iPhone `-122357-15fa` to `-124055-b330`; Android `-125434-2359` to `-132829-2e53`; Linux `-131713-5c3e` to `-132711-4c0e` |
 | iPhone recapture, 2026-10-22 | consent (Dark) `20261022-140740-f2d5`; `iphone-apps-empty` `-140919-a5b0`, `iphone-apps` `-140935-3e91`, `iphone-active-45` `-141050-40e6`, `iphone-schedules` `-141203-27e2` |
 | Export and import pair (`step-export`), 2026-10-22 | `mac-export` `20261022-143953-2843` (VM, cancelled, code made for the dialog only); `iphone-import` `-143441-628a` after `flow export` `-143314-9724`, cancelled; `media`, site build, `qualityLint` passed |
+| iCloud pair (`step-icloud`), 2026-10-22, test Apple Account | `mac-icloud` `20261022-150505-d60a` after `flow icloud link` `-145551-0512` (VM); `iphone-icloud` `-150857-0e8c` after a fresh install joined it; removed on both (iPhone `-151647-adf4`, Mac `-151739-66a9`); `media`, site build, `qualityLint` passed |
 | Privacy scan of tracked PNGs | example domains, synthetic folders, expired pairing codes only; bars cropped; no metadata |

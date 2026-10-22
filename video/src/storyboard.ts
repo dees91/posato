@@ -261,6 +261,7 @@ export const STILLS = {
   StepDuration: { desktop: "mac-duration-45.png", phone: "iphone-duration-45.png" },
   StepSchedules: { desktop: "mac-schedules.png", phone: "iphone-schedules.png" },
   StepFolder: { desktop: "mac-add-device.png", phone: "android-join.png" },
+  StepIcloud: { desktop: "mac-icloud.png", phone: "iphone-icloud.png" },
   StepExport: { desktop: "mac-export.png", phone: "iphone-import.png" },
 } as const;
 

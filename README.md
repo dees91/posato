@@ -115,6 +115,10 @@ session started on your iPhone blocks on the Mac only after you resume it there.
 Update Posato on every device: once one device runs Posato 1.3, devices on an
 earlier version stop syncing until they update.
 
+<p align="center">
+  <a href=".github/assets/step-icloud.png"><img src=".github/assets/step-icloud.png" width="960" alt="Session on a Mac and on an iPhone linked to one iCloud workspace, each showing when it last synced, with Sync now and Remove workspace"></a>
+</p>
+
 ### Sync through a folder
 
 To link any mix of Mac, iPhone, Linux, and Android, keep the workspace in a

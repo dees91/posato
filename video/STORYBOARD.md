@@ -105,13 +105,15 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `iphone-active-45` | Session active |
 | `iphone-schedules` | Schedules with Deep work saved |
 | `mac-add-device` | Folder sync, Add a device with the QR code and a pairing code (still and site) |
+| `mac-icloud` | Session's iCloud row linked: last synced, Sync now, Remove workspace (still and site) |
+| `iphone-icloud` | The same workspace joined on the iPhone, last synced (still and site) |
 | `mac-export` | Export pause sets with Protect with a code on and a sample code shown, then cancelled (still and site) |
 | `iphone-import` | Import review: Add to my pause sets selected over Replace my pause sets, one schedule arriving switched off (still and site) |
 | `android-websites` | Android: Focus, Websites, both domains (hero, still, and site) |
 | `android-active-45` | Android: Session active (social preview) |
 | `android-join` | Android: joining a folder workspace, the folder chosen and the pairing code step open (still and site) |
 
-The README stills pair the Mac with a phone (`user-confirmed` 2026-10-22): websites with Android, the 45-minute setup and schedules with the iPhone, folder pairing with Android, and export on the Mac with import on the iPhone. Linux appears in the hero's device row.
+The README stills pair the Mac with a phone (`user-confirmed` 2026-10-22): websites with Android, the 45-minute setup and schedules with the iPhone, folder pairing with Android, iCloud sync on both, and export on the Mac with import on the iPhone. Linux appears in the hero's device row.
 
 ## Updating
 

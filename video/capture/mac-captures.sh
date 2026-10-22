@@ -21,6 +21,8 @@
 #   video/capture/mac-captures.sh folder             # a folder workspace in the guest's ~/PosatoSync and its Add a device code
 #   video/capture/mac-captures.sh unfolder           # close the code and remove the workspace, so the code expires with it
 #   video/capture/mac-captures.sh export             # the Export dialog with Protect with a code on, then cancelled
+#   video/capture/mac-captures.sh icloud             # create the iCloud workspace; Session's iCloud row linked, with its last sync
+#   video/capture/mac-captures.sh unicloud           # remove the iCloud workspace, so the clone can be destroyed
 #
 # For the folder step, `posato-control relay --line primary --android SERIAL`
 # copies the workspace to the phone, where `android-captures.sh join` shows
@@ -191,8 +193,24 @@ export_dialog() {
   pc wait --for absent --text "Export file…" --role button --timeout-seconds 20 | ok
 }
 
+# The guest is signed in to the test Apple Account. flow icloud link returns once
+# the first sync after the link has settled and leaves the row expanded.
+icloud() {
+  ready
+  "${PC}" flow icloud link -t desktop --vm "${VM}" | ok
+  pc wait --for exists --text-contains "Last synced" --timeout-seconds 60 | ok
+  shot mac-icloud
+}
+
+# The iPhone removes its link first (`iphone-captures.sh unicloud`), then the Mac removes the workspace.
+unicloud() {
+  "${PC}" flow icloud remove -t desktop --vm "${VM}" | ok
+}
+
 case "${1:-}" in
   export) export_dialog ;;
+  icloud) icloud ;;
+  unicloud) unicloud ;;
   apps) apps ;;
   sets) sets ;;
   websites) websites ;;
@@ -202,5 +220,5 @@ case "${1:-}" in
   scheduled) scheduled ;;
   folder) folder ;;
   unfolder) unfolder ;;
-  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder|export" >&2; exit 2 ;;
+  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder|export|icloud|unicloud" >&2; exit 2 ;;
 esac

@@ -2,7 +2,7 @@
 
 The root README uses the `Hero` composition as a looping GIF and links the
 longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`,
-`StepSchedules`, `StepFolder`, and `StepExport` stills are the README's step screenshots,
+`StepSchedules`, `StepIcloud`, `StepFolder`, and `StepExport` stills are the README's step screenshots,
 each pairing the Mac with a phone (iPhone or Android); `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices. The walkthrough and the
@@ -46,8 +46,8 @@ Outputs:
 - `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 2,043,946 bytes.
 - `../.github/assets/step-websites.png` (Mac and Android), `step-duration.png`
   (Mac and iPhone), `step-schedules.png` (Mac and iPhone), and
-  `step-folder.png` (Mac and Android), and `step-export.png` (Mac and
-  iPhone): 1920 x 1080 composed stills on a
+  `step-icloud.png` (Mac and iPhone), `step-folder.png` (Mac and Android),
+  and `step-export.png` (Mac and iPhone): 1920 x 1080 composed stills on a
   transparent background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
@@ -106,7 +106,10 @@ Tracked captures are in the light appearance (`user-confirmed`
   `~/PosatoSync` and shows **Add a device** for `mac-add-device`, whose
   pairing code expired when `unfolder` removed the workspace. `export`
   switches on **Protect with a code** in the Export dialog for `mac-export`
-  and presses **Cancel**, so its code protects no file.
+  and presses **Cancel**, so its code protects no file. `icloud` creates an
+  iCloud workspace with `flow icloud link` in a guest signed in to the
+  dedicated test Apple Account and captures the linked row for `mac-icloud`;
+  `unicloud` removes the workspace before the clone is destroyed.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
   install, in Light Mode set by `appearance`, after the first-install skip
   scenario, with the Focus and Evening sets and the `Deep work` schedule
@@ -117,7 +120,11 @@ Tracked captures are in the light appearance (`user-confirmed`
   off, so matching items do not demonstrate sync. `import` adds `Deep work`
   turned off, exports through `flow export` (Save to Files into the driver
   host's folder), deletes the schedule, opens that file from **Import…**, and
-  captures the review for `iphone-import` before **Cancel**.
+  captures the review for `iphone-import` before **Cancel**. For
+  `iphone-icloud` the phone, on the same test Apple Account, was reinstalled
+  and the first run skipped without sets, so it took Focus and Evening from
+  the workspace the Mac had just created; `icloud` joins it with **Sync with
+  iCloud** and `unicloud` removes it again.
 - `android-*.png`: the same tree on a Samsung Galaxy XCover7 with Android 14
   in the light theme set by `appearance`, driven by
   `capture/android-captures.sh` with the same sets (Calculator as the app)

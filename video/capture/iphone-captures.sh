@@ -15,6 +15,12 @@
 #   video/capture/iphone-captures.sh session     # 45 minutes selected, active session, ended early
 #   video/capture/iphone-captures.sh schedules   # Schedules with Deep work, then deleted
 #   video/capture/iphone-captures.sh import      # the import review of an export that holds Deep work, then cancelled
+#   video/capture/iphone-captures.sh icloud      # join the Mac's iCloud workspace; Session's iCloud row linked, with its last sync
+#   video/capture/iphone-captures.sh unicloud    # remove the iCloud workspace on the iPhone
+#
+# For icloud, install fresh and skip the first run without the websites step:
+# the phone's unnamed first set then takes the Mac's Focus and Evening from the
+# workspace instead of adding a second Evening.
 set -euo pipefail
 
 PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
@@ -198,8 +204,62 @@ import_review() {
   pc tap --text "Session" --role button | ok
 }
 
+# Session's iCloud row starts collapsed and its actions can sit below the tab bar,
+# so the row and each action are scrolled to before they are pressed.
+open_icloud() {
+  pc tap --text "Session" --role button | ok
+  steps '[{"name":"row-reveal","action":"scrollTo","query":{"textContains":"iCloud,","role":"button"}},
+    {"name":"row","action":"tap","query":{"textContains":"iCloud,","role":"button"}},
+    {"name":"settle","action":"sleep","seconds":1}]'
+}
+press_icloud() {
+  steps "[{\"name\":\"reveal\",\"action\":\"scrollTo\",\"query\":{\"text\":\"$1\",\"role\":\"button\"}},
+    {\"name\":\"press\",\"action\":\"tap\",\"query\":{\"text\":\"$1\",\"role\":\"button\"}}]"
+}
+has() { pc find "$@" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; }
+
+# Joins the workspace the Mac created with `mac-captures.sh icloud`, pressing
+# Check again while the workspace key is awaited, for up to 15 minutes.
+icloud() {
+  ready
+  open_icloud
+  press_icloud "Sync with iCloud"
+  for _ in $(seq 60); do
+    has --text-contains "Last synced" && ! has --text-contains "is running" && break
+    has --text "Check again" --role button && press_icloud "Check again"
+    sleep 15
+  done
+  steps '[{"name":"reveal","action":"scrollTo","query":{"text":"Remove workspace","role":"button"}},
+    {"name":"settle","action":"sleep","seconds":1}]'
+  shot iphone-icloud
+}
+
+# Removes the workspace on the iPhone. A removal on the test Apple Account,
+# whose zone holds a long history, can end in "Sync didn't finish", so it is
+# pressed again, as flow icloud remove does on the Mac, for up to 15 minutes.
+# While the confirmation is open, its own Remove workspace is the only one.
+unicloud() {
+  ready
+  pc tap --text "Session" --role button | ok
+  for _ in $(seq 30); do
+    has --text "Sync with iCloud" --role button && return 0
+    has --text-contains "iCloud, Not connected" --role button && return 0
+    if ! has --text-contains "is running" && ! has --text-contains "Removing"; then
+      has --text "Remove workspace" --role button || open_icloud
+      steps '[{"name":"reveal","action":"scrollTo","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"ask","action":"tap","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"question","action":"waitFor","state":"exists","query":{"text":"Keep workspace","role":"button"}},
+        {"name":"confirm","action":"tap","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"closed","action":"waitFor","state":"absent","query":{"text":"Keep workspace","role":"button"}}]'
+    fi
+    sleep 30
+  done
+  echo "The iCloud removal did not finish" >&2
+  return 1
+}
+
 case "${1:-}" in
-  websites|apps|session|schedules|import) pc appearance "${THEME:-light}" | ok ;;
+  websites|apps|session|schedules|import|icloud) pc appearance "${THEME:-light}" | ok ;;
 esac
 case "${1:-}" in
   websites) websites ;;
@@ -207,5 +267,7 @@ case "${1:-}" in
   session) session ;;
   schedules) schedules ;;
   import) import_review ;;
-  *) echo "usage: $0 websites|apps|session|schedules|import" >&2; exit 2 ;;
+  icloud) icloud ;;
+  unicloud) unicloud ;;
+  *) echo "usage: $0 websites|apps|session|schedules|import|icloud|unicloud" >&2; exit 2 ;;
 esac
