@@ -115,9 +115,11 @@ the window is closed, and a running pause can be ended from the icon.
 - `AC-05`: **Quit Posato** with an enabled schedule shows the dialog with the
   window hidden (screenshot); after quitting during a pause, the service
   still ends it on time.
-- `AC-06`: Without a watcher (Openbox golden): closing with an enabled
-  schedule keeps Posato running with the notice; closing with neither a
-  pause nor a schedule quits.
+- `AC-06`: Without a watcher (GNOME with the AppIndicator extension turned
+  off while hidden): an enabled schedule keeps Posato running and the item
+  registers again when the extension returns; with neither a pause nor a
+  schedule Posato quits. Without a session bus (Openbox): closing with
+  nothing quits, and with a schedule asks as **Quit Posato** does.
 - `AC-07`: Hidden for 10 minutes with an enabled schedule: CPU under 1% on
   average, a stable thread count, no `LayoutUpdated` while the menu is
   closed, and resident memory not growing.

@@ -1,7 +1,7 @@
 # Execution: `LINUX-003`
 
 - **Brief:** [Posato for Linux keeps running in the background](../specifications/linux-003-background.md)
-- **Status:** `implemented`; waiting for the completed-change review
+- **Status:** `done`; completed-change review folded
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Branch:** `linux-003-background`
@@ -86,7 +86,16 @@ all folded above; recommendations taken: activation token and Show
 retry, minimal bus surface, symbolic icon with fallback and change
 signals, `prerm` autostart removal, exact pins and package notices,
 lock and Tweaks tests, rebase after #184 (done, onto `79b87c00`).
-Completed-change review: pending.
+Completed-change review 2026-10-22 (independent agent): no Critical; fixed
+a hidden window that nothing could show again without a session bus (now
+closing quits as **Quit Posato** does), head evidence, and the tool and
+skill documentation; taken: the AC-06 citation, the AppIndicator
+extension turned off and on while hidden, Show events kept from startup,
+`@Volatile` state, the runtime-directory bus fallback, the quit dialog's
+default focus and Escape, and the findings in the verification guide.
+Failing first: `StatusMenuTest` (assertion) and `LinuxStatusAreaTest`
+(the Openbox crash, then the injected blank address); the lock, autostart,
+and menu tests failed to compile before their code.
 
 ## Checks
 
@@ -99,7 +108,9 @@ Completed-change review: pending.
 | `AC-05` (`1f9754ff`) | dialog with the window hidden `-193955-c7a6`; after Quit still blocked `-194014-9381`, ended by the service `-194502-1a83` |
 | `AC-07` (`1f9754ff`, no ATK) | 600 s: CPU 0.48%, threads 43 to 38, RSS 115.4 to 116.7 MB, no `LayoutUpdated` (first run on `e29213be`: 10, fixed) |
 | Wayland `AC-01`, `AC-04` (`1f9754ff`) | `-200422-5069`, `-200442-7c00`, `-200501-5ca4` |
-| `AC-06` Openbox (`1e479838`) | closing with nothing quits `-200947-f722`; with a schedule stays with the notice `-201118-2854` |
+| `AC-06` Openbox (`1e479838`) | closing with nothing quits `-200947-f722`; with a schedule stays with the notice `-201001-960d` to `-201118-2854` |
+| Head (`dac8bad7`), GNOME | onboard `20261022-074202-e6fb`, tray read `-074359-aa97`, close keeps it `-074403-971a`, schedule starts closed `-074633-083e`, second launches `-074701-9a17`; extension off with a schedule stays, on again re-registers `-074933-e4b9`; off with nothing quits after the grace `-075014-d821` |
+| Head (`dac8bad7`), Openbox, no bus | closing with nothing quits `-075224-a26c`; with a schedule asks to quit, Escape keeps it `-075352-c73d`, `-075404-5958` |
 | `./gradlew quality` | passed on `1f9754ff`; `qualityLint` and Linux tests on `1e479838` |
 
-All run ids start with `20261021`.
+Run ids start with `20261021` unless written in full.
