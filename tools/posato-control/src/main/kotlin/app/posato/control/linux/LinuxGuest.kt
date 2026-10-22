@@ -127,8 +127,26 @@ class LinuxGuest(
             "Copying the Linux package inputs into $CLONE",
         )
         val script = "sh ~/posato-package/package-deb.sh ~/posato-package $VERSION ~/posato-out && " +
-            "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -q ~/posato-out/posato_${VERSION}_*.deb && ls ~/posato-out"
+            "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install --reinstall -y -q ~/posato-out/posato_${VERSION}_*.deb && ls ~/posato-out"
         return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Packaging and installing Posato in $CLONE").stdout.trim()
+    }
+
+    /** Copies a built `.deb` into the clone and installs it with apt. */
+    fun installPackage(file: Path): String {
+        if (!Files.isRegularFile(file) || !file.fileName.toString().endsWith(".deb")) {
+            throw ControlException(ErrorCode.APP_NOT_STAGED, "No .deb at $file.", "Pass a built posato_<version>_<arch>.deb.")
+        }
+        val name = file.fileName.toString()
+        tart.pipe(
+            CLONE,
+            "cat ${shellQuote(file.toString())}",
+            "rm -rf ~/posato-out && mkdir -p ~/posato-out && cat > ~/posato-out/${shellQuote(name)}",
+            "Copying $name into $CLONE",
+        )
+        // The given file wins over whatever is installed, including the same or a newer version.
+        val script = "sudo -n DEBIAN_FRONTEND=noninteractive apt-get install --reinstall --allow-downgrades -y -q " +
+            "~/posato-out/${shellQuote(name)} && ls ~/posato-out"
+        return exec(script).requireSuccess(ErrorCode.INSTALL_FAILED, "Installing $name in $CLONE").stdout.trim()
     }
 
     fun terminate() {

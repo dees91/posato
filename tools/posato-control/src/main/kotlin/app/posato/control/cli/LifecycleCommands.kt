@@ -16,6 +16,7 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
+import app.posato.control.linux.LinuxBackend
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.associate
@@ -24,6 +25,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.clikt.parameters.types.path
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
@@ -51,9 +53,20 @@ class InstallCommand : ControlCommand("install", "Install the built application 
         help = "Android: all (every grant, as for unattended runs), settings (only the Settings-page grants; " +
             "onboarding raises the VPN, notification, and battery requests), or none.",
     ).choice(AndroidGrants.choices)
+    private val packageFile by option(
+        "--package",
+        help = "Android or Linux: install this built APK or .deb, such as a release candidate, instead of the development build.",
+    ).path(mustExist = true, canBeDir = false)
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
+        packageFile?.let { file ->
+            when (backend) {
+                is AndroidBackend -> backend.packageFile = file
+                is LinuxBackend -> backend.packageFile = file
+                else -> throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--package applies to the android and linux targets.")
+            }
+        }
         grants?.let { chosen ->
             if (backend !is AndroidBackend) throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--grants applies to the android target.")
             backend.grants = chosen

@@ -7,17 +7,25 @@ import app.posato.control.backend.Lifecycle
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import java.nio.file.Path
 
 /** Posato in the Tart Ubuntu clone that `linux create` starts. */
 class LinuxBackend private constructor(
-    lifecycle: Lifecycle,
+    private val linuxLifecycle: LinuxLifecycle,
     evidence: Evidence,
     interaction: Interaction,
 ) : Backend,
-    Lifecycle by lifecycle,
+    Lifecycle by linuxLifecycle,
     Evidence by evidence,
     Interaction by interaction {
     override val target: Target = Target.LINUX
+
+    /** The `.deb` `install` installs instead of packaging the inputs in the clone. */
+    var packageFile: Path?
+        get() = linuxLifecycle.packageFile
+        set(value) {
+            linuxLifecycle.packageFile = value
+        }
 
     companion object {
         fun create(context: RunContext): LinuxBackend {

@@ -29,6 +29,9 @@ class LinuxLifecycle(
 ) : Lifecycle {
     val packageInputs: Path = context.layout.root.resolve("desktopApp/build/linux/package")
 
+    /** A built `.deb` to install instead of packaging the inputs in the clone, such as a release candidate. */
+    var packageFile: Path? = null
+
     override fun doctor(): List<DoctorCheck> {
         val clone = if (guest.running()) {
             DoctorCheck.pass("linux.clone", "The Linux clone ${LinuxGuest.CLONE} runs.")
@@ -77,7 +80,7 @@ class LinuxLifecycle(
 
     override fun install(): StatusResult {
         guest.requireRunning()
-        guest.install(packageInputs)
+        packageFile?.let(guest::installPackage) ?: guest.install(packageInputs)
         return status()
     }
 
@@ -107,7 +110,7 @@ class LinuxLifecycle(
             installed = installed(),
             running = pid != null,
             pid = pid,
-            appPath = context.layout.relativize(packageInputs),
+            appPath = context.layout.relativize(packageFile ?: packageInputs),
             containerPath = LinuxGuest.DATA_DIRECTORY,
             lastRunId = stateStore.load().linux?.runId,
         )

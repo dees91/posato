@@ -7,6 +7,7 @@ import app.posato.control.backend.Lifecycle
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import java.nio.file.Path
 
 /** Posato on an Android phone or emulator, chosen with `--udid <adb serial>` or `posato.android.serial`. */
 class AndroidBackend private constructor(
@@ -24,6 +25,13 @@ class AndroidBackend private constructor(
         get() = androidLifecycle.grants
         set(value) {
             androidLifecycle.grants = value
+        }
+
+    /** The APK `install` installs instead of the debug APK. */
+    var packageFile: Path?
+        get() = androidLifecycle.packageFile
+        set(value) {
+            androidLifecycle.packageFile = value
         }
 
     companion object {
