@@ -43,6 +43,15 @@ class ProtectedFixtureTest {
         assertFalse(removesICloudWorkspace(listOf("flow", "icloud", "--timeout-seconds", "900", "link", "-t", "desktop")))
     }
 
+    /** An option value named like an action once read as the action, so `--run-id link remove` skipped the guard. */
+    @Test
+    fun `given an option value named like an action when relaying flow icloud then the positional action decides`() {
+        assertTrue(removesICloudWorkspace(listOf("flow", "icloud", "--run-id", "link", "remove", "-t", "desktop")))
+        assertTrue(removesICloudWorkspace(listOf("flow", "icloud", "--human", "--run-id=link", "remove", "-t", "desktop")))
+        assertFalse(checksICloudKeychain(listOf("flow", "icloud", "--run-id", "link", "remove", "-t", "desktop")))
+        assertTrue(checksICloudKeychain(listOf("flow", "icloud", "--udid", "remove", "link", "-t", "desktop")))
+    }
+
     @Test
     fun `given a list file when loading then a missing file protects nothing and a broken one refuses`() {
         val directory = Files.createTempDirectory("protected-fixtures")
