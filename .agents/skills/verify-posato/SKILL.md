@@ -70,7 +70,11 @@ never from the Apple Developer portal. With the one-time setup in
   **Remove workspace** first. `vm destroy` refuses a running guest whose
   database shows a linked workspace (`WORKSPACE_LINKED`, exit 3); it cannot
   check a stopped guest or an unreadable database, so the rule is yours to
-  keep. `--keep-workspace` is only for a guest whose app cannot run.
+  keep. `--keep-workspace` is only for a guest whose app cannot run or whose
+  workspace is a protected fixture: `flow icloud remove` refuses an Apple
+  Account listed in the machine-wide protected fixtures file unless
+  `--destroy-fixture` is passed, so never pass it unless the task owns the
+  fixture (driver README, "Protected fixtures").
 - **Notarized candidates.** Update and release checks install a Developer ID
   DMG in a fresh clone with `$PC vm install --line <line> --dmg <file>`
   instead of using the development package; it installs by Finder drag and

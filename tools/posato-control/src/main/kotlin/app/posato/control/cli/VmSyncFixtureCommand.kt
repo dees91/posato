@@ -4,6 +4,7 @@ import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RepoLayout
+import app.posato.control.vm.ACCOUNT_ID
 import app.posato.control.vm.GUEST_ROOT
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
@@ -160,6 +161,5 @@ class VmSyncFixtureCommand :
         const val STAGED_APPLICATION = "desktopApp/build/compose/binaries/main/${RepoLayout.STAGED_PACKAGE_DIRECTORY}/Posato.app"
         const val WAIT_AFTER_DELETE_SECONDS = 15L * 60L
         val SEAM_TIMEOUT: Duration = Duration.ofMinutes(3)
-        val ACCOUNT_ID = Regex("AccountID\\s*=\\s*\"?([^\";\\s]+)\"?;")
     }
 }

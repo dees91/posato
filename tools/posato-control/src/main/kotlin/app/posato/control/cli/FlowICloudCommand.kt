@@ -4,9 +4,11 @@ import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Query
+import app.posato.control.vm.DESTROY_FIXTURE_OPTION
 import app.posato.control.vm.ICLOUD_FLOW_TIMEOUT_SECONDS
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.long
@@ -24,6 +26,10 @@ import kotlinx.serialization.json.put
 class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iCloud workspace, or remove the workspace, and wait for the outcome.") {
     private val action by argument(help = "link | remove").choice(LINK, REMOVE)
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(ICLOUD_FLOW_TIMEOUT_SECONDS)
+    private val destroyFixture by option(
+        DESTROY_FIXTURE_OPTION,
+        help = "Remove the workspace even when the host lists its Apple Account as a protected fixture; the host checks the list before relaying.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         // Verified only in Tart guests: on a compact iPhone the expanded row's actions can sit off screen.
@@ -40,6 +46,7 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
     ) = buildJsonObject {
         put("action", action)
         put("presses", presses)
+        if (destroyFixture) put("destroyFixture", true)
         row?.let { put("row", it) }
     }
 
