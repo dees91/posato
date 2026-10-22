@@ -315,9 +315,25 @@ does not have.
   to In Progress and records the pull request; merging that pull request sets
   Done; a dropped row is archived. An agent that changes a row and cannot
   update the project says so in the pull request.
-- Update through `gh project` (`item-list`, `item-create`, `item-edit`,
-  `item-archive`) with the `project` token scope. Views are created once in
-  the GitHub interface and are not part of the mirror rule.
+- Update with `tools/roadmap-mirror`
+  (`./gradlew :roadmap-mirror:installDist`, then
+  `tools/roadmap-mirror/build/install/roadmap-mirror/bin/roadmap-mirror`),
+  which needs `gh` with the `project` token scope:
+  `set-status <ROW-ID> todo|in-progress|done [--pr N]` finds the draft item
+  titled `<ROW-ID>: ...` and sets Status and the PR field (`#N`);
+  `add <ROW-ID> --title <outcome> --body <markdown> --epic <epic>
+  [--release backlog|1.5|...] [--class backlog|delivery|discovery]
+  [--status ...] [--pr N]` adds a row's item, with Status Todo unless
+  `--status` says otherwise. The project and field ids live only in its
+  `RoadmapProject.kt`; refresh them there after a field changes. It works
+  through `gh api graphql`, because `gh project item-list` returned no items
+  for this project (`observed` 2026-10-22). GitHub's item list can also come
+  back empty or without items added minutes before, so `add` takes
+  `--status` and `--pr` and sets a new row's whole state at once, and
+  `set-status` refuses an empty list instead of reporting the row missing. Archive and the remaining fields
+  (Wave, Dependencies, Integration group, Risk) still go through
+  `gh project item-archive` and `item-edit`. Views are created once in the
+  GitHub interface and are not part of the mirror rule.
 - Each release has a repository milestone named after its version (`1.3.0`).
   A row's pull request receives that milestone when it opens, and the
   release row closes the milestone at publication.
