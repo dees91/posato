@@ -35,7 +35,10 @@ privacy policy covers 1.5.
 
 - **Prepare, never publish.** Merging deploys `posato.app`, so this pull
   request merges only with the release go, as `DOCS-005` did. No App Store
-  Connect change or GitHub Release edit.
+  Connect change or GitHub Release edit. Amended 2026-10-22
+  (`user-confirmed`): the pull request merges before the release go, so
+  `posato.app` shows the 1.5 copy before `RELEASE-007` publishes the Linux
+  and Android files.
 - **Limits.** ADR 0010's "Limits to publish" text moves to the limits page
   unchanged in meaning; the page marks Linux and Android available and keeps
   Windows planned. The ADR then points to the page.
@@ -91,5 +94,5 @@ privacy policy covers 1.5.
 
 ## Decisions or blockers
 
-- **Maintainer:** the release go, which also merges this pull request and
-  deploys the site.
+- **Maintainer:** the release go. Resolved 2026-10-22 (`user-confirmed`):
+  merging and the site deploy go ahead before it.

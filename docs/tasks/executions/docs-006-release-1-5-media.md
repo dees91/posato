@@ -1,7 +1,7 @@
 # Execution: `DOCS-006`
 
 - **Brief:** [Prepare the public packaging for Posato 1.5](../specifications/docs-006-release-1-5-media.md)
-- **Status:** `done`; merges with the 1.5 release go
+- **Status:** `done`; merge before the 1.5 release go approved 2026-10-22
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `docs-006-release-1-5-media`
@@ -32,6 +32,8 @@ marked otherwise.
 - The folder wording and Android Dark Mode fixes concern platforms and
   modes new in 1.5, so the notes describe them as 1.5 behavior; only the
   first-set fix (`SYNC-024`) is listed under Fixes.
+- `user-confirmed` 2026-10-22: merge now. `posato.app` shows the 1.5 copy
+  before `RELEASE-007`, which brings the Linux and Android files.
 
 ## Result
 
