@@ -107,3 +107,70 @@ are folded above.
 diff rule, annotated `v1.5.0`, a draft release with the eight assets, byte comparison, publish as latest with the `DOCS-006` notes,
 feed checks, the in-app update, `store submit`, site and download link
 checks, Projects Done, milestone closed. A defect follows the brief's rule.
+
+## Result
+
+- **Tooling** (#194, squash `6da8d19b`, Standard review: Required fixed and
+  proven in the clone): the `Linux packages` workflow and `posato-control
+  install --package`.
+- **R** = `0c67878023308ca1977529e5cf5d72a31d8a4fa8` (`MARKETING_VERSION =
+  1.5.0` on `main` `6da8d19b` plus this row's documentation); clean-clone
+  `quality iosSwiftTest` passed (7 min 12 s).
+- **macOS build 30**, both architectures from one clean clone of R, G2
+  Developer ID: `Posato-1.5.0.dmg` `19bbac0d…12f8`, `appcast.xml`
+  `26146152…fac5`, `Posato-1.5.0-intel.dmg` `6d060bee…0471`,
+  `appcast-intel.xml` `22c39a04…31f2`. Host checks of both DMGs: Mach-O
+  files of the DMG's architecture only, no universal binaries, no Rosetta
+  switch or seam key, the stable feed URL per architecture with one
+  `SUPublicEDKey`, minimum macOS 13.0, Temurin 21.0.12.1 in both, strict
+  deep `codesign`, `stapler validate`, and `spctl` (Notarized Developer
+  ID); the app, helper, and sync companion entitlements equal 1.4.0's.
+- **Intel verification candidate** 9301 from a second clean clone:
+  candidate channel, Rosetta switch, loopback feed, a throwaway key in
+  Keychain account `posato-test-release-007`; never published
+  (`5837d39a…ca2a`).
+- **iOS 1.5.0 (8):** IPA signed with Apple Distribution, Family Controls,
+  the app group, CloudKit Production, the sync keychain group,
+  `get-task-allow` false, both privacy manifests; `altool` validate and
+  upload passed; `VALID`. `store prepare` (`after-approval`, the `DOCS-006`
+  What's New and description from R, screenshots unchanged) created the
+  version; a rerun reported every item `unchanged`;
+  `PREPARE_FOR_SUBMISSION`.
+- **Android:** `assembleRelease` in a clean clone of R, signed with
+  `apksigner` (password piped from the Keychain): `Posato-1.5.0.apk`
+  `6b21b3b6…be26`; v2 and v3 signatures, certificate SHA-256 equal to the
+  fingerprint above, `versionCode` 1, `versionName` 1.5.0, minSdk 33, not
+  debuggable or `testOnly`. No file under the clone, the worktree's
+  `build/` and `.gradle/`, or `~/.gradle` contains the password.
+- **Linux:** workflow run 39834015238 on R: both jobs green;
+  `posato_1.5.0_arm64.deb` `52df22ff…b738` and `posato_1.5.0_amd64.deb`
+  `22c5ac7a…6553`, each `.commit` equal to R and each `.sha256` verified.
+- **`SHA256SUMS`** covers the seven files and passes `shasum -a 256 -c`.
+- **Consumed build numbers:** macOS 30 (both), the never-published Intel
+  candidate 9301, iOS 8, Android versionCode 1.
+
+### Verification on the candidates (2026-10-22)
+
+Run directories are under the release worktree's ignored
+`build/verification/runs/`.
+
+| Check | Target | Result |
+| --- | --- | --- |
+| Install over a development build, onboarding with the pausing service, a 15 min pause: `example.org` answers `0.0.0.0`, `example.com` loads, four lines in `/etc/hosts`; Calculator chosen during the pause ends; after End session early `/etc/hosts` equals the copy taken before and both are allowed | Linux clone, workflow arm64 `.deb` | pass (`211828-a999` to `212045-1d4d`) |
+| Fresh install, onboarding through the real VPN, notification, and battery requests, a pause: `example.org` answers `127.0.0.1`, Clock covered by "Paused by Posato", both released after the end | Galaxy XCover7, signed APK | pass (`212129-1d5d` to `212829-e5ba`) |
+| Folder workspace created on Linux, the phone joins by code; a Linux pause is enforced on the phone after 21 s; ending it on the phone restores Linux `/etc/hosts` exactly after 35 s | Linux clone and phone, release packages, relay | pass |
+| Install from the arm64 DMG, setup with the helper, update consent; joins the phone's folder workspace by code and receives its set; a 1 h pause blocks on the Mac and on the phone (about 30 s); Until end of day blocks; a schedule starts on its own after a cold boot before any manual open | `primary`, arm64 release DMG | pass (`214608-49bd`, `214702-1833`, `215318-8c63`) |
+| Setup and one blocking pause | `legacy`, arm64 release DMG | pass (`220636-8436`) |
+| Intel release DMG passes Gatekeeper, shows "This version is for Intel Macs" under Rosetta, leaves no process or launchd item after Quit; the candidate sets up, blocks, and starts a schedule on its own | `ventura` | pass (`221155-5850`, `221613-9d70`) |
+| iCloud link (7 min 40 s), the pause-set notice, the pause-sets scenario, one press of Remove workspace (4 min 5 s) | `primary`, R's development package | pass (`222735-7c05`, `222743-8525`) |
+| Website Not Allowed in Safari, End session early, edge swipe back | test iPhone, R's development build | pass (`220052-cad4`, `220202-5ce3`) |
+
+Environment notes, not product defects: the iPhone's reinstalled
+development build had lost its Screen Time authorization ("Restrictions
+need attention"); the consent scenario from **Choose apps** restored it and
+**Retry** applied the pause. On a fresh Linux clone `posato-control` did
+not write `/tmp/posato-dbus` (an empty address lets `dbus-send` reach the
+X11 autolaunch bus, so the ping passes); the file was written by hand.
+`flow onboard -t linux` cannot continue when the pausing service is
+already installed (known, `QUALITY-013`); those screens were driven by
+hand. Both are follow-ups for `posato-control`.
