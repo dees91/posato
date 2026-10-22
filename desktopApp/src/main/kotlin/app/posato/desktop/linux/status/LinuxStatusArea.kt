@@ -85,7 +85,10 @@ internal class LinuxStatusArea(
         if (previous.filled != next.filled) bus.sendQuietly(StatusNotifierItem.NewIcon(ITEM_PATH))
         if (previous.title != next.title) bus.sendQuietly(StatusNotifierItem.NewTitle(ITEM_PATH))
         if (previous.description != next.description) bus.sendQuietly(StatusNotifierItem.NewToolTip(ITEM_PATH))
-        if (previous.entries != next.entries) menu.layoutChanged()?.let(bus::sendQuietly)
+        if (previous.entries != next.entries) {
+            val structural = previous.entries.map { it.copy(label = "") } != next.entries.map { it.copy(label = "") }
+            menu.layoutChanged(structural)?.let(bus::sendQuietly)
+        }
     }
 
     override fun close() {

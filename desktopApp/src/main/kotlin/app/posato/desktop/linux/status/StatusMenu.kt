@@ -5,8 +5,10 @@ import org.freedesktop.dbus.types.UInt32
 import org.freedesktop.dbus.types.Variant
 
 /**
- * The status icon's menu over com.canonical.dbusmenu. A change reaches the panel with LayoutUpdated only while the
- * menu is open; a closed menu just answers AboutToShow with "update needed", so an idle icon sends nothing.
+ * The status icon's menu over com.canonical.dbusmenu. A change of lines or actions reaches the panel at once, since
+ * GNOME's AppIndicator extension keeps the layout it last read; a change of wording only (the minutes left) reaches
+ * it at once only while the menu is open, and otherwise when the panel asks with AboutToShow, so an idle icon sends
+ * nothing.
  */
 internal class StatusMenu(
     private val entries: () -> List<StatusMenuEntry>,
@@ -21,10 +23,10 @@ internal class StatusMenu(
 
     @Volatile private var stale = false
 
-    /** The LayoutUpdated signal to send now, or null when the menu is closed and the change waits for AboutToShow. */
-    fun layoutChanged(): LayoutUpdated? {
+    /** The LayoutUpdated signal to send now, or null when only wording changed while the menu is closed. */
+    fun layoutChanged(structural: Boolean): LayoutUpdated? {
         revision++
-        if (clock() >= openUntil) {
+        if (!structural && clock() >= openUntil) {
             stale = true
             return null
         }

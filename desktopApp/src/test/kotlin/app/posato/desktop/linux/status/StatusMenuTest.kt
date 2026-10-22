@@ -15,7 +15,7 @@ class StatusMenuTest {
         menu.aboutToShow(0)
         now += 10 * 60_000L
 
-        assertNull(menu.layoutChanged())
+        assertNull(menu.layoutChanged(structural = false))
         assertTrue(menu.aboutToShow(0))
     }
 
@@ -24,7 +24,13 @@ class StatusMenuTest {
         menu.aboutToShow(0)
         now += 5_000L
 
-        assertNotNull(menu.layoutChanged())
+        assertNotNull(menu.layoutChanged(structural = false))
         assertFalse(menu.aboutToShow(0))
+    }
+
+    @Test
+    fun `given the menu is closed when its lines or actions change then the panel hears about it at once`() {
+        // GNOME's AppIndicator extension keeps the layout it read at registration and opens nothing for an empty one.
+        assertNotNull(menu.layoutChanged(structural = true))
     }
 }
