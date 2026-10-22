@@ -1,11 +1,14 @@
 # Execution: `RELEASE-007`
 
 - **Brief:** [Verify the 1.5.0 candidates and publish Posato 1.5](../specifications/release-007-release-1-5.md)
-- **Status:** `active`
+- **Status:** `active`: Posato 1.5.0 published 2026-10-22; iOS 1.5.0 waiting
+  for App Review. Pending (`releasing.md` step 9): record the App Review
+  outcome, set `done`, and delete the never-published verification candidate
+  and its throwaway key
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review and completed-change review
-- **Branch:** `docs/release-007-release-1-5` (#193)
+- **Branch:** `docs/release-007-release-1-5` (#193), closeout `docs/release-007-closeout`
 - **Updated:** 2026-10-22
 
 ## Plan
@@ -216,3 +219,45 @@ hand. Both are follow-ups for `posato-control`.
   against R and found no Critical or Required issue in the artifacts.
 
 **Verdict for R:** the candidates of R are fit to publish as Posato 1.5.0.
+
+## Publication (2026-10-22)
+
+- #193 squash-merged as `ae8428659f464dbede02c0cb009d4039786d4cd7`; `git
+  diff --name-only` from R lists only `PRIVACY.md` and `docs/`, and
+  `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `Version.xcconfig`
+  equal R. Annotated tag `v1.5.0` on it.
+- GitHub Release `v1.5.0`, latest, with the `DOCS-006` notes and the eight
+  assets, downloaded from the draft and byte-identical to the verified
+  outputs. `releases/latest/download/appcast.xml` and `appcast-intel.xml`
+  equal the verified feeds (build 30); the APK and `.deb` links answer 200.
+- iOS 1.5.0 (8) submitted with `store submit`: `WAITING_FOR_REVIEW`,
+  `AFTER_APPROVAL`.
+- `posato.app`, the limits and privacy pages, the README, and `PRIVACY.md`
+  (effective October 22, 2026) answer 200; the download buttons lead to the
+  latest release.
+- Projects: `RELEASE-007` Done; milestone `1.5.0` closed.
+
+### In-app update from 1.4.0
+
+On a `peer` clone set up with the published 1.4.0 (helper, `example.com`
+and Calculator in the default set, update consent allowed), a schedule
+started on its own on 1.4.0 at 22:42:14 and blocked both
+(`224214-81e0`, `224215-8395`). A second schedule was set for 23:14 on
+1.4.0. **Check for Updates…** offered Posato 1.5 from the stable feed;
+Install Update, then Install and Relaunch (macOS first asked whether
+`tart-guest-agent` may bypass the window picker, a verification-only
+prompt answered with `vm prompt picker-bypass`). The relaunched application
+was 1.5.0 (30) with the set, its application, both schedules, and the
+helper enabled; the 23:14 schedule started on its own at 23:14:11 and
+blocked `example.com` and Calculator (`231412-7aeb`, `231414-08fd`); a new
+check reported "You're up to date." This proves migration 14 on macOS.
+No upgrade regression.
+
+### Follow-ups
+
+- `posato-control`: on a fresh Linux clone the launch does not write
+  `/tmp/posato-dbus` when no bus file exists, because `dbus-send` with an
+  empty address reaches the X11 autolaunch bus and the ping passes.
+- `QUALITY-013` (already in the roadmap) met again during this run.
+- The `.deb` control file names `Posato <Unknown>` as maintainer (review
+  Optional finding).
