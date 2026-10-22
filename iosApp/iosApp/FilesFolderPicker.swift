@@ -50,6 +50,7 @@ final class FilesFolderPicker: NSObject, IosFolderPicker, UIDocumentPickerDelega
 final class FilesPauseSetPicker: NSObject, IosPauseSetFilePicker, UIDocumentPickerDelegate {
     weak var presenter: UIViewController?
     private var pickCompletion: ((Data?) -> Void)?
+    private var pickLimit = 0
 
     func exportFile(data: Data, fileName: String, completion: @escaping (KotlinBoolean) -> Void) {
         guard let presenter, presenter.presentedViewController == nil else {
@@ -66,20 +67,30 @@ final class FilesPauseSetPicker: NSObject, IosPauseSetFilePicker, UIDocumentPick
             return
         }
         let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        sheet.completionWithItemsHandler = { _, completed, _, _ in
+        var finished = false
+        sheet.completionWithItemsHandler = { activity, completed, _, _ in
+            // A cancelled activity, such as Save to Files closed without saving, leaves the sheet open for
+            // another choice; only a finished activity or the sheet closing ends the export, once.
+            guard !finished, completed || activity == nil else { return }
+            finished = true
             try? FileManager.default.removeItem(at: directory)
             completion(KotlinBoolean(value: completed))
         }
-        sheet.popoverPresentationController?.sourceView = presenter.view
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = presenter.view
+            popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
         presenter.present(sheet, animated: true)
     }
 
-    func pickFile(completion: @escaping (Data?) -> Void) {
+    func pickFile(maxBytes: Int32, completion: @escaping (Data?) -> Void) {
         guard pickCompletion == nil, let presenter, presenter.presentedViewController == nil else {
             completion(nil)
             return
         }
         pickCompletion = completion
+        pickLimit = Int(maxBytes)
         let types = [UTType(exportedAs: "app.posato.pause-sets"), .data]
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
         picker.delegate = self
@@ -88,9 +99,12 @@ final class FilesPauseSetPicker: NSObject, IosPauseSetFilePicker, UIDocumentPick
     }
 
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        let limit = pickLimit
         let data = urls.first.flatMap { url -> Data? in
             defer { try? FileManager.default.removeItem(at: url) }
-            return try? Data(contentsOf: url)
+            guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+            defer { try? handle.close() }
+            return try? handle.read(upToCount: limit)
         }
         finishPick(data)
     }

@@ -20,7 +20,11 @@ interface IosPauseSetFilePicker {
         completion: (Boolean) -> Unit,
     )
 
-    fun pickFile(completion: (NSData?) -> Unit)
+    /** Reads at most [maxBytes] of the chosen file, so a file that is too large is refused by its size alone. */
+    fun pickFile(
+        maxBytes: Int,
+        completion: (NSData?) -> Unit,
+    )
 }
 
 internal object NoPauseSetFilePicker : IosPauseSetFilePicker {
@@ -32,7 +36,10 @@ internal object NoPauseSetFilePicker : IosPauseSetFilePicker {
         completion(false)
     }
 
-    override fun pickFile(completion: (NSData?) -> Unit) {
+    override fun pickFile(
+        maxBytes: Int,
+        completion: (NSData?) -> Unit,
+    ) {
         completion(null)
     }
 }
@@ -49,15 +56,18 @@ internal class IosPauseSetFiles(
     ): Boolean {
         val data = bytes.toData()
         return withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { continuation -> picker.exportFile(data, fileName) { done -> continuation.resume(done) } }
+            suspendCancellableCoroutine { continuation ->
+                picker.exportFile(data, fileName) { done -> if (continuation.isActive) continuation.resume(done) }
+            }
         }
     }
 
     override suspend fun pick(limit: Int): ByteArray? {
         val data = withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine<NSData?> { continuation -> picker.pickFile { file -> continuation.resume(file) } }
+            suspendCancellableCoroutine<NSData?> { continuation ->
+                picker.pickFile(limit + 1) { file -> if (continuation.isActive) continuation.resume(file) }
+            }
         } ?: return null
-        // Only the first bytes past the limit are kept, so a file that is too large is refused by its size.
-        return data.toByteArray().let { bytes -> if (bytes.size > limit + 1) bytes.copyOf(limit + 1) else bytes }
+        return data.toByteArray()
     }
 }
