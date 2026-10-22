@@ -1,7 +1,7 @@
 # Execution: `DOCS-006`
 
 - **Brief:** [Prepare the public packaging for Posato 1.5](../specifications/docs-006-release-1-5-media.md)
-- **Status:** `done`; merges with the 1.5 release go
+- **Status:** `done` except the iPhone recapture below; merges with the 1.5 release go
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `docs-006-release-1-5-media`
@@ -19,55 +19,49 @@ Agent decisions under the delegations of 2026-10-09 and 2026-10-21 unless
 marked otherwise.
 
 - App Store text names Linux but not Android (guideline 2.3.10); no new
-  App Store screenshots. Package names follow the build; the APK name
-  `Posato-1.5.0.apk` is `user-confirmed`.
-- `user-confirmed`: each "How it works" step pairs a generic computer with a
-  phone instead of repeating near-identical screens: websites on the Mac and
-  Android, the 45-minute setup on Linux and the iPhone, schedules on the Mac
-  and the iPhone, folder pairing on Linux and Android. The separate Linux and
-  Android section became an "Install Posato" section for all four.
-- The new Linux and Android badges and the Mac badge's text are outlined
-  from Inter (OFL) with Simple Icons (CC0) marks; the App Store badge is
-  Apple's.
-- The site, README, and video keep dark captures; Linux is light because
-  Posato on Linux has no dark palette. Light Android and Linux sets are only
-  in the pull request.
-- `user-confirmed`: ADR 0010's limit bullet that ran Android, Linux, Android
-  is split by platform on the limits page and in the ADR, meaning unchanged.
+  App Store screenshots. The APK name `Posato-1.5.0.apk` is `user-confirmed`.
+- `user-confirmed` 2026-10-22: every tracked capture is light (the warm
+  `#F4F3EB` surface) on the site, README, and video, whose canvas stays
+  dark; the stills pair the Mac with a phone (websites and folder with
+  Android, duration and schedules with the iPhone); Linux appears in the
+  hero's device row and, light and dark, in the pull request.
+- Mac, Linux, and Android badges are outlined from Inter (OFL) with Simple
+  Icons (CC0) marks; the App Store badge is Apple's.
+- `user-confirmed`: ADR 0010's mixed Android and Linux limit bullet is split
+  by platform, meaning unchanged.
+- The folder wording and Android Dark Mode fixes concern platforms and
+  modes new in 1.5, so the notes describe them as 1.5 behavior; only the
+  first-set fix (`SYNC-024`) is listed under Fixes.
 
 ## Result
 
-- **Equal platforms.** Hero and install section: four badges and one
-  requirements line; README Quick start the same. Hero video: the sync scene
-  shows a Mac, Linux, an iPhone, and Android with "Sync through iCloud or a
-  folder you choose", privacy reads "Your cloud. Your data.", the close names
-  the four platforms; the social preview shows an iPhone and Android.
-- **Privacy policy** for 1.5 from the code: folder files and what the folder
-  service sees, the key file (Android Keystore sealed), the pairing code and
-  link, the Linux service, the Android VPN (Google Public DNS fallback when
-  the network offers none), usage access, and permissions.
-- **Captures** from `305d5bd7` on all four (Mac in a Tart VM, the test
-  iPhone, a Tart Ubuntu clone, the Galaxy XCover7), new capture scripts.
+- **Equal platforms:** four badges and install steps on the site and in the
+  README; the hero names and shows all four.
+- **1.5 copy after the rebase** onto `d0b34fa1`: export and import
+  (`TARGETS-007`), the two-step folder join (`SYNC-026`), Linux in the
+  background with a status icon and **Open Posato at login** (`LINUX-003`)
+  and its limit without the AppIndicator extension, the warmer light look,
+  and the first-set fix. The Linux "keep Posato open" caveat is gone.
+- **Privacy policy** for 1.5 from the code, with main's Export and import
+  section after the blocking sections.
+- **Captures** in light from `d0b34fa1`; `video/README.md` has provenance.
 
-## Findings for the maintainer
+## Open for the maintainer
 
-`observed`, not fixed here: on Android, linking a folder workspace renamed
-the default set back to "My set" (twice) and folder mode showed "Sync with
-iCloud didn't finish."; Linux ignores the desktop's dark theme and the
-Android block screen ignores Dark Mode; Android loses the pairing-code step
-when the screen is recreated.
+- The test iPhone no longer completes Screen Time consent: since
+  2026-10-21 13:04 the passcode keypad is in a process the driver cannot
+  read (`kAXErrorServerNotFound`), so `screen-time-consent.json` stops at
+  `system-done`. `iphone-schedules` therefore shows the Allow Screen Time
+  card, and `iphone-apps-empty`, `iphone-apps`, and `iphone-active-45` are
+  still dark. After the phone is restarted and unlocked, rerun
+  `iphone-captures.sh apps`, `session`, and `schedules`, collect, and
+  `npm run media` before merge.
+- Left to `RELEASE-007`: check the x86-64 `.deb` and date the policy.
 
 ## Review
 
-- Independent agent, 2026-10-21 (first pass): no Critical; two Required
-  fixed (privacy gap recorded, then closed by `AC-07`; alt text).
-- Independent agent, 2026-10-21 (second pass, widened row): no Critical;
-  two Required fixed: the pairing offer expiry and key recovery wording in
-  `PRIVACY.md`, and the schedule claim, which Linux does not meet with its
-  window closed. Recommended taken: notices only on Mac and iPhone, VPN
-  consent in the notes, mark attributions; unused Android captures dropped.
-- Left to `RELEASE-007`: check the x86-64 `.deb`, date the policy, and
-  whether the limits page adds that Linux schedules need Posato open.
+- Independent agents, 2026-10-21 (two passes): no Critical; Required
+  fixed (privacy gaps, alt text, pairing expiry, the Linux schedule claim).
 
 ## GitHub release notes for 1.5.0
 
@@ -81,15 +75,18 @@ the release commit signs, are
 >
 > ## New
 >
-> - **Posato for Linux.** Ubuntu 24.04 or later on arm64 and x86-64. Posato installs a small pausing service once, with your password. Paused websites are blocked through `/etc/hosts`, with no pause page, and paused apps are ended.
-> - **Posato for Android.** Android 13 or later, installed from the APK below. Paused websites are blocked by a local VPN that only answers website names, with no pause page, and paused apps are covered by a block screen. The first run asks for a local VPN that only answers website names, usage access, display over other apps, notifications, exact alarms, access to files for a sync folder, and running without battery limits.
+> - **Posato for Linux.** Ubuntu 24.04 or later on arm64 and x86-64. Posato installs a small pausing service once, with your password. Paused websites are blocked through `/etc/hosts`, with no pause page, and paused apps are ended. Closing the window keeps Posato running with an icon in the status area, **Open Posato at login** in About Posato starts it in the background, and it follows the desktop's light or dark style.
+> - **Posato for Android.** Android 13 or later, installed from the APK below. Paused websites are blocked by a local VPN that only answers website names, with no pause page, and paused apps are covered by a block screen that follows Dark Mode. The first run asks for the VPN, usage access, display over other apps, notifications, exact alarms, access to files for a sync folder, and running without battery limits.
 > - **Sync through a folder.** Keep your workspace in a folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted files there. The Mac and iPhone can use a folder instead of iCloud; a workspace uses one or the other.
-> - **Add a device by code, QR code, or link.** On the new device, choose its copy of the same folder. On a device in the workspace, choose **Add a device** for a one-time pairing code that works for 10 minutes. Scan its QR code with a phone's camera, use **Share link** or **Copy link**, or type the code. There is no way to remove a single device: to stop sharing with one, remove the workspace and create a new one in another folder.
+> - **Add a device in two steps.** On a device in the workspace, choose **Add a device** for a one-time pairing code that works for 10 minutes. On the new device, choose its copy of the same folder and scan the QR code with a phone's camera, open the shared link, or type the code, in either order; it joins as soon as it has both. There is no way to remove a single device: to stop sharing with one, remove the workspace and create a new one in another folder.
+> - **Export and import pause sets.** Choose **Export pause sets…** in the **…** menu of Pause sets to save your sets, their websites, the default set, and your schedules to a file, optionally protected by a code that Posato shows once, and **Import…** it on any device. App choices stay on each device.
+> - **A warmer light look** on every platform.
 > - **Duplicate a pause set** from its menu. A set with websites and no apps chosen on this device no longer shows a warning.
 > - **Last sync.** The sync section shows when this device last synced.
 >
 > ## Fixes
 >
+> - A device that renamed its first pause set or chose another default before linking keeps them when it creates a workspace.
 > - A device that joins during another device's pause starts pausing right away.
 > - The Pause sets list shows newly chosen or removed apps at once.
 > - **Mac:** the Posato window no longer opens with only its toolbar.
@@ -111,8 +108,8 @@ the release commit signs, are
 
 | Check | Result |
 | --- | --- |
-| `./gradlew qualityLint` | passed on `1910d1d6` and after the review fixes |
-| `website/` `npm run build`; wide and phone renders | passed: 5 pages, four badges, install grid |
-| `video/` `npm run media` (check, renders, `verify`) | passed: GIF 1,979,021 bytes, site MP4 548,696 bytes |
-| Captures (`build/verification/runs/`) | Linux `20261021-094149-2207` to `-094816-cf41`; Mac `20261021-100611-5631`, `-100849-d08d`; iPhone `20261021-102925-336a` to `-103419-b5f3`; Android `20261021-093919-363a` to `-110451-3842` |
+| `./gradlew qualityLint` | passed on the final head |
+| `website/` `npm run build`; wide and phone renders | passed: 5 pages, light stills, no overflow at 390 px |
+| `video/` `npm run media` (check, renders, `verify`) | passed: GIF 2,043,946 bytes, site MP4 559,638 bytes |
+| Captures (`build/verification/runs/`), 2026-10-22 | Mac `20261022-124124-44d8` to `-131644-748f`; iPhone `-122357-15fa` to `-124055-b330`; Android `-125434-2359` to `-132829-2e53`; Linux `-131713-5c3e` to `-132711-4c0e` |
 | Privacy scan of tracked PNGs | example domains, synthetic folders, expired pairing codes only; bars cropped; no metadata |

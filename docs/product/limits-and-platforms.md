@@ -93,6 +93,12 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   them can be lost. It clears the pause at its end time even when Posato is
   closed. Removing the package clears an active pause. An app whose desktop
   entry starts a script, an interpreter, or Flatpak cannot be paused.
+- On Linux, schedules start only while Posato is running. Closing its window
+  keeps it running with an icon in the status area, and **Open Posato at
+  login** in About Posato starts it in the background when you log in.
+  Without the GNOME AppIndicator extension, as on other desktops, there is
+  no status icon; Posato then stays in the background only while a pause or
+  a schedule is on, and you open it again from the applications menu.
 - On Android, website blocking runs as a local VPN that only answers name
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
@@ -128,6 +134,11 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On Android, the folder must be a local folder that another app keeps in
   sync, such as Syncthing; most cloud storage apps for Android do not keep a
   local folder in sync. On iPhone, Posato syncs the folder when you open it.
+- An exported `.posato` file holds pause set names, websites, the default
+  set, and schedules, never app choices. Without a code, anyone who gets the
+  file can read it. The nine-character code stops a casual reader, not
+  someone who spends a lot of computing power on guessing. An import is a
+  one-time copy, not sync, and imported schedules arrive switched off.
 - A workspace syncs through iCloud or through one folder, never both, and
   there is no move between them: remove the iCloud workspace before choosing
   a folder.

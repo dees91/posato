@@ -52,7 +52,7 @@ export const SyncPrivacy = ({ frame }: { readonly frame: number }) => {
       <div style={{ position: "absolute", left: 110, top: 80 }}><Wordmark size={38} /></div>
       <div style={{ position: "absolute", left: 110, top: 300, fontSize: 96, lineHeight: 1.05, fontWeight: 600, letterSpacing: "-0.04em", whiteSpace: "pre" }}>{sync.headline}</div>
       <div style={{ position: "absolute", left: 110, top: 912, fontSize: 32, color: colors.primary }}>{sync.line}</div>
-      <div style={{ position: "absolute", left: card.left, top: card.top, width: card.width, height: cardHeight, borderRadius: 14, backgroundColor: colors.surface, overflow: "hidden", scale: `${nudge}`, translate: `${30 * (1 - enter)}px 0` }}>
+      <div style={{ position: "absolute", left: card.left, top: card.top, width: card.width, height: cardHeight, borderRadius: 14, backgroundColor: colors.captureSurface, overflow: "hidden", scale: `${nudge}`, translate: `${30 * (1 - enter)}px 0` }}>
         {[sync.card.before, sync.card.after].map((capture, layer) => (
           <div key={capture} style={{ position: "absolute", inset: cardInset, overflow: "hidden", opacity: layer === 0 ? 1 : changed, maskImage: "linear-gradient(90deg, #000 82%, transparent)" }}>
             <Img src={staticFile(capture)} style={{ position: "absolute", width: 1272 * scale, maxWidth: "none", left: -cropLeft * scale, top: -cropTop * scale }} />

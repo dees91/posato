@@ -2,9 +2,10 @@
 # Drives Posato in the Linux Tart clone through posato-control and captures
 # the states DOCS-006 shows. Run from the repository root after
 # `build -t linux`, `linux create`, `install -t linux`, and `launch -t linux`
-# on a fresh clone, with no macOS clone running. Posato on Linux always draws
-# its light palette: Compose Desktop does not read the GNOME color scheme, so
-# these captures exist in light only. Nothing runs on the host Mac.
+# on a fresh clone, with no macOS clone running. Posato on Linux follows
+# GNOME's color scheme (LINUX-002): THEME=light (the default) or dark sets it
+# with gsettings before each step, and dark captures are named
+# `linux-<state>-dark`. Nothing runs on the host Mac.
 #
 #   video/capture/linux-captures.sh screen      # set the guest to 1280 x 961 so the maximized window matches the Mac aspect
 #   video/capture/linux-captures.sh first-run   # onboarding: the step that installs the pausing service, then the rest
@@ -13,7 +14,7 @@
 #   video/capture/linux-captures.sh session     # 45 minutes with Focus, then restrictions active, then ended early
 #   video/capture/linux-captures.sh schedules   # Deep work (weekdays 09:00-11:00) and Evening reading (daily 20:00-21:00)
 #   video/capture/linux-captures.sh folder      # a folder workspace in /mnt/shared/posato-sync, its pairing code, the linked section; then removed
-#   video/capture/linux-captures.sh collect DIR # crop the title bar, scale to 1272 x 936, and write each capture to DIR
+#   video/capture/linux-captures.sh collect DIR # crop the title bar, scale to 1272 x 936, and write each capture of THEME to DIR
 #
 # Raw captures land in build/verification/runs/<run-id>/screenshots/.
 set -euo pipefail
@@ -23,7 +24,17 @@ RUNS="${RUNS_DIR:-build/verification/runs}"
 NAMES=(linux-first-run linux-websites linux-duration-45 linux-active-45 linux-schedules linux-add-device linux-folder-sync)
 pc() { "${PC}" "$1" -t linux "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["result"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
-shot() { echo "capture ${1}"; pc screenshot --name "$1" | ok; }
+has() { pc find "$@" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; }
+THEME="${THEME:-light}"
+suffix() { [ "${THEME}" = dark ] && echo "-dark" || true; }
+shot() { echo "capture ${1}$(suffix)"; pc screenshot --name "${1}$(suffix)" | ok; }
+# Posato re-reads the scheme when dconf rewrites the user's settings folder.
+theme() {
+  local scheme=default
+  [ "${THEME}" = dark ] && scheme=prefer-dark
+  "${PC}" linux exec --script "dbus-run-session -- gsettings set org.gnome.desktop.interface color-scheme ${scheme}" | ok >/dev/null
+  sleep 2
+}
 
 screen() {
   # The Linux window opens maximized; a 1280 x 961 screen leaves a 1280 x 942
@@ -91,8 +102,12 @@ session() {
 }
 
 schedules() {
-  "${PC}" flow schedule -t linux --name "Deep work" --start 09:00 --end 11:00 --set Focus --days weekdays | ok
-  "${PC}" flow schedule -t linux --name "Evening reading" --start 20:00 --end 21:00 --set Evening --days every | ok
+  # flow schedule adds a row each time, so a second theme only opens the list.
+  pc tap --text "Schedules" --role button | ok
+  if ! has --text "Actions for Deep work" --role button; then
+    "${PC}" flow schedule -t linux --name "Deep work" --start 09:00 --end 11:00 --set Focus --days weekdays | ok
+    "${PC}" flow schedule -t linux --name "Evening reading" --start 20:00 --end 21:00 --set Evening --days every | ok
+  fi
   pc wait --for exists --text "Actions for Evening reading" --role button --timeout-seconds 20 | ok
   shot linux-schedules
 }
@@ -109,10 +124,10 @@ folder() {
 collect() {
   local out="${1:?output directory}"
   mkdir -p "${out}"
-  for name in "${NAMES[@]}"; do
-    local source
+  for base in "${NAMES[@]}"; do
+    local source name="${base}$(suffix)"
     source="$(ls -t "${RUNS}"/*/screenshots/"${name}.png" 2>/dev/null | head -1 || true)"
-    test -n "${source}" || { echo "No run holds screenshots/${name}.png" >&2; exit 1; }
+    test -n "${source}" || { echo "No run holds screenshots/${name}.png; skipped" >&2; continue; }
     python3 - "${source}" "${out}/${name}.png" <<'EOF'
 import io, sys
 from PIL import Image
@@ -132,6 +147,9 @@ EOF
   done
 }
 
+case "${1:-}" in
+  first-run|websites|session|schedules|folder) theme ;;
+esac
 case "${1:-}" in
   screen) screen ;;
   first-run) first_run ;;

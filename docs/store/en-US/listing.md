@@ -28,8 +28,8 @@ The description is [description.txt](description.txt), the exact text
 `posato-provisioning store prepare --description` uploads. Since 1.2 it adds
 schedules, schedule sync, the one-time Mac setup, and the advice to update
 every device; 1.3 adds pause sets and Intel Macs; 1.4 adds the longer quick
-choices; 1.5 adds folder sync, joining by QR code or link, and Posato on
-Linux. It does not name Android, because App Review guideline 2.3.10 does not
+choices; 1.5 adds folder sync, joining by QR code, export and import, and
+Posato on Linux. It does not name Android, because App Review guideline 2.3.10 does not
 allow other mobile platforms in the metadata. Earlier text is in Git history.
 
 ## Keywords

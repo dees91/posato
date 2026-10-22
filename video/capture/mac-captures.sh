@@ -6,9 +6,10 @@
 # the pause set fixture: the first set renamed to Focus with example.com and
 # example.net, and a second set, Evening, with example.net. Before 1.5 the
 # Evening reading row warned that apps weren't chosen unless Chess was chosen
-# in Evening; since TARGETS-011 it shows no notice either way. The guest is switched
-# to Dark Mode with `vm exec --script "defaults write -g AppleInterfaceStyle
-# Dark"` before the app launches. Nothing runs on the host Mac.
+# in Evening; since TARGETS-011 it shows no notice either way. The guest stays
+# in Light Mode, as on posato.app (`vm exec --script "defaults delete -g
+# AppleInterfaceStyle"` before the app launches if a golden was left dark).
+# Nothing runs on the host Mac.
 #
 #   video/capture/mac-captures.sh apps               # Focus, Apps tab: empty, then Chess chosen
 #   video/capture/mac-captures.sh sets               # Pause sets: Focus (default) and Evening
@@ -17,6 +18,12 @@
 #   video/capture/mac-captures.sh schedules HH:MM    # a weekday plan alone, then with a daily Evening plan starting at HH:MM
 #   video/capture/mac-captures.sh evening HH:MM      # only the daily plan, when schedules stopped after Deep work
 #   video/capture/mac-captures.sh scheduled          # after HH:MM: the scheduled pause running
+#   video/capture/mac-captures.sh folder             # a folder workspace in the guest's ~/PosatoSync and its Add a device code
+#   video/capture/mac-captures.sh unfolder           # close the code and remove the workspace, so the code expires with it
+#
+# For the folder step, `posato-control relay --line primary --android SERIAL`
+# copies the workspace to the phone, where `android-captures.sh join` shows
+# the code step while the Mac's code is still open.
 #
 # Raw captures land in build/verification/runs/<run-id>/guest/screenshots/;
 # collect them with video/capture/collect.sh.
@@ -153,6 +160,20 @@ scheduled() {
   shot mac-scheduled-active
 }
 
+folder() {
+  ready
+  pc tap --text "Session" --role button | ok
+  "${PC}" vm exec --line "${VM}" --script 'mkdir -p "$HOME/PosatoSync"' | ok >/dev/null
+  "${PC}" flow folder link -t desktop --vm "${VM}" --path "${SYNC_DIR:-/Users/posato/PosatoSync}" | ok
+  "${PC}" flow folder offer -t desktop --vm "${VM}" | ok >/dev/null
+  shot mac-add-device
+}
+
+unfolder() {
+  "${PC}" flow folder done -t desktop --vm "${VM}" | ok
+  "${PC}" flow folder remove -t desktop --vm "${VM}" | ok
+}
+
 case "${1:-}" in
   apps) apps ;;
   sets) sets ;;
@@ -161,5 +182,7 @@ case "${1:-}" in
   schedules) schedules "${2:-}" ;;
   evening) evening "${2:-}" ;;
   scheduled) scheduled ;;
-  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled" >&2; exit 2 ;;
+  folder) folder ;;
+  unfolder) unfolder ;;
+  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder" >&2; exit 2 ;;
 esac

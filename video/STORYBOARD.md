@@ -1,6 +1,6 @@
 # Posato showcase storyboard
 
-- **Revision:** 6 (2026-10-21, `DOCS-006`: Posato 1.5 on Mac, iPhone, Linux, and Android; the hero's sync scene shows one pause set changing and reaching all four, and names folder sync, the close names the platforms, and the README stills pair a computer with a phone across platforms)
+- **Revision:** 7 (2026-10-22, `DOCS-006`: Posato 1.5 on Mac, iPhone, Linux, and Android; the hero's sync scene shows one pause set changing and reaching all four, and names folder sync, the close names the platforms; `user-confirmed` 2026-10-22: every capture is in the light appearance and the README stills pair the Mac with a phone)
 - **Format:** `Hero` 24 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
 - **Audience:** someone meeting Posato on GitHub or posato.app who has ten seconds to decide whether it is for them.
 - **Executable projection:** `src/storyboard.ts`. Copy, frame numbers, targets, and captures live there; `src/storyboard.test.ts` enforces this document's rules.
@@ -14,9 +14,10 @@ Show, without sound and at 960 pixels wide, that Posato is a pause you set up yo
 The first rule covers every output. The rest govern the walkthrough and the stills; the hero section below states how the hero differs.
 
 - Real captures with synthetic choices only: two pause sets with neutral names (`Focus`, the default, and `Evening`), `example.com`, `example.net`, the built-in Chess application on the Mac, one unnamed built-in app on the iPhone, and two schedules with neutral names (`Deep work`, `Evening reading`). No account, notification, real domain, device name, or home path may appear.
-- Captures sit in the same generic bezels as posato.app: a graphite display bezel on a moss-to-sage wallpaper for a computer (Mac or Linux), a rounded graphite phone bezel for a phone (iPhone or Android), each with a one-pixel outline. No Apple, Linux, or Android artwork, base, or shadow.
+- Captures sit in the same generic bezels as posato.app: a graphite display bezel on a moss-to-sage wallpaper for the Mac, a rounded graphite phone bezel for a phone (iPhone or Android), each with a one-pixel outline. No Apple, Linux, or Android artwork, base, or shadow.
 - Actions are shown by a springy arrow cursor with a click ring on the Mac and a fingertip dot with one ring on the iPhone. Captures crossfade over eight frames at the click; native pickers and the time wheels are elided. Since 1.2, a set-up Mac starts a pause without an administrator prompt, so none is elided.
 - A callout pill names each action while it happens. No stretch longer than 90 frames passes without a visible change.
+- Captures are in the light appearance, the warm `#F4F3EB` surface of `DESIGN.md`, on the dark video canvas; a container behind a crop uses that surface so the crop's edge does not show.
 - Zoom is gated to actions (at most 1.06x) and scenes overlap by six frames. Title cards use the product's dark tokens and the system font stack; no web fonts, music, stock footage, or particles.
 - The walkthrough's closing card fades fully to the canvas. The hero instead wipes back to its exact opening composition, so its loop has no cut.
 
@@ -98,18 +99,17 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `mac-schedules` | Deep work (Set: Focus) and Evening reading (Set: Evening) saved, each with its next run (the still and the site) |
 | `mac-scheduled-active` | Session during Evening reading: a scheduled pause is running with Set: Evening |
 | `iphone-websites` | Focus, Websites, both domains |
-| `iphone-pause-sets` | Pause sets: Focus (default) and Evening |
 | `iphone-apps-empty` | Apps tab, nothing chosen |
 | `iphone-apps` | one application chosen |
 | `iphone-duration-45` | setup with the set Focus and 45 minutes selected |
 | `iphone-active-45` | Session active |
 | `iphone-schedules` | Schedules with Deep work saved |
-| `linux-duration-45` | Linux: setup with the set Focus and 45 minutes selected (still and site) |
-| `linux-add-device` | Linux: Folder sync, Add a device with the QR code and a pairing code (still and site) |
+| `mac-add-device` | Folder sync, Add a device with the QR code and a pairing code (still and site) |
 | `android-websites` | Android: Focus, Websites, both domains (hero, still, and site) |
-| `android-join` | Android: joining a folder workspace with a pairing code (still and site) |
+| `android-active-45` | Android: Session active (social preview) |
+| `android-join` | Android: joining a folder workspace, the folder chosen and the pairing code step open (still and site) |
 
-The README stills pair a computer with a phone: websites on the Mac and Android, the 45-minute setup on Linux and the iPhone, schedules on the Mac and the iPhone, and folder pairing on Linux and Android.
+The README stills pair the Mac with a phone (`user-confirmed` 2026-10-22): websites with Android, the 45-minute setup and schedules with the iPhone, and folder pairing with Android. Linux appears in the hero's device row.
 
 ## Updating
 

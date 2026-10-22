@@ -85,7 +85,7 @@ ends. On a Mac, a one-time setup lets pauses and schedules start without asking
 for your password each time.
 
 <p align="center">
-  <a href=".github/assets/step-duration.png"><img src=".github/assets/step-duration.png" width="960" alt="Session setup on a Linux computer and an iPhone, side by side, with a 45-minute pause selected"></a>
+  <a href=".github/assets/step-duration.png"><img src=".github/assets/step-duration.png" width="960" alt="Session setup on a Mac and an iPhone, side by side, with a 45-minute pause selected"></a>
 </p>
 
 Screenshots and the demo show synthetic choices in the real apps on a Mac,
@@ -96,8 +96,7 @@ an iPhone, a Linux computer, and an Android phone; see the
 
 Add a schedule with a name, a pause set, weekdays, and hours, such as weekday
 mornings from 9 to 11. It starts and ends on its own on each device you set up, even with
-the Mac window, the iPhone app, or the Android app closed; on Linux, keep
-Posato open. Skip the next one or end one
+Posato's window or app closed. Skip the next one or end one
 early when plans change. When pauses overlap, Posato pauses everything in
 their sets, within each device's limits, and each item stays paused until the
 last pause that includes it ends. On Mac and iPhone, Posato can tell you when a pause ends or when one
@@ -122,16 +121,27 @@ To link any mix of Mac, iPhone, Linux, and Android, keep the workspace in a
 folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service
 keeps in sync. Posato writes only encrypted files there. A workspace uses
 iCloud or one folder, never both. Create the workspace on one device, then
-choose **Add a device** there. On the other device, choose its copy of the
-same folder, then scan the QR code with its camera, open the shared link, or
-type the pairing code. The code works for 10 minutes. A device that joins
+choose **Add a device** there. On the other device, take two steps in either
+order: choose its copy of the same folder, and scan the QR code with the
+phone's camera, open the shared link, or type the pairing code. It joins as
+soon as it has both. The code works for 10 minutes. A device that joins
 during a pause starts pausing right away. You cannot remove a single device;
 to stop sharing with one, remove the workspace and create a new one in
 another folder.
 
 <p align="center">
-  <a href=".github/assets/step-folder.png"><img src=".github/assets/step-folder.png" width="960" alt="Add a device on a Linux computer with a QR code and a pairing code, and an Android phone joining the same folder workspace with the code"></a>
+  <a href=".github/assets/step-folder.png"><img src=".github/assets/step-folder.png" width="960" alt="Add a device on a Mac with a QR code and a pairing code, and an Android phone joining the same folder workspace, with the folder chosen and the code step open"></a>
 </p>
+
+### Copy pause sets with a file
+
+To set up a device outside your workspace, such as a Mac on another Apple
+Account, choose **Export pause sets…** from the **…** menu in **Pause sets**.
+The `.posato` file holds your pause sets with their websites, the default
+set, and your schedules, never app choices. **Protect with a code** encrypts
+it with a nine-character code that Posato shows once. On the other device,
+choose **Import…** to add the sets to yours or replace them; imported
+schedules arrive switched off. It is a one-time copy, not sync.
 
 ## Limits
 
@@ -149,7 +159,10 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - **Linux:** websites are blocked by name through `/etc/hosts`, with no pause
   page; a browser with its own DNS over HTTPS bypasses it. Paused apps are
   ended, so save your work first. A system service, installed once with your
-  password, ends the pause on time even when Posato is closed.
+  password, ends the pause on time even when Posato is closed. Closing the
+  window keeps Posato running with an icon in the status area; without the
+  GNOME AppIndicator extension, as on other desktops, there is no icon, and
+  Posato stays in the background only while a pause or a schedule is on.
 - **Android:** websites are blocked by name through a local VPN, with no
   pause page; another VPN cannot run during a pause, and strict Private DNS
   or a browser with its own DNS over HTTPS bypasses it. A paused app is

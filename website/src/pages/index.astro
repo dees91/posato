@@ -5,8 +5,8 @@ import androidJoin from "../../../video/public/android-join.png";
 import androidWebsites from "../../../video/public/android-websites.png";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
-import linuxAddDevice from "../../../video/public/linux-add-device.png";
-import linuxDuration from "../../../video/public/linux-duration-45.png";
+import macAddDevice from "../../../video/public/mac-add-device.png";
+import macDuration from "../../../video/public/mac-duration-45.png";
 import macSchedules from "../../../video/public/mac-schedules.png";
 import macWebsites from "../../../video/public/mac-websites.png";
 
@@ -110,10 +110,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
-            src={linuxDuration}
+            src={macDuration}
             widths={[480, 636, 960, 1272]}
             sizes="(max-width: 600px) 70vw, 36rem"
-            alt="Session setup on a Linux computer with the pause set Focus and a 45-minute pause selected"
+            alt="Session setup on a Mac with the pause set Focus and a 45-minute pause selected"
           />
         </div>
       </div>
@@ -135,8 +135,8 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
     <h2 id="schedules">Plan pauses ahead</h2>
     <p class="prose">
       Add a schedule with a name, a pause set, weekdays, and hours, such as weekday mornings from 9 to
-      11. It starts and ends on its own on each device you set up, even with the Mac window, the iPhone
-      app, or the Android app closed; on Linux, keep Posato open. Skip the next one or end one early when plans change. When pauses overlap,
+      11. It starts and ends on its own on each device you set up, even with Posato's window or app
+      closed. Skip the next one or end one early when plans change. When pauses overlap,
       Posato pauses everything in their sets, within each device's limits, and each item stays paused
       until the last pause that includes it ends. On Mac and iPhone, Posato can tell you when a pause ends or when one starts on another device.
     </p>
@@ -185,9 +185,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       To link any mix of Mac, iPhone, Linux, and Android, keep the workspace in a folder that Dropbox,
       OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted
       files there. A workspace uses iCloud or one folder, never both. Create the workspace on one
-      device, then choose <strong>Add a device</strong> there. On the other device, choose its copy of
-      the same folder, then scan the QR code with its camera, open the shared link, or type the pairing
-      code. The code works for 10 minutes. A device that joins during a pause starts pausing right away.
+      device, then choose <strong>Add a device</strong> there. On the other device, take two steps in
+      either order: choose its copy of the same folder, and scan the QR code with the phone's camera,
+      open the shared link, or type the pairing code. It joins as soon as it has both. The code works
+      for 10 minutes. A device that joins during a pause starts pausing right away.
       You cannot remove a single device; to stop sharing with one, remove the workspace and create a
       new one in another folder.
     </p>
@@ -196,10 +197,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <div class="device device-desktop shot-desktop">
         <div class="device-screen">
           <Image
-            src={linuxAddDevice}
+            src={macAddDevice}
             widths={[480, 636, 960, 1272]}
             sizes="(max-width: 600px) 70vw, 36rem"
-            alt="Add a device on a Linux computer, with a QR code and a one-time pairing code"
+            alt="Add a device on a Mac, with a QR code and a one-time pairing code"
           />
         </div>
       </div>
@@ -209,11 +210,24 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
             src={androidJoin}
             widths={[160, 330, 660]}
             sizes="(max-width: 600px) 24vw, 12rem"
-            alt="An Android phone joining the folder workspace with a pairing code"
+            alt="An Android phone joining the folder workspace: the folder is chosen and the pairing code step is open"
           />
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="step" aria-labelledby="export">
+    <h2 id="export">Copy pause sets with a file</h2>
+    <p class="prose">
+      To set up a device outside your workspace, such as a Mac on another Apple Account, choose
+      <strong>Export pause sets…</strong> from the <strong>…</strong> menu in <strong>Pause sets</strong>.
+      The <code>.posato</code> file holds your pause sets with their websites, the default set, and your
+      schedules, never app choices. <strong>Protect with a code</strong> encrypts it with a
+      nine-character code that Posato shows once. On the other device, choose <strong>Import…</strong>
+      to add the sets to yours or replace them; imported schedules arrive switched off. It is a one-time
+      copy, not sync.
+    </p>
   </section>
 
   <section aria-labelledby="limits">
@@ -235,7 +249,9 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         <strong>Linux:</strong> websites are blocked by name through <code>/etc/hosts</code>, with no
         pause page; a browser with its own DNS over HTTPS bypasses it. Paused apps are ended, so save
         your work before a session starts. A system service, installed once with your password, ends
-        the pause on time even when Posato is closed.
+        the pause on time even when Posato is closed. Closing the window keeps Posato running with an
+        icon in the status area; without the GNOME AppIndicator extension, as on other desktops, there
+        is no icon, and Posato stays in the background only while a pause or a schedule is on.
       </li>
       <li>
         <strong>Android:</strong> websites are blocked by name through a local VPN, with no pause page;

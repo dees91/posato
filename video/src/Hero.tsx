@@ -39,7 +39,7 @@ const HeroFrame = ({ frame }: { readonly frame: number }) => {
           ) : null}
           <div style={{ opacity: sameHeadline ? 1 : Math.max(0, progress * 2 - 1), translate: `0 ${sameHeadline ? 0 : 20 * (1 - progress)}px` }}>{current.headline}</div>
         </div>
-        <div style={{ position: "absolute", left, top, width, height, overflow: "hidden", borderRadius: 14, backgroundColor: colors.surface }}>
+        <div style={{ position: "absolute", left, top, width, height, overflow: "hidden", borderRadius: 14, backgroundColor: colors.captureSurface }}>
           {[previous, current].map((shot, layer) => (
             <AbsoluteFill key={layer} style={{ inset: cropPadding, width: width - cropPadding * 2, height: height - cropPadding * 2, overflow: "hidden", clipPath: layer === 0 ? undefined : `inset(0 ${(1 - progress) * 100}% 0 0)` }}>
             <Img

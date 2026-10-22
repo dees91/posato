@@ -255,12 +255,12 @@ export const WALKTHROUGH: readonly StoryScene[] = [
   { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
 
-/** Each README step pairs a computer with a phone; across the steps every platform appears twice. */
+/** Each README step pairs a Mac with a phone (user-confirmed 2026-10-22); Linux appears in the hero's device row. */
 export const STILLS = {
   StepWebsites: { desktop: "mac-websites.png", phone: "android-websites.png" },
-  StepDuration: { desktop: "linux-duration-45.png", phone: "iphone-duration-45.png" },
+  StepDuration: { desktop: "mac-duration-45.png", phone: "iphone-duration-45.png" },
   StepSchedules: { desktop: "mac-schedules.png", phone: "iphone-schedules.png" },
-  StepFolder: { desktop: "linux-add-device.png", phone: "android-join.png" },
+  StepFolder: { desktop: "mac-add-device.png", phone: "android-join.png" },
 } as const;
 
 export const SOCIAL_PREVIEW = {

@@ -1,4 +1,4 @@
-// Dark-appearance tokens from DESIGN.md ("Semantic palette"). The bezel color
+// Dark-appearance tokens from DESIGN.md for the video canvas ("Semantic palette"). The bezel color
 // is the website's `--bezel` from website/src/styles/site.css, not a DESIGN.md
 // token, so that the video frames match the site frames exactly.
 export const colors = {
@@ -15,6 +15,8 @@ export const colors = {
   warmWhite: "#FFFEFA",
   ink: "#18231F",
   bezel: "#0F1411",
+  /** DESIGN.md's light surface: the captures are light, so a crop's container matches them. */
+  captureSurface: "#F4F3EB",
 } as const;
 
 export const fonts = {

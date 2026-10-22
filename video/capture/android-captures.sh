@@ -2,9 +2,10 @@
 # Drives Posato on a connected, unlocked Android phone through posato-control
 # and captures the states the site, the README, and the release need, without
 # a hand on the phone. Run from the repository root after `build -t android`.
-# ANDROID_SERIAL names the phone; THEME=dark (the default) or light switches
-# the system theme first and names light captures `android-<state>-light`.
-# A theme switch recreates Posato's screen, so each step starts from Session.
+# ANDROID_SERIAL names the phone; THEME=light (the default, as on posato.app)
+# or dark switches the system theme first with `appearance` and names dark
+# captures `android-<state>-dark`. A theme switch recreates Posato's screen,
+# so each step starts from Session.
 #
 # The fixture matches the Mac and iPhone captures: two pause sets, Focus (the
 # first set, renamed and the default, with the two synthetic domains and the
@@ -17,19 +18,20 @@
 #   video/capture/android-captures.sh session    # 45 minutes, review, active, block screen over Calculator, ended early
 #   video/capture/android-captures.sh schedules  # Deep work and Evening reading, then the Pause sets list that uses them
 #   video/capture/android-captures.sh offer DIR  # creates a folder workspace in DIR and shows Add a device
-#   video/capture/android-captures.sh join DIR   # DIR holds another device's workspace: the pairing code step
+#   video/capture/android-captures.sh join DIR   # DIR holds another device's workspace: folder chosen, the code step open
 set -euo pipefail
 
 PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
 SERIAL="${ANDROID_SERIAL:?set ANDROID_SERIAL to the adb serial of the phone}"
-THEME="${THEME:-dark}"
+THEME="${THEME:-light}"
 pc() { "${PC}" "$1" -t android --udid "${SERIAL}" "${@:2}"; }
 flow() { "${PC}" flow "$1" -t android --udid "${SERIAL}" "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
+has() { pc find "$@" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; }
 # Navigation and the theme switch animate; a capture waits for them to settle.
 shot() {
   local name="android-$1"
-  [ "${THEME}" = light ] && name="${name}-light"
+  [ "${THEME}" = dark ] && name="${name}-dark"
   sleep 1.5
   echo "capture ${name}"
   pc screenshot --name "${name}" | ok
@@ -38,9 +40,7 @@ steps() {
   printf '{"version":1,"launch":{"terminateExisting":false},"defaults":{"timeoutSeconds":30},"steps":%s}' "$1" | pc run --scenario - | ok
 }
 theme() {
-  local night=yes
-  [ "${THEME}" = light ] && night=no
-  adb -s "${SERIAL}" shell cmd uimode night "${night}" >/dev/null
+  pc appearance "${THEME}" | ok
   sleep 2
   pc launch | ok
 }
@@ -48,16 +48,6 @@ home() {
   pc wait --for exists --text "Session" --role button --timeout-seconds 60 | ok
   pc tap --text "Session" --role button | ok
 }
-found() { pc find "$@" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; }
-# The Folder sync row expands on a tap and stays expanded until the next launch.
-open_folder_sync() {
-  home
-  steps '[{"name":"reveal","action":"scrollTo","query":{"textContains":"Folder sync","role":"button"}}]'
-  if ! found --text "Use another folder" --role button && ! found --text "Use this folder" --role button; then
-    pc tap --text-contains "Folder sync" --role button | ok
-  fi
-}
-
 first_run() {
   theme
   pc wait --for exists --text "Make some space" --role button --timeout-seconds 60 | ok
@@ -135,8 +125,12 @@ schedules() {
   home
   # Run it outside both plans (weekdays 09:00 to 11:00, daily 20:00 to 21:00),
   # or the plan that is due starts a pause during the run.
-  flow schedule --name "Deep work" --set Focus --days weekdays --start 09:00 --end 11:00 | ok
-  flow schedule --name "Evening reading" --set Evening --start 20:00 --end 21:00 | ok
+  # flow schedule adds a row each time, so a second theme only opens the list.
+  pc tap --text "Schedules" --role button | ok
+  if ! has --text "Actions for Deep work" --role button; then
+    flow schedule --name "Deep work" --set Focus --days weekdays --start 09:00 --end 11:00 | ok
+    flow schedule --name "Evening reading" --set Evening --start 20:00 --end 21:00 | ok
+  fi
   shot schedules
   pc tap --text "Pause sets" --role button | ok
   pc wait --for exists --text-contains "Used by Deep work" --role button --timeout-seconds 30 | ok
@@ -152,27 +146,12 @@ offer() {
   pc tap --text "Done" --role button | ok
 }
 
+# Since SYNC-026 joining is two steps in either order: choosing the folder
+# that already holds a workspace leaves the code step open, which is captured.
 join() {
   theme
-  open_folder_sync
-  # A device that left a workspace offers its last folder first.
-  steps '[{"name":"another-reveal","action":"scrollTo","optional":true,"timeoutSeconds":10,"query":{"text":"Use another folder","role":"button"}},
-    {"name":"another","action":"tap","optional":true,"timeoutSeconds":5,"query":{"text":"Use another folder","role":"button"}}]'
-  steps '[{"name":"field","action":"scrollTo","query":{"role":"textField"}}]'
-  pc type --role textField --input "$1" --clear | ok
-  steps '[{"name":"use-reveal","action":"scrollTo","query":{"text":"Use this folder","role":"button"}},
-    {"name":"use","action":"tap","query":{"text":"Use this folder","role":"button"}},
-    {"name":"sync-reveal","action":"scrollTo","query":{"text":"Sync with this folder","role":"button"}},
-    {"name":"sync","action":"tap","query":{"text":"Sync with this folder","role":"button"}}]'
+  flow folder link --path "$1" | ok
   pc wait --for exists --text "Join" --role button --timeout-seconds 60 | ok
-  shot_join
-}
-
-# The pairing code step is lost when the theme switch recreates the screen,
-# so each theme walks to it again.
-shot_join() {
-  steps '[{"name":"reveal","action":"scrollTo","query":{"text":"Check again","role":"button"}}]'
-  adb -s "${SERIAL}" shell input swipe 540 1500 540 1200 400
   shot join
 }
 

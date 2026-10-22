@@ -2,12 +2,14 @@ Posato 1.5
 
 Sync through a folder: instead of iCloud, keep your workspace in a folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted files there. A workspace uses iCloud or one folder, never both; to switch, remove the iCloud workspace first. Folder sync also links the new Posato for Linux and Android.
 
-Add a device: in a folder workspace, choose Add a device to show a one-time pairing code that works for 10 minutes, as a QR code or a link to copy. There is no way to remove a single device; to stop sharing with one, remove the workspace and create a new one in another folder.
+Add a device: in a folder workspace, choose Add a device to show a one-time pairing code that works for 10 minutes, as a QR code or a link to copy. To join on this Mac, choose the same folder and type the code, in either order; Posato joins as soon as it has both. There is no way to remove a single device; to stop sharing with one, remove the workspace and create a new one in another folder.
 
-A device that joins during another device's pause now starts pausing right away.
+Export and import: choose Export pause sets… in the … menu of Pause sets to save your sets, their websites, the default set, and your schedules to a file, optionally protected by a code that Posato shows once. Import… on another device adds them or replaces its sets. App choices stay on each device.
 
 Pause sets: duplicate a set from its menu; a set with websites and no apps chosen on this Mac no longer shows a warning; and the Pause sets list shows chosen apps at once.
 
-The sync section shows when this Mac last synced, and the Posato window no longer opens with only its toolbar.
+A warmer light look, the sync section shows when this Mac last synced, and the Posato window no longer opens with only its toolbar.
+
+Fixes: a Mac that renamed its first pause set or chose another default before linking keeps them when it creates a workspace, and a device that joins during another device's pause now starts pausing right away.
 
 During a pause, Posato does not install the update; install it after the pause ends.

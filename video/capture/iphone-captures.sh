@@ -3,7 +3,8 @@
 # and captures the states the storyboard needs, without a hand on the phone.
 # Run from the repository root after `build -t device --driver`, a fresh
 # `install -t device`, `launch -t device`, and `first-install-skip.json`. It
-# puts the phone in Dark Mode itself with `appearance -t device dark`. The fixture is two pause sets, Focus (the first set,
+# sets the phone's appearance itself with `appearance -t device`: THEME=light
+# (the default, as on posato.app) or dark. The fixture is two pause sets, Focus (the first set,
 # renamed, with the two synthetic domains and one built-in application:
 # Calculator, which Posato shows only as a count) and Evening (example.net),
 # and one schedule named Deep work, which `schedules` deletes again so the
@@ -160,7 +161,7 @@ schedules() {
 }
 
 case "${1:-}" in
-  websites|apps|session|schedules) pc appearance dark | ok ;;
+  websites|apps|session|schedules) pc appearance "${THEME:-light}" | ok ;;
 esac
 case "${1:-}" in
   websites) websites ;;
