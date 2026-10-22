@@ -35,6 +35,12 @@ follow the process in [`AGENTS.md`](../../AGENTS.md#code-review) and the
   is empty, or, after a rebase, each differing path's own change in the pull
   request is the same patch. The check also fails when a cited run has no
   directory.
+- A change to an application screen (its layout, labels, accessibility
+  names, or flow) updates the `posato-control` flows, the
+  `tools/posato-control/fixtures/scenarios/` files, and the
+  `.agents/skills/verify-posato/` pages that drive that screen, or the pull
+  request states that none drive it. Flag a stale recipe as `Required`: the
+  next verification run otherwise fails on a screen it no longer matches.
 - A decision labelled `agent-delegated` may stand in a task record or pull
   request, but block its promotion into an ADR, `DESIGN.md`, or a product or
   security document until it is `user-confirmed`; "accepted without
