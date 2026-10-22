@@ -4,7 +4,7 @@
 # Run from the repository root after `build -t device --driver`, a fresh
 # `install -t device`, `launch -t device`, and `first-install-skip.json`. It
 # sets the phone's appearance itself with `appearance -t device`: THEME=light
-# (the default, as on posato.app) or dark. The fixture is two pause sets, Focus (the first set,
+# (the default, as on posato.app) or dark, whose captures end in `-dark`. The fixture is two pause sets, Focus (the first set,
 # renamed, with the two synthetic domains and one built-in application:
 # Calculator, which Posato shows only as a count) and Evening (example.net),
 # and one schedule named Deep work, which `schedules` deletes again so the
@@ -20,7 +20,13 @@ PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
 SCENARIOS="tools/posato-control/fixtures/scenarios"
 pc() { "${PC}" "$1" -t device "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
-shot() { echo "capture ${1}"; pc screenshot --name "$1" | ok; }
+# Dark captures are named `<name>-dark`, so a dark run never replaces the light files.
+shot() {
+  local name="$1"
+  [ "${THEME:-light}" = dark ] && name="${name}-dark"
+  echo "capture ${name}"
+  pc screenshot --name "${name}" | ok
+}
 ready() { pc wait --for exists --text "Pause sets" --role button --timeout-seconds 60 | ok; }
 open_sets() {
   pc tap --text "Pause sets" --role button | ok

@@ -163,8 +163,10 @@ scheduled() {
 folder() {
   ready
   pc tap --text "Session" --role button | ok
-  "${PC}" vm exec --line "${VM}" --script 'mkdir -p "$HOME/PosatoSync"' | ok >/dev/null
-  "${PC}" flow folder link -t desktop --vm "${VM}" --path "${SYNC_DIR:-/Users/posato/PosatoSync}" | ok
+  # The relay reaches a Mac guest's $HOME/PosatoSync; the path is read from the guest.
+  local dir
+  dir="$("${PC}" vm exec --line "${VM}" --script 'mkdir -p "$HOME/PosatoSync" && printf %s "$HOME/PosatoSync"' | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["stdout"])')"
+  "${PC}" flow folder link -t desktop --vm "${VM}" --path "${dir}" | ok
   "${PC}" flow folder offer -t desktop --vm "${VM}" | ok >/dev/null
   shot mac-add-device
 }

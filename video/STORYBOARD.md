@@ -17,7 +17,7 @@ The first rule covers every output. The rest govern the walkthrough and the stil
 - Captures sit in the same generic bezels as posato.app: a graphite display bezel on a moss-to-sage wallpaper for the Mac, a rounded graphite phone bezel for a phone (iPhone or Android), each with a one-pixel outline. No Apple, Linux, or Android artwork, base, or shadow.
 - Actions are shown by a springy arrow cursor with a click ring on the Mac and a fingertip dot with one ring on the iPhone. Captures crossfade over eight frames at the click; native pickers and the time wheels are elided. Since 1.2, a set-up Mac starts a pause without an administrator prompt, so none is elided.
 - A callout pill names each action while it happens. No stretch longer than 90 frames passes without a visible change.
-- Captures are in the light appearance, the warm `#F4F3EB` surface of `DESIGN.md`, on the dark video canvas; a container behind a crop uses that surface so the crop's edge does not show.
+- Captures are in the light appearance, the warm `#F4F3EB` surface of `DESIGN.md`, on the dark video canvas (until their recapture, `iphone-apps-empty`, `iphone-apps`, and `iphone-active-45` are still dark); a container behind a crop uses that surface so the crop's edge does not show.
 - Zoom is gated to actions (at most 1.06x) and scenes overlap by six frames. Title cards use the product's dark tokens and the system font stack; no web fonts, music, stock footage, or particles.
 - The walkthrough's closing card fades fully to the canvas. The hero instead wipes back to its exact opening composition, so its loop has no cut.
 

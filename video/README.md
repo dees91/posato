@@ -76,14 +76,15 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures come from the product tree of revision `d0b34fa1` (the `main`
+All captures except three iPhone captures named below come from the product tree of revision `d0b34fa1` (the `main`
 head of Posato 1.5 that `DOCS-006` captured on 2026-10-22), driven through
 `posato-control` by the scripts in `capture/` without a hand on any
 device, and reduced with FFmpeg or PIL only: Mac frames to 1272 pixels
 wide, iPhone and Android frames to 660 pixels wide. No label, timer value,
 service result, or application UI has been reconstructed or retouched.
-Every tracked capture is in the light appearance (`user-confirmed`
-2026-10-22); earlier dark captures are in Git history.
+Tracked captures are in the light appearance (`user-confirmed`
+2026-10-22), except the three iPhone captures listed below, which are
+recaptured before merge; earlier dark captures are in Git history.
 
 - `mac-*.png`: development-signed Posato in a disposable Tart VM on macOS 26
   in Light Mode, never on the maintainer's Mac. The fixture is two pause

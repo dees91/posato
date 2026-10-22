@@ -96,9 +96,11 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On Linux, schedules start only while Posato is running. Closing its window
   keeps it running with an icon in the status area, and **Open Posato at
   login** in About Posato starts it in the background when you log in.
-  Without the GNOME AppIndicator extension, as on other desktops, there is
-  no status icon; Posato then stays in the background only while a pause or
-  a schedule is on, and you open it again from the applications menu.
+  On a desktop whose status area does not show app icons, such as GNOME
+  without the AppIndicator extension, there is no icon; Posato then stays
+  in the background only while a pause runs or a schedule is on, and you
+  open it again from the applications menu. Quitting Posato stops new
+  scheduled starts.
 - On Android, website blocking runs as a local VPN that only answers name
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not

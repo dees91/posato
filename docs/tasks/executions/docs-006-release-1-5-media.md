@@ -44,7 +44,8 @@ marked otherwise.
   and the first-set fix. The Linux "keep Posato open" caveat is gone.
 - **Privacy policy** for 1.5 from the code, with main's Export and import
   section after the blocking sections.
-- **Captures** in light from `d0b34fa1`; `video/README.md` has provenance.
+- **Captures** in light from `d0b34fa1`, except the iPhone below;
+  `video/README.md` has provenance.
 
 ## Open for the maintainer
 
@@ -53,15 +54,19 @@ marked otherwise.
   read (`kAXErrorServerNotFound`), so `screen-time-consent.json` stops at
   `system-done`. `iphone-schedules` therefore shows the Allow Screen Time
   card, and `iphone-apps-empty`, `iphone-apps`, and `iphone-active-45` are
-  still dark. After the phone is restarted and unlocked, rerun
+  still dark, so `step-schedules` and the social preview are not ready.
+  Merge blocker: after the phone is restarted and unlocked, rerun
   `iphone-captures.sh apps`, `session`, and `schedules`, collect, and
-  `npm run media` before merge.
+  `npm run media`, then upload the social preview by hand.
 - Left to `RELEASE-007`: check the x86-64 `.deb` and date the policy.
 
 ## Review
 
 - Independent agents, 2026-10-21 (two passes): no Critical; Required
   fixed (privacy gaps, alt text, pairing expiry, the Linux schedule claim).
+- Independent agent, 2026-10-22: no Critical; Required fixed (the Linux
+  icon wording, `AC-03` and `AC-06` amended, provenance qualified); the
+  iPhone recapture stays the merge blocker above.
 
 ## GitHub release notes for 1.5.0
 
@@ -108,7 +113,7 @@ the release commit signs, are
 
 | Check | Result |
 | --- | --- |
-| `./gradlew qualityLint` | passed on the final head |
+| `./gradlew qualityLint` | passed after the review fixes |
 | `website/` `npm run build`; wide and phone renders | passed: 5 pages, light stills, no overflow at 390 px |
 | `video/` `npm run media` (check, renders, `verify`) | passed: GIF 2,043,946 bytes, site MP4 559,638 bytes |
 | Captures (`build/verification/runs/`), 2026-10-22 | Mac `20261022-124124-44d8` to `-131644-748f`; iPhone `-122357-15fa` to `-124055-b330`; Android `-125434-2359` to `-132829-2e53`; Linux `-131713-5c3e` to `-132711-4c0e` |

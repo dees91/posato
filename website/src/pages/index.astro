@@ -135,8 +135,8 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
     <h2 id="schedules">Plan pauses ahead</h2>
     <p class="prose">
       Add a schedule with a name, a pause set, weekdays, and hours, such as weekday mornings from 9 to
-      11. It starts and ends on its own on each device you set up, even with Posato's window or app
-      closed. Skip the next one or end one early when plans change. When pauses overlap,
+      11. It starts and ends on its own on each device you set up, even with Posato's window closed on a
+      computer or the app closed on a phone. Skip the next one or end one early when plans change. When pauses overlap,
       Posato pauses everything in their sets, within each device's limits, and each item stays paused
       until the last pause that includes it ends. On Mac and iPhone, Posato can tell you when a pause ends or when one starts on another device.
     </p>
@@ -250,8 +250,9 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         pause page; a browser with its own DNS over HTTPS bypasses it. Paused apps are ended, so save
         your work before a session starts. A system service, installed once with your password, ends
         the pause on time even when Posato is closed. Closing the window keeps Posato running with an
-        icon in the status area; without the GNOME AppIndicator extension, as on other desktops, there
-        is no icon, and Posato stays in the background only while a pause or a schedule is on.
+        icon in the status area. On a desktop whose status area does not show app icons, such as GNOME
+        without the AppIndicator extension, there is no icon, and Posato stays in the background only
+        while a pause runs or a schedule is on. Quitting Posato stops new scheduled starts.
       </li>
       <li>
         <strong>Android:</strong> websites are blocked by name through a local VPN, with no pause page;

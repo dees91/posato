@@ -8,7 +8,7 @@ Export and import: choose Export pause sets… in the … menu of Pause sets to 
 
 Pause sets: duplicate a set from its menu; a set with websites and no apps chosen on this Mac no longer shows a warning; and the Pause sets list shows chosen apps at once.
 
-A warmer light look, the sync section shows when this Mac last synced, and the Posato window no longer opens with only its toolbar.
+A warmer light look. The sync section shows when this Mac last synced, and the Posato window no longer opens with only its toolbar.
 
 Fixes: a Mac that renamed its first pause set or chose another default before linking keeps them when it creates a workspace, and a device that joins during another device's pause now starts pausing right away.
 

@@ -63,7 +63,9 @@ privacy policy covers 1.5.
   folder sync, with install steps for the `.deb` and the APK and working
   links, and the site builds.
 - `AC-03`: the README and `posato.app` show real Linux and Android
-  screenshots with synthetic content.
+  screenshots with synthetic content. Amended 2026-10-22 (`user-confirmed`):
+  real light Android screenshots; Linux appears in the hero's device row
+  and, light and dark, in the pull request.
 - `AC-04`: the store listing has the 1.5 description and What's New, ready
   for `posato-provisioning store prepare`.
 - `AC-05`: the update feed notes and the GitHub release notes for 1.5 are
@@ -72,6 +74,9 @@ privacy policy covers 1.5.
   equal download buttons and install steps; each "How it works" step pairs
   a computer with a phone so every platform appears; the hero video, the
   README GIF, and the social preview name and show all four.
+  Amended 2026-10-22 (`user-confirmed`): every capture is light, each step
+  pairs the Mac with a phone, and the hero shows Linux and Android as
+  outlines in its device row; the social preview names all four.
 - `AC-07` (2026-10-21): `PRIVACY.md` covers folder sync, the key file, the
   pairing code, and blocking on Linux and Android, from the code.
 
