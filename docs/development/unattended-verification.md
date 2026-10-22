@@ -244,6 +244,14 @@ second golden line from the first:
    chmod 600 /etc/netplan/00-network-manager-all.yaml
    ```
 
+   The desktop also brings the software updater, whose windows cover
+   Posato in screenshots; remove it (this removes only the
+   `ubuntu-desktop-minimal` metapackage besides it):
+
+   ```shell
+   DEBIAN_FRONTEND=noninteractive apt-get purge -y update-notifier update-manager
+   ```
+
 3. Replace LightDM with GDM, log the guest user in automatically, and store
    Xorg as the user's session, which `xdotool` and whole-screen capture
    need; Wayland stays available:
