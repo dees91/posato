@@ -49,6 +49,13 @@ internal class SyncScheduleStore(
         return recorded { workspace -> local.save(plan, workspace) }
     }
 
+    override suspend fun enable(
+        ids: Set<ScheduleId>,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit> {
+        return recorded { workspace -> local.enable(ids, workspace) }
+    }
+
     override suspend fun remove(
         id: ScheduleId,
         workspaceId: ByteArray?,

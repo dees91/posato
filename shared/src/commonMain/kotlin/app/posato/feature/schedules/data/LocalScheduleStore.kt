@@ -27,6 +27,15 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<SchedulePlan>
 
+    /**
+     * Turns on every schedule in [ids] that is still here and off, in one transaction that reads the live plans,
+     * so another writer between two of them cannot leave some off; [workspaceId] as in [save].
+     */
+    suspend fun enable(
+        ids: Set<ScheduleId>,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit>
+
     suspend fun remove(
         id: ScheduleId,
         workspaceId: ByteArray?,

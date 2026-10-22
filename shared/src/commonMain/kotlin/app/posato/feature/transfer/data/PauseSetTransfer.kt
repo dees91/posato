@@ -183,9 +183,6 @@ internal class PauseSetTransfer(
 
     /** Switches the imported schedules on, each as a normal edit, so a linked device shares them. */
     suspend fun turnOn(ids: List<ScheduleId>): Boolean {
-        val snapshot = (schedules.read() as? ScheduleResult.Success)?.value ?: return false
-        return snapshot.schedules.map { stored -> stored.plan }.filter { plan -> plan.id in ids && !plan.enabled }.all { plan ->
-            schedules.save(plan.copy(enabled = true), workspaceId = null) is ScheduleResult.Success
-        }
+        return schedules.enable(ids.toSet(), workspaceId = null) is ScheduleResult.Success
     }
 }
