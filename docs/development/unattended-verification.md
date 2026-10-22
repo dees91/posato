@@ -283,7 +283,12 @@ What the status icon relies on (`observed` 2026-10-21, `LINUX-003`): the
 AppIndicator extension lists items in its watcher as `<bus name>@<path>`,
 shows XEmbed tray icons too but in an unthemed AWT menu, finds an item's
 themed icons in `IconThemePath` only when that folder has an
-`index.theme`, and never sends dbusmenu's `closed` event. An autostart
+`index.theme`, and never sends dbusmenu's `closed` event. It also
+rejects a `Properties.Get` reply that is not a variant (dbus-java answers
+with the getter's own type unless the getter returns a `Variant`), reads
+the menu when the item registers, ignores `LayoutUpdated` while its menu
+is closed, and never opens a menu it holds empty, so an item that
+registers before its menu has lines shows an empty menu. An autostart
 entry runs at the next login on the session's own bus, which `linux
 relogin` reproduces.
 

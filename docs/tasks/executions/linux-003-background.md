@@ -75,8 +75,11 @@ Required); the maintainer decided C2, C4, R6, and R9 (`user-confirmed`
   the address is now read first. The GNOME golden's desktop settings
   handed the network to an absent NetworkManager; the golden uses
   systemd-networkd (guide updated). Both regressions have tests first.
+  The panel menu was empty (`Properties.Get` without a variant; item
+  registered before the menu had lines): properties are variants now, the
+  item registers with its first lines, separators keep their ids.
 - **Left to `DOCS-006`:** the limits page line (no icon on GNOME without
-  the AppIndicator extension), since #178 moves the Linux limits there.
+  the AppIndicator extension; #178 moves the Linux limits there).
 
 ## Review
 
@@ -93,9 +96,9 @@ skill documentation; taken: the AC-06 citation, the AppIndicator
 extension turned off and on while hidden, Show events kept from startup,
 `@Volatile` state, the runtime-directory bus fallback, the quit dialog's
 default focus and Escape, and the findings in the verification guide.
-Failing first: `StatusMenuTest` (assertion) and `LinuxStatusAreaTest`
-(the Openbox crash, then the injected blank address); the lock, autostart,
-and menu tests failed to compile before their code.
+Failing first: `StatusMenuTest`, `StatusMenuEntriesTest`, the empty panel
+menu on GNOME, and `LinuxStatusAreaTest` (Openbox crash, blank address);
+lock, autostart, and menu tests failed to compile before their code.
 
 ## Checks
 
@@ -109,7 +112,8 @@ and menu tests failed to compile before their code.
 | `AC-07` (`1f9754ff`, no ATK) | 600 s: CPU 0.48%, threads 43 to 38, RSS 115.4 to 116.7 MB, no `LayoutUpdated` (first run on `e29213be`: 10, fixed) |
 | Wayland `AC-01`, `AC-04` (`1f9754ff`) | `-200422-5069`, `-200442-7c00`, `-200501-5ca4` |
 | `AC-06` Openbox (`1e479838`) | closing with nothing quits `-200947-f722`; with a schedule stays with the notice `-201001-960d` to `-201118-2854` |
-| Head (`dac8bad7`), GNOME | onboard `20261022-074202-e6fb`, tray read `-074359-aa97`, close keeps it `-074403-971a`, schedule starts closed `-074633-083e`, second launches `-074701-9a17`; extension off with a schedule stays, on again re-registers `-074933-e4b9`; off with nothing quits after the grace `-075014-d821` |
+| GNOME (`dac8bad7`) | extension off with a schedule stays, on again re-registers `20261022-074933-e4b9`; off with nothing quits after the grace `-075014-d821` |
+| Head (`519de482`), GNOME | panel menu by right and left click, ordered after a pause and a schedule start (`build/verification/linux-003-menu/`); tray read `20261022-082520-5b57`; end early from the icon `-082535-6f85`; close keeps it `-082924-4236`; schedule starts closed, blocked `-083118-b413`; `--background` and plain second launch, one process `-083137-f9e4`; quit asks `-083148-13a6` |
 | Head (`dac8bad7`), Openbox, no bus | closing with nothing quits `-075224-a26c`; with a schedule asks to quit, Escape keeps it `-075352-c73d`, `-075404-5958` |
 | `./gradlew quality` | passed on `1f9754ff`; `qualityLint` and Linux tests on `1e479838` |
 

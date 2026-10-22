@@ -128,4 +128,8 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   prepare data in the Xorg session and switch with `linux session wayland`.
 - GNOME's panel never reports that the status menu closed, and the
   AppIndicator extension finds themed icons only through an `index.theme`;
-  `LINUX-003` relies on both facts.
+  `LINUX-003` relies on both facts. `linux tray` reads the menu over the
+  bus, which works even when the panel's own menu stays empty; prove the
+  panel menu with a right click on the icon and a screenshot
+  (`gnome-screenshot -f` in the session), and look for `expected "(v)"` in
+  the shell's journal.
