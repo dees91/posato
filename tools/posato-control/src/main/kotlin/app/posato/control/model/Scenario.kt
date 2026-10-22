@@ -42,6 +42,8 @@ data class Step(
     val timeoutSeconds: Double? = null,
     val maxDepth: Int? = null,
     val orientation: String? = null,
+    /** `appearance`: the system appearance to switch to, `light` or `dark`; null only reads it. */
+    val appearance: String? = null,
     val bundleId: String? = null,
     val url: String? = null,
     val secret: String? = null,
@@ -82,7 +84,8 @@ object Actions {
     const val SWIPE_BACK = "swipeBack"
     const val SWIPE_LEFT = "swipeLeft"
     const val ADJUST_WHEELS = "adjustWheels"
-    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, TERMINATE_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
+    const val APPEARANCE = "appearance"
+    val iosOnly: Set<String> = setOf(ORIENT, APPEARANCE, LAUNCH_APP, TERMINATE_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
     val all: Set<String> =
         setOf(WAIT_FOR, PRECONDITION, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }
@@ -93,6 +96,12 @@ object Orientations {
     const val LANDSCAPE_LEFT = "landscapeLeft"
     const val LANDSCAPE_RIGHT = "landscapeRight"
     val all: List<String> = listOf(PORTRAIT, PORTRAIT_UPSIDE_DOWN, LANDSCAPE_LEFT, LANDSCAPE_RIGHT)
+}
+
+object Appearances {
+    const val LIGHT = "light"
+    const val DARK = "dark"
+    val all: List<String> = listOf(LIGHT, DARK)
 }
 
 object States {

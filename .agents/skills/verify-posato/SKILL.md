@@ -368,6 +368,13 @@ windows, and the events land there instead. Simulator screenshots of a
 landscape device stay in the portrait pixel orientation; rotate them only for
 viewing.
 
+Switch the iPhone, the Simulator, or an Android phone to Light or Dark Mode
+with `appearance -t device dark` (or `light`; no mode only reads it), or the
+iOS scenario step `{"action":"appearance","appearance":"dark"}`. It reports
+`before`, `mode`, and `changed` and leaves a phone already in that mode alone.
+Never ask the maintainer to switch the appearance by hand. The mode outlives
+the run, so put the phone back in the mode it had when you finish.
+
 Platform traps that invalidate a run:
 
 - Batch entry keeps focus after Add or Return so another domain can be entered.
