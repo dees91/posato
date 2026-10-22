@@ -76,15 +76,14 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures except three iPhone captures named below come from the product tree of revision `d0b34fa1` (the `main`
+All captures come from the product tree of revision `d0b34fa1` (the `main`
 head of Posato 1.5 that `DOCS-006` captured on 2026-10-22), driven through
 `posato-control` by the scripts in `capture/` without a hand on any
 device, and reduced with FFmpeg or PIL only: Mac frames to 1272 pixels
 wide, iPhone and Android frames to 660 pixels wide. No label, timer value,
 service result, or application UI has been reconstructed or retouched.
 Tracked captures are in the light appearance (`user-confirmed`
-2026-10-22), except the three iPhone captures listed below, which are
-recaptured before merge; earlier dark captures are in Git history.
+2026-10-22); earlier dark captures are in Git history.
 
 - `mac-*.png`: development-signed Posato in a disposable Tart VM on macOS 26
   in Light Mode, never on the maintainer's Mac. The fixture is two pause
@@ -108,12 +107,11 @@ recaptured before merge; earlier dark captures are in Git history.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
   install, in Light Mode set by `appearance`, after the first-install skip
   scenario, with the Focus and Evening sets and the `Deep work` schedule
-  driven by `capture/iphone-captures.sh`. Screen Time access could not be
-  granted unattended in this run, so `iphone-schedules` shows the request to
-  allow it, and `iphone-apps-empty`, `iphone-apps`, and `iphone-active-45`
-  are still the dark captures of 2026-10-21 (revision `305d5bd7`), with
-  Calculator as the one application. iCloud was off, so matching items do
-  not demonstrate sync.
+  driven by `capture/iphone-captures.sh`, with Calculator as the one
+  application. Screen Time consent (`screen-time-consent.json` from the Apps
+  tab) ran with the phone in Dark appearance, because the driver cannot read
+  the passcode keypad in Light; the captures then ran in Light. iCloud was
+  off, so matching items do not demonstrate sync.
 - `android-*.png`: the same tree on a Samsung Galaxy XCover7 with Android 14
   in the light theme set by `appearance`, driven by
   `capture/android-captures.sh` with the same sets (Calculator as the app)

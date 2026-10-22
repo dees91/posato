@@ -1,7 +1,7 @@
 # Execution: `DOCS-006`
 
 - **Brief:** [Prepare the public packaging for Posato 1.5](../specifications/docs-006-release-1-5-media.md)
-- **Status:** `done` except the iPhone recapture below; merges with the 1.5 release go
+- **Status:** `done`; merges with the 1.5 release go
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `docs-006-release-1-5-media`
@@ -44,20 +44,14 @@ marked otherwise.
   and the first-set fix. The Linux "keep Posato open" caveat is gone.
 - **Privacy policy** for 1.5 from the code, with main's Export and import
   section after the blocking sections.
-- **Captures** in light from `d0b34fa1`, except the iPhone below;
-  `video/README.md` has provenance.
+- **Captures** in light from `d0b34fa1`; `video/README.md` has provenance.
+  The iPhone's Screen Time consent ran in Dark appearance, because the
+  driver cannot read the passcode keypad in Light, then the captures in Light.
 
 ## Open for the maintainer
 
-- The test iPhone no longer completes Screen Time consent: since
-  2026-10-21 13:04 the passcode keypad is in a process the driver cannot
-  read (`kAXErrorServerNotFound`), so `screen-time-consent.json` stops at
-  `system-done`. `iphone-schedules` therefore shows the Allow Screen Time
-  card, and `iphone-apps-empty`, `iphone-apps`, and `iphone-active-45` are
-  still dark, so `step-schedules` and the social preview are not ready.
-  Merge blocker: after the phone is restarted and unlocked, rerun
-  `iphone-captures.sh apps`, `session`, and `schedules`, collect, and
-  `npm run media`, then upload the social preview by hand.
+- Upload the regenerated `.github/assets/social-preview.png` in the
+  repository settings by hand.
 - Left to `RELEASE-007`: check the x86-64 `.deb` and date the policy.
 
 ## Review
@@ -66,7 +60,7 @@ marked otherwise.
   fixed (privacy gaps, alt text, pairing expiry, the Linux schedule claim).
 - Independent agent, 2026-10-22: no Critical; Required fixed (the Linux
   icon wording, `AC-03` and `AC-06` amended, provenance qualified); the
-  iPhone recapture stays the merge blocker above.
+  iPhone recapture followed the same day.
 
 ## GitHub release notes for 1.5.0
 
@@ -117,4 +111,5 @@ the release commit signs, are
 | `website/` `npm run build`; wide and phone renders | passed: 5 pages, light stills, no overflow at 390 px |
 | `video/` `npm run media` (check, renders, `verify`) | passed: GIF 2,043,946 bytes, site MP4 559,638 bytes |
 | Captures (`build/verification/runs/`), 2026-10-22 | Mac `20261022-124124-44d8` to `-131644-748f`; iPhone `-122357-15fa` to `-124055-b330`; Android `-125434-2359` to `-132829-2e53`; Linux `-131713-5c3e` to `-132711-4c0e` |
+| iPhone recapture, 2026-10-22 | consent (Dark) `20261022-140740-f2d5`; `iphone-apps-empty` `-140919-a5b0`, `iphone-apps` `-140935-3e91`, `iphone-active-45` `-141050-40e6`, `iphone-schedules` `-141203-27e2` |
 | Privacy scan of tracked PNGs | example domains, synthetic folders, expired pairing codes only; bars cropped; no metadata |
