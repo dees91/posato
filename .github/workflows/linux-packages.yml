@@ -1,5 +1,7 @@
 # Builds the Posato for Linux .deb packages for x86-64 and arm64 and checks that each installs and starts.
-# A release dispatches it on its release commit and publishes the uploaded packages (docs/development/releasing.md).
+# A release dispatches it with the full release commit as `ref` and publishes the uploaded packages after checking
+# that each `.commit` file names that commit (docs/development/releasing.md). Pull requests run it only when the
+# packaging itself changes; application changes reach it at release time.
 name: Linux packages
 
 on:
@@ -27,6 +29,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+          persist-credentials: false
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -70,7 +73,7 @@ jobs:
       - name: Install the packaging and smoke-test tools
         run: |
           sudo apt-get update -q
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q openjdk-21-jdk fakeroot dpkg-dev binutils xvfb xdotool dbus libgl1-mesa-dri libegl1
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q openjdk-21-jdk fakeroot dpkg-dev binutils xvfb xdotool dbus libgl1 libglx-mesa0 libgl1-mesa-dri
       - name: Package
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-${{ matrix.arch }}
@@ -98,11 +101,17 @@ jobs:
       - name: Install and start Posato
         run: |
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q "./$DEB"
-          dbus-run-session -- xvfb-run -a sh -ec '
+          # A 24-bit screen with GLX, so Compose renders through Mesa's OpenGL as on a desktop.
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x800x24 +extension GLX" sh -ec '
             /opt/posato/bin/posato > posato.log 2>&1 &
-            sleep 30
-            pgrep -x posato > /dev/null || { echo "Posato exited"; exit 1; }
+            for attempt in $(seq 1 45); do
+              pgrep -x posato > /dev/null || { echo "Posato exited"; cat posato.log; exit 1; }
+              xdotool search --name Posato > /dev/null && break
+              sleep 2
+            done
             xdotool search --name Posato > /dev/null || { echo "No Posato window"; exit 1; }
+            sleep 10
+            pgrep -x posato > /dev/null || { echo "Posato exited"; cat posato.log; exit 1; }
             pkill -x posato'
           if grep -E 'Exception|Error:' posato.log; then echo "Posato logged an error"; exit 1; fi
           sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y -q posato
