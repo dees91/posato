@@ -115,6 +115,6 @@ lock, autostart, and menu tests failed to compile before their code.
 | GNOME (`dac8bad7`) | extension off with a schedule stays, on again re-registers `20261022-074933-e4b9`; off with nothing quits after the grace `-075014-d821` |
 | Head (`519de482`), GNOME | panel menu by right and left click, ordered after a pause and a schedule start (`build/verification/linux-003-menu/`); tray read `20261022-082520-5b57`; end early from the icon `-082535-6f85`; close keeps it `-082924-4236`; schedule starts closed, blocked `-083118-b413`; `--background` and plain second launch, one process `-083137-f9e4`; quit asks `-083148-13a6` |
 | Head (`dac8bad7`), Openbox, no bus | closing with nothing quits `-075224-a26c`; with a schedule asks to quit, Escape keeps it `-075352-c73d`, `-075404-5958` |
-| `./gradlew quality` | passed on `1f9754ff`; `qualityLint` and Linux tests on `1e479838` |
+| `./gradlew quality` | passed on `3cf5971a` (the last code and record change, on `b82c4ab1`) |
 
 Run ids start with `20261021` unless written in full.
