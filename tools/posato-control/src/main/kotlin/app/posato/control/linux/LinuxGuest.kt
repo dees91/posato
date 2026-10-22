@@ -20,10 +20,11 @@ import java.util.Base64
  */
 class LinuxGuest(
     private val context: RunContext,
+    line: LinuxLine = LinuxLine.OPENBOX,
 ) {
     private val tart = Tart(context)
     private val ledger = MachineLedger.of(context)
-    private val golden = context.configuration.value(ConfigurationKey.VM_LINUX_GOLDEN) ?: DEFAULT_GOLDEN
+    private val golden = context.configuration.value(line.key) ?: line.defaultGolden
 
     fun create(): String {
         if (tart.list().any { it.name == CLONE }) throw ControlException(ErrorCode.ALREADY_EXISTS, "$CLONE already exists; `linux destroy` first.")
@@ -95,6 +96,9 @@ class LinuxGuest(
 
     val screen: LinuxScreen = LinuxScreen(this)
 
+    /** The desktop session: GNOME's Xorg or Wayland choice, and logging the user in again. */
+    val desktopSession: LinuxDesktopSession = LinuxDesktopSession(this)
+
     /** Posato started with its accessibility tree on AT-SPI, and the helper that reads and presses it. */
     val accessibility: LinuxAccessibility = LinuxAccessibility(this)
 
@@ -105,7 +109,7 @@ class LinuxGuest(
         // The guest agent's control socket sometimes refuses one connection; a person's retry is what the next attempt is.
         var attempt = 0
         while (true) {
-            val output = tart.exec(CLONE, "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; $script", stdin)
+            val output = tart.exec(CLONE, "$SESSION_ENVIRONMENT; $script", stdin)
             if (AGENT_ERROR !in output.stderr || ++attempt >= AGENT_ATTEMPTS) return output
             Thread.sleep(AGENT_RETRY_MILLIS)
         }
@@ -147,6 +151,11 @@ class LinuxGuest(
         fun syncShare(context: RunContext): Path = context.layout.verificationDirectory.resolve("linux-share").resolve(SHARE_NAME)
 
         const val DEFAULT_GOLDEN = "posato-golden-linux"
+        const val DEFAULT_GNOME_GOLDEN = "posato-golden-linux-gnome"
+
+        /** X11 under Xorg (GDM's or LightDM's authority in ~/.Xauthority) or under GNOME's Xwayland (mutter's file). */
+        private const val SESSION_ENVIRONMENT = "export DISPLAY=:0 XAUTHORITY=\$HOME/.Xauthority; " +
+            "for f in /run/user/\$(id -u)/.mutter-Xwaylandauth.*; do [ -e \"\$f\" ] && export XAUTHORITY=\"\$f\"; done"
         const val VERSION = "1.5.0"
         private const val BOOT_TIMEOUT_MILLIS = 180_000L
         private const val PROBE_SECONDS = 10L
@@ -157,12 +166,38 @@ class LinuxGuest(
     }
 }
 
+/**
+ * The golden a Linux clone starts from: the Openbox line for the shared commands, or the GNOME line (GDM, the
+ * `ubuntu` session with its AppIndicator extension, Wayland by default and Xorg selectable) for the status area.
+ */
+enum class LinuxLine(
+    val key: ConfigurationKey,
+    val defaultGolden: String,
+) {
+    OPENBOX(ConfigurationKey.VM_LINUX_GOLDEN, LinuxGuest.DEFAULT_GOLDEN),
+    GNOME(ConfigurationKey.VM_LINUX_GNOME_GOLDEN, LinuxGuest.DEFAULT_GNOME_GOLDEN),
+}
+
+/** The GNOME line's session: Xorg for `xdotool` and whole-screen capture, Wayland for what a stock Ubuntu runs. */
+enum class LinuxSession(
+    val desktop: String,
+    val type: String,
+) {
+    XORG("ubuntu-xorg", "x11"),
+    WAYLAND("ubuntu", "wayland"),
+}
+
 /** The clone's screen, captured in the guest, and its keyboard, driven with `xdotool`. */
 class LinuxScreen(
     private val guest: LinuxGuest,
 ) {
     fun screenshot(file: Path): Path {
-        val encoded = guest.exec("import -window root /tmp/posato-screen.png && base64 -w0 /tmp/posato-screen.png")
+        // On Wayland only GNOME's own capture sees the whole screen; Xorg and Openbox use the X root window.
+        val capture = "if [ \"\$(loginctl show-session \$XDG_SESSION_ID -p Type --value 2>/dev/null)\" = wayland ] || " +
+            "[ -n \"\$(ls /run/user/\$(id -u)/.mutter-Xwaylandauth.* 2>/dev/null)\" ]; then " +
+            "${LinuxAccessibility.SESSION_BUS}; gnome-screenshot -f /tmp/posato-screen.png; " +
+            "else import -window root /tmp/posato-screen.png; fi"
+        val encoded = guest.exec("$capture && base64 -w0 /tmp/posato-screen.png")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Capturing the screen of $CLONE").stdout.trim()
         Files.createDirectories(file.parent)
         Files.write(file, Base64.getDecoder().decode(encoded))

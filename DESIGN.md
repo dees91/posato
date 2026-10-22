@@ -634,6 +634,36 @@ when its window closes and lives in the menu bar.
   **Resume restrictions**, because quitting, sleep, a login launch, and a
   session received from another device all lead there.
 
+#### Status icon on Linux
+
+`user-confirmed` (`LINUX-003`, 2026-10-21): Posato for Linux stays running
+when its window closes, with an icon in the desktop's status area, so pauses
+and schedules keep working.
+
+- **Icon and menu.** The Posato pause mark as a symbolic icon the panel
+  recolors, outlined, and filled only while restrictions are confirmed
+  active. The menu has the same lines and actions as the Mac menu above,
+  with "Restrictions not active on this computer". The panel draws it.
+- **Window.** Closing the window hides it while the icon shows, or while a
+  pause runs or a schedule is on; otherwise it quits. On a desktop without a
+  session bus nothing could show it again, so closing quits as **Quit
+  Posato** does. **Open Posato** and
+  opening Posato again from the applications menu show the same window.
+- **First close.** One notice per device, with **OK**: "Posato is still
+  running, so your pause and schedules keep working. Open it again from its
+  icon or the applications menu." Without an icon, the last sentence reads
+  "Open it again from the applications menu."
+- **Quit.** **Quit Posato** in the icon menu, Ctrl+Q, and **Quit Posato** in
+  About Posato. Only while a schedule is on, a dialog asks **Quit Posato?**
+  "Scheduled pauses won't start until you open Posato again. A running
+  pause still ends on time." with **Keep Posato open** (default) and
+  **Quit**.
+- **Open at login.** In About Posato under **In the background**
+  (`user-confirmed` 2026-10-22, with **Quit Posato** below it), a switch
+  **Open Posato at login**, off by default: "Starts Posato in the background
+  when you log in, so schedules start on time." A login launch opens no
+  window.
+
 ### Reflow
 
 Essential status, end time, warning, and primary action must remain accessible

@@ -36,6 +36,10 @@ import app.posato.generated.resources.notification_section_title
 import app.posato.generated.resources.notification_setting
 import app.posato.generated.resources.notification_setting_denied
 import app.posato.generated.resources.notification_setting_supporting
+import app.posato.generated.resources.residence_login
+import app.posato.generated.resources.residence_login_supporting
+import app.posato.generated.resources.residence_quit
+import app.posato.generated.resources.residence_section_title
 import app.posato.generated.resources.update_automatic_checks
 import app.posato.generated.resources.update_automatic_checks_supporting
 import app.posato.generated.resources.update_check_now
@@ -50,6 +54,7 @@ internal fun AboutScreen(
     modifier: Modifier = Modifier,
     updates: ApplicationUpdates? = null,
     notifications: SessionNotifier? = null,
+    residence: ApplicationResidence? = null,
     barBackLabel: String? = null,
     barRoot: Boolean = false,
 ) {
@@ -62,9 +67,11 @@ internal fun AboutScreen(
             null
         }
     }
-    val notificationsContent: (@Composable () -> Unit)? = notifications?.let { notifier ->
-        { NotificationsSection(notifier) }
-    }
+    val sections = listOfNotNull<@Composable () -> Unit>(
+        residence?.let { host -> { ResidenceSection(host) } },
+        notifications?.let { notifier -> { NotificationsSection(notifier) } },
+    )
+    val notificationsContent: (@Composable () -> Unit)? = sections.takeIf { it.isNotEmpty() }?.let { parts -> { parts.forEach { it() } } }
     AboutScreen(version, onOpenLicenses, onBack, modifier, barBackLabel, barRoot, notificationsContent, updatesContent)
 }
 
@@ -146,6 +153,27 @@ private fun AboutBody(
         headlineContent = { Text("Licenses", style = MaterialTheme.typography.bodyLarge) },
         supportingContent = { PosatoCaption("License and third-party notices") },
     )
+}
+
+/** Starting at login and quitting, for a host that keeps Posato running in the background. */
+@Composable
+private fun ResidenceSection(residence: ApplicationResidence) {
+    val opensAtLogin by residence.opensAtLogin.collectAsState()
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+        PosatoSectionHeader(titleContent = {
+            Text(stringResource(Res.string.residence_section_title), style = MaterialTheme.typography.titleMedium)
+        })
+        PosatoSwitchRow(
+            checked = opensAtLogin,
+            onCheckedChange = residence::setOpensAtLogin,
+            supportingContent = { PosatoCaption(stringResource(Res.string.residence_login_supporting)) },
+        ) {
+            Text(stringResource(Res.string.residence_login), style = MaterialTheme.typography.bodyLarge)
+        }
+        PosatoButton(onClick = residence::quit, style = PosatoButtonStyle.Quiet) {
+            Text(stringResource(Res.string.residence_quit))
+        }
+    }
 }
 
 @Composable

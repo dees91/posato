@@ -220,6 +220,86 @@ is an emulator of your own.
    `posato.vm.linuxGolden`. `posato-control linux create` clones it as
    `posato-run-linux`.
 
+The Linux status icon (`LINUX-003`) needs the desktop a person runs: GNOME
+with Ubuntu's AppIndicator extension, which the Openbox golden lacks. Make a
+second golden line from the first:
+
+1. Clone and boot it: `tart clone <linux-golden> <linux-gnome-golden>` and
+   `tart run <linux-gnome-golden> --no-graphics &`.
+2. Install Ubuntu's minimal desktop and a capture tool (as root, after
+   `apt-get update`):
+
+   ```shell
+   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+     ubuntu-desktop-minimal yaru-theme-gtk yaru-theme-icon yaru-theme-gnome-shell \
+     gnome-terminal gnome-control-center nautilus gnome-screenshot xdg-utils
+   ```
+
+   The desktop settings install a netplan file that hands the network to
+   NetworkManager, which this install leaves out, so a clone boots without a
+   network. Keep the guest on systemd-networkd:
+
+   ```shell
+   printf 'network:\n  version: 2\n  renderer: networkd\n' > /etc/netplan/00-network-manager-all.yaml
+   chmod 600 /etc/netplan/00-network-manager-all.yaml
+   ```
+
+   The desktop also brings the software updater, whose windows cover
+   Posato in screenshots; remove it (this removes only the
+   `ubuntu-desktop-minimal` metapackage besides it):
+
+   ```shell
+   DEBIAN_FRONTEND=noninteractive apt-get purge -y update-notifier update-manager
+   ```
+
+3. Replace LightDM with GDM, log the guest user in automatically, and store
+   Xorg as the user's session, which `xdotool` and whole-screen capture
+   need; Wayland stays available:
+
+   ```shell
+   systemctl disable lightdm
+   echo /usr/sbin/gdm3 > /etc/X11/default-display-manager
+   ln -sf /usr/lib/systemd/system/gdm3.service /etc/systemd/system/display-manager.service
+   printf '[daemon]\nAutomaticLoginEnable=true\nAutomaticLogin=<guest-user>\nWaylandEnable=true\nDefaultSession=ubuntu-xorg.desktop\n' \
+     > /etc/gdm3/custom.conf
+   mkdir -p /var/lib/AccountsService/users
+   printf '[User]\nSession=ubuntu-xorg\nXSession=ubuntu-xorg\nSystemAccount=false\n' \
+     > /var/lib/AccountsService/users/<guest-user>
+   ```
+
+4. Turn off the lock screen, blanking, and the welcome dialog with a dconf
+   system database (`/etc/dconf/profile/user` with `user-db:user` and
+   `system-db:local`, keys `org/gnome/desktop/screensaver/lock-enabled=false`,
+   `idle-activation-enabled=false`, `org/gnome/desktop/session/idle-delay=uint32 0`,
+   and `org/gnome/shell/welcome-dialog-last-shown-version='999'` in
+   `/etc/dconf/db/local.d/`, then `dconf update`), remove
+   `gnome-initial-setup` if present, and as the guest user link
+   `~/.Xauthority` to `/run/user/<uid>/gdm/Xauthority`.
+5. Shut it down from inside and set `posato.vm.linuxGnomeGolden` (default
+   `posato-golden-linux-gnome`).
+
+`posato-control linux create --golden gnome` clones it as
+`posato-run-linux`; `--session wayland` then logs the user in to the
+Wayland session (GDM stops, the session in `custom.conf` and
+AccountsService changes, `accounts-daemon` restarts, GDM starts). Under
+Tart's virtio GPU, GNOME runs on Wayland. There, `gnome-screenshot -f`
+captures the whole screen, while GNOME Shell's own `Screenshot` D-Bus
+method refuses other callers, and `xdotool` input does not reach Posato's
+window; `wmctrl -c Posato` closes it politely.
+
+What the status icon relies on (`observed` 2026-10-21, `LINUX-003`): the
+AppIndicator extension lists items in its watcher as `<bus name>@<path>`,
+shows XEmbed tray icons too but in an unthemed AWT menu, finds an item's
+themed icons in `IconThemePath` only when that folder has an
+`index.theme`, and never sends dbusmenu's `closed` event. It also
+rejects a `Properties.Get` reply that is not a variant (dbus-java answers
+with the getter's own type unless the getter returns a `Variant`), reads
+the menu when the item registers, ignores `LayoutUpdated` while its menu
+is closed, and never opens a menu it holds empty, so an item that
+registers before its menu has lines shows an empty menu. An autostart
+entry runs at the next login on the session's own bus, which `linux
+relogin` reproduces.
+
 For Android, install the Android SDK's command-line tools, emulator, and a
 Google APIs system image for API 33 or later, then create and boot an
 emulator only Posato uses:

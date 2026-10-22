@@ -251,6 +251,14 @@ For what matters.</string>
     <string name="presence_first_close_not_enforcing">Posato is still running in the menu bar. Restrictions not active on this Mac.</string>
     <string name="presence_first_close_ok">OK</string>
     <string name="presence_login_item">Open Posato at login</string>
+    <string name="residence_section_title">In the background</string>
+    <string name="residence_login">Open Posato at login</string>
+    <string name="residence_login_supporting">Starts Posato in the background when you log in, so schedules start on time.</string>
+    <string name="residence_quit">Quit Posato</string>
+    <string name="presence_linux_not_enforcing">Restrictions not active on this computer</string>
+    <string name="presence_linux_first_close">Posato is still running, so your pause and schedules keep working. Open it again from its icon or the applications menu.</string>
+    <string name="presence_linux_first_close_no_icon">Posato is still running, so your pause and schedules keep working. Open it again from the applications menu.</string>
+    <string name="presence_linux_quit_schedules">Scheduled pauses won't start until you open Posato again. A running pause still ends on time.</string>
     <string name="mac_standing_grant">Start sessions without the password</string>
     <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions apply only during a pause you start or a schedule you set.</string>
     <string name="mac_standing_grant_blocked">You can change this after the session ends.</string>

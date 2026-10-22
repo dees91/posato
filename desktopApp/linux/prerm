@@ -4,6 +4,12 @@ set -e
 case "$1" in
   remove|upgrade|deconfigure)
     if [ "$1" = remove ]; then
+      # The person's "Open Posato at login" entry goes with Posato; TryExec already makes any other entry inert.
+      user=$(sed -n 's/^user=//p' /etc/posato/helper.conf 2>/dev/null || true)
+      case "$user" in
+        ''|*[!a-z0-9_-]*) ;;
+        *) home=$(getent passwd "$user" | cut -d: -f6); [ -n "$home" ] && rm -f "$home/.config/autostart/posato.desktop" ;;
+      esac
       systemctl disable --now posato-helper.service 2>/dev/null || true
       if [ -f /etc/posato/helper.conf ]; then
         /opt/posato/lib/runtime/bin/java -cp /opt/posato/lib/app/posato.jar app.posato.linux.helper.MainKt cleanup || true

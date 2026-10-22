@@ -2993,6 +2993,16 @@ first removal attempt that does not finish, not to a paused keychain.
   waits while the code has not reached the folder; an empty folder offers
   Create workspace. `observed` on a Galaxy XCover7: scan first, folder
   first, a late offer, and an expired code.
+## [2026-10-21] implementation | LINUX-003: Posato for Linux stays running
+
+- `observed` in Tart GNOME (Xorg and Wayland) and Openbox clones: closing
+  the window keeps Posato running with a StatusNotifierItem that Ubuntu's
+  AppIndicator extension shows, schedules start with the window closed and
+  after a login launch, and a quit during a pause leaves the service to end
+  it. GNOME never reports the menu closing; the extension finds themed
+  icons only through an `index.theme`; dbus-java throws unchecked errors
+  for a missing session bus.
+
 ## [2026-10-21] design | DESIGN-005: a warmer light palette
 
 - `user-confirmed` (idea 51): the light surface becomes `#F4F3EB` with the
