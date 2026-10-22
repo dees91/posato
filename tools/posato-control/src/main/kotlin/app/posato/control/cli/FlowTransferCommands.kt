@@ -8,6 +8,7 @@ import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
+import app.posato.control.desktop.AxBridge
 import app.posato.control.linux.LinuxGuest
 import app.posato.control.model.Query
 import app.posato.control.model.States
@@ -195,7 +196,7 @@ private fun transferFiles(session: Session): TransferFiles {
 
         Target.LINUX -> LinuxTransferFiles(LinuxGuest(session.context))
 
-        Target.DESKTOP -> MacTransferFiles()
+        Target.DESKTOP -> MacTransferFiles(AxBridge(session.context))
 
         Target.SIMULATOR -> throw ControlException(
             ErrorCode.UNSUPPORTED_ON_TARGET,

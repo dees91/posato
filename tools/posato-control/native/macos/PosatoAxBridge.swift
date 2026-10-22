@@ -234,6 +234,27 @@ enum Bridge {
     }
   }
 
+  /// Clicks the centre of `element` as a pointer would. A file panel's rows ignore AXPress and refuse a set
+  /// selection, and the panel runs in a service of its own, so only a real click selects one.
+  static func click(_ element: AXUIElement) throws {
+    let bounds = frame(element)
+    guard bounds.w > 0, bounds.h > 0 else {
+      throw BridgeError(code: "ELEMENT_NOT_FOUND", message: "The element has no visible bounds.")
+    }
+    let location = CGPoint(x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2)
+    for type in [CGEventType.mouseMoved, .leftMouseDown, .leftMouseUp] {
+      guard
+        let event = CGEvent(
+          mouseEventSource: nil, mouseType: type, mouseCursorPosition: location, mouseButton: .left)
+      else {
+        throw BridgeError(code: "AX_ERROR", message: "Could not create a pointer event.")
+      }
+      event.setIntegerValueField(.mouseEventClickState, value: 1)
+      event.post(tap: .cgSessionEventTap)
+      usleep(80_000)
+    }
+  }
+
   /// A two-finger swipe to the right over the main window, as the trackpad reports it: phased,
   /// continuous scroll events that AppKit's swipe tracking follows. A long first movement completes
   /// the swipe between pages; a short one is released below the threshold and cancels it.
@@ -707,6 +728,11 @@ do {
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     try Bridge.press(try Bridge.resolve(pid: pid, path: try argument(3, "path")))
+    emit(["ok": true])
+  case "click":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    try Bridge.click(try Bridge.resolve(pid: pid, path: try argument(3, "path")))
     emit(["ok": true])
   case "type":
     try requireAccessibilityTrust()

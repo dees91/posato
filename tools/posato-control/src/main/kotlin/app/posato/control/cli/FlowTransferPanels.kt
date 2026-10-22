@@ -3,16 +3,19 @@ package app.posato.control.cli
 import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.desktop.AxBridge
 import app.posato.control.linux.LinuxGuest
 import app.posato.control.model.Actions
+import app.posato.control.model.Query
 import app.posato.control.model.Step
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.Base64
 
 /**
- * The file panels of the Mac and Linux, AWT's file dialog over Posato's window. Neither shows in Posato's tree, so
- * they are driven by keys, as a person who knows the path would: the panel opens with its name field focused.
+ * A file panel with no tree of its own, driven by keys as a person who knows the path would: it opens with its
+ * name field focused. Linux's GTK chooser is one.
  */
 internal abstract class PanelTransferFiles : TransferFiles {
     /** Where exports land and files to import are placed, on the device. */
@@ -94,41 +97,76 @@ internal class LinuxTransferFiles(
 }
 
 /**
- * The Mac's save and open panels, in the guest where the whole command runs: Go to Folder (Command-Shift-G) takes
- * a folder when saving and a file when opening. The file to import is already in the guest, put there with
- * `vm push`, and the export is read where it was saved.
+ * The Mac's save and open panels, in the guest where the whole command runs. The panels run in a separate service
+ * that keys sent to Posato do not reach, but their tree is Posato's, so they are driven by accessibility: the Where
+ * menu moves them to the home folder, which needs no privacy consent for the tool to read, a file row is clicked,
+ * since it takes no accessibility selection, and Save or Open is pressed. The file to import is put in the guest with `vm push`.
  */
-internal class MacTransferFiles : PanelTransferFiles() {
-    override val folder: String = Path.of(System.getProperty("user.home"), "PosatoTransfer").toString()
+internal class MacTransferFiles(
+    private val bridge: AxBridge,
+) : TransferFiles {
+    private val home: Path = Path.of(System.getProperty("user.home"))
 
     override fun clear() {
-        Files.createDirectories(Path.of(folder))
-        Files.deleteIfExists(Path.of(folder, EXPORT_NAME))
+        Files.deleteIfExists(home.resolve(EXPORT_NAME))
     }
 
     override fun save(backend: Backend) {
-        enter(backend, folder, listOf("cmd+shift+g"))
-        // Go to Folder only moves the panel; Return then saves under the name it proposes.
-        FlowSteps.run(backend, listOf(FlowSteps.sleep(1.0), press("return")))
+        FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(id = SAVE_PANEL))))
+        toHome(backend)
+        FlowSteps.run(backend, listOf(FlowSteps.tap(Query(id = CONFIRM))))
     }
 
     override fun fetch(destination: Path) {
-        val saved = Path.of(folder, EXPORT_NAME)
-        if (!Files.isRegularFile(saved)) throw ControlException(ErrorCode.COMMAND_FAILED, "No export was saved in $folder.")
+        val saved = home.resolve(EXPORT_NAME)
+        if (!Files.isRegularFile(saved)) throw ControlException(ErrorCode.COMMAND_FAILED, "No export was saved in $home.")
         Files.copy(saved, destination)
     }
 
-    override fun place(source: Path): String = source.toString()
+    override fun place(source: Path): String {
+        val placed = home.resolve(source.fileName.toString())
+        if (source.toAbsolutePath() != placed) Files.copy(source, placed, StandardCopyOption.REPLACE_EXISTING)
+        return placed.toString()
+    }
 
     override fun choose(
         backend: Backend,
         placed: String,
     ) {
-        enter(backend, placed, listOf("cmd+shift+g"))
-        confirmOpened(backend)
+        FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(id = OPEN_PANEL))))
+        toHome(backend)
+        val name = Path.of(placed).fileName.toString()
+        val row = FlowSteps.nodes(backend).firstOrNull { node -> node.value == name }?.path
+            ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The open panel lists no $name in $home.")
+        val pid = backend.status().pid ?: throw ControlException(ErrorCode.APP_NOT_RUNNING, "Posato is not running.")
+        bridge.windowActions.click(pid, row)
+        FlowSteps.run(backend, listOf(FlowSteps.sleep(SETTLE_SECONDS), FlowSteps.tap(Query(id = CONFIRM))))
     }
 
     override fun cleanUp(placed: String) = Unit
+
+    /** Picking the folder a panel already shows leaves the Where menu open over the rows, so it is picked only to move. */
+    private fun toHome(backend: Backend) {
+        val folder = home.fileName.toString()
+        if (FlowSteps.nodes(backend).any { node -> node.id == WHERE && node.value == folder }) return
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.tap(Query(id = WHERE)),
+                FlowSteps.sleep(SETTLE_SECONDS),
+                FlowSteps.tap(Query(text = folder, within = Query(id = WHERE), index = 0)),
+                FlowSteps.sleep(SETTLE_SECONDS),
+            ),
+        )
+    }
+
+    private companion object {
+        const val SAVE_PANEL = "save-panel"
+        const val OPEN_PANEL = "open-panel"
+        const val WHERE = "where popup"
+        const val CONFIRM = "OKButton"
+        const val SETTLE_SECONDS = 1.0
+    }
 }
 
 /** A key with modifiers, sent to whatever has focus, such as a file panel with no tree of its own. */

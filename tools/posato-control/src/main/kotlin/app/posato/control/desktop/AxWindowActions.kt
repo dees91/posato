@@ -7,6 +7,14 @@ class AxWindowActions(
         invoke(arrayOf("activate", pid.toString()))
     }
 
+    /** Clicks the centre of the element at [path], for a file panel's rows, which AXPress does not select. */
+    fun click(
+        pid: Long,
+        path: String
+    ) {
+        invoke(arrayOf("click", pid.toString(), path))
+    }
+
     fun scroll(
         pid: Long,
         path: String,
