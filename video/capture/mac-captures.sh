@@ -6,9 +6,10 @@
 # the pause set fixture: the first set renamed to Focus with example.com and
 # example.net, and a second set, Evening, with example.net. Before 1.5 the
 # Evening reading row warned that apps weren't chosen unless Chess was chosen
-# in Evening; since TARGETS-011 it shows no notice either way. The guest is switched
-# to Dark Mode with `vm exec --script "defaults write -g AppleInterfaceStyle
-# Dark"` before the app launches. Nothing runs on the host Mac.
+# in Evening; since TARGETS-011 it shows no notice either way. The guest stays
+# in Light Mode, as on posato.app (`vm exec --script "defaults delete -g
+# AppleInterfaceStyle"` before the app launches if a golden was left dark).
+# Nothing runs on the host Mac.
 #
 #   video/capture/mac-captures.sh apps               # Focus, Apps tab: empty, then Chess chosen
 #   video/capture/mac-captures.sh sets               # Pause sets: Focus (default) and Evening
@@ -17,6 +18,15 @@
 #   video/capture/mac-captures.sh schedules HH:MM    # a weekday plan alone, then with a daily Evening plan starting at HH:MM
 #   video/capture/mac-captures.sh evening HH:MM      # only the daily plan, when schedules stopped after Deep work
 #   video/capture/mac-captures.sh scheduled          # after HH:MM: the scheduled pause running
+#   video/capture/mac-captures.sh folder             # a folder workspace in the guest's ~/PosatoSync and its Add a device code
+#   video/capture/mac-captures.sh unfolder           # close the code and remove the workspace, so the code expires with it
+#   video/capture/mac-captures.sh export             # the Export dialog with Protect with a code on, then cancelled
+#   video/capture/mac-captures.sh icloud             # create the iCloud workspace; Session's iCloud row linked, with its last sync
+#   video/capture/mac-captures.sh unicloud           # remove the iCloud workspace, so the clone can be destroyed
+#
+# For the folder step, `posato-control relay --line primary --android SERIAL`
+# copies the workspace to the phone, where `android-captures.sh join` shows
+# the code step while the Mac's code is still open.
 #
 # Raw captures land in build/verification/runs/<run-id>/guest/screenshots/;
 # collect them with video/capture/collect.sh.
@@ -153,7 +163,54 @@ scheduled() {
   shot mac-scheduled-active
 }
 
+folder() {
+  ready
+  pc tap --text "Session" --role button | ok
+  # The relay reaches a Mac guest's $HOME/PosatoSync; the path is read from the guest.
+  local dir
+  dir="$("${PC}" vm exec --line "${VM}" --script 'mkdir -p "$HOME/PosatoSync" && printf %s "$HOME/PosatoSync"' | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["stdout"])')"
+  "${PC}" flow folder link -t desktop --vm "${VM}" --path "${dir}" | ok
+  "${PC}" flow folder offer -t desktop --vm "${VM}" | ok >/dev/null
+  shot mac-add-device
+}
+
+unfolder() {
+  "${PC}" flow folder done -t desktop --vm "${VM}" | ok
+  "${PC}" flow folder remove -t desktop --vm "${VM}" | ok
+}
+
+# The code is made for this dialog only; Cancel exports nothing, so it protects no file.
+export_dialog() {
+  ready
+  open_sets
+  pc tap --text "More actions for pause sets" | ok
+  pc tap --text "Export pause sets…" | ok
+  pc wait --for exists --text "Export file…" --role button --timeout-seconds 20 | ok
+  pc tap --text-contains "Protect with a code" | ok
+  pc wait --for exists --text-contains "Posato does not keep it" --timeout-seconds 20 | ok
+  shot mac-export
+  pc tap --text "Cancel" --role button | ok
+  pc wait --for absent --text "Export file…" --role button --timeout-seconds 20 | ok
+}
+
+# The guest is signed in to the test Apple Account. flow icloud link returns once
+# the first sync after the link has settled and leaves the row expanded.
+icloud() {
+  ready
+  "${PC}" flow icloud link -t desktop --vm "${VM}" | ok
+  pc wait --for exists --text-contains "Last synced" --timeout-seconds 60 | ok
+  shot mac-icloud
+}
+
+# The iPhone removes its link first (`iphone-captures.sh unicloud`), then the Mac removes the workspace.
+unicloud() {
+  "${PC}" flow icloud remove -t desktop --vm "${VM}" | ok
+}
+
 case "${1:-}" in
+  export) export_dialog ;;
+  icloud) icloud ;;
+  unicloud) unicloud ;;
   apps) apps ;;
   sets) sets ;;
   websites) websites ;;
@@ -161,5 +218,7 @@ case "${1:-}" in
   schedules) schedules "${2:-}" ;;
   evening) evening "${2:-}" ;;
   scheduled) scheduled ;;
-  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled" >&2; exit 2 ;;
+  folder) folder ;;
+  unfolder) unfolder ;;
+  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder|export|icloud|unicloud" >&2; exit 2 ;;
 esac

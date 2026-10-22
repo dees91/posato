@@ -3044,6 +3044,23 @@ first removal attempt that does not finish, not to a paused keychain.
   transaction. Mac file panels take no synthetic keys but are in Posato's
   accessibility tree; the GTK chooser leaves keyboard focus nowhere.
 
+## [2026-10-22] docs | DOCS-006: public packaging for 1.5
+
+- `user-confirmed` text moved: ADR 0010's accepted Linux, Android, and
+  folder sync limits now live on the limits page, which lists Linux and
+  Android as supported and keeps only Windows planned. The README, the site,
+  the App Store text, the update feed notes, and the release notes draft
+  describe 1.5; the App Store text names no other mobile platform.
+- `user-confirmed` 2026-10-21: Linux and Android stand level with the Mac and
+  iPhone (four download buttons, steps that pair a computer with a phone,
+  a hero that shows all four); `PRIVACY.md` covers 1.5; ADR 0010's mixed
+  Android and Linux limit bullet is split by platform.
+- `user-confirmed` 2026-10-22: the site, README, and video show light
+  captures, and the stills pair the Mac with a phone; Linux shows in the
+  hero's device row. `observed`: since 2026-10-21 13:04 the test iPhone's
+  Screen Time passcode keypad is unreadable to the driver
+  (`kAXErrorServerNotFound`), so consent does not finish unattended.
+
 ## [2026-10-22] tooling | pressKeys types an inaccessible passcode keypad
 
 - `observed` on the test iPhone (iOS 26.5): the Screen Time "Enter iPhone

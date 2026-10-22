@@ -43,6 +43,18 @@ whenever a runtime dependency changes.
 - **Sparkle:** Copyright (c) 2006-2013 Andy Matuschak; (c) 2009-2013 Elgato Systems GmbH; (c) 2011-2014 Kornel Lesiński; (c) 2015-2017 Mayur Pawashe; (c) 2014 C.W. Betts; (c) 2014 Petroules Corporation; (c) 2014 Big Nerd Ranch. Distributed under the MIT License. It includes bsdiff and bspatch (Copyright 2003-2005 Colin Percival, BSD-2-Clause), sais-lite (Copyright (c) 2008-2010 Yuta Mori, MIT), the portable Ed25519 implementation (Copyright (c) 2015 Orson Peters, zlib), and SUSignatureVerifier (Copyright (c) 2011 Mark Hamlin, BSD-2-Clause).
 - **OpenJDK (Eclipse Temurin 21):** the bundled runtime is produced from the Eclipse Temurin 21 JDK and includes its own `legal` notices directory, which must stay in the distributed application.
 
+## Website and README artwork
+
+The download badges on posato.app and in the README are not shipped inside
+the applications. Their text is outlined from the Inter typeface (Rasmus
+Andersson, SIL Open Font License 1.1). The Linux and Android marks come from
+Simple Icons (CC0-1.0 path data): Tux was drawn by Larry Ewing with The GIMP,
+and the Android robot is reproduced or modified from work created and shared
+by Google and used according to terms described in the Creative Commons 3.0
+Attribution License. Linux is a registered trademark of Linus Torvalds;
+Android is a trademark of Google LLC; Apple, Mac, and App Store are
+trademarks of Apple Inc.
+
 ## Build and verification tools
 
 These tools are used to build or check Posato and are not shipped inside the

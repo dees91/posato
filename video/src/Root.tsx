@@ -19,6 +19,9 @@ export const RemotionRoot = () => (
     <Still id="StepWebsites" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepWebsites} />
     <Still id="StepDuration" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepDuration} />
     <Still id="StepSchedules" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepSchedules} />
+    <Still id="StepFolder" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepFolder} />
+    <Still id="StepIcloud" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepIcloud} />
+    <Still id="StepExport" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepExport} />
     <Still id="SocialPreview" component={SocialPreview} width={SOCIAL_PREVIEW.width} height={SOCIAL_PREVIEW.height} />
   </>
 );

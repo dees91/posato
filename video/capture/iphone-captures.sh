@@ -3,7 +3,8 @@
 # and captures the states the storyboard needs, without a hand on the phone.
 # Run from the repository root after `build -t device --driver`, a fresh
 # `install -t device`, `launch -t device`, and `first-install-skip.json`. It
-# puts the phone in Dark Mode itself with `appearance -t device dark`. The fixture is two pause sets, Focus (the first set,
+# sets the phone's appearance itself with `appearance -t device`: THEME=light
+# (the default, as on posato.app) or dark, whose captures end in `-dark`. The fixture is two pause sets, Focus (the first set,
 # renamed, with the two synthetic domains and one built-in application:
 # Calculator, which Posato shows only as a count) and Evening (example.net),
 # and one schedule named Deep work, which `schedules` deletes again so the
@@ -13,13 +14,26 @@
 #   video/capture/iphone-captures.sh apps        # Screen Time access, Apps tab: empty, then one application
 #   video/capture/iphone-captures.sh session     # 45 minutes selected, active session, ended early
 #   video/capture/iphone-captures.sh schedules   # Schedules with Deep work, then deleted
+#   video/capture/iphone-captures.sh import      # the import review of an export that holds Deep work, then cancelled
+#   video/capture/iphone-captures.sh icloud      # join the Mac's iCloud workspace; Session's iCloud row linked, with its last sync
+#   video/capture/iphone-captures.sh unicloud    # remove the iCloud workspace on the iPhone
+#
+# For icloud, install fresh and skip the first run without the websites step:
+# the phone's unnamed first set then takes the Mac's Focus and Evening from the
+# workspace instead of adding a second Evening.
 set -euo pipefail
 
 PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
 SCENARIOS="tools/posato-control/fixtures/scenarios"
 pc() { "${PC}" "$1" -t device "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
-shot() { echo "capture ${1}"; pc screenshot --name "$1" | ok; }
+# Dark captures are named `<name>-dark`, so a dark run never replaces the light files.
+shot() {
+  local name="$1"
+  [ "${THEME:-light}" = dark ] && name="${name}-dark"
+  echo "capture ${name}"
+  pc screenshot --name "${name}" | ok
+}
 ready() { pc wait --for exists --text "Pause sets" --role button --timeout-seconds 60 | ok; }
 open_sets() {
   pc tap --text "Pause sets" --role button | ok
@@ -159,13 +173,101 @@ schedules() {
   pc tap --text "Session" --role button | ok
 }
 
+# Exports the pause sets with a Deep work schedule, deletes the schedule, and
+# opens the export from Import… so the review has something to add. The export
+# stays in the driver host's folder under On My iPhone, where flow export saved
+# it; the review is cancelled, so nothing is imported.
+import_review() {
+  ready
+  "${PC}" flow schedule -t device --name "Deep work" --start 09:00 --end 12:00 --days weekdays --off | ok
+  allow_notices
+  "${PC}" flow export -t device | ok
+  pc tap --text "Schedules" --role button | ok
+  steps '[{"name":"swipe","action":"swipeLeft","query":{"textContains":"Deep work,","role":"button"}},
+    {"name":"ask","action":"tap","query":{"text":"Delete","role":"button"}},
+    {"name":"question","action":"waitFor","state":"exists","query":{"text":"Keep","role":"button"}},
+    {"name":"confirm","action":"tap","query":{"text":"Delete","role":"button"}},
+    {"name":"deleted","action":"waitFor","state":"absent","query":{"textContains":"Deep work,","role":"button"}}]'
+  open_sets
+  # The document picker belongs to this run, so the file is chosen and the review captured in one scenario.
+  steps '[{"name":"menu","action":"tap","query":{"text":"More actions for pause sets"}},
+    {"name":"import","action":"tap","query":{"text":"Import…"}},
+    {"name":"browse","action":"tap","optional":true,"timeoutSeconds":4,"query":{"text":"Browse"}},
+    {"name":"device","action":"tap","optional":true,"timeoutSeconds":4,"query":{"text":"On My iPhone"}},
+    {"name":"folder","action":"tap","query":{"text":"PosatoDriverHost"}},
+    {"name":"file","action":"tap","query":{"textContains":"Posato pause sets"}},
+    {"name":"review","action":"waitFor","state":"exists","query":{"text":"Choose how to import"}},
+    {"name":"settle","action":"sleep","seconds":1},
+    {"name":"iphone-import","action":"screenshot"},
+    {"name":"cancel","action":"tap","query":{"text":"Cancel","role":"button"}},
+    {"name":"closed","action":"waitFor","state":"absent","query":{"text":"Choose how to import"}}]'
+  pc tap --text "Session" --role button | ok
+}
+
+# Session's iCloud row starts collapsed and its actions can sit below the tab bar,
+# so the row and each action are scrolled to before they are pressed.
+open_icloud() {
+  pc tap --text "Session" --role button | ok
+  steps '[{"name":"row-reveal","action":"scrollTo","query":{"textContains":"iCloud,","role":"button"}},
+    {"name":"row","action":"tap","query":{"textContains":"iCloud,","role":"button"}},
+    {"name":"settle","action":"sleep","seconds":1}]'
+}
+press_icloud() {
+  steps "[{\"name\":\"reveal\",\"action\":\"scrollTo\",\"query\":{\"text\":\"$1\",\"role\":\"button\"}},
+    {\"name\":\"press\",\"action\":\"tap\",\"query\":{\"text\":\"$1\",\"role\":\"button\"}}]"
+}
+has() { pc find "$@" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; }
+
+# Joins the workspace the Mac created with `mac-captures.sh icloud`, pressing
+# Check again while the workspace key is awaited, for up to 15 minutes.
+icloud() {
+  ready
+  open_icloud
+  press_icloud "Sync with iCloud"
+  for _ in $(seq 60); do
+    has --text-contains "Last synced" && ! has --text-contains "is running" && break
+    has --text "Check again" --role button && press_icloud "Check again"
+    sleep 15
+  done
+  steps '[{"name":"reveal","action":"scrollTo","query":{"text":"Remove workspace","role":"button"}},
+    {"name":"settle","action":"sleep","seconds":1}]'
+  shot iphone-icloud
+}
+
+# Removes the workspace on the iPhone. A removal on the test Apple Account,
+# whose zone holds a long history, can end in "Sync didn't finish", so it is
+# pressed again, as flow icloud remove does on the Mac, for up to 15 minutes.
+# While the confirmation is open, its own Remove workspace is the only one.
+unicloud() {
+  ready
+  pc tap --text "Session" --role button | ok
+  for _ in $(seq 30); do
+    has --text "Sync with iCloud" --role button && return 0
+    has --text-contains "iCloud, Not connected" --role button && return 0
+    if ! has --text-contains "is running" && ! has --text-contains "Removing"; then
+      has --text "Remove workspace" --role button || open_icloud
+      steps '[{"name":"reveal","action":"scrollTo","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"ask","action":"tap","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"question","action":"waitFor","state":"exists","query":{"text":"Keep workspace","role":"button"}},
+        {"name":"confirm","action":"tap","query":{"text":"Remove workspace","role":"button"}},
+        {"name":"closed","action":"waitFor","state":"absent","query":{"text":"Keep workspace","role":"button"}}]'
+    fi
+    sleep 30
+  done
+  echo "The iCloud removal did not finish" >&2
+  return 1
+}
+
 case "${1:-}" in
-  websites|apps|session|schedules) pc appearance dark | ok ;;
+  websites|apps|session|schedules|import|icloud) pc appearance "${THEME:-light}" | ok ;;
 esac
 case "${1:-}" in
   websites) websites ;;
   apps) apps ;;
   session) session ;;
   schedules) schedules ;;
-  *) echo "usage: $0 websites|apps|session|schedules" >&2; exit 2 ;;
+  import) import_review ;;
+  icloud) icloud ;;
+  unicloud) unicloud ;;
+  *) echo "usage: $0 websites|apps|session|schedules|import|icloud|unicloud" >&2; exit 2 ;;
 esac

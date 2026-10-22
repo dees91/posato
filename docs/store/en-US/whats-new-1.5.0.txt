@@ -1,0 +1,10 @@
+- Sync through a folder: keep your workspace in a folder that iCloud Drive, Dropbox, OneDrive, or another service keeps in sync, instead of iCloud. Posato writes only encrypted files there and syncs the folder when you open it. It also links Posato on Linux, new in 1.5.
+- Join in two steps, in either order: choose the same folder on the iPhone, and scan the QR code that Add a device shows on your other device with the iPhone camera. Posato joins as soon as it has both. The code works for 10 minutes.
+- Export and import: save your pause sets, their websites, and your schedules to a file, optionally protected by a code, and import it on another device. App choices stay on each device.
+- A warmer light look.
+- A device that joins during a pause starts pausing right away.
+- The sync section shows when this device last synced.
+- Duplicate a pause set from its menu.
+- A set with websites and no apps chosen on this device no longer shows a warning.
+- App choices update the pause set summaries at once.
+- A first pause set you renamed, and the default you chose, stay when you create a workspace.

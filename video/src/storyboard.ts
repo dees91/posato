@@ -66,7 +66,7 @@ export const IPHONE_TARGETS = {
 } as const satisfies Record<string, Point>;
 
 const OPEN_COPY = {
-  eyebrow: "Posato for Mac and iPhone",
+  eyebrow: "Posato for Mac, iPhone, Linux, and Android",
   headline: "A little space.\nFor what matters.",
   support: "Pause the websites and apps you choose, now or on a schedule.",
 } as const;
@@ -74,7 +74,7 @@ const OPEN_COPY = {
 const CLOSE_COPY = {
   eyebrow: "Session active",
   headline: "A little room. Just for you.",
-  footer: "Mac · iPhone · No account · No analytics · Apache 2.0",
+  footer: "Mac · iPhone · Linux · Android · No account · No analytics",
 } as const;
 
 const iphoneAppsScene = (start: number, end: number): StoryScene => ({
@@ -255,16 +255,20 @@ export const WALKTHROUGH: readonly StoryScene[] = [
   { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
 
+/** Each README step pairs a Mac with a phone (user-confirmed 2026-10-22); Linux appears in the hero's device row. */
 export const STILLS = {
-  StepWebsites: { mac: "mac-websites.png", iphone: "iphone-websites.png" },
-  StepDuration: { mac: "mac-duration-45.png", iphone: "iphone-duration-45.png" },
-  StepSchedules: { mac: "mac-schedules.png", iphone: "iphone-schedules.png" },
+  StepWebsites: { desktop: "mac-websites.png", phone: "android-websites.png" },
+  StepDuration: { desktop: "mac-duration-45.png", phone: "iphone-duration-45.png" },
+  StepSchedules: { desktop: "mac-schedules.png", phone: "iphone-schedules.png" },
+  StepFolder: { desktop: "mac-add-device.png", phone: "android-join.png" },
+  StepIcloud: { desktop: "mac-icloud.png", phone: "iphone-icloud.png" },
+  StepExport: { desktop: "mac-export.png", phone: "iphone-import.png" },
 } as const;
 
 export const SOCIAL_PREVIEW = {
   width: 1280,
   height: 640,
-  iphone: "iphone-active-45.png",
+  phones: ["iphone-active-45.png", "android-active-45.png"],
   copy: {
     eyebrow: OPEN_COPY.eyebrow,
     headline: OPEN_COPY.headline,
@@ -338,9 +342,30 @@ export const HERO = {
   duration: { start: 72, end: 114, capture: "mac-duration-45.png", headline: "Start your pause.", crop: [300, 95], pose: [250, 305, 1040, 640, 1], title: [150, 96] },
   start: { start: 114, end: 168, capture: "mac-review-45.png", headline: "Start your pause.", crop: [300, 150], pose: [250, 305, 1040, 600, 1], title: [150, 96], click: 156 },
   active: { start: 168, end: 300, capture: "mac-active-45.png", headline: "A little space.", crop: [300, 40], pose: [250, 305, 1040, 575, 1], title: [150, 96] },
-  sync: { start: 300, end: 450, headline: "Your devices.\nConnected." },
-  privacy: { start: 450, end: 630, headline: "Your iCloud.\nYour data." },
-  close: { start: 630, end: 720, headline: "A little space.\nFor what matters." },
+  sync: {
+    start: 300,
+    end: 450,
+    headline: "Your devices.\nConnected.",
+    /** One real capture of the Focus set; the second website appearing is the change that syncs. */
+    card: { before: "mac-websites-empty.png", after: "mac-websites.png", crop: [326, 116, 570, 504] },
+    change: 36,
+    rail: [56, 104],
+    /** The row lays out by count, so another platform is one more entry. */
+    devices: [
+      { label: "Mac", kind: "laptop" },
+      { label: "iPhone", kind: "phone" },
+      { label: "Linux", kind: "laptop" },
+      { label: "Android", kind: "phone" },
+    ],
+    line: "Sync through iCloud or a folder you choose.",
+  },
+  privacy: {
+    start: 450,
+    end: 630,
+    headline: "Your cloud.\nYour data.",
+    lines: ["Encrypted on your device.", "Stored in your private iCloud", "or in a folder you choose."],
+  },
+  close: { start: 630, end: 720, headline: "A little space.\nFor what matters.", platforms: "Mac · iPhone · Linux · Android" },
 } as const;
 
 /** The poster frame, shown before the hero loads and under Reduce Motion: restrictions active on the Mac. */

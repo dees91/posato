@@ -12,12 +12,12 @@ if (start < 0 || end < 0) {
 const limits = html.slice(start, end).replace('<h2 id="limits">Limits</h2>', "");
 ---
 
-<Base title="Limits" description="What Posato's blocking and sync can and cannot do on Mac and iPhone.">
+<Base title="Limits" description="What Posato's blocking and sync can and cannot do on Mac, iPhone, Linux, and Android.">
   <div class="prose">
     <h1>Limits</h1>
     <Fragment set:html={limits} />
     <p>
-      Posato targets macOS 13 or later on Apple silicon and Intel Macs, and iOS 18 or later; see the <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a> for what was checked on each. See the <a href="/privacy/">privacy policy</a> for what Posato keeps on your devices and in iCloud.
+      Posato targets macOS 13 or later on Apple silicon and Intel Macs, iOS 18 or later, Ubuntu 24.04 or later, and Android 13 or later; see the <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a> for what was checked on each. See the <a href="/privacy/">privacy policy</a> for what Posato keeps on your devices, in iCloud, and in a sync folder.
     </p>
   </div>
 </Base>

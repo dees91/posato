@@ -39,7 +39,7 @@ const HeroFrame = ({ frame }: { readonly frame: number }) => {
           ) : null}
           <div style={{ opacity: sameHeadline ? 1 : Math.max(0, progress * 2 - 1), translate: `0 ${sameHeadline ? 0 : 20 * (1 - progress)}px` }}>{current.headline}</div>
         </div>
-        <div style={{ position: "absolute", left, top, width, height, overflow: "hidden", borderRadius: 14, backgroundColor: colors.surface }}>
+        <div style={{ position: "absolute", left, top, width, height, overflow: "hidden", borderRadius: 14, backgroundColor: colors.captureSurface }}>
           {[previous, current].map((shot, layer) => (
             <AbsoluteFill key={layer} style={{ inset: cropPadding, width: width - cropPadding * 2, height: height - cropPadding * 2, overflow: "hidden", clipPath: layer === 0 ? undefined : `inset(0 ${(1 - progress) * 100}% 0 0)` }}>
             <Img
@@ -73,6 +73,7 @@ const HeroFrame = ({ frame }: { readonly frame: number }) => {
         <div style={{ position: "absolute", left: 110, top: 360, fontSize: 106, fontWeight: 600, lineHeight: 1.08, letterSpacing: "-0.04em", whiteSpace: "pre-line", width: 1020 }}>
           {story.close.headline}
         </div>
+        <div style={{ position: "absolute", left: 115, top: 640, fontSize: 34, color: colors.muted }}>{story.close.platforms}</div>
         <div style={{ position: "absolute", right: 130, top: 260, width: 270, height: 380 }}>
           <div style={{ position: "absolute", left: 10, bottom: 0, width: 78, height: 300, borderRadius: 78, backgroundColor: colors.moss, rotate: "8deg", translate: `${-closing * 12}px 0` }} />
           <div style={{ position: "absolute", right: 10, top: 0, width: 78, height: 300, borderRadius: 78, backgroundColor: colors.primary, rotate: "8deg", translate: `${closing * 12}px 0` }} />

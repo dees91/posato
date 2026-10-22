@@ -1,13 +1,15 @@
 # Posato showcase media
 
 The root README uses the `Hero` composition as a looping GIF and links the
-longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`, and
-`StepSchedules` stills are the README's step screenshots; `SocialPreview` is the repository
+longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`,
+`StepSchedules`, `StepIcloud`, `StepFolder`, and `StepExport` stills are the README's step screenshots,
+each pairing the Mac with a phone (iPhone or Android); `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices. The walkthrough and the
 stills place them in the same generic device frames as the site, and the
 walkthrough names each click with a synthetic cursor; the hero crops the Mac
-captures directly and shows its one click, Start, the same way.
+captures directly and shows its one click, Start, the same way, then shows
+a change to one pause set reaching a Mac, an iPhone, a Linux computer, and an Android phone, drawn as outlines.
 [STORYBOARD.md](STORYBOARD.md) is the human contract and
 `src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
 enforces the storyboard rules. This is documentation artwork, not a test of
@@ -41,14 +43,16 @@ moves every crop taken from it, and nothing else reports that.
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,558,142 bytes.
-- `../.github/assets/step-websites.png`, `step-duration.png`, and
-  `step-schedules.png`: 1920 x 1080 composed stills on a transparent
-  background.
+- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 2,043,946 bytes.
+- `../.github/assets/step-websites.png` (Mac and Android), `step-duration.png`
+  (Mac and iPhone), `step-schedules.png` (Mac and iPhone), and
+  `step-icloud.png` (Mac and iPhone), `step-folder.png` (Mac and Android),
+  and `step-export.png` (Mac and iPhone): 1920 x 1080 composed stills on a
+  transparent background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 515,041 bytes, with a JPEG poster for the first paint, phones, and
+  faststart, 559,638 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
@@ -73,43 +77,64 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures come from the product tree of revision `27c593d` (the `main`
-head the `DOCS-005` branch started from, Posato 1.4, with the `DESIGN-004`
-interface), driven through
-`posato-control` by the scripts in `capture/` without a hand on either
-device, and reduced with FFmpeg only: Mac frames to 1272 pixels wide, iPhone
-frames to 660 pixels wide. No label, timer value, service result, or
-application UI has been reconstructed or retouched. Earlier captures are in
-Git history.
+All captures come from the product tree of revision `d0b34fa1` (the `main`
+head of Posato 1.5 that `DOCS-006` captured on 2026-10-22), driven through
+`posato-control` by the scripts in `capture/` without a hand on any
+device, and reduced with FFmpeg or PIL only: Mac frames to 1272 pixels
+wide, iPhone and Android frames to 660 pixels wide. No label, timer value,
+service result, or application UI has been reconstructed or retouched.
+Tracked captures are in the light appearance (`user-confirmed`
+2026-10-22); earlier dark captures are in Git history.
 
 - `mac-*.png`: development-signed Posato in a disposable Tart VM on macOS 26
-  in Dark Mode, never on the maintainer's Mac. The fixture is two pause sets,
-  `Focus` (the first set, renamed and the default, with `example.com`,
-  `example.net`, and the built-in Chess application) and `Evening`
-  (`example.net`; Chess was chosen in it with single `posato-control`
-  commands after the first schedule list, so `mac-schedules` and
-  `mac-scheduled-active` show no missing-apps notice while `mac-pause-sets`
-  shows Evening without apps), and two schedules, `Deep work` (Focus, weekdays
-  09:00 to 11:00) and `Evening reading` (Evening, daily, one hour). The sets
-  were created with single `posato-control` commands before the script ran. The VM finished the unified setup first, so the
-  session started without an administrator prompt. `capture/mac-captures.sh`
-  opens Focus from **Pause sets** for `apps` and `websites`, captures the
-  list with `sets`, and picks Chess through recognized screen text, because
-  the resident helper and the picker are two processes with one name;
-  `session` selects 45 minutes with the default set, reviews, starts, and
-  ends early; `schedules HH:MM` saves `Deep work`, captures it alone, then
-  saves `Evening reading` with the Evening set through `flow schedule`; and `scheduled` captures
-  Session once `Evening reading` started on its own. The duration, review,
-  and active frames were captured within one minute so their end times agree.
+  in Light Mode, never on the maintainer's Mac. The fixture is two pause
+  sets, `Focus` (the first set, renamed with `flow set --rename-from` and the
+  default, with `example.com`, `example.net`, and the built-in Chess
+  application) and `Evening` (`example.net`), and two schedules, `Deep work`
+  (Focus, weekdays 09:00 to 11:00) and `Evening reading` (Evening, daily,
+  one hour from a time a few minutes after the capture, so that
+  `mac-scheduled-active` shows it running). `vm onboard` finished the
+  unified setup first, so the session started without an administrator
+  prompt. `capture/mac-captures.sh` opens Focus from **Pause sets** for
+  `apps` and `websites`, captures the list with `sets`, and picks Chess
+  through recognized screen text, because the resident helper and the picker
+  are two processes with one name; `session` selects 45 minutes with the
+  default set, reviews, starts, and ends early; `schedules HH:MM` saves
+  `Deep work`, captures it alone, then saves `Evening reading` through
+  `flow schedule`; `scheduled` captures Session once `Evening reading`
+  started on its own; and `folder` creates a folder workspace in the guest's
+  `~/PosatoSync` and shows **Add a device** for `mac-add-device`, whose
+  pairing code expired when `unfolder` removed the workspace. `export`
+  switches on **Protect with a code** in the Export dialog for `mac-export`
+  and presses **Cancel**, so its code protects no file. `icloud` creates an
+  iCloud workspace with `flow icloud link` in a guest signed in to the
+  dedicated test Apple Account and captures the linked row for `mac-icloud`;
+  `unicloud` removes the workspace before the clone is destroyed.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
-  install, in Dark Mode, after the first-install skip scenario. The Focus and
-  Evening sets, the two synthetic domains, the Screen Time consent when asked, one
-  built-in application in Focus (Calculator, which Posato shows only as a
-  count), the notification permission, and the `Deep work` schedule were all
-  driven by `capture/iphone-captures.sh`, which deletes the schedule again.
-  The active frame follows the app reporting **Restrictions active.** iCloud
-  was off on both devices, so matching items and the schedule on the iPhone
-  do not demonstrate sync.
+  install, in Light Mode set by `appearance`, after the first-install skip
+  scenario, with the Focus and Evening sets and the `Deep work` schedule
+  driven by `capture/iphone-captures.sh`, with Calculator as the one
+  application. Screen Time consent (`screen-time-consent.json` from the Apps
+  tab) ran with the phone in Dark appearance, because the driver cannot read
+  the passcode keypad in Light; the captures then ran in Light. iCloud was
+  off, so matching items do not demonstrate sync. `import` adds `Deep work`
+  turned off, exports through `flow export` (Save to Files into the driver
+  host's folder), deletes the schedule, opens that file from **Import…**, and
+  captures the review for `iphone-import` before **Cancel**. For
+  `iphone-icloud` the phone, on the same test Apple Account, was reinstalled
+  and the first run skipped without sets, so it took Focus and Evening from
+  the workspace the Mac had just created; `icloud` joins it with **Sync with
+  iCloud** and `unicloud` removes it again.
+- `android-*.png`: the same tree on a Samsung Galaxy XCover7 with Android 14
+  in the light theme set by `appearance`, driven by
+  `capture/android-captures.sh` with the same sets (Calculator as the app)
+  and schedules; the status bar and navigation bar are cropped.
+  `android-join` shows the two-step join after choosing the phone's
+  synthetic `PosatoSync` folder, into which `posato-control relay` copied the
+  Mac's workspace: the folder is chosen and the pairing code step is open.
+- `capture/linux-captures.sh` drives a disposable Tart Ubuntu 24.04 clone in
+  light and dark (`THEME`); its frames are in the pull request, not tracked,
+  because the stills pair the Mac with a phone.
 
 The timeline selects observed states; its cuts do not assert elapsed session
 time or iCloud delivery, and the native application pickers and the
