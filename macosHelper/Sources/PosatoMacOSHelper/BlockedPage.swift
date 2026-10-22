@@ -42,7 +42,7 @@ enum BlockedPage {
   private static let styles = """
     :root {
       color-scheme: light dark;
-      --surface: #FFFEFA;
+      --surface: #F4F3EB;
       --ink: #18231F;
       --primary: #2E5D50;
       --muted: #626B63;
