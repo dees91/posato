@@ -358,14 +358,27 @@ before `openURL`, because the first page an already running Safari opens after
 a website pause ends can hang), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
-removed from the xcodebuild log), `swipeBack`, the system back gesture:
+removed from the xcodebuild log; when the keypad's keys are not in the
+accessibility tree, the driver finds the standard 3 x 4 keypad in a fresh
+screenshot and taps each key at its measured position through SpringBoard, and
+those coordinate-tap lines are removed too (the run's `.xcresult` bundle under
+the ignored `build/verification/` keeps XCTest's own activity log, key and
+coordinate taps included, unredacted). On the test iPhone (iOS 26.5) the
+Screen Time "Enter iPhone Passcode" keypad is readable in Dark appearance and
+unreadable in Light, so Light takes the screenshot path. The measured
+geometry is the test iPhone's 375 x 812 pt keypad; on another screen size an
+unreadable keypad may go unfound. An optional `pressKeys` passes only when no
+keypad is found; a keypad it cannot type, or one
+still on screen 10 s after typing, fails the step), `swipeBack`, the system back gesture:
 a drag from the leading screen edge most of the way across, `swipeLeft` (`query`), a quick swipe
 toward the leading edge across the matched element, which reveals a list row's swipe actions, and
 `adjustWheels` (`values`, optional `query`), which turns a system picker's wheels to the given values,
 first wheel first, within the matched element or the first picker on screen; tap a compact time picker
 first to open its wheels, and tap the element with id `PopoverDismissRegion` to close them. Any step can set `optional: true`: a missing
 element or a wait timeout then passes, for surfaces that appear only on some
-paths such as a Face ID retry. On iOS a pending system sheet belongs to the
+paths such as a Face ID retry. It means "this surface may not appear", not
+"skip it when it misbehaves": a step that found its surface and then failed
+still fails. On iOS a pending system sheet belongs to the
 running app, and activating the app for a new driver run dismisses it, so a
 consent flow must stay inside one scenario (see
 `fixtures/scenarios/screen-time-consent.json`).

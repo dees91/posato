@@ -3060,3 +3060,11 @@ first removal attempt that does not finish, not to a paused keychain.
   hero's device row. `observed`: since 2026-10-21 13:04 the test iPhone's
   Screen Time passcode keypad is unreadable to the driver
   (`kAXErrorServerNotFound`), so consent does not finish unattended.
+
+## [2026-10-22] tooling | pressKeys types an inaccessible passcode keypad
+
+- `observed` on the test iPhone (iOS 26.5): the Screen Time "Enter iPhone
+  Passcode" keypad exposes its keys to XCUITest in Dark appearance and not in
+  Light. The iOS driver now finds the keypad in a screenshot and taps measured
+  key positions; an optional `pressKeys` fails when a keypad appears and is not
+  typed, and coordinate-tap lines are removed from the xcodebuild log.

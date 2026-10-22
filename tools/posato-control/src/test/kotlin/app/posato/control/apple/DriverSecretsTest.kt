@@ -63,4 +63,21 @@ class DriverSecretsTest {
 
         assertEquals("t =     1.20s Tap \"Continue\" Button\n** TEST SUCCEEDED **", DriverSecrets.redactKeyTaps(log))
     }
+
+    @Test
+    fun `a pressKeys tap at a measured key position is removed from the xcodebuild log`() {
+        // When the keypad is not accessible, each digit is a tap at a SpringBoard coordinate, which names the key.
+        val log =
+            """
+            t =     1.20s Tap "Continue" Button
+            t =    22.75s Tap Application 'com.apple.springboard'[0.00, 0.00] -> (290.3, 517.1)
+            t =    22.75s     Wait for com.apple.springboard to idle
+            ** TEST SUCCEEDED **
+            """.trimIndent()
+
+        assertEquals(
+            "t =     1.20s Tap \"Continue\" Button\nt =    22.75s     Wait for com.apple.springboard to idle\n** TEST SUCCEEDED **",
+            DriverSecrets.redactKeyTaps(log),
+        )
+    }
 }
