@@ -6,8 +6,10 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * A verification run removed the test Apple Account's long-history zone that `SYNC-022` needed (2026-10-21). E2E
@@ -31,6 +33,14 @@ class ProtectedFixtureTest {
         assertNull(protectedFixtureRefusal(fixtures, destroyFixture = false) { listOf("other-account") })
         assertNull(protectedFixtureRefusal(emptyList(), destroyFixture = false) { null })
         assertNotNull(protectedFixtureRefusal(fixtures, destroyFixture = false) { null })
+    }
+
+    /** An option placed before the action once skipped the guard, so `flow icloud --timeout-seconds 900 remove` removed a fixture. */
+    @Test
+    fun `given options before the action when relaying flow icloud remove then the guard still applies`() {
+        assertTrue(removesICloudWorkspace(listOf("flow", "icloud", "remove", "-t", "desktop")))
+        assertTrue(removesICloudWorkspace(listOf("flow", "icloud", "--timeout-seconds", "900", "remove", "-t", "desktop")))
+        assertFalse(removesICloudWorkspace(listOf("flow", "icloud", "--timeout-seconds", "900", "link", "-t", "desktop")))
     }
 
     @Test

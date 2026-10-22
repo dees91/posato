@@ -114,7 +114,7 @@ object GuestRelay {
         val output = if (checksICloudKeychain(arguments)) {
             GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
         } else {
-            if (resumesICloudKeychain(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
+            if (removesICloudWorkspace(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
             runInGuest(context, line, arguments, stdin, runId)
         }
         print(output.envelope)
@@ -228,8 +228,3 @@ internal fun relayRunId(args: List<String>): String? {
 }
 
 private const val RUN_ID_OPTION = "--run-id"
-
-/** `flow icloud remove`, which unlinks a guest so that `vm destroy` can free its disk. */
-internal fun removesICloudWorkspace(forwarded: List<String>): Boolean = forwarded.take(ICLOUD_REMOVE.size) == ICLOUD_REMOVE
-
-private val ICLOUD_REMOVE = listOf("flow", "icloud", "remove")
