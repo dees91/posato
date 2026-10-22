@@ -1,10 +1,10 @@
 # Execution: `TARGETS-007`
 
 - **Brief:** [Export pause sets and schedules to a file and import them on any device](../specifications/targets-007-export-import.md)
-- **Status:** `in-progress` (device runs done; completed-change review next)
+- **Status:** `in-progress` (review folded, final runs done; pull request open)
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Branch:** `targets-007-export-import` (rebase after #182, roadmap revision 26)
+- **Branch:** `targets-007-export-import`
 
 ## Plan
 
@@ -19,17 +19,13 @@
    the content. Extension `.posato`, media type
    `application/vnd.posato.pause-sets`, iOS type `app.posato.pause-sets`.
    Readers detect plain or coded by the first bytes, never the name.
-2. **Code and key.** 9 characters drawn uniformly at random from the 32
-   letters of the pairing alphabet: 45 bits. PBKDF2-HMAC-SHA256 over the
-   code's 9 ASCII bytes (no groups or spaces, upper case) with the salt,
-   then HKDF-SHA256 with info `app.posato.export.v1/key` for the AES key
-   (domain separation). Iterations: one fixed value per container version,
-   chosen after measuring (step 9); a reader refuses any other count before
-   deriving. Residual risk stated in `PRIVACY.md` and on the export dialog:
-   the code stops casual readers, not a determined offline attack on a
-   leaked file (`inferred`, order of GPU-years). `SyncCryptoProvider` gains
-   `pbkdf2HmacSha256` (JDK and Android `PBKDF2WithHmacSHA256`, iOS
-   CommonCrypto in the Swift provider).
+2. **Code and key.** 9 random characters of the pairing alphabet (45 bits).
+   PBKDF2-HMAC-SHA256 over the normalized code's ASCII bytes and the salt,
+   then HKDF-SHA256 (info `app.posato.export.v1/key`) for the AES key. One
+   iteration count per container version, measured (step 9); a reader
+   refuses any other before deriving. Residual risk in `PRIVACY.md` and the
+   dialog (`inferred`: GPU-years offline). `pbkdf2HmacSha256` on JDK,
+   Android, and iOS CommonCrypto.
 3. **Validation before anything changes.** Size cap 4 MiB (10 sets of 1,024
    253-byte domains plus names and schedules). Then versions, shape, refs,
    names and domains (trim, NFC) through `PauseSets.of` and `SchedulePlan`
@@ -97,24 +93,28 @@
 
 ## Progress
 
-- Failing first, then green: codec, seal, planner, writer, export, service
-  (common), `PauseSetFileVectorTest` (JVM; RFC 7914, a file pinned with
-  Python), `IosPbkdf2Test` (iOS). Count 1,000,000: 1.43 s on the XCover7,
-  0.15 s on the iPhone 13 mini (`observed`).
-- Phones (runs `20261021-201948` to `-210500`): a coded Android export opened
-  by Python; combine, separate, replace both ways, replace refused in a
-  pause; Android file combined on the iPhone (for "Mac coded to iPhone": the
-  VMs and the iPhone were never held together); iPhone exports on Android
-  with **Turn on imported schedules**.
-- Linux (`20261022-090045` to `-091600`, GTK chooser by keys): Android file
-  combine and separate; coded export opened by Python; linked to Android by
-  folder, a Linux replace reached the phone with removals and the default;
-  replace refused and combine accepted in a pause; the review warns that
-  linked devices change too.
-- Mac (`20261022-094601` to `-100201`, panels by accessibility): primary
-  export opened by Python; peer combine, separate, replace; replace refused
-  while a scheduled pause ran. `open`: one **Turn on imported schedules**
-  turned only the first on ("could not be turned on", run
-  `20261022-095042-edec`); not reproduced on rerun or in a JVM test.
-- Fixed from the runs: what replace removes, the schedule-only result, the
-  switch label, and keyboard focus after the Linux chooser.
+- Failing first, then green: codec, seal, planner, writer, export, service,
+  `PauseSetFileVectorTest` (RFC 7914, a file pinned with Python),
+  `IosPbkdf2Test`, `TurnOnContentionTest`. 1,000,000 rounds: 1.43 s on the
+  XCover7, 0.15 s on the iPhone 13 mini (`observed`).
+- Phones, before the rebase onto #185 (`20261021-201948` to `-210500`):
+  coded Android export opened by Python; combine, separate, replace both
+  ways, replace refused in a pause; Android file on the iPhone; iPhone
+  exports on Android with **Turn on imported schedules**.
+- Linux at `e629fb09` (`20261022-090045` to `-091600`): Android file combine
+  and separate; coded export opened by Python; a Linux replace reached a
+  folder-linked Android phone; replace refused and combine accepted in a
+  pause; the linked warning. Focus failed first (`20261022-085638-9067`).
+- Mac at `f6acf4e4` (`20261022-094601` to `-100201`): primary export opened by
+  Python; peer combine, separate, replace; replace refused in a scheduled
+  pause. Turn on failed first (`20261022-095042-edec`, review R1).
+- Final, at `15c22c98`: Mac turn-on of three, one open now, twice
+  (`20261022-102741`, `-102807`); iPhone Save to Files, Cancel, then Save,
+  one export and no crash (`20261022-102510` to `-102721`); AC-04: Mac
+  coded on the iPhone (`20261022-102832`, `-102838`), Linux coded on
+  Android with replace (`20261022-102209-047e`).
+- Deviations: Android uses only the document picker; the Mac's panels take
+  no keys, so the Where menu and a bridge `click` replace Go to Folder.
+- Fixed from runs and review: what replace removes, the schedule-only
+  result, the switch label, focus after the Linux chooser, turn-on in one
+  transaction and an import retry, the share sheet's single end.
