@@ -3005,4 +3005,6 @@ first removal attempt that does not finish, not to a paused keychain.
   session setup, review, active pause, and block screen all draw on
   `#F4F3EB` (runs `20261022-074340-6d87`, `-074410-a9cf`, `-074427-e4bf`,
   `-074435-a8b4`, `-074442-4963`); in Dark they stay `#1C2520` (runs
-  `20261022-074531-9719` to `-074603-47ce`). iPhone and Mac runs pending.
+  `20261022-074531-9719` to `-074603-47ce`). On the test iPhone in Light the
+  set, the pause-set list, and session setup draw on `#F4F3EB` (runs
+  `20261022-081446-15d0`, `-081535-f743`, `-081657-9662`). Mac run pending.
