@@ -17,6 +17,7 @@ object DriverSecrets {
     const val DEVICE_PASSCODE = "devicePasscode"
     private const val ENVIRONMENT_PREFIX = "POSATO_SECRET_"
     private val KEY_ELEMENT = Regex(""""[^"]*" Key\b""")
+    private val SPRINGBOARD_COORDINATE_TAP = Regex("""com\.apple\.springboard.*-> \(""")
 
     fun environment(
         scenario: Scenario,
@@ -35,9 +36,12 @@ object DriverSecrets {
     /**
      * XCUITest names a keyboard key in every message about it (the wait for it to exist, the existence and
      * interruption checks, the lookup, and the tap), so a typed passcode would appear digit by digit in the
-     * xcodebuild log. Every line naming a key is dropped.
+     * xcodebuild log. When the keypad is not accessible, each key is a tap at a SpringBoard coordinate that is the
+     * key's position. Every line naming a key or such a tap is dropped.
      */
-    fun redactKeyTaps(log: String): String = log.lines().filterNot { KEY_ELEMENT.containsMatchIn(it) }.joinToString("\n")
+    fun redactKeyTaps(log: String): String = log.lines()
+        .filterNot { KEY_ELEMENT.containsMatchIn(it) || SPRINGBOARD_COORDINATE_TAP.containsMatchIn(it) }
+        .joinToString("\n")
 
     /** Reads a secret from the login Keychain; the value stays in memory. */
     fun keychainReader(context: RunContext): (String) -> String = { _ ->

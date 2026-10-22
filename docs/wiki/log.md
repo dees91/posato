@@ -3043,3 +3043,11 @@ first removal attempt that does not finish, not to a paused keychain.
   while another connection writes, so a multi-row change belongs in one
   transaction. Mac file panels take no synthetic keys but are in Posato's
   accessibility tree; the GTK chooser leaves keyboard focus nowhere.
+
+## [2026-10-22] tooling | pressKeys types an inaccessible passcode keypad
+
+- `observed` on the test iPhone (iOS 26.5): the Screen Time "Enter iPhone
+  Passcode" keypad exposes its keys to XCUITest in Dark appearance and not in
+  Light. The iOS driver now finds the keypad in a screenshot and taps measured
+  key positions; an optional `pressKeys` fails when a keypad appears and is not
+  typed, and coordinate-tap lines are removed from the xcodebuild log.

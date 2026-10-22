@@ -40,6 +40,11 @@ final class ScenarioExecutor {
   ]
   private static let appearanceSettle: TimeInterval = 1
 
+  private static let keypadDismissTimeout: TimeInterval = 10
+  private static let keyTimeout: TimeInterval = 3
+  private static let keyInterval: TimeInterval = 0.2
+  private static let keypadSettle: TimeInterval = 0.3
+
   private static let springboardScope = "springboard"
   private static let secretPrefix = "POSATO_SECRET_"
   private static let noBreakSpace = "\u{00A0}"
@@ -281,22 +286,88 @@ final class ScenarioExecutor {
     XCUIDevice.shared.system.open(url)
   }
 
-  /// Types a secret on the system keypad one key at a time. Errors never name the key,
-  /// so they cannot leak the secret.
+  /// Types a secret on the system keypad one key at a time. Errors never name a key, so they
+  /// cannot leak the secret.
+  ///
+  /// The keys are tapped through the accessibility tree when the keypad exposes them, and
+  /// otherwise at the positions `PasscodeKeypad` measures in a screenshot. Only a keypad that never
+  /// appears is a missing element, which an optional step accepts; a keypad that appears and is
+  /// not typed, or that stays on screen afterwards, fails the step.
   private func pressKeys(_ step: Step, timeout: TimeInterval) throws {
     guard let name = step.secret,
       let value = ProcessInfo.processInfo.environment[Self.secretPrefix + name.uppercased()],
-      !value.isEmpty
+      let leading = value.first
     else {
       throw DriverError(.scenarioInvalid, "pressKeys requires a secret the host provided")
     }
+    let first = springboard.keys[String(leading)]
+    var keypad: PasscodeKeypad?
+    let appeared = poll(timeout: timeout) {
+      if first.exists { return true }
+      keypad = PasscodeKeypad.locate()
+      return keypad != nil
+    }
+    guard appeared else {
+      throw DriverError(.elementNotFound, "no passcode keypad appeared within \(timeout) s")
+    }
+    if let keypad {
+      try pressByPosition(value, on: try settled(keypad, timeout: timeout))
+    } else {
+      try pressByAccessibility(value)
+    }
+    let dismissed = poll(timeout: Self.keypadDismissTimeout) {
+      !first.exists && PasscodeKeypad.locate() == nil
+    }
+    guard dismissed else {
+      throw DriverError(
+        .stepFailed,
+        "the passcode keypad was still on screen \(Self.keypadDismissTimeout) s after typing"
+      )
+    }
+  }
+
+  /// The keypad once two measurements a moment apart agree, so no tap lands on a keypad that is
+  /// still sliding in: a tap on the wrong key is a failed passcode attempt.
+  private func settled(_ keypad: PasscodeKeypad, timeout: TimeInterval) throws -> PasscodeKeypad {
+    var previous = keypad
+    var current: PasscodeKeypad?
+    let still = poll(timeout: timeout) {
+      Thread.sleep(forTimeInterval: Self.keypadSettle)
+      current = PasscodeKeypad.locate()
+      guard let current else { return false }
+      defer { previous = current }
+      return current.matches(previous)
+    }
+    guard still, let current else {
+      throw DriverError(.stepFailed, "the passcode keypad did not hold still within \(timeout) s")
+    }
+    return current
+  }
+
+  private func pressByAccessibility(_ value: String) throws {
+    NSLog("posato-driver: the passcode keypad is accessible; tapping its keys")
     for (position, character) in value.enumerated() {
       let key = springboard.keys[String(character)]
-      guard key.waitForExistence(timeout: timeout) else {
+      guard key.waitForExistence(timeout: Self.keyTimeout) else {
         throw DriverError(
-          .elementNotFound, "the system keypad has no key for position \(position + 1)")
+          .stepFailed, "the system keypad has no key for position \(position + 1)")
       }
       key.tap()
+    }
+  }
+
+  /// Taps each key at its measured centre. The keypad's process does not answer accessibility
+  /// queries then, so the taps go through SpringBoard's coordinate space, which is the screen's.
+  private func pressByPosition(_ value: String, on keypad: PasscodeKeypad) throws {
+    NSLog("posato-driver: the passcode keypad is not accessible; tapping measured key positions")
+    let origin = springboard.coordinate(withNormalizedOffset: .zero)
+    for (position, character) in value.enumerated() {
+      guard let centre = keypad.centres[character] else {
+        throw DriverError(
+          .stepFailed, "the secret has no keypad key at position \(position + 1)")
+      }
+      origin.withOffset(CGVector(dx: centre.x, dy: centre.y)).tap()
+      Thread.sleep(forTimeInterval: Self.keyInterval)
     }
   }
 
