@@ -24,10 +24,10 @@ jobs:
       version: ${{ steps.source.outputs.version }}
       commit: ${{ steps.source.outputs.commit }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -70,7 +70,7 @@ jobs:
       - name: Install the packaging and smoke-test tools
         run: |
           sudo apt-get update -q
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q openjdk-21-jdk fakeroot dpkg-dev binutils xvfb xdotool dbus
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q openjdk-21-jdk fakeroot dpkg-dev binutils xvfb xdotool dbus libgl1-mesa-dri libegl1
       - name: Package
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-${{ matrix.arch }}
