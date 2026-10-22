@@ -262,7 +262,7 @@ brand provenance, not replacements for the current application colors.
 | onSurfaceVariant | `#626B63` | `#AFB9AE` |
 | surfaceContainer / surfaceVariant | `#EBEAE1` | `#232E26` |
 | surfaceContainerLow | `#EFEEE6` | `#202A23` |
-| surfaceContainerLowest / High / Highest | `#FBFAF4` / `#E6E5DC` / `#E1E0D6` | see PosatoPalette.kt |
+| surfaceContainerLowest / High / Highest | `#FBFAF4` / `#EDECE4` / `#E1E0D6` | see PosatoPalette.kt |
 | outline | `#A3AFA2` | `#6D816E` |
 | outlineVariant | `#D8D8CD` | `#39453B` |
 | tertiary (caution) | `#805811` | `#EDC780` |
@@ -275,7 +275,9 @@ The light surface is a warm `#F4F3EB` rather than near-white `#FFFEFA`, with
 the container, outline, and canvas tones shifted so they still read against
 it (`user-confirmed` 2026-10-21, idea 51, `DESIGN-005`, after a test on a Mac
 and an iPhone). Muted text (`#626B63`) keeps WCAG AA on the surface (4.96:1)
-and on surfaceContainer (4.57:1). posato.app's light theme, the macOS pause
+and on surfaceContainer (4.57:1). surfaceContainerHigh, the drawn dialogs'
+container, stays lighter than surfaceContainer so dialog messages and field
+hints keep AA too (4.66:1). posato.app's light theme, the macOS pause
 page, and the Android block screen's window use the same surface.
 
 The complete ColorScheme mapping is in

@@ -32,7 +32,7 @@ internal object PosatoPalette {
         surfaceContainer = Color(0xFFEBEAE1),
         surfaceContainerLow = Color(0xFFEFEEE6),
         surfaceContainerLowest = Color(0xFFFBFAF4),
-        surfaceContainerHigh = Color(0xFFE6E5DC),
+        surfaceContainerHigh = Color(0xFFEDECE4),
         surfaceContainerHighest = Color(0xFFE1E0D6),
         outline = Color(0xFFA3AFA2),
         outlineVariant = Color(0xFFD8D8CD),
