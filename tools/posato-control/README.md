@@ -183,6 +183,7 @@ grants a permission.
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
 | `press --key <key> [--modifiers cmd,shift]` | all | Keyboard input. Desktop: `return`, `escape`, `tab`, `delete`, `space`, arrows, digits, letters, with `--modifiers`. iOS: `return`, `delete`, `space`, `home`, `volumeUp`, `volumeDown` (device only), and `escape`/`tab` where the keyboard offers them. |
 | `orient --to portrait\|portraitUpsideDown\|landscapeLeft\|landscapeRight` | simulator, device | Rotates the device through XCUITest and waits until the application window has the matching aspect and has settled. A target that shares the current aspect first goes through the other aspect, so every rotation is observable and an orientation the application does not support fails. The orientation outlives the run. The desktop refuses the command. |
+| `appearance [light\|dark]` | simulator, device, android | Switches the phone's system appearance, as Settings > Display & Brightness or Android's dark theme would, and reports `before`, `mode` (the mode afterwards), and `changed`; without a mode it only reads it. A phone already in the requested mode is left alone. iOS sets `XCUIDevice.appearance` from the driver without starting Posato (one driver run, about 4 s on the iPhone) and keeps the report as `evidence`; Android runs `cmd uimode night yes\|no`, where a mode set to `auto` or `custom` reads as that word. The mode outlives the run. Desktop and Linux refuse with `UNSUPPORTED_ON_TARGET`. |
 | `wait --for exists\|absent\|enabled\|disabled\|settled [query] [--timeout-seconds 10]` | all | Polls until the condition holds. |
 | `run --scenario file.json` (or `-`) `[--summary]` | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. `--summary` reports the step count and duration and writes the steps to `run-result.json`, as a failure always does. |
 | `logs [--tail n] [--stream-seconds s]` | all | Captured application log; the simulator can also stream the unified log for a few seconds. |
@@ -345,7 +346,9 @@ Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 state a scenario starts from, such as no active session or no set an earlier run left behind), `tap` (`repeat`
 taps the element, located once, that many times with `seconds` between taps; not on iOS), `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
-(`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
+(`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `appearance`
+(`appearance`: `light` or `dark`, or none to read it; iOS only, attaches
+`appearance-<index>.json` with the mode before and after), `terminate`, and
 `relaunch`. `openURL` (`url`) opens a link on iOS and Android, as a message or a camera scan does. iOS only: `launchApp` (`bundleId`, brought forward without being
 terminated), `terminateApp` (`bundleId`, ended if it runs, for example Safari
 before `openURL`, because the first page an already running Safari opens after
@@ -677,7 +680,10 @@ with the scenario passed as a base64 environment variable and reads the
 attachments back with `xcresulttool`. Each invocation costs roughly 5 s of
 XCUITest startup on the Simulator and 6–12 s on an unlocked iPhone (about a
 minute when the runner must be reinstalled or the phone is locked), so prefer
-`run --scenario` over many single commands on iOS. The xcodebuild transcript
+`run --scenario` over many single commands on iOS. `appearance` switches the
+whole device to Light or Dark Mode through `XCUIDevice.appearance`, with no
+Control Center or Settings navigation, so captures in either mode need no
+hand on the phone. The xcodebuild transcript
 of every driver run is kept next to its result bundle in the run directory.
 
 ## Workflow for an agent

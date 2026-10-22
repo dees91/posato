@@ -1,5 +1,6 @@
 package app.posato.control
 
+import app.posato.control.cli.AppearanceCommand
 import app.posato.control.cli.ArtifactsCommand
 import app.posato.control.cli.BuildCommand
 import app.posato.control.cli.CleanupCommand
@@ -158,6 +159,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     TypeCommand(),
     PressCommand(),
     OrientCommand(),
+    AppearanceCommand(),
     WaitCommand(),
     RunCommand(),
     LogsCommand(),

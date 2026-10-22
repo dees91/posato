@@ -3003,3 +3003,14 @@ first removal attempt that does not finish, not to a paused keychain.
   icons only through an `index.theme`; dbus-java throws unchecked errors
   for a missing session bus.
 
+
+## [2026-10-22] tooling | posato-control appearance switches Light and Dark Mode
+
+- `posato-control appearance [light|dark]` switches the test iPhone or the
+  Simulator through `XCUIDevice.appearance` (XCUIAutomation, iOS 15 and
+  later) without Control Center or Settings, and Android through
+  `cmd uimode night yes|no`; it reports `before`, `mode`, and `changed`.
+  `observed` on the iPhone 13 mini (iOS 26.5): each switch took about 4 s,
+  a fresh driver read back the new mode, and the Home Screen widgets
+  changed; `observed` on the Galaxy XCover7 too. Captures no longer need
+  the maintainer to switch the phone by hand.

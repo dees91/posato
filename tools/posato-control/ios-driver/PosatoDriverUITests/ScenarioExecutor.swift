@@ -34,6 +34,11 @@ final class ScenarioExecutor {
     "landscapeLeft": .landscapeLeft,
     "landscapeRight": .landscapeRight,
   ]
+  private static let appearances: [String: XCUIDevice.Appearance] = [
+    "light": .light,
+    "dark": .dark,
+  ]
+  private static let appearanceSettle: TimeInterval = 1
 
   private static let springboardScope = "springboard"
   private static let secretPrefix = "POSATO_SECRET_"
@@ -193,6 +198,8 @@ final class ScenarioExecutor {
       try scrollTo(step, timeout: timeout)
     case "orient":
       try orient(step, timeout: timeout)
+    case "appearance":
+      artifacts.append(try appearance(step, index: index, timeout: timeout))
     case "launchApp":
       try launchApp(step, timeout: timeout)
     case "openURL":
@@ -466,6 +473,49 @@ final class ScenarioExecutor {
     }
     try rotate(to: orientation, named: name, timeout: timeout)
     try waitForSettled(timeout: timeout)
+  }
+
+  /// Reads the system appearance and, when the step names another one, switches the whole
+  /// device to it through XCUIDevice, as Settings > Display & Brightness would, then waits until
+  /// the device reports it. It needs no application in front and changes nothing when the device
+  /// is already in the requested mode. The attached JSON records the mode before and after.
+  private func appearance(_ step: Step, index: Int, timeout: TimeInterval) throws -> String {
+    let device = XCUIDevice.shared
+    let before = Self.appearanceName(device.appearance)
+    if let requested = step.appearance {
+      guard let target = Self.appearances[requested] else {
+        let valid = Self.appearances.keys.sorted().joined(separator: ", ")
+        throw DriverError(.scenarioInvalid, "appearance must be one of: \(valid)")
+      }
+      if device.appearance != target {
+        device.appearance = target
+        guard poll(timeout: timeout, until: { device.appearance == target }) else {
+          throw DriverError(
+            .waitTimeout, "the device did not report \(requested) within \(timeout) s")
+        }
+        // The system redraws every visible surface after the switch; a following screenshot
+        // should show the new mode.
+        Thread.sleep(forTimeInterval: Self.appearanceSettle)
+      }
+    }
+    let report = ["before": before, "after": Self.appearanceName(device.appearance)]
+    let fileName = "appearance-\(index).json"
+    let attachment = XCTAttachment(
+      data: try DriverJSON.encoder(pretty: false).encode(report),
+      uniformTypeIdentifier: "public.json"
+    )
+    attachment.name = fileName
+    attachment.lifetime = .keepAlways
+    attach(attachment)
+    return fileName
+  }
+
+  private static func appearanceName(_ appearance: XCUIDevice.Appearance) -> String {
+    switch appearance {
+    case .light: return "light"
+    case .dark: return "dark"
+    default: return "unspecified"
+    }
   }
 
   private func rotate(
