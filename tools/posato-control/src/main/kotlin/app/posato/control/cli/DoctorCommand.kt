@@ -40,7 +40,7 @@ class DoctorCommand :
         targets.forEach { target -> checks.addAll(targetChecks(session, target)) }
         // Only on request: the probe brings the XCTest runner to the front of a phone another session may be driving.
         if (session.options.target == Target.DEVICE && !runsInVirtualMachine() && !skipAutomationProbe) {
-            automationProbe(session)?.let(checks::add)
+            checks.addAll(automationProbe(session))
         }
         val ok = checks.none { !it.ok && it.severity == Severity.ERROR.name.lowercase() }
         return ControlJson.pretty.encodeToJsonElement(DoctorReport.serializer(), DoctorReport(ok, checks))
@@ -74,11 +74,11 @@ class DoctorCommand :
         }
     }
 
-    /** The device backend's automation probe; null when no device backend can be made. */
-    private fun automationProbe(session: Session): DoctorCheck? = try {
+    /** The device backend's automation probe and the appearance it read; a failure when no device backend can be made. */
+    private fun automationProbe(session: Session): List<DoctorCheck> = try {
         session.backend(Target.DEVICE).automationProbe()
     } catch (exception: ControlException) {
-        DoctorCheck.fail("device.automation", exception.message ?: exception.code.name, exception.hint, Severity.WARN)
+        listOf(DoctorCheck.fail("device.automation", exception.message ?: exception.code.name, exception.hint, Severity.WARN))
     }
 
     /** A host that runs out of space breaks a build or a clone midway, long after this check could have said so. */

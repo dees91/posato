@@ -383,7 +383,7 @@ private const val ENDPOINT_POLL_MS = 1_000L
 internal fun vmDirectory(line: VmLine): Path = stateRoot().resolve(line.cloneName)
 
 /** The driver's machine-wide VM state in Tart's home; owner-only, since screen captures and the VNC log pass through it. */
-private fun stateRoot(): Path = tartHome().resolve("posato-control")
+internal fun stateRoot(): Path = tartHome().resolve("posato-control")
 
 private val OWNER_ONLY_DIRECTORY = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))
 

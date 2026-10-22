@@ -3068,3 +3068,21 @@ first removal attempt that does not finish, not to a paused keychain.
   Light. The iOS driver now finds the keypad in a screenshot and taps measured
   key positions; an optional `pressKeys` fails when a keypad appears and is not
   typed, and coordinate-tap lines are removed from the xcodebuild log.
+
+## [2026-10-22] tooling | Release 1.5 retrospective fixes
+
+- `flow icloud remove --vm` refuses a guest signed in to an Apple Account
+  listed in the machine-wide `~/.tart/posato-control/protected-fixtures.json`
+  unless `--destroy-fixture` is passed, after a verification run removed the
+  long-history zone `SYNC-022` needed.
+- `pr-evidence` accepts a `Verified <sha>` line only when every path except
+  `docs/`, `.md` files, `.agents/`, and `.claude/` matches the head; its old
+  directory list missed `androidApp/` and `linuxHelper/`. It must pass
+  before `babysit-pr adopt`.
+- `tools/roadmap-mirror` and the `publish-row-pr` skill publish a row's pull
+  request and update the GitHub Projects mirror. `observed` 2026-10-22:
+  GitHub's item list for the project came back empty or without new items
+  for many minutes while writes and reads by id worked.
+- `doctor -t device` and `-t android` report the phone's appearance; a
+  review rule asks screen changes to update the recipes that drive them;
+  roadmap revision 27 adds `QUALITY-013` and `PLATFORM-003`.

@@ -70,7 +70,11 @@ never from the Apple Developer portal. With the one-time setup in
   **Remove workspace** first. `vm destroy` refuses a running guest whose
   database shows a linked workspace (`WORKSPACE_LINKED`, exit 3); it cannot
   check a stopped guest or an unreadable database, so the rule is yours to
-  keep. `--keep-workspace` is only for a guest whose app cannot run.
+  keep. `--keep-workspace` is only for a guest whose app cannot run or whose
+  workspace is a protected fixture: `flow icloud remove` refuses an Apple
+  Account listed in the machine-wide protected fixtures file unless
+  `--destroy-fixture` is passed, so never pass it unless the task owns the
+  fixture (driver README, "Protected fixtures").
 - **Notarized candidates.** Update and release checks install a Developer ID
   DMG in a fresh clone with `$PC vm install --line <line> --dmg <file>`
   instead of using the development package; it installs by Finder drag and
@@ -373,7 +377,12 @@ with `appearance -t device dark` (or `light`; no mode only reads it), or the
 iOS scenario step `{"action":"appearance","appearance":"dark"}`. It reports
 `before`, `mode`, and `changed` and leaves a phone already in that mode alone.
 Never ask the maintainer to switch the appearance by hand. The mode outlives
-the run, so put the phone back in the mode it had when you finish.
+the run, so put the phone back in the mode it had when you finish;
+`doctor -t device` (with its automation probe) and `doctor -t android` report
+it as `device.appearance` and `android.appearance`. Capture scripts set the
+appearance explicitly instead of trusting the current mode. On iOS 26.5 the
+Screen Time passcode keypad is unreadable to XCUITest in Light appearance,
+so `pressKeys` falls back to coordinate taps there (since PR #190).
 
 Platform traps that invalidate a run:
 
@@ -449,11 +458,13 @@ Proof standard for a feature:
    request: `Verified <sha> on <target>: <scenario or command> -> <result>, run <run-id>`.
    Verify and post again after any later application change; reviewers block
    a merge on evidence that does not name the head.
-6. Before `gh pr ready`, run `$PC pr-evidence --pr <number>` in the worktree
-   that holds the runs. It reads lines that start with `Verified` in comments
-   by the author or the repository owner, and fails when the last one's
-   product change differs from the head's (rebases do not count) or a cited
-   `run <id>` has no directory here. Pass the run id
+6. Before `gh pr ready` and before `babysit-pr adopt`, run
+   `$PC pr-evidence --pr <number>` in the worktree that holds the runs; do
+   not hand the pull request over until it passes. It reads lines that start
+   with `Verified` in comments by the author or the repository owner, and
+   fails when the last one's product tree differs from the head's (every path
+   except `docs/`, `.md` files, `.agents/`, and `.claude/`; a rebase onto a
+   newer main does not count) or a cited `run <id>` has no directory here. Pass the run id
    as one `--run-id <id>`; a second one is refused.
 
 Report an unreachable path with the exact command and the failing check

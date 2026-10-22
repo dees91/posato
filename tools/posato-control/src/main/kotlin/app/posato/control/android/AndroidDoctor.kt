@@ -18,7 +18,7 @@ class AndroidDoctor(
     fun checks(): List<DoctorCheck> {
         val reachable = reachability()
         if (!reachable.ok) return listOf(adb(), reachable, apk())
-        return listOf(adb(), reachable, version(), apk(), installed(), foreignVpn(), privateDns(), screenLock())
+        return listOf(adb(), reachable, version(), apk(), installed(), foreignVpn(), privateDns(), screenLock(), appearance())
     }
 
     private fun adb(): DoctorCheck = if (Files.isExecutable(java.nio.file.Paths.get(AndroidDevice.ADB))) {
@@ -106,6 +106,16 @@ class AndroidDoctor(
                 Severity.INFO,
             )
         }
+    }
+
+    /**
+     * The mode outlives a run and decides what a capture shows, so a run that forgot to restore it shows here; read as
+     * `appearance -t android` reads it.
+     */
+    private fun appearance(): DoctorCheck = try {
+        DoctorCheck.pass("android.appearance", "The system appearance is ${device.nightMode()}.")
+    } catch (exception: ControlException) {
+        DoctorCheck.fail("android.appearance", exception.message ?: "The night mode is unreadable.", "Run `appearance -t android`.", Severity.INFO)
     }
 
     private companion object {

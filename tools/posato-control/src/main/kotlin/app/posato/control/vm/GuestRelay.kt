@@ -97,7 +97,11 @@ object GuestRelay {
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
         // Removing a workspace is how a linked clone becomes destroyable, so it runs below the minimum.
-        if (!removesICloudWorkspace(forwarded)) requireGuestRoom(context.layout.root, line)
+        if (removesICloudWorkspace(forwarded)) {
+            requireRemovableWorkspace(context, line, forwarded)
+        } else {
+            requireGuestRoom(context.layout.root, line)
+        }
         requireCurrentTooling(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
@@ -110,7 +114,7 @@ object GuestRelay {
         val output = if (checksICloudKeychain(arguments)) {
             GuestICloudFlow(context, line).run(arguments) { sliced -> runInGuest(context, line, sliced, stdin, runId) }
         } else {
-            if (resumesICloudKeychain(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
+            if (removesICloudWorkspace(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
             runInGuest(context, line, arguments, stdin, runId)
         }
         print(output.envelope)
@@ -146,6 +150,16 @@ object GuestRelay {
         // The envelope is the evidence of commands such as observe, which write nothing else into their run directory.
         if (envelope.isNotBlank()) Files.writeString(hostRun.resolve("envelope.json"), envelope)
         return GuestOutput(output.exitCode, envelope, output.stderr)
+    }
+
+    /** A workspace listed as a protected fixture is removed only with `--destroy-fixture` (retro of release 1.5). */
+    private fun requireRemovableWorkspace(
+        context: RunContext,
+        line: VmLine,
+        forwarded: List<String>,
+    ) {
+        val fixtures = loadProtectedFixtures(protectedFixturesFile())
+        protectedFixtureRefusal(fixtures, DESTROY_FIXTURE_OPTION in forwarded) { signedInAccounts(Tart(context), line.cloneName) }?.let { throw it }
     }
 
     private const val RELAY_TIMEOUT_MINUTES = 30L
@@ -214,8 +228,3 @@ internal fun relayRunId(args: List<String>): String? {
 }
 
 private const val RUN_ID_OPTION = "--run-id"
-
-/** `flow icloud remove`, which unlinks a guest so that `vm destroy` can free its disk. */
-internal fun removesICloudWorkspace(forwarded: List<String>): Boolean = forwarded.take(ICLOUD_REMOVE.size) == ICLOUD_REMOVE
-
-private val ICLOUD_REMOVE = listOf("flow", "icloud", "remove")

@@ -33,20 +33,39 @@ internal data class GuestOutput(
  * Whether forwarded arguments run `flow icloud link`, the one action that waits for a key from iCloud Keychain. A
  * removal never does, and gating it would leave a clone whose keychain cannot be resumed unable to remove its workspace.
  */
-internal fun checksICloudKeychain(arguments: List<String>): Boolean {
-    if (arguments.take(2) != listOf("flow", "icloud")) return false
-    return arguments.drop(2).firstOrNull { it == LINK_ACTION || it == REMOVE_ACTION } == LINK_ACTION
-}
+internal fun checksICloudKeychain(arguments: List<String>): Boolean = iCloudAction(arguments) == LINK_ACTION
 
 /**
- * Whether forwarded arguments run `flow icloud remove`. A clone's keychain pauses a few minutes after it boots, and a
- * removal against a paused keychain waits out its whole timeout, so the host resumes the keychain first without
- * refusing when that fails.
+ * Whether forwarded arguments run `flow icloud remove`, which unlinks a guest so that `vm destroy` can free its disk.
+ * The action is the first positional word, so `flow icloud --run-id link remove` counts too. A clone's keychain
+ * pauses a few minutes after it boots, and a removal against a paused keychain waits out its whole timeout, so the host
+ * resumes the keychain first without refusing when that fails.
  */
-internal fun resumesICloudKeychain(arguments: List<String>): Boolean {
-    if (arguments.take(2) != listOf("flow", "icloud")) return false
-    return arguments.drop(2).firstOrNull { it == LINK_ACTION || it == REMOVE_ACTION } == REMOVE_ACTION
+internal fun removesICloudWorkspace(arguments: List<String>): Boolean = iCloudAction(arguments) == REMOVE_ACTION
+
+/**
+ * The positional action of `flow icloud`, read as Clikt reads it: an option in [VALUE_OPTIONS] consumes the next
+ * word, any other option word is a flag or carries its value after `=`, and every word after `--` is positional.
+ */
+private fun iCloudAction(arguments: List<String>): String? {
+    if (arguments.take(2) != listOf("flow", "icloud")) return null
+    val words = arguments.drop(2).iterator()
+    while (words.hasNext()) {
+        val word = words.next()
+        when {
+            word == END_OF_OPTIONS -> return words.asSequence().firstOrNull()
+            word in VALUE_OPTIONS -> if (words.hasNext()) words.next()
+            word.startsWith("-") -> Unit
+            else -> return word
+        }
+    }
+    return null
 }
+
+private const val END_OF_OPTIONS = "--"
+
+/** The options of `flow icloud` and the global group that take a separate value, plus the relay's own `--vm`. */
+private val VALUE_OPTIONS = setOf("-t", "--target", "--udid", "--run-id", "--artifacts", "--timeout", TIMEOUT_OPTION, "--vm")
 
 /** The whole wait `flow icloud` was asked for, or null when its value is not a number and the guest should say so. */
 internal fun flowTimeoutSeconds(arguments: List<String>): Long? {

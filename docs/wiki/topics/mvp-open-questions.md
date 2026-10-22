@@ -1310,6 +1310,16 @@ below. This queue retains idea provenance without expanding the original MVP.
     container, outline, and background tones shifted so they still read
     against it, on every platform and on posato.app's light theme; tested on
     a Mac and an iPhone before acceptance. Owner: `DESIGN-005` (1.5).
+52. **Linux onboarding in the driver after the service is installed.**
+    `observed` in the release 1.5 retrospective, `user-confirmed`
+    (2026-10-22): `posato-control flow onboard -t linux` waits for **Allow**,
+    but once the pausing service is installed the page shows **Continue**,
+    so a rerun on the same clone fails. Owner: backlog row `QUALITY-013`.
+53. **One resident-window core for Mac, Linux, and Windows.**
+    `user-confirmed` (2026-10-22): `LINUX-003` built the Linux status icon,
+    window close, and start at login beside the Mac's code and kept the Mac
+    untouched; when Windows arrives, extract a shared core instead of a third
+    copy. Owner: backlog row `PLATFORM-003`.
 
 ## Later platform questions
 

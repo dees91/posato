@@ -20,10 +20,12 @@ import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
 import app.posato.control.core.TrackedProcess
+import app.posato.control.model.Actions
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.LaunchConfiguration
 import app.posato.control.model.Scenario
 import app.posato.control.model.Severity
+import app.posato.control.model.Step
 import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.readLines
@@ -100,31 +102,44 @@ class DeviceLifecycle(
      * the first interaction an hour later (release 1.4 retro). It takes the driver's start-up time, about 6 to 12 s,
      * and brings the XCTest runner to the front briefly, so it runs only for an explicit `doctor -t device`.
      */
-    override fun automationProbe(): DoctorCheck {
+    override fun automationProbe(): List<DoctorCheck> {
         if (xcodeBuild.driverState(Target.DEVICE) != XcodeBuild.DriverState.FRESH) {
-            return DoctorCheck.unknown(
-                "device.automation",
-                "Not probed: the device driver is not built from its current sources.",
-                "Run `build -t device --driver`, then `doctor -t device` again.",
+            return listOf(
+                DoctorCheck.unknown(
+                    "device.automation",
+                    "Not probed: the device driver is not built from its current sources.",
+                    "Run `build -t device --driver`, then `doctor -t device` again.",
+                ),
             )
         }
         return try {
-            val probe = Scenario(launch = LaunchConfiguration(skip = true))
-            IosDriverRunner(context, xcodeBuild, Target.DEVICE).run(probe, session.udid(), IOS_BUNDLE_ID, PROBE_TIMEOUT)
-            DoctorCheck.pass("device.automation", "The test iPhone accepts UI automation.")
+            // The probe reads the appearance on the way: in Light the Screen Time passcode keypad is unreadable to
+            // XCUITest on iOS 26.5, and a run that forgot to restore the mode changes every capture after it.
+            val probe = Scenario(launch = LaunchConfiguration(skip = true), steps = listOf(Step(action = Actions.APPEARANCE)))
+            val run = IosDriverRunner(context, xcodeBuild, Target.DEVICE).run(probe, session.udid(), IOS_BUNDLE_ID, PROBE_TIMEOUT)
+            listOf(DoctorCheck.pass("device.automation", "The test iPhone accepts UI automation."), appearanceCheck(run))
         } catch (exception: ControlException) {
             val locked = exception.code == ErrorCode.DEVICE_AUTOMATION_LOCKED
-            DoctorCheck.fail(
-                "device.automation",
-                if (locked) {
-                    "DEVICE_AUTOMATION_LOCKED: the test iPhone is locked or waits for its XCTest passcode."
-                } else {
-                    exception.message ?: exception.code.name
-                },
-                if (locked) "Unlock the iPhone, enter its passcode if it asks, and run `doctor -t device` again." else exception.hint,
-                Severity.WARN,
+            listOf(
+                DoctorCheck.fail(
+                    "device.automation",
+                    if (locked) {
+                        "DEVICE_AUTOMATION_LOCKED: the test iPhone is locked or waits for its XCTest passcode."
+                    } else {
+                        exception.message ?: exception.code.name
+                    },
+                    if (locked) "Unlock the iPhone, enter its passcode if it asks, and run `doctor -t device` again." else exception.hint,
+                    Severity.WARN,
+                ),
             )
         }
+    }
+
+    private fun appearanceCheck(run: DriverRun): DoctorCheck = try {
+        val report = AppearanceReport.read(context.layout.root, run.result)
+        DoctorCheck.pass("device.appearance", "The system appearance is ${report.after}.")
+    } catch (exception: ControlException) {
+        DoctorCheck.fail("device.appearance", exception.message ?: "The appearance is unreadable.", "Run `appearance -t device`.", Severity.INFO)
     }
 
     private fun driverCheck(): DoctorCheck = when (xcodeBuild.driverState(Target.DEVICE)) {
