@@ -3086,3 +3086,9 @@ first removal attempt that does not finish, not to a paused keychain.
 - `doctor -t device` and `-t android` report the phone's appearance; a
   review rule asks screen changes to update the recipes that drive them;
   roadmap revision 27 adds `QUALITY-013` and `PLATFORM-003`.
+
+## [2026-10-22] web | Ask for a GitHub star on posato.app and in the README
+
+- `user-confirmed`: as the first step of promoting the open-source project,
+  the hero and the README ask visitors whom Posato helps to star the
+  repository; `DESIGN.md` records the hero sentence.
