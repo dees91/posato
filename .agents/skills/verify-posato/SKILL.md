@@ -377,7 +377,12 @@ with `appearance -t device dark` (or `light`; no mode only reads it), or the
 iOS scenario step `{"action":"appearance","appearance":"dark"}`. It reports
 `before`, `mode`, and `changed` and leaves a phone already in that mode alone.
 Never ask the maintainer to switch the appearance by hand. The mode outlives
-the run, so put the phone back in the mode it had when you finish.
+the run, so put the phone back in the mode it had when you finish;
+`doctor -t device` (with its automation probe) and `doctor -t android` report
+it as `device.appearance` and `android.appearance`. Capture scripts set the
+appearance explicitly instead of trusting the current mode. On iOS 26.5 the
+Screen Time passcode keypad is unreadable to XCUITest in Light appearance,
+so `pressKeys` falls back to coordinate taps there (since PR #190).
 
 Platform traps that invalidate a run:
 

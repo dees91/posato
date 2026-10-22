@@ -5,6 +5,7 @@ import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.core.RunContext
+import app.posato.control.model.Appearances
 import app.posato.control.model.SnapshotNode
 import java.nio.file.Files
 import java.nio.file.Path
@@ -73,6 +74,20 @@ class AndroidDevice(
     }
 
     fun property(name: String): String = shell("getprop $name").stdout.trim()
+
+    /** `light`, `dark`, or the raw `auto`/`custom` value `cmd uimode night` reports. */
+    fun nightMode(): String {
+        val output = shell("cmd uimode night")
+        val value = output.stdout.substringAfter("Night mode:", "").trim()
+        if (output.exitCode != 0 || value.isEmpty()) {
+            throw ControlException(ErrorCode.COMMAND_FAILED, "cmd uimode night did not report the night mode: ${output.stdout.trim()}")
+        }
+        return when (value) {
+            "yes" -> Appearances.DARK
+            "no" -> Appearances.LIGHT
+            else -> value
+        }
+    }
 
     fun screenshot(file: Path): Path {
         Files.createDirectories(file.parent)

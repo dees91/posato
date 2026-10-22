@@ -77,8 +77,8 @@ data class LogsResult(
 interface Lifecycle {
     fun doctor(): List<DoctorCheck>
 
-    /** A short live check that the target accepts UI automation; null where no such probe exists. */
-    fun automationProbe(): DoctorCheck? = null
+    /** A short live check that the target accepts UI automation, and what it read on the way; empty where no probe exists. */
+    fun automationProbe(): List<DoctorCheck> = emptyList()
 
     fun build(options: BuildOptions): BuildResult
 
