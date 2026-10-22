@@ -35,9 +35,11 @@ Follow `releasing.md`. Differences for 1.5:
   `ubuntu-24.04-arm` from R; the arm64 package also passes the Linux E2E in
   the Tart clone. No update feed: an update is a new `.deb` installed over
   the old one.
-- **Android:** a release build type and a signing configuration that reads
-  the keystore path from the ignored `local.properties` and the passwords
-  from the login Keychain. The release-signed `Posato-1.5.0.apk` passes
+- **Android:** the default `release` build type without a signing
+  configuration; `apksigner` signs it after the build with the keystore
+  named in the ignored `local.properties` and the password piped from the
+  login Keychain, so Gradle never sees the key (the plan review's
+  correction to the first draft of this brief). The release-signed `Posato-1.5.0.apk` passes
   the Android E2E on the test phone. No update feed: an update is a new APK
   signed with the same key.
 - **Release assets:** the five macOS assets plus the two `.deb` files and

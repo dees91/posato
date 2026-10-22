@@ -163,7 +163,14 @@ Run directories are under the release worktree's ignored
 | Setup and one blocking pause | `legacy`, arm64 release DMG | pass (`220636-8436`) |
 | Intel release DMG passes Gatekeeper, shows "This version is for Intel Macs" under Rosetta, leaves no process or launchd item after Quit; the candidate sets up, blocks, and starts a schedule on its own | `ventura` | pass (`221155-5850`, `221613-9d70`) |
 | iCloud link (7 min 40 s), the pause-set notice, the pause-sets scenario, one press of Remove workspace (4 min 5 s) | `primary`, R's development package | pass (`222735-7c05`, `222743-8525`) |
+| Package fields, install and removal in a clean `ubuntu:24.04` container, install on the runner and a start under D-Bus and Xvfb with a Posato window; no x86-64 Linux machine ran the E2E (a stated limit) | x86-64 `.deb`, workflow run 39834015238 | pass |
 | Website Not Allowed in Safari, End session early, edge swipe back | test iPhone, R's development build | pass (`220052-cad4`, `220202-5ce3`) |
+
+The folder chain ran in a different order from the plan, because a Linux
+clone and a macOS clone may not run together: Linux created the workspace,
+the phone joined, and `primary` joined with a code from the phone. Proven
+directions: Linux to phone, phone to Linux, Mac to phone; a Mac pause on
+Linux is not shown directly.
 
 Environment notes, not product defects: the iPhone's reinstalled
 development build had lost its Screen Time authorization ("Restrictions
@@ -174,3 +181,38 @@ X11 autolaunch bus, so the ping passes); the file was written by hand.
 `flow onboard -t linux` cannot continue when the pausing service is
 already installed (known, `QUALITY-013`); those screens were driven by
 hand. Both are follow-ups for `posato-control`.
+
+### TB-08 and T-13 review of the release artifacts
+
+- R changes only `Version.xcconfig` from its parent; the branch adds only
+  `docs/` after R; `.github/` and `tools/` landed on `main` in #194 before
+  R.
+- New since `v1.4.0`, each shipped through its own reviewed row: the Linux
+  root service (`posato-helper-setup`, `postinst`, `prerm`; it edits a
+  marked block of `/etc/hosts` and answers only the installing user and
+  root over a root-owned socket, ADR 0010), the Android DNS-only VPN and
+  block screen, folder sync with encrypted files and one-time pairing codes
+  that expire after 10 minutes (`SYNC-018`, `SYNC-026`), export files with
+  an optional code (`TARGETS-007`), and migration 14, which only adds the
+  `sync_last_exchange` table. No macOS entitlement, iOS entitlement, or
+  privacy manifest changed: the app, helper, and companion entitlements
+  equal 1.4.0's in both DMGs, and the IPA carries Apple Distribution,
+  CloudKit Production, and both privacy manifests.
+- The Sparkle release key stayed in the maintainer's login Keychain with
+  pre-granted access (the accepted `T-13` residual risk: any process
+  running as the maintainer could use it, together with the logged-in `gh`,
+  to publish a signed update).
+- The Android keystore lives outside the repository; its password stays in
+  the login Keychain and reached only `apksigner` through stdin. No file
+  under the build clone, the worktree's `build/` and `.gradle/`, or
+  `~/.gradle` contains it; Git history holds no keystore, signing
+  configuration, or password; the Linux workflow reads no secret, has
+  `contents: read`, and does not persist its token. The same `T-13`
+  consequence applies: a process running as the maintainer can read the
+  password from the Keychain and sign an APK that installations accept.
+  The maintainer holds a backup of the keystore and its password.
+- The completed-change review (independent, 2026-10-22) re-verified every
+  hash, both feeds, both DMGs, the IPA, the APK, and both `.deb` files
+  against R and found no Critical or Required issue in the artifacts.
+
+**Verdict for R:** the candidates of R are fit to publish as Posato 1.5.0.
