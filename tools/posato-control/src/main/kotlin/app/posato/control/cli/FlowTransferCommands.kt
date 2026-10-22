@@ -8,6 +8,7 @@ import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
+import app.posato.control.linux.LinuxGuest
 import app.posato.control.model.Query
 import app.posato.control.model.States
 import com.github.ajalt.clikt.parameters.options.default
@@ -20,14 +21,16 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 /**
- * Exports the pause sets through Pause sets' menu and the system's own save path, then copies the file to the
- * host: Android's document picker into Documents, and on the iPhone the share sheet's Save to Files into the
- * driver host's folder under On My iPhone. With --code the file is protected and the code is read from the dialog.
+ * Exports the pause sets through Pause sets' menu and the system's own save path, then keeps the file in the run's
+ * evidence and copies it to --out: Android's document picker into Documents, the iPhone's Save to Files into the
+ * driver host's folder under On My iPhone, and the Mac's and Linux's save panels into a folder of their own. With
+ * --code the file is protected and the code is read from the dialog.
  */
 class FlowExportCommand : ControlCommand("export", "Export the pause sets to a file and copy it to the host.") {
-    private val out by option("--out", help = "Where to put the exported file on the host.").required()
+    private val out by option("--out", help = "Where else to put the exported file; in a VM a path in the guest.")
     private val code by option("--code", help = "Protect the file with a code and print the code.").flag()
 
     override fun execute(session: Session): JsonElement {
@@ -47,11 +50,15 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
             listOf(FlowSteps.waitFor(Query(text = "Export file…", role = FlowSteps.ROLE_BUTTON), States.ABSENT))
         }
         FlowSteps.run(backend, saved)
-        val target = Path.of(out).toAbsolutePath()
-        files.fetch(target)
+        // A Mac guest's run directory comes back to the host with the run, so the file reaches the host from there.
+        val kept = session.context.recordArtifact(session.context.artifactPath("transfer", EXPORT_NAME))
+        files.fetch(kept)
+        val copy = out?.let { path -> Path.of(path).toAbsolutePath() }
+        copy?.let { path -> Files.copy(kept, Files.createDirectories(path.parent).resolve(path.fileName), StandardCopyOption.REPLACE_EXISTING) }
         return buildJsonObject {
-            put("out", target.toString())
-            put("bytes", Files.size(target))
+            put("file", session.context.layout.relativize(kept))
+            copy?.let { path -> put("out", path.toString()) }
+            put("bytes", Files.size(kept))
             shown?.let { put("code", it) }
         }
     }
@@ -72,9 +79,9 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
         if (!Files.isRegularFile(source)) throw ControlException(ErrorCode.USAGE, "--file $source is not a file.")
         val backend = session.backend()
         val files = transferFiles(session)
-        files.place(source)
+        val placed = files.place(source)
         TransferScreens.openMenu(backend, session.target(), "Import…")
-        files.choose(backend, source.fileName.toString())
+        files.choose(backend, placed)
         code?.let { typed ->
             FlowSteps.run(
                 backend,
@@ -93,7 +100,7 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
         // A refused import explains why and offers no button but Cancel.
         if (preview != null && REFUSALS.any(preview::startsWith)) {
             FlowSteps.run(backend, listOf(FlowSteps.button("Cancel")))
-            files.cleanUp(source)
+            files.cleanUp(placed)
             return buildJsonObject {
                 put("mode", mode)
                 put("refused", true)
@@ -109,7 +116,7 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
             )
         }
         FlowSteps.run(backend, listOf(FlowSteps.button("Done")))
-        files.cleanUp(source)
+        files.cleanUp(placed)
         return buildJsonObject {
             put("mode", mode)
             preview?.let { put("preview", it) }
@@ -156,7 +163,7 @@ private object TransferScreens {
 }
 
 /** Where a target's system panels put and find export files, and how the host reaches them. */
-private interface TransferFiles {
+internal interface TransferFiles {
     /** Removes an earlier export, so the one found after saving is this run's. */
     fun clear()
 
@@ -164,15 +171,16 @@ private interface TransferFiles {
 
     fun fetch(destination: Path)
 
-    fun place(source: Path)
+    /** Puts [source] where the picker reaches it and returns it there, a path on the device. */
+    fun place(source: Path): String
 
-    /** Picks the file [place] put where the picker reaches it. */
+    /** Picks [placed], the file [place] put where the picker reaches it. */
     fun choose(
         backend: Backend,
-        name: String,
+        placed: String,
     )
 
-    fun cleanUp(source: Path)
+    fun cleanUp(placed: String)
 }
 
 private fun transferFiles(session: Session): TransferFiles {
@@ -185,10 +193,14 @@ private fun transferFiles(session: Session): TransferFiles {
             }
         }
 
-        else -> throw ControlException(
+        Target.LINUX -> LinuxTransferFiles(LinuxGuest(session.context))
+
+        Target.DESKTOP -> MacTransferFiles()
+
+        Target.SIMULATOR -> throw ControlException(
             ErrorCode.UNSUPPORTED_ON_TARGET,
-            "Export and import are driven on Android and the iPhone for now.",
-            "The Mac and Linux file panels come next.",
+            "Export and import are driven on the test iPhone, not the Simulator.",
+            "Use -t device.",
         )
     }
 }
@@ -219,25 +231,23 @@ private class AndroidTransferFiles(
         device.shell("rm -f '$DOCUMENTS/$EXPORT_NAME'")
     }
 
-    override fun place(source: Path) {
-        device.adb(
-            "push",
-            source.toString(),
-            "$DOCUMENTS/${source.fileName}",
-        ).requireSuccess(ErrorCode.COMMAND_FAILED, "Placing the file in Documents")
+    override fun place(source: Path): String {
+        val placed = "$DOCUMENTS/${source.fileName}"
+        device.adb("push", source.toString(), placed).requireSuccess(ErrorCode.COMMAND_FAILED, "Placing the file in Documents")
+        return placed
     }
 
     override fun choose(
         backend: Backend,
-        name: String,
+        placed: String,
     ) {
         FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(id = HEADER))))
         openDocuments(backend)
-        FlowSteps.run(backend, listOf(FlowSteps.tap(Query(textContains = name))))
+        FlowSteps.run(backend, listOf(FlowSteps.tap(Query(textContains = placed.substringAfterLast('/')))))
     }
 
-    override fun cleanUp(source: Path) {
-        device.shell("rm -f '$DOCUMENTS/${source.fileName}'")
+    override fun cleanUp(placed: String) {
+        device.shell("rm -f '$placed'")
     }
 
     /**
@@ -340,13 +350,14 @@ private class IphoneTransferFiles(
         devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = false, destination, "$HOST_DOCUMENTS/$EXPORT_NAME")
     }
 
-    override fun place(source: Path) {
+    override fun place(source: Path): String {
         devicectl.copyAppData(udid, HOST_BUNDLE, toDevice = true, source, "$HOST_DOCUMENTS/${source.fileName}")
+        return source.fileName.toString()
     }
 
     override fun choose(
         backend: Backend,
-        name: String,
+        placed: String,
     ) {
         FlowSteps.run(
             backend,
@@ -354,12 +365,12 @@ private class IphoneTransferFiles(
                 FlowSteps.tap(Query(text = "Browse"), optional = true, timeoutSeconds = SHORT_SECONDS),
                 FlowSteps.tap(Query(text = "On My iPhone"), optional = true, timeoutSeconds = SHORT_SECONDS),
                 FlowSteps.tap(Query(text = HOST_FOLDER)),
-                FlowSteps.tap(Query(textContains = name.removeSuffix(".posato"))),
+                FlowSteps.tap(Query(textContains = placed.removeSuffix(".posato"))),
             ),
         )
     }
 
-    override fun cleanUp(source: Path) = Unit
+    override fun cleanUp(placed: String) = Unit
 
     private companion object {
         const val HOST_BUNDLE = "app.posato.ios.driverhost"
@@ -376,4 +387,4 @@ private class IphoneTransferFiles(
     }
 }
 
-private const val EXPORT_NAME = "Posato pause sets.posato"
+internal const val EXPORT_NAME = "Posato pause sets.posato"
