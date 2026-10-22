@@ -52,7 +52,7 @@ internal abstract class PanelTransferFiles : TransferFiles {
         const val PANEL_SECONDS = 2.0
         const val SETTLE_MILLIS = 1_500L
         const val OPEN_ATTEMPTS = 3
-        val AFTER_OPEN = setOf("Enter the code", "Choose how to import", "This file can't be read")
+        val AFTER_OPEN = setOf(TransferScreens.CODE_TITLE, TransferScreens.REVIEW_TITLE, TransferScreens.FAILURE_TITLE)
     }
 }
 

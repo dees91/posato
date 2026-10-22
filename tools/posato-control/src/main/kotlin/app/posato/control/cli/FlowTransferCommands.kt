@@ -70,7 +70,7 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
  * picker can reach it, chosen there, opened with --code when it is protected, and imported in --mode.
  */
 class FlowImportCommand : ControlCommand("import", "Import a pause set file from the host.") {
-    private val file by option("--file", help = "The file on the host to import.").required()
+    private val file by option("--file", help = "The file to import: on the host, or in a Mac guest after vm push.").required()
     private val code by option("--code", help = "The code of a protected file.")
     private val mode by option("--mode", help = "combine, separate, or replace.").choice("combine", "separate", "replace").default("combine")
     private val turnOn by option("--turn-on", help = "Turn the imported schedules on from the result.").flag()
@@ -84,12 +84,10 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
         TransferScreens.openMenu(backend, session.target(), "Import…")
         files.choose(backend, placed)
         code?.let { typed ->
-            FlowSteps.run(
-                backend,
-                listOf(FlowSteps.waitFor(Query(text = "Enter the code")), FlowSteps.typeInto(typed, submit = false), FlowSteps.button("Open")),
-            )
+            TransferScreens.awaitOpened(backend, TransferScreens.CODE_TITLE)
+            FlowSteps.run(backend, listOf(FlowSteps.typeInto(typed, submit = false), FlowSteps.button("Open")))
         }
-        FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(text = "Choose how to import"))))
+        TransferScreens.awaitOpened(backend, TransferScreens.REVIEW_TITLE)
         val choice = when (mode) {
             "replace" -> FlowSteps.tap(Query(textContains = "Replace my pause sets"))
             "separate" -> FlowSteps.tap(Query(textContains = "Keep them separate"))
@@ -134,7 +132,7 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
 }
 
 /** The app's own part of export and import, the same on every target. */
-private object TransferScreens {
+internal object TransferScreens {
     fun openMenu(
         backend: Backend,
         target: Target,
@@ -159,8 +157,36 @@ private object TransferScreens {
             ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The export dialog shows no code after Protect with a code.")
     }
 
+    /**
+     * Waits for [title] after a file was chosen or its code entered. A file Posato cannot open shows a message
+     * titled Import instead, whose text the run fails with.
+     */
+    fun awaitOpened(
+        backend: Backend,
+        title: String,
+    ) {
+        val deadline = System.nanoTime() + OPEN_WAIT_NANOS
+        while (System.nanoTime() < deadline) {
+            val labels = FlowSteps.labels(backend)
+            if (title in labels) return
+            // The review's own Import button reads like the message's title, so only a message with OK counts.
+            if (FAILURE_TITLE in labels && "OK" in labels && REVIEW_TITLE !in labels) {
+                val reason = labels.getOrNull(labels.indexOf(FAILURE_TITLE) + 1) ?: FAILURE_TITLE
+                FlowSteps.run(backend, listOf(FlowSteps.button("OK")))
+                throw ControlException(ErrorCode.ASSERTION_FAILED, "Posato did not open the file: $reason")
+            }
+            Thread.sleep(POLL_MILLIS)
+        }
+        throw ControlException(ErrorCode.WAIT_TIMEOUT, "Posato showed neither $title nor a message after the file was chosen.")
+    }
+
+    const val CODE_TITLE = "Enter the code"
+    const val REVIEW_TITLE = "Choose how to import"
+    const val FAILURE_TITLE = "Import"
     private val CODE = Regex("[A-Z2-7]{3} [A-Z2-7]{3} [A-Z2-7]{3}")
     private const val SHORT_SECONDS = 3.0
+    private const val POLL_MILLIS = 500L
+    private const val OPEN_WAIT_NANOS = 30_000_000_000L
 }
 
 /** Where a target's system panels put and find export files, and how the host reaches them. */
