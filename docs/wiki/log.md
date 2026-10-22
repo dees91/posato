@@ -3003,6 +3003,24 @@ first removal attempt that does not finish, not to a paused keychain.
   icons only through an `index.theme`; dbus-java throws unchecked errors
   for a missing session bus.
 
+## [2026-10-21] design | DESIGN-005: a warmer light palette
+
+- `user-confirmed` (idea 51): the light surface becomes `#F4F3EB` with the
+  container, outline, and canvas tones shifted (`PosatoPalette.kt`,
+  `DESIGN.md` "Semantic palette"); posato.app's light theme, the macOS pause
+  page, and the Android block screen's window follow. Muted text keeps AA on
+  the surface (4.96:1) and surfaceContainer (4.57:1); dark and high
+  contrast are unchanged.
+- `observed` on `10352422` (Galaxy XCover7, Android 14): in Light the set,
+  session setup, review, active pause, and block screen all draw on
+  `#F4F3EB` (runs `20261022-074340-6d87`, `-074410-a9cf`, `-074427-e4bf`,
+  `-074435-a8b4`, `-074442-4963`); in Dark they stay `#1C2520` (runs
+  `20261022-074531-9719` to `-074603-47ce`). On the test iPhone in Light the
+  set, the pause-set list, and session setup draw on `#F4F3EB` (runs
+  `20261022-081446-15d0`, `-081535-f743`, `-081657-9662`). In a Tart macOS
+  clone in Light the window draws on `#F4F3EB` with the sidebar on
+  `#EBEAE1` (runs `20261022-084638-8ec5`, `-084646-1e16`), and the pause page
+  in Safari on `#F4F3EB` (run `20261022-084657-5cc2`).
 
 ## [2026-10-22] tooling | posato-control appearance switches Light and Dark Mode
 
