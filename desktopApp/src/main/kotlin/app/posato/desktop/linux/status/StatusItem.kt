@@ -1,38 +1,43 @@
 package app.posato.desktop.linux.status
 
 import org.freedesktop.dbus.DBusPath
+import org.freedesktop.dbus.types.Variant
 
-/** Posato's StatusNotifierItem: identity, icon, tooltip, and menu, read by the panel as properties. */
+/**
+ * Posato's StatusNotifierItem: identity, icon, tooltip, and menu, read by the panel as properties. Each property is a
+ * [Variant] because dbus-java answers org.freedesktop.DBus.Properties.Get with the getter's own type, `(a(iiay))`
+ * instead of `(v)` for the pixmaps, which GNOME's AppIndicator extension rejects and then shows an empty menu.
+ */
 internal class StatusItem(
     private val icons: StatusIcons,
     private val state: () -> StatusAreaState,
     private val onShow: (String) -> Unit,
 ) : StatusNotifierItem {
-    override val category: String get() = "ApplicationStatus"
+    override val category: Variant<*> get() = Variant("ApplicationStatus")
 
-    override val id: String get() = "posato"
+    override val id: Variant<*> get() = Variant("posato")
 
-    override val title: String get() = state().title
+    override val title: Variant<*> get() = Variant(state().title)
 
-    override val status: String get() = "Active"
+    override val status: Variant<*> get() = Variant("Active")
 
-    override val windowId: Int get() = 0
+    override val windowId: Variant<*> get() = Variant(0)
 
-    override val iconThemePath: String get() = icons.themePath
+    override val iconThemePath: Variant<*> get() = Variant(icons.themePath)
 
-    override val iconName: String get() = if (state().filled) icons.filledName else icons.outlineName
+    override val iconName: Variant<*> get() = Variant(if (state().filled) icons.filledName else icons.outlineName)
 
-    override val iconPixmap: List<IconPixmap> get() = if (state().filled) icons.filledPixmaps else icons.outlinePixmaps
+    override val iconPixmap: Variant<*> get() = Variant(if (state().filled) icons.filledPixmaps else icons.outlinePixmaps, PIXMAPS)
 
-    override val overlayIconName: String get() = ""
+    override val overlayIconName: Variant<*> get() = Variant("")
 
-    override val attentionIconName: String get() = ""
+    override val attentionIconName: Variant<*> get() = Variant("")
 
-    override val toolTip: ToolTip get() = state().let { ToolTip("", emptyList(), it.title, it.description) }
+    override val toolTip: Variant<*> get() = state().let { Variant(ToolTip("", emptyList(), it.title, it.description), TOOLTIP) }
 
-    override val itemIsMenu: Boolean get() = false
+    override val itemIsMenu: Variant<*> get() = Variant(false)
 
-    override val menu: DBusPath get() = DBusPath(LinuxStatusArea.MENU_PATH)
+    override val menu: Variant<*> get() = Variant(DBusPath(LinuxStatusArea.MENU_PATH))
 
     override fun activate(
         x: Int,
@@ -55,4 +60,9 @@ internal class StatusItem(
     ) = Unit
 
     override fun getObjectPath(): String = LinuxStatusArea.ITEM_PATH
+
+    private companion object {
+        const val PIXMAPS = "a(iiay)"
+        const val TOOLTIP = "(sa(iiay)ss)"
+    }
 }

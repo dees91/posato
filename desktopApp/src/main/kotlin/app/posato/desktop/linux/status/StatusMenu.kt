@@ -33,13 +33,13 @@ internal class StatusMenu(
         return DbusMenu.LayoutUpdated(LinuxStatusArea.MENU_PATH, UInt32(revision), ROOT)
     }
 
-    override val version: UInt32 get() = UInt32(VERSION)
+    override val version: Variant<*> get() = Variant(UInt32(VERSION))
 
-    override val textDirection: String get() = "ltr"
+    override val textDirection: Variant<*> get() = Variant("ltr")
 
-    override val status: String get() = "normal"
+    override val status: Variant<*> get() = Variant("normal")
 
-    override val iconThemePath: List<String> get() = emptyList()
+    override val iconThemePath: Variant<*> get() = Variant(emptyList<String>(), "as")
 
     override fun getLayout(
         parentId: Int,

@@ -112,6 +112,8 @@ private fun StatusIconEffect(
     menu: PresenceMenu,
 ) {
     val area = host.statusArea ?: return
+    // The panel reads the menu when the icon registers, which waits for the first lines, so they are never the loading ones.
+    if (menu.state == PresenceState.LOADING) return
     LaunchedEffect(menu) {
         while (true) {
             val model = presenceMenuModel(menu, host.copy.presence, System.currentTimeMillis(), ::formatClockTime)

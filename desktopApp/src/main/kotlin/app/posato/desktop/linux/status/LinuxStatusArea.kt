@@ -22,7 +22,10 @@ internal data class StatusAreaState(
 /**
  * Posato's presence on the Linux session bus (LINUX-003): the name a second launch reaches, and the status icon with
  * its menu, registered with the panel's StatusNotifierWatcher whenever one runs. Without a session bus nothing is
- * exported and [start] answers false; without a watcher the item waits for one ([watcherPresent]).
+ * exported and [start] answers false; without a watcher the item waits for one ([watcherPresent]). The item registers
+ * only once its menu has lines: GNOME's AppIndicator extension reads the layout when the item registers, ignores
+ * LayoutUpdated while its menu is closed, and never opens a menu it holds empty, so an early registration would leave
+ * the icon with no menu.
  */
 internal class LinuxStatusArea(
     private val icons: StatusIcons,
@@ -39,6 +42,8 @@ internal class LinuxStatusArea(
     private val mutableWatcherPresent = MutableStateFlow(false)
 
     @Volatile private var state = StatusAreaState(emptyList(), "Posato", "Posato", filled = false)
+
+    @Volatile private var menuReady = false
     private val item = StatusItem(icons, { state }, onShow)
     private val menu = StatusMenu({ state.entries }, onAction, onMenuOpened)
 
@@ -82,6 +87,11 @@ internal class LinuxStatusArea(
         val previous = state
         state = next
         val bus = connection ?: return
+        if (!menuReady && next.entries.isNotEmpty()) {
+            menuReady = true
+            if (mutableWatcherPresent.value) register(bus)
+            return
+        }
         if (previous.filled != next.filled) bus.sendQuietly(StatusNotifierItem.NewIcon(ITEM_PATH))
         if (previous.title != next.title) bus.sendQuietly(StatusNotifierItem.NewTitle(ITEM_PATH))
         if (previous.description != next.description) bus.sendQuietly(StatusNotifierItem.NewToolTip(ITEM_PATH))
@@ -100,8 +110,11 @@ internal class LinuxStatusArea(
 
     private fun watcherChanged(present: Boolean) {
         mutableWatcherPresent.value = present
-        if (!present) return
         val bus = connection ?: return
+        if (present && menuReady) register(bus)
+    }
+
+    private fun register(bus: DBusConnection) {
         runCatching {
             bus.getRemoteObject(WATCHER_NAME, WATCHER_PATH, StatusNotifierWatcher::class.java).registerStatusNotifierItem(itemName)
         }

@@ -45,6 +45,16 @@ class StatusMenuEntriesTest {
         }
     }
 
+    @Test
+    fun `given the menu while loading and then with no session then the separator above Quit keeps its id`() {
+        val loading = statusMenuEntries(model(PresenceMenu(PresenceState.LOADING, PresenceAction.START_SESSION, null), now = 0))
+        val noSession = statusMenuEntries(model(PresenceMenu(PresenceState.NO_SESSION, PresenceAction.START_SESSION, null), now = 0))
+        val aboveQuit = { entries: List<StatusMenuEntry> -> entries[entries.indexOfFirst { it.action == PresenceMenuActionId.QUIT } - 1] }
+
+        assertTrue(aboveQuit(loading).separator)
+        assertEquals(aboveQuit(loading).id, aboveQuit(noSession).id)
+    }
+
     private fun model(
         menu: PresenceMenu,
         now: Long,

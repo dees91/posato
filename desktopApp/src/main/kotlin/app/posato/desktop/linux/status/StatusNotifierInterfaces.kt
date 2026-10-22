@@ -23,43 +23,43 @@ import org.freedesktop.dbus.types.Variant
 @DBusInterfaceName("org.kde.StatusNotifierItem")
 interface StatusNotifierItem : DBusInterface {
     @get:DBusBoundProperty(name = "Category")
-    val category: String
+    val category: Variant<*>
 
     @get:DBusBoundProperty(name = "Id")
-    val id: String
+    val id: Variant<*>
 
     @get:DBusBoundProperty(name = "Title")
-    val title: String
+    val title: Variant<*>
 
     @get:DBusBoundProperty(name = "Status")
-    val status: String
+    val status: Variant<*>
 
     @get:DBusBoundProperty(name = "WindowId")
-    val windowId: Int
+    val windowId: Variant<*>
 
     @get:DBusBoundProperty(name = "IconThemePath")
-    val iconThemePath: String
+    val iconThemePath: Variant<*>
 
     @get:DBusBoundProperty(name = "IconName")
-    val iconName: String
+    val iconName: Variant<*>
 
     @get:DBusBoundProperty(name = "IconPixmap")
-    val iconPixmap: List<IconPixmap>
+    val iconPixmap: Variant<*>
 
     @get:DBusBoundProperty(name = "OverlayIconName")
-    val overlayIconName: String
+    val overlayIconName: Variant<*>
 
     @get:DBusBoundProperty(name = "AttentionIconName")
-    val attentionIconName: String
+    val attentionIconName: Variant<*>
 
     @get:DBusBoundProperty(name = "ToolTip")
-    val toolTip: ToolTip
+    val toolTip: Variant<*>
 
     @get:DBusBoundProperty(name = "ItemIsMenu")
-    val itemIsMenu: Boolean
+    val itemIsMenu: Variant<*>
 
     @get:DBusBoundProperty(name = "Menu")
-    val menu: DBusPath
+    val menu: Variant<*>
 
     @DBusMemberName("Activate")
     fun activate(
@@ -114,16 +114,16 @@ interface StatusNotifierWatcher : DBusInterface {
 @DBusInterfaceName("com.canonical.dbusmenu")
 interface DbusMenu : DBusInterface {
     @get:DBusBoundProperty(name = "Version")
-    val version: UInt32
+    val version: Variant<*>
 
     @get:DBusBoundProperty(name = "TextDirection")
-    val textDirection: String
+    val textDirection: Variant<*>
 
     @get:DBusBoundProperty(name = "Status")
-    val status: String
+    val status: Variant<*>
 
     @get:DBusBoundProperty(name = "IconThemePath")
-    val iconThemePath: List<String>
+    val iconThemePath: Variant<*>
 
     @DBusMemberName("GetLayout")
     fun getLayout(
