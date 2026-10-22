@@ -27,8 +27,9 @@ Follow `releasing.md`. Differences for 1.5:
   architectures (both published feeds hold 29); iOS build: the next free
   number from `store status`; Android `versionName` 1.5.0, `versionCode` 1.
 - **Data migration:** `migrations/14.sqm` and the sync bootstrap tables
-  changed since `v1.4.0`, so the replacement over 1.4.0 and the iPhone
-  upgrade over 1.4.0 return to the matrix, as in 1.3.
+  changed since `v1.4.0`. The matrix stays reduced as in 1.4 by the
+  maintainer's choice; the in-app update from 1.4.0 proves the migration on
+  macOS.
 - **Linux:** `.deb` packages for arm64 and x86-64, both built and
   smoke-tested by a new GitHub Actions workflow on `ubuntu-24.04` and
   `ubuntu-24.04-arm` from R; the arm64 package also passes the Linux E2E in
@@ -83,11 +84,19 @@ review before tagging.
 
 ## Decisions or blockers
 
-- **Blocker (maintainer):** the publication go.
 - **Blocker (maintainer):** a backup of the Android keystore and its
-  passwords outside this Mac, before the APK is published.
+  password outside this Mac, before the APK is published.
 - **`user-confirmed` (2026-10-22):** the Android keystore lives outside the
-  repository with its passwords in the login Keychain, and the maintainer
+  repository with its password in the login Keychain, and the maintainer
   backs it up; both `.deb` packages are built on GitHub Actions runners.
-- **`open`:** the matrix, the App Store release type, and the claimed iOS
-  version, settled in the plan.
+- **`user-confirmed` (2026-10-22):** the publication go in advance, given
+  when all checks and the completed-change review pass; the maintainer is
+  away during the run. A product defect found by a check holds the
+  release: the agent fixes it test-first in its own pull request through
+  `babysit-pr`, builds a new candidate, and continues; after publication,
+  the `releasing.md` rollback applies. The matrix is reduced as in 1.4: the
+  replacement over 1.4.0 and the iPhone upgrade over 1.4.0 are not
+  repeated, and the in-app update from 1.4.0 covers migration 14 on macOS.
+- **Decided by the agent under the maintainer's delegation (2026-10-22):**
+  App Store release type `after-approval` and claiming iOS 26 only, as in
+  1.4.
