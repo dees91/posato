@@ -110,7 +110,7 @@ class LinuxLifecycle(
             installed = installed(),
             running = pid != null,
             pid = pid,
-            appPath = context.layout.relativize(packageInputs),
+            appPath = context.layout.relativize(packageFile ?: packageInputs),
             containerPath = LinuxGuest.DATA_DIRECTORY,
             lastRunId = stateStore.load().linux?.runId,
         )

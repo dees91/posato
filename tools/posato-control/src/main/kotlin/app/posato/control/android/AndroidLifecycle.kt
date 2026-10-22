@@ -79,7 +79,7 @@ class AndroidLifecycle(
             running = pid != null,
             pid = pid,
             udid = device.serial,
-            appPath = context.layout.relativize(device.apk),
+            appPath = context.layout.relativize(packageFile ?: device.apk),
             lastRunId = stateStore.load().android?.runId,
         )
     }
