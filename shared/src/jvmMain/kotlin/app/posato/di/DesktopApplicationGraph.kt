@@ -53,6 +53,8 @@ import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.targets.data.retainSets
+import app.posato.feature.transfer.DesktopPauseSetFiles
+import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.update.DesktopUpdateMaintenance
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph

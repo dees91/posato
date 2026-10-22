@@ -14,6 +14,7 @@ import app.posato.core.designsystem.PosatoMenuItem
 import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.transfer.ui.PauseSetTransferUiState
 
 private sealed interface PauseSetsRoute {
     data object List : PauseSetsRoute
@@ -30,6 +31,7 @@ internal fun PauseSetsDestination(
     deviceNoun: String,
     modifier: Modifier = Modifier,
     entryModifier: Modifier = Modifier,
+    transfer: PauseSetTransferUiState? = null,
     viewModel: PauseSetsViewModel = viewModel { PauseSetsViewModel(inputs) },
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -50,6 +52,7 @@ internal fun PauseSetsDestination(
                 onDuplicate = viewModel::duplicate,
                 onDelete = viewModel::delete,
                 onRetry = viewModel::retry,
+                transfer = transfer,
             )
 
             is PauseSetsRoute.Set -> PauseSetScreen(

@@ -25,6 +25,9 @@ internal class SyncTargetPolicyStore(
     override val policyChanges: Flow<Unit>
         get() = local.policyChanges
 
+    override val changeAnnouncer: () -> Unit
+        get() = local.changeAnnouncer
+
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return local.read()
     }

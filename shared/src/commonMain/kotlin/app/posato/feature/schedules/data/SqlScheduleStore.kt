@@ -24,16 +24,19 @@ internal class SqlScheduleStore(
 ) : ScheduleSyncStore {
     private val writeGate = Mutex()
     private val mutableChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val transactor = ScheduleTransactor(database, databaseDispatcher, mutableChanges)
 
     override val changes: Flow<Unit>
         get() = mutableChanges
+
+    override val changeAnnouncer: () -> Unit = { mutableChanges.tryEmit(Unit) }
 
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
         return writeGate.withLock { block() }
     }
 
     override suspend fun read(): ScheduleResult<ScheduleSnapshot> {
-        return transact(changed = false, writes = false) { readSnapshot() }
+        return transactor.transact(changed = false, writes = false) { readSnapshot() }
     }
 
     override suspend fun save(
@@ -44,7 +47,7 @@ internal class SqlScheduleStore(
         if (!normalized.isStorable()) {
             return ScheduleResult.Failure(ScheduleStoreFailure.INVALID_SCHEDULE)
         }
-        return transact {
+        return transactor.transact {
             val existing = readSnapshot().schedules.any { it.plan.id == normalized.id }
             if (!existing && liveScheduleCount() >= ScheduleLimits.MAX_SCHEDULES) {
                 throw ScheduleStoreException(ScheduleStoreFailure.CAPACITY)
@@ -55,11 +58,24 @@ internal class SqlScheduleStore(
         }
     }
 
+    override suspend fun enable(
+        ids: Set<ScheduleId>,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit> {
+        return transactor.transact {
+            readSnapshot().schedules.map { stored -> stored.plan }.filter { plan -> plan.id in ids && !plan.enabled }.forEach { plan ->
+                val enabled = plan.copy(enabled = true)
+                writeSchedule(enabled, refused = false)
+                workspaceId?.let { writeIntent(it, ScheduleIntent.Put(enabled)) }
+            }
+        }
+    }
+
     override suspend fun remove(
         id: ScheduleId,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit> {
-        return transact {
+        return transactor.transact {
             deleteScheduleEverywhere(id)
             if (workspaceId == null) {
                 scheduleQueries.promoteRefusedSchedules()
@@ -75,7 +91,7 @@ internal class SqlScheduleStore(
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit> {
-        return transact {
+        return transactor.transact {
             keys.forEach { key ->
                 writeFact(if (kind == OccurrenceStop.SKIP) FACT_SKIP else FACT_END, key)
                 val intent = if (kind == OccurrenceStop.SKIP) ScheduleIntent.Skip(key, authorDate) else ScheduleIntent.End(key, authorDate)
@@ -86,15 +102,15 @@ internal class SqlScheduleStore(
 
     override suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit> {
         // The host's own writes never wake the host again.
-        return transact(changed = false) { writeHostUpdate(update) }
+        return transactor.transact(changed = false) { writeHostUpdate(update) }
     }
 
     override suspend fun readIntents(): ScheduleResult<List<SequencedScheduleIntent>> {
-        return transact(changed = false, writes = false) { readIntentRows() }
+        return transactor.transact(changed = false, writes = false) { readIntentRows() }
     }
 
     override suspend fun deleteIntent(sequence: Long): ScheduleResult<Unit> {
-        return transact(changed = false) { scheduleQueries.deleteScheduleIntent(sequence) }
+        return transactor.transact(changed = false) { scheduleQueries.deleteScheduleIntent(sequence) }
     }
 
     override suspend fun seedOnce(
@@ -102,17 +118,24 @@ internal class SqlScheduleStore(
         synced: SyncedSchedules,
         today: ScheduleDate,
     ): ScheduleResult<Boolean> {
-        return transact { seedWorkspace(workspaceId, synced, today) }
+        return transactor.transact { seedWorkspace(workspaceId, synced, today) }
     }
 
     override suspend fun materialize(
         workspaceId: ByteArray,
         synced: SyncedSchedules,
     ): ScheduleResult<Unit> {
-        return transact { applySynced(workspaceId, synced) }
+        return transactor.transact { applySynced(workspaceId, synced) }
     }
+}
 
-    private suspend fun <T> transact(
+/** One transaction on the schedule tables, which says once after commit that the schedules changed. */
+private class ScheduleTransactor(
+    private val database: PosatoDatabase,
+    private val databaseDispatcher: CoroutineDispatcher,
+    private val changes: MutableSharedFlow<Unit>,
+) {
+    suspend fun <T> transact(
         changed: Boolean = true,
         writes: Boolean = true,
         block: suspend PosatoDatabase.() -> T,
@@ -133,7 +156,7 @@ internal class SqlScheduleStore(
             }
         }
         if (changed && result is ScheduleResult.Success) {
-            mutableChanges.tryEmit(Unit)
+            changes.tryEmit(Unit)
         }
         return result
     }

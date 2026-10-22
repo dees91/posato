@@ -43,6 +43,9 @@ import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoItemList
+import app.posato.core.designsystem.PosatoItemMenu
+import app.posato.core.designsystem.PosatoMenuItem
+import app.posato.core.designsystem.PosatoMenuSymbol
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoPickerOption
 import app.posato.core.designsystem.PosatoPickerRow
@@ -55,6 +58,8 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.transfer.ui.PauseSetTransferDialogs
+import app.posato.feature.transfer.ui.PauseSetTransferUiState
 
 /** The list's title and New set: a large title with a bar button on iOS, a section header elsewhere. */
 @Composable
@@ -63,7 +68,9 @@ private fun PauseSetsChrome(
     onCreate: () -> Unit,
     body: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    transfer: PauseSetTransferUiState? = null,
 ) {
+    val more: @Composable () -> Unit = { transfer?.takeIf { it.available }?.let { state -> PauseSetsMoreMenu(state) } }
     val latestBody by rememberUpdatedState(body)
     val content = remember { movableContentOf { latestBody() } }
     if (platformUsesCupertinoChrome) {
@@ -73,8 +80,11 @@ private fun PauseSetsChrome(
             largeTitle = true,
             contentPadding = PaddingValues(horizontal = PosatoBarInset),
             trailingContent = {
-                PosatoBarButton(onClick = onCreate, enabled = canCreate) {
-                    Text("New set", style = PosatoTypography.BarAction)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    more()
+                    PosatoBarButton(onClick = onCreate, enabled = canCreate) {
+                        Text("New set", style = PosatoTypography.BarAction)
+                    }
                 }
             },
         ) { content() }
@@ -83,7 +93,10 @@ private fun PauseSetsChrome(
             PosatoSectionHeader(
                 titleContent = { Text("Pause sets", style = MaterialTheme.typography.headlineSmall) },
                 actionContent = {
-                    PosatoButton(onClick = onCreate, enabled = canCreate) { Text("New set") }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+                        PosatoButton(onClick = onCreate, enabled = canCreate) { Text("New set") }
+                        more()
+                    }
                 },
             )
             content()
@@ -103,6 +116,7 @@ internal fun PauseSetsScreen(
     onDelete: (PauseSetId, PauseSetId?) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    transfer: PauseSetTransferUiState? = null,
 ) {
     var dialog by remember { mutableStateOf<PauseSetDialog?>(null) }
     val body: @Composable () -> Unit = {
@@ -126,7 +140,8 @@ internal fun PauseSetsScreen(
             }
         }
     }
-    PauseSetsChrome(canCreate = state.canCreate, onCreate = { dialog = PauseSetDialog.Create }, modifier = modifier, body = body)
+    PauseSetsChrome(canCreate = state.canCreate, onCreate = { dialog = PauseSetDialog.Create }, modifier = modifier, body = body, transfer = transfer)
+    transfer?.let { PauseSetTransferDialogs(it) }
     when (val current = dialog) {
         PauseSetDialog.Create -> {
             PauseSetNameDialog("New set", "", onDismiss = { dialog = null }) { name ->
@@ -151,6 +166,18 @@ internal fun PauseSetsScreen(
 
         null -> {}
     }
+}
+
+/** Export and import, from the "…" beside New set. */
+@Composable
+private fun PauseSetsMoreMenu(transfer: PauseSetTransferUiState) {
+    PosatoItemMenu(
+        "More actions for pause sets",
+        listOf(
+            PosatoMenuItem("Export pause sets…", transfer::startExport, PosatoMenuSymbol.Export),
+            PosatoMenuItem("Import…", transfer::startImport, PosatoMenuSymbol.Import),
+        ),
+    )
 }
 
 @Composable

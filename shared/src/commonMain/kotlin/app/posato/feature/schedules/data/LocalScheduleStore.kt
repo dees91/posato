@@ -13,6 +13,10 @@ import kotlinx.coroutines.flow.Flow
 internal interface LocalScheduleStore {
     val changes: Flow<Unit>
 
+    /** Tells readers that a write outside this store, such as an import, changed the schedules. */
+    val changeAnnouncer: () -> Unit
+        get() = {}
+
     suspend fun <T> withWriteGate(block: suspend () -> T): T
 
     suspend fun read(): ScheduleResult<ScheduleSnapshot>
@@ -22,6 +26,15 @@ internal interface LocalScheduleStore {
         plan: SchedulePlan,
         workspaceId: ByteArray?,
     ): ScheduleResult<SchedulePlan>
+
+    /**
+     * Turns on every schedule in [ids] that is still here and off, in one transaction that reads the live plans,
+     * so another writer between two of them cannot leave some off; [workspaceId] as in [save].
+     */
+    suspend fun enable(
+        ids: Set<ScheduleId>,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit>
 
     suspend fun remove(
         id: ScheduleId,

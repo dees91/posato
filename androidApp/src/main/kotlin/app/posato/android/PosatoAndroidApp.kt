@@ -31,6 +31,7 @@ class PosatoAndroidApp : Application() {
             localDirectory = filesDir.resolve("sync").absolutePath,
             browseFolder = { activity?.browseFolder() },
             linkSharing = ShareSheetLinkSharing(this),
+            pauseSetFiles = AndroidPauseSetFiles { activity },
         )
     }
 

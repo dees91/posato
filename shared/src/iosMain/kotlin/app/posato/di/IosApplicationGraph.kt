@@ -61,6 +61,10 @@ import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.targets.data.retainSets
+import app.posato.feature.transfer.IosPauseSetFilePicker
+import app.posato.feature.transfer.IosPauseSetFiles
+import app.posato.feature.transfer.NoPauseSetFilePicker
+import app.posato.feature.transfer.data.TransferPlatform
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -102,6 +106,7 @@ internal interface IosApplicationGraph :
             @Provides notifications: SessionNotificationPlatform,
             @Provides schedules: IosScheduleBridge,
             @Provides folderPicker: IosFolderPicker,
+            @Provides pauseSetFilePicker: IosPauseSetFilePicker,
         ): IosApplicationGraph
     }
 
@@ -266,6 +271,7 @@ internal fun createIosApplicationRuntime(
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
     folderPicker: IosFolderPicker = NoFolderPicker,
+    pauseSetFilePicker: IosPauseSetFilePicker = NoPauseSetFilePicker,
 ): IosApplicationRuntime {
     runtimeLock.lock()
     try {
@@ -280,6 +286,7 @@ internal fun createIosApplicationRuntime(
             notifications,
             schedules,
             folderPicker,
+            pauseSetFilePicker,
         ).also { processRuntime = it }
     } finally {
         runtimeLock.unlock()
@@ -296,6 +303,7 @@ private fun buildIosApplicationRuntime(
     notifications: SessionNotificationPlatform,
     schedules: IosScheduleBridge,
     folderPicker: IosFolderPicker,
+    pauseSetFilePicker: IosPauseSetFilePicker,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
     val enforcement = IosSessionEnforcement(
@@ -312,6 +320,7 @@ private fun buildIosApplicationRuntime(
         notifications,
         schedules,
         folderPicker,
+        pauseSetFilePicker,
     )
     return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }

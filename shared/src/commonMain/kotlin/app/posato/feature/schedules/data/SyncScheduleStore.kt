@@ -31,6 +31,9 @@ internal class SyncScheduleStore(
     override val changes: Flow<Unit>
         get() = local.changes
 
+    override val changeAnnouncer: () -> Unit
+        get() = local.changeAnnouncer
+
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
         return local.withWriteGate(block)
     }
@@ -44,6 +47,13 @@ internal class SyncScheduleStore(
         workspaceId: ByteArray?,
     ): ScheduleResult<SchedulePlan> {
         return recorded { workspace -> local.save(plan, workspace) }
+    }
+
+    override suspend fun enable(
+        ids: Set<ScheduleId>,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit> {
+        return recorded { workspace -> local.enable(ids, workspace) }
     }
 
     override suspend fun remove(

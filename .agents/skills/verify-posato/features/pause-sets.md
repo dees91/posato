@@ -23,6 +23,19 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
 - `pause-sets-device.json` (test iPhone): "Apps on this iPhone" wording, a new
   set with a website, its choice in Session setup and Review, and its deletion.
 
+- Export and import (`TARGETS-007`, every target but the Simulator): `flow
+  export --code [--out F]` returns the code and keeps the file in the run's
+  evidence; `flow import --file F --code C --mode combine|separate|replace
+  [--turn-on]` returns the review's line and the result, or `refused` with
+  its reason. On a Mac push the file first (`vm push --to name.posato`) and
+  pass `/Users/posato/name.posato`; a panel left open by a failed run stays
+  open (presses bypass its modality), so close it with `CancelButton` before
+  the next run. Proof for a coded file: it opens with the code outside
+  Posato too (PBKDF2, HKDF, AES-GCM as in the record). For the refusal,
+  start a pause on a set the file lacks with `flow session`, then replace.
+  A file sealed with another round count does not open by design.
+
+
 ## Driving notes
 
 - List rows are buttons labelled with their whole text; query them with
