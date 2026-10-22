@@ -2,8 +2,8 @@
 # Drives Posato on the connected, unlocked test iPhone through posato-control
 # and captures the states the storyboard needs, without a hand on the phone.
 # Run from the repository root after `build -t device --driver`, a fresh
-# `install -t device`, `launch -t device`, and `first-install-skip.json`, with
-# the phone in Dark Mode. The fixture is two pause sets, Focus (the first set,
+# `install -t device`, `launch -t device`, and `first-install-skip.json`. It
+# puts the phone in Dark Mode itself with `appearance -t device dark`. The fixture is two pause sets, Focus (the first set,
 # renamed, with the two synthetic domains and one built-in application:
 # Calculator, which Posato shows only as a count) and Evening (example.net),
 # and one schedule named Deep work, which `schedules` deletes again so the
@@ -159,6 +159,9 @@ schedules() {
   pc tap --text "Session" --role button | ok
 }
 
+case "${1:-}" in
+  websites|apps|session|schedules) pc appearance dark | ok ;;
+esac
 case "${1:-}" in
   websites) websites ;;
   apps) apps ;;
