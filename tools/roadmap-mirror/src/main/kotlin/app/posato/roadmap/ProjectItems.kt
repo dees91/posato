@@ -22,6 +22,54 @@ data class ProjectItem(
     val title: String,
 )
 
+/** An item as GitHub reads it back by its id: the project it belongs to, its title, and its field values by name. */
+data class ItemState(
+    val id: String,
+    val projectId: String,
+    val archived: Boolean,
+    val title: String,
+    val fields: Map<String, String>,
+)
+
+/** The new item's id in an `addProjectV2DraftIssue` response; a response without it fails. */
+fun addedItemId(data: JsonObject): String = (data["addProjectV2DraftIssue"] as? JsonObject)
+    ?.let { it["projectItem"] as? JsonObject }
+    ?.let { (it["id"] as? JsonPrimitive)?.content }
+    ?: throw MirrorException("GitHub's answer to adding the draft item names no item: $data")
+
+/** Parses the `node` of [ProjectItems.read]; a single-select value reads as its option name, a text value as its text. */
+fun parseItemState(data: JsonObject): ItemState {
+    val node = data["node"] as? JsonObject ?: throw MirrorException("GitHub found no project item: $data")
+    val fields = node["fieldValues"]?.jsonObject?.get("nodes")?.jsonArray.orEmpty().mapNotNull { value ->
+        val entry = value.jsonObject
+        val field = (entry["field"] as? JsonObject)?.let { (it["name"] as? JsonPrimitive)?.content } ?: return@mapNotNull null
+        val content = (entry["name"] as? JsonPrimitive ?: entry["text"] as? JsonPrimitive)?.content ?: return@mapNotNull null
+        field to content
+    }.toMap()
+    return ItemState(
+        id = node.getValue("id").jsonPrimitive.content,
+        projectId = node["project"]?.jsonObject?.get("id")?.jsonPrimitive?.content.orEmpty(),
+        archived = node["isArchived"]?.jsonPrimitive?.boolean ?: false,
+        title = node["content"]?.jsonObject?.get("title")?.jsonPrimitive?.content.orEmpty(),
+        fields = fields,
+    )
+}
+
+/** Fails unless [item] is a live item of this project, titled `<rowId>: ...`, whose fields hold [expected]. */
+fun requireWritten(
+    item: ItemState,
+    rowId: String,
+    expected: Map<String, String>,
+) {
+    val problems = buildList {
+        if (item.projectId != RoadmapProject.ID) add("it belongs to project '${item.projectId}'")
+        if (item.archived) add("it is archived")
+        if (!item.title.startsWith("$rowId: ")) add("its title is '${item.title}'")
+        expected.forEach { (field, value) -> if (item.fields[field] != value) add("$field is '${item.fields[field]}', not '$value'") }
+    }
+    if (problems.isNotEmpty()) throw MirrorException("Item ${item.id} is not what $rowId needs: ${problems.joinToString("; ")}.")
+}
+
 /** The one item titled `<rowId>: ...`; a row ID that is a prefix of another (`SYNC-02`, `SYNC-021`) does not match. */
 fun findRow(
     items: List<ProjectItem>,
@@ -68,11 +116,24 @@ class ProjectItems {
     fun addDraft(
         title: String,
         body: String,
-    ): String = graphql(
-        "mutation(\$project: ID!, \$title: String!, \$body: String!) { addProjectV2DraftIssue(input: " +
-            "{projectId: \$project, title: \$title, body: \$body}) { projectItem { id } } }",
-        mapOf("project" to RoadmapProject.ID, "title" to title, "body" to body),
-    ).getValue("addProjectV2DraftIssue").jsonObject.getValue("projectItem").jsonObject.getValue("id").jsonPrimitive.content
+    ): String = addedItemId(
+        graphql(
+            "mutation(\$project: ID!, \$title: String!, \$body: String!) { addProjectV2DraftIssue(input: " +
+                "{projectId: \$project, title: \$title, body: \$body}) { projectItem { id } } }",
+            mapOf("project" to RoadmapProject.ID, "title" to title, "body" to body),
+        ),
+    )
+
+    /** Reads one item by its id, which does not depend on the project's item list. */
+    fun read(item: String): ItemState = parseItemState(
+        graphql(
+            "query(\$item: ID!) { node(id: \$item) { ... on ProjectV2Item { id isArchived project { id } " +
+                "content { ... on DraftIssue { title } } fieldValues(first: 30) { nodes { " +
+                "... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2SingleSelectField { name } } } " +
+                "... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2Field { name } } } } } } } }",
+            mapOf("item" to item),
+        ),
+    )
 
     fun setOption(
         item: String,

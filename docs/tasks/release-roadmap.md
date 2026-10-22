@@ -336,8 +336,13 @@ does not have.
   through `gh api graphql`, because `gh project item-list` returned no items
   for this project (`observed` 2026-10-22). GitHub's item list can also come
   back empty or without items added minutes before, so `add` takes
-  `--status` and `--pr` and sets a new row's whole state at once, and
-  `set-status` refuses an empty list instead of reporting the row missing. Archive and the remaining fields
+  `--status` and `--pr`, sets a new row's whole state at once, and prints
+  the item id; `set-status --item <id>` skips the list, and `set-status`
+  refuses an empty list instead of reporting the row missing. Both read the
+  item back by its id after writing and fail unless it is a live item of
+  this project with the row's title and the written values. `add` checks
+  for an existing item through the list, so while the list lags, a rerun
+  can add a duplicate. Archive and the remaining fields
   (Wave, Dependencies, Integration group, Risk) still go through
   `gh project item-archive` and `item-edit`. Views are created once in the
   GitHub interface and are not part of the mirror rule.

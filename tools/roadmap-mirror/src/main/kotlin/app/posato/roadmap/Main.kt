@@ -25,13 +25,21 @@ class SetStatusCommand : CliktCommand(name = "set-status") {
     private val row by argument("ROW-ID", help = "Roadmap row, such as SYNC-022.")
     private val status by argument("STATUS").choice(*RoadmapProject.STATUS.keys.toTypedArray())
     private val pr by option("--pr", help = "Pull request number recorded in the PR field.").int()
+    private val itemId by option(
+        "--item",
+        help = "The row's item id (PVTI_...), as add prints it; skips GitHub's item list, which can lag or come back empty.",
+    )
 
     override fun run() {
         val items = ProjectItems()
-        val item = findRow(items.list(), row)
-        items.setOption(item.id, RoadmapProject.STATUS_FIELD, RoadmapProject.STATUS.getValue(status))
-        pr?.let { number -> items.setText(item.id, RoadmapProject.PR_FIELD, "#$number") }
-        echo("${item.title}: Status $status${pr?.let { ", PR #$it" }.orEmpty()}")
+        val item = itemId?.also { id -> requireWritten(items.read(id), row, emptyMap()) } ?: findRow(items.list(), row).id
+        val option = RoadmapProject.STATUS.getValue(status)
+        items.setOption(item, RoadmapProject.STATUS_FIELD, option.id)
+        pr?.let { number -> items.setText(item, RoadmapProject.PR_FIELD, "#$number") }
+        val expected = mapOf(RoadmapProject.STATUS_NAME to option.name) + pr?.let { mapOf(RoadmapProject.PR_NAME to "#$it") }.orEmpty()
+        val written = items.read(item)
+        requireWritten(written, row, expected)
+        echo("${written.title}: Status ${option.name}${pr?.let { ", PR #$it" }.orEmpty()} ($item, read back)")
     }
 }
 
@@ -52,14 +60,20 @@ class AddCommand : CliktCommand(name = "add") {
         val items = ProjectItems()
         if (items.list().any { it.title.startsWith("$row: ") }) throw MirrorException("$row already has a project item.")
         val id = items.addDraft("$row: $title", body)
+        val options = listOf(
+            Triple(RoadmapProject.STATUS_FIELD, RoadmapProject.STATUS_NAME, RoadmapProject.STATUS.getValue(status)),
+            Triple(RoadmapProject.RELEASE_FIELD, RoadmapProject.RELEASE_NAME, RoadmapProject.RELEASE.getValue(release)),
+            Triple(RoadmapProject.CLASS_FIELD, RoadmapProject.CLASS_NAME, RoadmapProject.CLASS.getValue(rowClass)),
+            Triple(RoadmapProject.EPIC_FIELD, RoadmapProject.EPIC_NAME, RoadmapProject.EPIC.getValue(epic)),
+        )
         // The project's item list can lag a write by many minutes, so a new row gets its whole state here, not in a
         // set-status that may not find it yet (`observed` 2026-10-22).
-        items.setOption(id, RoadmapProject.STATUS_FIELD, RoadmapProject.STATUS.getValue(status))
+        options.forEach { (field, _, option) -> items.setOption(id, field, option.id) }
         pr?.let { number -> items.setText(id, RoadmapProject.PR_FIELD, "#$number") }
-        items.setOption(id, RoadmapProject.RELEASE_FIELD, RoadmapProject.RELEASE.getValue(release))
-        items.setOption(id, RoadmapProject.CLASS_FIELD, RoadmapProject.CLASS.getValue(rowClass))
-        items.setOption(id, RoadmapProject.EPIC_FIELD, RoadmapProject.EPIC.getValue(epic))
-        echo("$row: $title: added to $release as $id, Status $status${pr?.let { ", PR #$it" }.orEmpty()}")
+        val expected = options.associate { (_, name, option) -> name to option.name } +
+            pr?.let { mapOf(RoadmapProject.PR_NAME to "#$it") }.orEmpty()
+        requireWritten(items.read(id), row, expected)
+        echo("$row: $title: added as $id and read back (${expected.entries.joinToString { "${it.key} ${it.value}" }})")
     }
 }
 
