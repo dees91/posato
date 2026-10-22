@@ -566,7 +566,9 @@ so the developer's local data is unchanged.
   `local.properties`. It starts on the onboarding screen that shows **Allow Screen Time
   access**; after onboarding the request comes from **Choose apps**, so replace the
   first step's query with that button. The passcode step is optional, because Face ID
-  can approve without the keypad.
+  can approve without the keypad; when the keypad appears and cannot be typed, the step
+  fails. In Light appearance the keypad's keys are not accessible on iOS 26.5, and the
+  driver taps positions it measures in a screenshot (driver README, `pressKeys`).
 - `onboarding-sync-consent-ios.json` takes a fresh iPhone install through iCloud consent,
   Screen Time consent (the same steps in one run), and the remaining onboarding;
   `choose-app-ios.json` picks Calculator in the picker; `observe-blocking-ios.json` and
