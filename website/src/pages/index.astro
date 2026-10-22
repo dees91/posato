@@ -3,9 +3,11 @@ import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
 import androidJoin from "../../../video/public/android-join.png";
 import androidWebsites from "../../../video/public/android-websites.png";
+import iphoneImport from "../../../video/public/iphone-import.png";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
 import macAddDevice from "../../../video/public/mac-add-device.png";
+import macExport from "../../../video/public/mac-export.png";
 import macDuration from "../../../video/public/mac-duration-45.png";
 import macSchedules from "../../../video/public/mac-schedules.png";
 import macWebsites from "../../../video/public/mac-websites.png";
@@ -218,6 +220,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
   </section>
 
   <section class="step" aria-labelledby="export">
+    <div class="step-copy">
     <h2 id="export">Copy pause sets with a file</h2>
     <p class="prose">
       To set up a device outside your workspace, such as a Mac on another Apple Account, choose
@@ -228,6 +231,29 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       to add the sets to yours or replace them; imported schedules arrive switched off. It is a one-time
       copy, not sync.
     </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macExport}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Export pause sets on a Mac with Protect with a code switched on and a sample nine-character code shown"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneImport}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Importing on an iPhone: Add to my pause sets is selected over Replace my pause sets, and the schedule arrives switched off"
+          />
+        </div>
+      </div>
+    </div>
   </section>
 
   <section aria-labelledby="limits">

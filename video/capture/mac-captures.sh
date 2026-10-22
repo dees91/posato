@@ -20,6 +20,7 @@
 #   video/capture/mac-captures.sh scheduled          # after HH:MM: the scheduled pause running
 #   video/capture/mac-captures.sh folder             # a folder workspace in the guest's ~/PosatoSync and its Add a device code
 #   video/capture/mac-captures.sh unfolder           # close the code and remove the workspace, so the code expires with it
+#   video/capture/mac-captures.sh export             # the Export dialog with Protect with a code on, then cancelled
 #
 # For the folder step, `posato-control relay --line primary --android SERIAL`
 # copies the workspace to the phone, where `android-captures.sh join` shows
@@ -176,7 +177,22 @@ unfolder() {
   "${PC}" flow folder remove -t desktop --vm "${VM}" | ok
 }
 
+# The code is made for this dialog only; Cancel exports nothing, so it protects no file.
+export_dialog() {
+  ready
+  open_sets
+  pc tap --text "More actions for pause sets" | ok
+  pc tap --text "Export pause sets…" | ok
+  pc wait --for exists --text "Export file…" --role button --timeout-seconds 20 | ok
+  pc tap --text-contains "Protect with a code" | ok
+  pc wait --for exists --text-contains "Posato does not keep it" --timeout-seconds 20 | ok
+  shot mac-export
+  pc tap --text "Cancel" --role button | ok
+  pc wait --for absent --text "Export file…" --role button --timeout-seconds 20 | ok
+}
+
 case "${1:-}" in
+  export) export_dialog ;;
   apps) apps ;;
   sets) sets ;;
   websites) websites ;;
@@ -186,5 +202,5 @@ case "${1:-}" in
   scheduled) scheduled ;;
   folder) folder ;;
   unfolder) unfolder ;;
-  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder" >&2; exit 2 ;;
+  *) echo "usage: $0 apps|sets|websites|session|schedules HH:MM|evening HH:MM|scheduled|folder|unfolder|export" >&2; exit 2 ;;
 esac

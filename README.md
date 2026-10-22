@@ -143,6 +143,10 @@ it with a nine-character code that Posato shows once. On the other device,
 choose **Import…** to add the sets to yours or replace them; imported
 schedules arrive switched off. It is a one-time copy, not sync.
 
+<p align="center">
+  <a href=".github/assets/step-export.png"><img src=".github/assets/step-export.png" width="960" alt="Export pause sets on a Mac with Protect with a code switched on and a sample code shown, and the import review on an iPhone with Add to my pause sets selected over Replace my pause sets"></a>
+</p>
+
 ## Limits
 
 Posato adds deliberate friction; it is not a lock you cannot open.

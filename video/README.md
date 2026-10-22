@@ -2,7 +2,7 @@
 
 The root README uses the `Hero` composition as a looping GIF and links the
 longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`,
-`StepSchedules`, and `StepFolder` stills are the README's step screenshots,
+`StepSchedules`, `StepFolder`, and `StepExport` stills are the README's step screenshots,
 each pairing the Mac with a phone (iPhone or Android); `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices. The walkthrough and the
@@ -46,7 +46,8 @@ Outputs:
 - `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 2,043,946 bytes.
 - `../.github/assets/step-websites.png` (Mac and Android), `step-duration.png`
   (Mac and iPhone), `step-schedules.png` (Mac and iPhone), and
-  `step-folder.png` (Mac and Android): 1920 x 1080 composed stills on a
+  `step-folder.png` (Mac and Android), and `step-export.png` (Mac and
+  iPhone): 1920 x 1080 composed stills on a
   transparent background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
@@ -103,7 +104,9 @@ Tracked captures are in the light appearance (`user-confirmed`
   `flow schedule`; `scheduled` captures Session once `Evening reading`
   started on its own; and `folder` creates a folder workspace in the guest's
   `~/PosatoSync` and shows **Add a device** for `mac-add-device`, whose
-  pairing code expired when `unfolder` removed the workspace.
+  pairing code expired when `unfolder` removed the workspace. `export`
+  switches on **Protect with a code** in the Export dialog for `mac-export`
+  and presses **Cancel**, so its code protects no file.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
   install, in Light Mode set by `appearance`, after the first-install skip
   scenario, with the Focus and Evening sets and the `Deep work` schedule
@@ -111,7 +114,10 @@ Tracked captures are in the light appearance (`user-confirmed`
   application. Screen Time consent (`screen-time-consent.json` from the Apps
   tab) ran with the phone in Dark appearance, because the driver cannot read
   the passcode keypad in Light; the captures then ran in Light. iCloud was
-  off, so matching items do not demonstrate sync.
+  off, so matching items do not demonstrate sync. `import` adds `Deep work`
+  turned off, exports through `flow export` (Save to Files into the driver
+  host's folder), deletes the schedule, opens that file from **Import…**, and
+  captures the review for `iphone-import` before **Cancel**.
 - `android-*.png`: the same tree on a Samsung Galaxy XCover7 with Android 14
   in the light theme set by `appearance`, driven by
   `capture/android-captures.sh` with the same sets (Calculator as the app)
