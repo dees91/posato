@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoActionRow
@@ -32,6 +36,9 @@ public fun ResidenceDialogContent(
     secondary: String? = null,
     onSecondary: () -> Unit = {},
 ) {
+    // The first button is the default: focused at once, so Enter or Space keeps Posato open.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(focus) { focus.requestFocus() }
     PosatoTheme {
         Column(
             modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).padding(PosatoSpace.Section),
@@ -41,7 +48,7 @@ public fun ResidenceDialogContent(
             PosatoBody(message)
             PosatoActionRow {
                 secondary?.let { label -> PosatoButton(onClick = onSecondary, style = PosatoButtonStyle.Secondary) { Text(label) } }
-                PosatoButton(onClick = onPrimary, style = PosatoButtonStyle.Primary) { Text(primary) }
+                PosatoButton(onClick = onPrimary, modifier = Modifier.focusRequester(focus), style = PosatoButtonStyle.Primary) { Text(primary) }
             }
         }
     }

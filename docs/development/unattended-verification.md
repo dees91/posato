@@ -276,7 +276,16 @@ Wayland session (GDM stops, the session in `custom.conf` and
 AccountsService changes, `accounts-daemon` restarts, GDM starts). Under
 Tart's virtio GPU, GNOME runs on Wayland. There, `gnome-screenshot -f`
 captures the whole screen, while GNOME Shell's own `Screenshot` D-Bus
-method refuses other callers, and `xdotool` reaches only Xwayland windows.
+method refuses other callers, and `xdotool` input does not reach Posato's
+window; `wmctrl -c Posato` closes it politely.
+
+What the status icon relies on (`observed` 2026-10-21, `LINUX-003`): the
+AppIndicator extension lists items in its watcher as `<bus name>@<path>`,
+shows XEmbed tray icons too but in an unthemed AWT menu, finds an item's
+themed icons in `IconThemePath` only when that folder has an
+`index.theme`, and never sends dbusmenu's `closed` event. An autostart
+entry runs at the next login on the session's own bus, which `linux
+relogin` reproduces.
 
 For Android, install the Android SDK's command-line tools, emulator, and a
 Google APIs system image for API 33 or later, then create and boot an

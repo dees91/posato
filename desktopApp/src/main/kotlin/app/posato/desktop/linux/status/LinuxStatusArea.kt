@@ -32,12 +32,13 @@ internal class LinuxStatusArea(
     private val onBusLost: () -> Unit,
     private val sessionBusAddress: () -> String? = ::environmentBusAddress,
 ) : Closeable {
-    private var connection: DBusConnection? = null
+    @Volatile private var connection: DBusConnection? = null
 
     @Volatile private var closing = false
     private val itemName = "org.kde.StatusNotifierItem-${ProcessHandle.current().pid()}-1"
     private val mutableWatcherPresent = MutableStateFlow(false)
-    private var state = StatusAreaState(emptyList(), "Posato", "Posato", filled = false)
+
+    @Volatile private var state = StatusAreaState(emptyList(), "Posato", "Posato", filled = false)
     private val item = StatusItem(icons, { state }, onShow)
     private val menu = StatusMenu({ state.entries }, onAction, onMenuOpened)
 
@@ -149,5 +150,13 @@ private fun DBusConnection.sendQuietly(signal: org.freedesktop.dbus.messages.DBu
     runCatching { sendMessage(signal) }
 }
 
-/** The session bus the desktop advertises to the processes of the login session; blank or absent without one. */
-private fun environmentBusAddress(): String? = System.getenv("DBUS_SESSION_BUS_ADDRESS")
+/**
+ * The session bus the desktop advertises to the processes of the login session, or the per-user bus systemd keeps
+ * in the runtime directory when a launcher left the variable out; null without either.
+ */
+private fun environmentBusAddress(): String? {
+    System.getenv("DBUS_SESSION_BUS_ADDRESS")?.takeIf { it.isNotBlank() }?.let { return it }
+    val runtime = System.getenv("XDG_RUNTIME_DIR")?.takeIf { it.startsWith("/") } ?: return null
+    val socket = java.nio.file.Path.of(runtime, "bus")
+    return if (java.nio.file.Files.exists(socket)) "unix:path=$socket" else null
+}

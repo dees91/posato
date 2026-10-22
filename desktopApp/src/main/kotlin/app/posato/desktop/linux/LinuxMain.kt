@@ -44,21 +44,20 @@ fun main(args: Array<String>) {
     mappings.keptTargets = graph.keptApplicationRequirements::of
     val copy = runBlocking { loadLinuxPresenceCopy() }
     val residence = LinuxResidence(LinuxAutostart(linuxAutostartDirectory(System.getenv(), System.getProperty("user.home"))))
-    lateinit var host: LinuxResidentHost
+    val events = LinuxHostEvents()
     val statusArea = LinuxStatusArea(
         icons = StatusIcons(LINUX_ICON_THEME_PATH),
-        onShow = { host.showRequests.tryEmit(Unit) },
-        onAction = { action -> host.actions.tryEmit(action) },
-        onMenuOpened = { host.menuOpened.tryEmit(Unit) },
+        onShow = { events.show() },
+        onAction = events::act,
+        onMenuOpened = events::openMenu,
         // The session ended under Posato: the desktop is logging out.
         onBusLost = { exitProcess(0) },
     ).takeIf { it.start() }
-    host = LinuxResidentHost(graph, copy, statusArea, residence, LinuxFirstCloseMarker(data.resolve("first-close")), startHidden = background)
+    val host = LinuxResidentHost(graph, copy, events, statusArea, residence, LinuxFirstCloseMarker(data.resolve("first-close")), background)
+    // The lock and the bus connection end with the process, which application {} exits.
     application {
         LinuxResidentPosato(host)
     }
-    statusArea?.close()
-    lock.close()
 }
 
 /** A second launch asks the running Posato to show its window, retrying while that Posato is still starting. */

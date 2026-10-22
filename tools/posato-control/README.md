@@ -594,6 +594,19 @@ that `posato.vm.linuxGolden` names (its one-time setup is in
   Compose reports bounds on Linux with offsets that do not match the screen,
   so `tap` performs the element's accessibility action, as the Mac presses,
   and `type` focuses the field through AT-SPI before `xdotool` types.
+- In a GNOME session (the GNOME golden line) `launch -t linux` writes the
+  session's own bus address to `/tmp/posato-dbus` instead of starting a
+  private bus, turns toolkit accessibility on, and keeps the shell's AT-SPI
+  bus, so Posato's status icon reaches the shell's StatusNotifierWatcher.
+- `linux tray [--activate LABEL | --open]` reads Posato's StatusNotifierItem
+  and its dbusmenu layout over the session bus with
+  `src/main/resources/linux/posato-tray.py`, clicks an enabled menu item, or
+  activates the icon; `linux screen [--name N]` captures the whole screen
+  (`import -window root`, or `gnome-screenshot -f` on Wayland, where GNOME
+  Shell's own Screenshot method refuses other callers); `linux relogin`
+  restarts the display manager and waits for the user's new session, so
+  autostart entries run; `linux session xorg|wayland` switches the GNOME
+  line's session and keeps the clone's data.
 - `flow onboard -t linux` installs the pausing service; the guest's polkit
   rule lets the session user approve `pkexec` without a password.
 - `observe -t linux --website URL --application PATH` reads `getent ahosts`

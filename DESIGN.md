@@ -635,7 +635,9 @@ and schedules keep working.
   active. The menu has the same lines and actions as the Mac menu above,
   with "Restrictions not active on this computer". The panel draws it.
 - **Window.** Closing the window hides it while the icon shows, or while a
-  pause runs or a schedule is on; otherwise it quits. **Open Posato** and
+  pause runs or a schedule is on; otherwise it quits. On a desktop without a
+  session bus nothing could show it again, so closing quits as **Quit
+  Posato** does. **Open Posato** and
   opening Posato again from the applications menu show the same window.
 - **First close.** One notice per device, with **OK**: "Posato is still
   running, so your pause and schedules keep working. Open it again from its
@@ -646,7 +648,8 @@ and schedules keep working.
   "Scheduled pauses won't start until you open Posato again. A running
   pause still ends on time." with **Keep Posato open** (default) and
   **Quit**.
-- **Open at login.** In About Posato under **In the background**, a switch
+- **Open at login.** In About Posato under **In the background**
+  (`user-confirmed` 2026-10-22, with **Quit Posato** below it), a switch
   **Open Posato at login**, off by default: "Starts Posato in the background
   when you log in, so schedules start on time." A login launch opens no
   window.

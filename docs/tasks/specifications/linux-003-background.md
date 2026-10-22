@@ -55,6 +55,8 @@ the window is closed, and a running pause can be ended from the icon.
 - **Schedules:** the Linux composable calls `presence.runWhileResident()` at
   application level and the window graph does not host schedules
   (`hostsSession = false`), so exactly one scheduler runs.
+- **Without a session bus:** nothing could show a hidden window again, so
+  closing the window quits as **Quit Posato** does.
 - **Without an icon** (`user-confirmed`): when no StatusNotifierWatcher owns
   its name, closing the window keeps Posato in the background only while a
   pause runs or a schedule is enabled, and the one-time notice says how to
@@ -63,12 +65,14 @@ the window is closed, and a running pause can be ended from the icon.
   same rule applies live: if the watcher goes away while the window is
   hidden and neither a pause runs nor a schedule is enabled, Posato quits.
 - **Quit** (`user-confirmed`): **Quit Posato** in the icon menu, Ctrl+Q, and a
-  **Quit Posato** row in the Linux options. It asks only while a schedule is
+  **Quit Posato** row in About Posato under **In the background**
+  (`user-confirmed` 2026-10-22). It asks only while a schedule is
   enabled, in a focused standalone dialog even with the window hidden. A
   running pause still ends on time through the pausing service. Logout never
   waits. Posato exits when its session bus disconnects.
-- **Open at login:** a platform-neutral login-item port with a Linux row in
-  "On this computer", off by default. It writes
+- **Open at login:** a platform-neutral port with the switch in About
+  Posato under **In the background** (`user-confirmed` 2026-10-22), off by
+  default. It writes
   `$XDG_CONFIG_HOME/autostart/posato.desktop` atomically with `Type`, `Name`,
   `Icon`, `TryExec`, and `Exec=/opt/posato/bin/posato --background`, no
   `Hidden` key; an entry with `Hidden=true` or

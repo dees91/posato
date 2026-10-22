@@ -88,6 +88,18 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   android shell --script reboot`. A phone with a screen lock runs Posato only
   after the first unlock, which needs a person; an emulator has none.
 
+- **Linux status icon and background (`LINUX-003`):** use the GNOME line,
+  `$PC linux create --golden gnome` (add `--session wayland` once for
+  Wayland), where `launch -t linux` uses the session's own bus so the icon
+  reaches the shell. `$PC linux tray` reads the icon and its menu over D-Bus,
+  `$PC linux tray --activate "End session early…"` clicks an item, and `$PC
+  linux screen` captures the whole screen with the top bar. Close the window
+  with `xdotool key alt+F4` on Xorg or `wmctrl -c Posato` on Wayland (install
+  `wmctrl` in the clone), then prove the process stays (`pgrep -x posato`)
+  and a schedule starts (`observe`). `$PC linux relogin` runs the autostart
+  entry; `$PC linux session xorg|wayland` switches the session and keeps the
+  data. Proof of a login launch: `pgrep -a posato` shows `--background`.
+
 ## Gotchas
 
 - Do not run the Linux clone together with a macOS clone; the Linux guest has
@@ -111,3 +123,9 @@ DNS, or a screen lock on the phone, and a missing clone or package.
 - Android private DNS set to strict mode, and a browser with its own DNS over
   HTTPS, bypass website blocking by design; the emulator's default settings
   do not.
+- On Wayland, `xdotool` input does not reach Posato's window, so flows that
+  type or press by text (`flow set`, `flow session` from an empty set) fail;
+  prepare data in the Xorg session and switch with `linux session wayland`.
+- GNOME's panel never reports that the status menu closed, and the
+  AppIndicator extension finds themed icons only through an `index.theme`;
+  `LINUX-003` relies on both facts.

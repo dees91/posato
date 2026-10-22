@@ -53,10 +53,10 @@ internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
     host.residence.onQuit = quit
 
     LaunchedEffect(Unit) { presence.runWhileResident() }
-    LaunchedEffect(Unit) { host.showRequests.collect { visible = true } }
-    LaunchedEffect(Unit) { host.menuOpened.collect { presence.onMenuOpened() } }
+    LaunchedEffect(Unit) { host.events.showRequests.collect { visible = true } }
+    LaunchedEffect(Unit) { host.events.menuOpened.collect { presence.onMenuOpened() } }
     LaunchedEffect(Unit) {
-        host.actions.collect { action ->
+        host.events.actions.collect { action ->
             if (action == PresenceMenuActionId.QUIT) return@collect quit()
             visible = true
             windowRequestOf(action)?.let(presence::request)
@@ -76,20 +76,24 @@ internal fun ApplicationScope.LinuxResidentPosato(host: LinuxResidentHost) {
     if (visible) {
         Window(
             onCloseRequest = {
-                if (!watcher && !keepsRunning(menu)) {
-                    exitApplication()
-                } else {
-                    visible = false
-                    if (host.firstClose.firstTime()) notice = if (watcher) LinuxNotice.FIRST_CLOSE else LinuxNotice.FIRST_CLOSE_NO_ICON
+                when (closeOutcome(host.statusArea != null, watcher, menu)) {
+                    CloseOutcome.HIDE -> {
+                        visible = false
+                        if (host.firstClose.firstTime()) notice = if (watcher) LinuxNotice.FIRST_CLOSE else LinuxNotice.FIRST_CLOSE_NO_ICON
+                    }
+
+                    CloseOutcome.QUIT_ASKING -> {
+                        quit()
+                    }
+
+                    CloseOutcome.EXIT -> {
+                        exitApplication()
+                    }
                 }
             },
             title = "Posato",
             state = windowState,
-            onPreviewKeyEvent = { event ->
-                val quitKey = event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.Q
-                if (quitKey) quit()
-                quitKey
-            },
+            onPreviewKeyEvent = { event -> event.isQuitKey().also { quitKey -> if (quitKey) quit() } },
         ) {
             host.graph.application.Content(
                 hostsSession = false,
@@ -127,7 +131,18 @@ private fun NoticeWindow(
     onQuit: () -> Unit,
 ) {
     val state = rememberDialogState(width = DIALOG_WIDTH.dp, height = DIALOG_HEIGHT.dp)
-    DialogWindow(onCloseRequest = onDismiss, state = state, title = "Posato", resizable = false, alwaysOnTop = true) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        state = state,
+        title = "Posato",
+        resizable = false,
+        alwaysOnTop = true,
+        onPreviewKeyEvent = { event ->
+            val escape = event.type == KeyEventType.KeyDown && event.key == Key.Escape
+            if (escape) onDismiss()
+            escape
+        },
+    ) {
         when (notice) {
             LinuxNotice.QUIT -> ResidenceDialogContent(
                 title = copy.presence.quitTitle,
@@ -143,6 +158,25 @@ private fun NoticeWindow(
             LinuxNotice.FIRST_CLOSE_NO_ICON -> ResidenceDialogContent(null, copy.firstCloseNoIcon, copy.presence.firstCloseOk, onDismiss)
         }
     }
+}
+
+private fun androidx.compose.ui.input.key.KeyEvent.isQuitKey(): Boolean = type == KeyEventType.KeyDown && isCtrlPressed && key == Key.Q
+
+private enum class CloseOutcome { HIDE, QUIT_ASKING, EXIT }
+
+/**
+ * Closing hides Posato only when it can be shown again: by its icon, or, for a pause or an enabled schedule, by a
+ * second launch over the session bus. Without a session bus nothing could show it again, so closing quits as
+ * **Quit Posato** does.
+ */
+private fun closeOutcome(
+    sessionBus: Boolean,
+    watcher: Boolean,
+    menu: PresenceMenu,
+): CloseOutcome = when {
+    !sessionBus -> CloseOutcome.QUIT_ASKING
+    watcher || keepsRunning(menu) -> CloseOutcome.HIDE
+    else -> CloseOutcome.EXIT
 }
 
 private fun windowRequestOf(action: PresenceMenuActionId): SessionWindowRequest? = when (action) {
