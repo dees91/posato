@@ -28,8 +28,13 @@ follow the process in [`AGENTS.md`](../../AGENTS.md#code-review) and the
   [verify-posato Evidence steps](../../.agents/skills/verify-posato/SKILL.md#evidence)
   at the reviewed head, or a named blocker. Documentation-only changes need
   none. Run `posato-control pr-evidence --pr <number>` in the author's
-  worktree, or ask for its output: it fails when the verified commit's product
-  code differs from the head or a cited run has no directory.
+  worktree, or ask for its output; the author runs it before `gh pr ready`
+  and before `babysit-pr adopt`. A `Verified <sha>` line holds only when the
+  product tree of `<sha>` equals the head's:
+  `git diff <sha> <head> -- . ':!docs/' ':!*.md' ':!.agents/' ':!.claude/'`
+  is empty, or, after a rebase, each differing path's own change in the pull
+  request is the same patch. The check also fails when a cited run has no
+  directory.
 - A decision labelled `agent-delegated` may stand in a task record or pull
   request, but block its promotion into an ADR, `DESIGN.md`, or a product or
   security document until it is `user-confirmed`; "accepted without

@@ -42,6 +42,46 @@ class PrEvidenceTest {
     @Test
     fun `given documentation inside product and tooling directories when scoping then it is not product code`() {
         val paths = listOf("tools/posato-control/README.md", "shared/notes.md", "tools/posato-control/src/Main.kt")
-        assertEquals(listOf("tools/posato-control/src/Main.kt"), productPaths(paths, includeTooling = true))
+        assertEquals(listOf("tools/posato-control/src/Main.kt"), productPaths(paths))
+    }
+
+    /**
+     * Release 1.5 added `androidApp/` and `linuxHelper/`, which a list of product directories did not name, so a change
+     * there after the verified commit passed. Everything but documentation and agent instructions is product now.
+     */
+    @Test
+    fun `given a path outside docs, Markdown, and agent instructions when scoping then it is product code`() {
+        val paths = listOf(
+            "androidApp/src/main/kotlin/Main.kt",
+            "linuxHelper/src/main/kotlin/Helper.kt",
+            "tools/posato-control/fixtures/scenarios/a.json",
+            "website/index.html",
+            "docs/wiki/diagram.svg",
+            ".agents/skills/verify-posato/features/README.md",
+            ".claude/skills/verify-posato",
+            "README.md",
+        )
+        assertEquals(
+            listOf(
+                "androidApp/src/main/kotlin/Main.kt",
+                "linuxHelper/src/main/kotlin/Helper.kt",
+                "tools/posato-control/fixtures/scenarios/a.json",
+                "website/index.html",
+            ),
+            productPaths(paths),
+        )
+    }
+
+    /**
+     * Without a rebase, any product path that differs between the verified commit and the head invalidates the
+     * evidence. After a rebase a differing path counts only when the pull request's own change of it differs, so a
+     * newer main does not.
+     */
+    @Test
+    fun `given product paths that differ from the head when judging then only a rebase lets main's changes pass`() {
+        val differing = listOf("shared/A.kt", "androidApp/B.kt", "docs/c.md")
+        val ownChange = setOf("androidApp/B.kt")
+        assertEquals(listOf("androidApp/B.kt", "shared/A.kt"), productChangesSinceVerified(differing, rebased = false) { it in ownChange })
+        assertEquals(listOf("androidApp/B.kt"), productChangesSinceVerified(differing, rebased = true) { it in ownChange })
     }
 }

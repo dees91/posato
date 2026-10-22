@@ -453,11 +453,13 @@ Proof standard for a feature:
    request: `Verified <sha> on <target>: <scenario or command> -> <result>, run <run-id>`.
    Verify and post again after any later application change; reviewers block
    a merge on evidence that does not name the head.
-6. Before `gh pr ready`, run `$PC pr-evidence --pr <number>` in the worktree
-   that holds the runs. It reads lines that start with `Verified` in comments
-   by the author or the repository owner, and fails when the last one's
-   product change differs from the head's (rebases do not count) or a cited
-   `run <id>` has no directory here. Pass the run id
+6. Before `gh pr ready` and before `babysit-pr adopt`, run
+   `$PC pr-evidence --pr <number>` in the worktree that holds the runs; do
+   not hand the pull request over until it passes. It reads lines that start
+   with `Verified` in comments by the author or the repository owner, and
+   fails when the last one's product tree differs from the head's (every path
+   except `docs/`, `.md` files, `.agents/`, and `.claude/`; a rebase onto a
+   newer main does not count) or a cited `run <id>` has no directory here. Pass the run id
    as one `--run-id <id>`; a second one is refused.
 
 Report an unreachable path with the exact command and the failing check

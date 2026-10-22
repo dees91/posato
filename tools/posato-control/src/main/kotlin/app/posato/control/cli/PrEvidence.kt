@@ -54,34 +54,33 @@ internal fun parseVerifiedLines(
 }
 
 /**
- * The paths whose change after the verified commit invalidates the evidence: the application sources and their
- * builds, and the verification driver when the pull request changes it. Documentation, also a README inside those
- * directories, wiki, and skills may change after the run.
+ * The paths whose difference between the verified commit and the head invalidates the evidence: every path except
+ * documentation (`docs/` and any `.md` file, also a README inside a product directory) and agent instructions
+ * (`.agents/` and `.claude/`, the skills). It is the pathspec `. ':!docs/' ':!*.md' ':!.agents/' ':!.claude/'`, so new
+ * application directories count without a list to keep current.
  */
-internal fun productPaths(
-    paths: Collection<String>,
-    includeTooling: Boolean,
-): List<String> = paths.filterNot { it.endsWith(".md") }.filter { path ->
-    PRODUCT_PREFIXES.any { path.startsWith(it) } || path in PRODUCT_FILES || (includeTooling && path.startsWith(TOOLING_PREFIX))
+internal fun productPaths(paths: Collection<String>): List<String> = paths.filterNot { path ->
+    path.endsWith(".md") || NON_PRODUCT_PREFIXES.any { path.startsWith(it) }
 }.sorted()
 
-private const val TOOLING_PREFIX = "tools/posato-control/"
-
-private val PRODUCT_PREFIXES = listOf(
-    "shared/",
-    "desktopApp/",
-    "iosApp/",
-    "macosHelper/",
-    "macosSyncCompanion/",
-    "buildSrc/",
-    "gradle/",
-)
-
-private val PRODUCT_FILES = setOf("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "Version.xcconfig")
+private val NON_PRODUCT_PREFIXES = listOf("docs/", ".agents/", ".claude/")
 
 /**
- * Checks a pull request's verification evidence before it is marked ready: its last `Verified <sha>` comment must name
- * a commit whose product code equals the head, and every run any `Verified` comment cites must exist under this
+ * The product paths among [differing], the paths whose content differs between the verified commit and the head. With
+ * the same merge base on both sides each one is a change after the run. After a rebase a path counts only when
+ * [ownChangeDiffers]: the pull request's own change of it, against each side's merge base, is not the same patch, so
+ * what a newer base branch brought does not count.
+ */
+internal fun productChangesSinceVerified(
+    differing: Collection<String>,
+    rebased: Boolean,
+    ownChangeDiffers: (String) -> Boolean,
+): List<String> = productPaths(differing).filter { path -> !rebased || ownChangeDiffers(path) }
+
+/**
+ * Checks a pull request's verification evidence before it is marked ready or handed to `babysit-pr`: its last
+ * `Verified <sha>` comment must name a commit whose product tree equals the head's ([productPaths]; after a rebase,
+ * whose own product change equals the head's), and every run any `Verified` comment cites must exist under this
  * worktree's run directory. Every completed-change review of release 1.4 stopped on one of these by hand.
  */
 class PrEvidenceCommand :
@@ -113,9 +112,9 @@ class PrEvidenceCommand :
         // Each side against its own merge base, so a rebase onto a newer main does not count as a change.
         val headBase = git.mergeBase("origin/$base", head)
         val verifiedBase = git.mergeBase("origin/$base", last.commit)
-        val headPaths = git.changed(headBase, head)
-        val scope = productPaths(headPaths + git.changed(verifiedBase, last.commit), headPaths.any { it.startsWith(TOOLING_PREFIX) })
-        val product = scope.filter { path -> git.patchId(verifiedBase, last.commit, path) != git.patchId(headBase, head, path) }
+        val product = productChangesSinceVerified(git.changed(last.commit, head), rebased = headBase != verifiedBase) { path ->
+            git.patchId(verifiedBase, last.commit, path) != git.patchId(headBase, head, path)
+        }
         val cited = lines.flatMap { it.runIds }.distinct()
         val missing = cited.filterNot { runs.resolve(it).exists() }
         val uncited = lines.filter { it.runIds.isEmpty() }.map { it.commit }
@@ -130,7 +129,8 @@ class PrEvidenceCommand :
             putJsonArray("linesWithoutRun") { uncited.forEach { add(it) } }
         }
         val problems = listOfNotNull(
-            "product code changed after ${last.commit}: ${product.joinToString()}".takeIf { product.isNotEmpty() },
+            "the product tree of ${last.commit.take(SHORT_SHA)} differs from the head ${head.take(SHORT_SHA)} in ${product.joinToString()}"
+                .takeIf { product.isNotEmpty() },
             "cited runs missing under build/verification/runs: ${missing.joinToString()}".takeIf { missing.isNotEmpty() },
             "Verified lines citing no existing run: ${uncited.joinToString()}".takeIf { uncited.isNotEmpty() },
         )
@@ -138,13 +138,16 @@ class PrEvidenceCommand :
             throw ControlException(
                 ErrorCode.ASSERTION_FAILED,
                 "The evidence of #$pr does not hold: ${problems.joinToString("; ")}.",
-                "Verify the head's product code again and post its Verified line, citing runs from this worktree.",
+                "Verify the head again and post `Verified ${head.take(SHORT_SHA)} on <target>: ... run <run-id>`, citing runs from " +
+                    "this worktree; only docs/, .md files, .agents/, and .claude/ may change after a run.",
                 result = report,
             )
         }
         return report
     }
 }
+
+private const val SHORT_SHA = 8
 
 /** The few Git and GitHub reads `pr-evidence` needs, each failing as a command failure with what it was doing. */
 private class Git(
