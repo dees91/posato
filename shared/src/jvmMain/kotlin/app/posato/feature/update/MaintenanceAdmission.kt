@@ -76,6 +76,9 @@ public class MaintenanceAdmission internal constructor(
 ) : UpdateMaintenanceGate {
     private val mutex = Mutex()
     private var admittedCycle = false
+
+    /** Whether the helper holds restrictions applied through this gate; written by the gated port, which never takes a claim's lock from here. */
+    @Volatile internal var restrictionsHeld: Boolean = false
     private val mutableClosed = MutableStateFlow<Boolean?>(null)
 
     public val closed: StateFlow<Boolean?> = mutableClosed.asStateFlow()
@@ -100,7 +103,7 @@ public class MaintenanceAdmission internal constructor(
         targetBuild: String,
     ): MaintenanceCloseResult {
         return mutex.withLock {
-            when (val closed = store.close(fromBuild, targetBuild, clock())) {
+            when (val closed = store.close(fromBuild, targetBuild, clock(), restrictionsHeld)) {
                 is MaintenanceStoreResult.Failure -> MaintenanceCloseResult.StorageFailure
 
                 is MaintenanceStoreResult.Success -> when (closed.value) {
@@ -194,8 +197,36 @@ public class GatedEnforcementPort(
     override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
         return admission.withApplyPermit(
             refused = { EnforcementApplyReport(EnforcementOutcome.FAILED, false, delegate.reapplyRequiresPrompt) },
-            block = { delegate.apply(request) },
+            block = { applied(delegate.apply(request)) },
         )
+    }
+
+    /** The clear and the apply share one permit, so an update cannot close between them; a closed gate clears nothing. */
+    override suspend fun replace(request: EnforcementRequest): EnforcementApplyReport? {
+        return admission.withApplyPermit(
+            refused = { null },
+            block = { if (cleared(delegate.clear()) == EnforcementOutcome.CLEARED) applied(delegate.apply(request)) else null },
+        )
+    }
+
+    override suspend fun clear(): EnforcementOutcome {
+        return cleared(delegate.clear())
+    }
+
+    override suspend fun status(): EnforcementOutcome {
+        return cleared(delegate.status())
+    }
+
+    private fun applied(report: EnforcementApplyReport): EnforcementApplyReport {
+        admission.restrictionsHeld = report.outcome == EnforcementOutcome.APPLIED
+        return report
+    }
+
+    private fun cleared(outcome: EnforcementOutcome): EnforcementOutcome {
+        if (outcome == EnforcementOutcome.CLEARED) {
+            admission.restrictionsHeld = false
+        }
+        return outcome
     }
 }
 

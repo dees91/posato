@@ -95,6 +95,51 @@ class MaintenanceAdmissionTest {
         assertEquals(MaintenanceCloseResult.Closed, closing.await())
     }
 
+    // MACOS-030: a schedule's change clears and applies again; a gate closed in between would end its restrictions.
+    @Test
+    fun `given a closed gate when held restrictions are replaced then nothing is cleared`() = runTest {
+        val port = RecordingPort()
+        val admission = MaintenanceAdmission(InMemoryMaintenanceStore(), clock = { NOW })
+        val gated = GatedEnforcementPort(port, admission)
+        assertEquals(EnforcementOutcome.APPLIED, gated.apply(REQUEST).outcome)
+        assertEquals(MaintenanceCloseResult.Closed, admission.close(FROM_BUILD, TARGET_BUILD))
+
+        assertEquals(null, gated.replace(REQUEST))
+
+        assertEquals(0, port.cleared)
+        assertEquals(1, port.applied)
+    }
+
+    @Test
+    fun `given restrictions applied through the gate when the gate closes then it knows they are held`() = runTest {
+        val store = InMemoryMaintenanceStore(closeOutcome = MaintenanceCloseOutcome.SESSION_ACTIVE)
+        val admission = MaintenanceAdmission(store, clock = { NOW })
+        val gated = GatedEnforcementPort(RecordingPort(), admission)
+
+        gated.apply(REQUEST)
+        admission.close(FROM_BUILD, TARGET_BUILD)
+
+        assertEquals(true, store.closedWithRestrictionsHeld)
+    }
+
+    @Test
+    fun `given held restrictions when the helper reports them cleared then the gate no longer counts them`() = runTest {
+        val store = InMemoryMaintenanceStore(closeOutcome = MaintenanceCloseOutcome.SESSION_ACTIVE)
+        val admission = MaintenanceAdmission(store, clock = { NOW })
+        val port = RecordingPort()
+        val gated = GatedEnforcementPort(port, admission)
+        gated.apply(REQUEST)
+
+        assertEquals(EnforcementOutcome.CLEARED, gated.status())
+        admission.close(FROM_BUILD, TARGET_BUILD)
+        assertEquals(false, store.closedWithRestrictionsHeld)
+
+        gated.apply(REQUEST)
+        gated.clear()
+        admission.close(FROM_BUILD, TARGET_BUILD)
+        assertEquals(false, store.closedWithRestrictionsHeld)
+    }
+
     @Test
     fun `given an active session when the gate closes then admission is refused and the gate stays open`() = runTest {
         val store = InMemoryMaintenanceStore(closeOutcome = MaintenanceCloseOutcome.SESSION_ACTIVE)
@@ -165,6 +210,7 @@ class MaintenanceAdmissionTest {
         private val beforeApply: suspend () -> Unit = {},
     ) : EnforcementPort {
         var applied: Int = 0
+        var cleared: Int = 0
 
         override val reapplyRequiresPrompt: Boolean = true
 
@@ -175,6 +221,7 @@ class MaintenanceAdmissionTest {
         }
 
         override suspend fun clear(): EnforcementOutcome {
+            cleared += 1
             return EnforcementOutcome.CLEARED
         }
 
@@ -201,11 +248,15 @@ internal class InMemoryMaintenanceStore(
         return readFailure?.let { MaintenanceStoreResult.Failure(it) } ?: MaintenanceStoreResult.Success(gate)
     }
 
+    var closedWithRestrictionsHeld: Boolean? = null
+
     override suspend fun close(
         fromBuild: String,
         targetBuild: String,
         nowEpochMillis: Long,
+        restrictionsHeld: Boolean,
     ): MaintenanceStoreResult<MaintenanceCloseOutcome> {
+        closedWithRestrictionsHeld = restrictionsHeld
         if (closeOutcome == MaintenanceCloseOutcome.CLOSED) {
             gate = MaintenanceGate.Closed(fromBuild, targetBuild, nowEpochMillis)
         }

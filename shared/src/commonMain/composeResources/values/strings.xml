@@ -270,7 +270,7 @@ For what matters.</string>
     <string name="update_consent_deny">Don’t Check</string>
     <string name="update_preparing">Preparing to update…</string>
     <string name="update_refused_title">The update can’t be installed now</string>
-    <string name="update_refused_session">End the current session first, then check for updates again.</string>
+    <string name="update_refused_session">End the current pause first, then check for updates again.</string>
     <string name="update_refused_other_instance">Another copy of Posato is open. Quit it, then check for updates again.</string>
     <string name="update_refused_other">Posato could not confirm that blocking has stopped. Check the Mac setup, then try again.</string>
     <string name="mac_unified_title">Set up Posato on this Mac.</string>

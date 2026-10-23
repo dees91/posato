@@ -45,6 +45,7 @@ internal interface UpdateMaintenanceStore {
         fromBuild: String,
         targetBuild: String,
         nowEpochMillis: Long,
+        restrictionsHeld: Boolean,
     ): MaintenanceStoreResult<MaintenanceCloseOutcome>
 
     suspend fun reopen(): MaintenanceStoreResult<Unit>
@@ -64,9 +65,12 @@ internal class SqlUpdateMaintenanceStore(
         fromBuild: String,
         targetBuild: String,
         nowEpochMillis: Long,
+        restrictionsHeld: Boolean,
     ): MaintenanceStoreResult<MaintenanceCloseOutcome> {
         return databaseCall {
-            if (database.hasActiveLocalSession(nowEpochMillis) || database.hasRunningSchedule(nowEpochMillis)) {
+            // A scheduled pause that applied nothing, as when its helper was unavailable, holds no update back.
+            val scheduleHolds = restrictionsHeld && database.hasRunningSchedule(nowEpochMillis)
+            if (database.hasActiveLocalSession(nowEpochMillis) || scheduleHolds) {
                 MaintenanceCloseOutcome.SESSION_ACTIVE
             } else {
                 database.updateMaintenanceQueries.closeGate(fromBuild, targetBuild, nowEpochMillis)

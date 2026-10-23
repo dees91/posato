@@ -42,7 +42,10 @@ class SqlUpdateMaintenanceStoreTest {
         try {
             val first = SqlUpdateMaintenanceStore(PosatoDatabase(driver), Dispatchers.Default)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), first.close(FROM_BUILD, TARGET_BUILD, NOW))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                first.close(FROM_BUILD, TARGET_BUILD, NOW, restrictionsHeld = false),
+            )
             driver.close()
 
             driver = testDatabase.openDriver()
@@ -65,7 +68,10 @@ class SqlUpdateMaintenanceStoreTest {
             assertIs<LocalSessionResult.Success<*>>(sessions.start(SessionId(testIdentifier(31)), NOW, NOW + DURATION, NOW, START_SET))
             val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE), store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L, restrictionsHeld = false),
+            )
             assertEquals(MaintenanceStoreResult.Success(MaintenanceGate.Open), store.read())
         } finally {
             driver.close()
@@ -74,7 +80,7 @@ class SqlUpdateMaintenanceStoreTest {
     }
 
     @Test
-    fun `given a scheduled pause running here when the gate closes then closing is refused until its pin ends`() = runTest {
+    fun `given a scheduled pause holding restrictions here when the gate closes then closing is refused until its pin ends`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("maintenance-schedule.db")
         val driver = testDatabase.openDriver()
         try {
@@ -84,10 +90,38 @@ class SqlUpdateMaintenanceStoreTest {
             schedules.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, NOW))))
             val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE), store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L, restrictionsHeld = true),
+            )
 
             schedules.recordHost(ScheduleHostUpdate(released = setOf(key)))
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L, restrictionsHeld = true),
+            )
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    // MACOS-030: a scheduled pause whose helper could not apply it pauses nothing, so it must not hold an update back.
+    @Test
+    fun `given a scheduled pause running here that holds no restrictions when the gate closes then it closes`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("maintenance-schedule-unapplied.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val schedules = SqlScheduleStore(database, Dispatchers.Default)
+            val key = OccurrenceKey(ScheduleId("000000000000400080000000000000a2"), ScheduleDate(2026, 9, 28))
+            schedules.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, NOW))))
+            val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
+
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L, restrictionsHeld = false),
+            )
         } finally {
             driver.close()
             testDatabase.delete()
@@ -105,7 +139,10 @@ class SqlUpdateMaintenanceStoreTest {
             assertIs<LocalSessionResult.Success<*>>(sessions.endEarly(NOW + 1L, null))
             val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L, restrictionsHeld = false),
+            )
         } finally {
             driver.close()
             testDatabase.delete()
@@ -122,7 +159,10 @@ class SqlUpdateMaintenanceStoreTest {
             sessions.start(SessionId(testIdentifier(33)), NOW, NOW + DURATION, NOW, START_SET)
             val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, TARGET_BUILD, NOW + DURATION))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                store.close(FROM_BUILD, TARGET_BUILD, NOW + DURATION, restrictionsHeld = false),
+            )
         } finally {
             driver.close()
             testDatabase.delete()
@@ -135,7 +175,7 @@ class SqlUpdateMaintenanceStoreTest {
         val driver = testDatabase.openDriver()
         try {
             val store = SqlUpdateMaintenanceStore(PosatoDatabase(driver), Dispatchers.Default)
-            store.close(FROM_BUILD, TARGET_BUILD, NOW)
+            store.close(FROM_BUILD, TARGET_BUILD, NOW, restrictionsHeld = false)
 
             assertEquals(MaintenanceStoreResult.Success(Unit), store.reopen())
             assertEquals(MaintenanceStoreResult.Success(MaintenanceGate.Open), store.read())
@@ -151,9 +191,12 @@ class SqlUpdateMaintenanceStoreTest {
         val driver = testDatabase.openDriver()
         try {
             val store = SqlUpdateMaintenanceStore(PosatoDatabase(driver), Dispatchers.Default)
-            store.close(FROM_BUILD, TARGET_BUILD, NOW)
+            store.close(FROM_BUILD, TARGET_BUILD, NOW, restrictionsHeld = false)
 
-            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, NEWER_TARGET_BUILD, NOW + 1L))
+            assertEquals(
+                MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED),
+                store.close(FROM_BUILD, NEWER_TARGET_BUILD, NOW + 1L, restrictionsHeld = false),
+            )
             assertEquals(MaintenanceStoreResult.Success(MaintenanceGate.Closed(FROM_BUILD, NEWER_TARGET_BUILD, NOW + 1L)), store.read())
         } finally {
             driver.close()
