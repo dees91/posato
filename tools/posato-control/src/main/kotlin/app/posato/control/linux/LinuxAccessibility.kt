@@ -1,5 +1,6 @@
 package app.posato.control.linux
 
+import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.ProcessOutput
 import app.posato.control.vm.shellQuote
@@ -17,10 +18,24 @@ import app.posato.control.vm.shellQuote
 class LinuxAccessibility(
     private val guest: LinuxGuest,
 ) {
-    /** Starts Posato, ending a running one, with its tree published on AT-SPI. */
+    /**
+     * Starts Posato, ending a running one, and returns once its tree can be read on AT-SPI. The process starts at
+     * once but takes seconds to register, and a command that reads the tree before then fails.
+     */
     fun launch() {
         guest.exec(ACCESSIBILITY_SESSION + "\n" + LINK_WRAPPER + "\npkill -x posato; sleep 1\n" + START_ACCESSIBLE)
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato in ${LinuxGuest.CLONE}")
+        val deadline = System.currentTimeMillis() + REGISTER_MILLIS
+        while (!helper("dump").succeeded) {
+            if (System.currentTimeMillis() > deadline) {
+                throw ControlException(
+                    ErrorCode.COMMAND_FAILED,
+                    "Posato did not appear on the accessibility bus within ${REGISTER_MILLIS / MILLIS_PER_SECOND} s.",
+                    "Read /tmp/posato.log in the clone with `linux exec`.",
+                )
+            }
+            Thread.sleep(REGISTER_POLL_MILLIS)
+        }
     }
 
     /** Runs the status-icon helper in the guest on the session's bus: `show`, `open`, or `activate <label>`. */
@@ -39,6 +54,9 @@ class LinuxAccessibility(
 
     companion object {
         const val BUS_FILE = "/tmp/posato-dbus"
+        private const val REGISTER_MILLIS = 60_000L
+        private const val REGISTER_POLL_MILLIS = 500L
+        private const val MILLIS_PER_SECOND = 1_000L
         private const val ATSPI_HELPER = "/linux/posato-atspi.py"
         private const val TRAY_HELPER = "/linux/posato-tray.py"
 
