@@ -1463,6 +1463,23 @@ val linuxPackageInputs by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("linux/package"))
 }
 
+// MACOS-030: the helper harness runs inside a Tart guest, which has a JDK but no checkout, so its test classes, the
+// helper client, and the few libraries they load travel as one jar for `JUnitCore` (verify-posato's sessions feature).
+val helperHarnessJar by tasks.registering(Jar::class) {
+    group = "verification"
+    description = "Builds the jar that runs the helper harnesses in a Tart guest."
+    archiveFileName.set("posato-helper-harness.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("helper-harness"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val runtime = configurations.testRuntimeClasspath
+    val harnessLibraries = listOf("kotlin-stdlib", "kotlin-test", "kotlinx-coroutines-core", "junit-", "hamcrest-core")
+    dependsOn(runtime)
+    from(sourceSets.main.map { it.output })
+    from(sourceSets.test.map { it.output })
+    from({ runtime.get().filter { jar -> harnessLibraries.any { jar.name.startsWith(it) } }.map { zipTree(it) } })
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
+}
+
 sqldelight {
     databases {
         create("MacOsApplicationMappingsDatabase") {

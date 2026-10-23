@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 28 (2026-10-23: `QUALITY-013` delivered by the release 1.5 retrospective)
+- **Revision:** 29 (2026-10-23: `MACOS-030` started outside a release)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-23
@@ -226,6 +226,11 @@
   `RELEASE-007` retrospective (`user-confirmed`, 2026-10-23), together with
   a fix it exposed: `launch -t linux` now returns only once Posato's
   accessibility tree can be read.
+  Revision 29 adds `MACOS-030` (idea 54) and starts it outside a release
+  at the maintainer's request (`user-confirmed`, 2026-10-23): the Mac
+  stopped talking to its helper after 256 operations, which left
+  restrictions in place after a pause and refused updates. It ships with
+  the next macOS build.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -598,6 +603,7 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
 | `QUALITY-013` | Let `posato-control flow onboard -t linux` finish when Posato's pausing service is already installed in the clone: the onboarding page then shows **Continue** instead of **Allow**, and the flow fails waiting for **Allow**. Press whichever of the two is shown, as `flow icloud link` does with its buttons, and cover a rerun on the same clone. | Verification | Idea 52; release 1.5 retrospective | Any planning checkpoint; cheap |
+| `MACOS-030` | Keep the Mac talking to its helper for as long as Posato runs: start a new helper connection before the 256-operation bound of ADR 0004 on both the application side and the helper's daemon side, without ending the helper process, its proxy relay, or its lease during a pause; restrictions end when the pause ends; an update is refused only while restrictions are held. Prove it with a test that sends more than 256 operations to the real helper in a Tart VM. | Sessions and enforcement | Idea 54; reported on three Macs | Started outside a release (revision 29) |
 
 ## Coverage matrix
 
