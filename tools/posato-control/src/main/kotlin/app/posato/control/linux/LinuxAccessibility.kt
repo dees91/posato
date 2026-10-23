@@ -26,12 +26,18 @@ class LinuxAccessibility(
         guest.exec(ACCESSIBILITY_SESSION + "\n" + LINK_WRAPPER + "\npkill -x posato; sleep 1\n" + START_ACCESSIBLE)
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Launching Posato in ${LinuxGuest.CLONE}")
         val deadline = System.currentTimeMillis() + REGISTER_MILLIS
-        while (!helper("dump").succeeded) {
+        while (true) {
+            val dump = helper("dump")
+            if (dump.succeeded) return
+            if (!guest.exec("pgrep -x posato >/dev/null && echo running").stdout.contains("running")) {
+                throw ControlException(ErrorCode.COMMAND_FAILED, "Posato exited after launch.", LOG_HINT)
+            }
             if (System.currentTimeMillis() > deadline) {
                 throw ControlException(
                     ErrorCode.COMMAND_FAILED,
-                    "Posato did not appear on the accessibility bus within ${REGISTER_MILLIS / MILLIS_PER_SECOND} s.",
-                    "Read /tmp/posato.log in the clone with `linux exec`.",
+                    "Posato did not appear on the accessibility bus within ${REGISTER_MILLIS / MILLIS_PER_SECOND} s: " +
+                        dump.stderr.trim().lines().lastOrNull().orEmpty(),
+                    LOG_HINT,
                 )
             }
             Thread.sleep(REGISTER_POLL_MILLIS)
@@ -57,6 +63,7 @@ class LinuxAccessibility(
         private const val REGISTER_MILLIS = 60_000L
         private const val REGISTER_POLL_MILLIS = 500L
         private const val MILLIS_PER_SECOND = 1_000L
+        private const val LOG_HINT = "Read /tmp/posato.log in the clone with `linux exec`."
         private const val ATSPI_HELPER = "/linux/posato-atspi.py"
         private const val TRAY_HELPER = "/linux/posato-tray.py"
 

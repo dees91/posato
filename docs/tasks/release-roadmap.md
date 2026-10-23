@@ -6,7 +6,7 @@
 - **Revision:** 28 (2026-10-23: `QUALITY-013` delivered by the release 1.5 retrospective)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-22
+- **Last amended:** 2026-10-23
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
