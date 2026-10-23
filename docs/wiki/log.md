@@ -3107,3 +3107,15 @@ first removal attempt that does not finish, not to a paused keychain.
   which proves migration 14 on macOS.
 - `user-confirmed`: the Android keystore lives outside the repository with
   a maintainer backup; `releasing.md` now covers Linux and Android.
+
+## [2026-10-23] tooling | Release 1.5 retro: Linux launch and onboarding rerun
+
+- `observed`: a tree read right after `launch -t linux` failed in five of
+  six tries; `launch` now waits until the tree can be read, and six of six
+  passed.
+- `QUALITY-013` delivered: `flow onboard -t linux` continues when the
+  pausing service is already installed, proven on a fresh clone and a rerun
+  on the same clone.
+- `superseded`: the `RELEASE-007` record named a missing `/tmp/posato-dbus`
+  as the cause; without the file both sides use the X11 autolaunch bus, and
+  the failure was the registration delay.

@@ -141,8 +141,12 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
         throw ControlException(ErrorCode.ASSERTION_FAILED, "Access was not allowed after $MAX_ANDROID_REQUESTS requests.", "Run `doctor -t android`.")
     }
 
-    /** The service installs through `pkexec`; the clone's polkit rule lets the test user approve without a password. */
+    /**
+     * The service installs through `pkexec`; the clone's polkit rule lets the test user approve without a password.
+     * A clone that already has the service, such as after `launch --fresh`, shows it installed with only Continue.
+     */
     private fun allowLinux(backend: Backend): String {
+        if (LINUX_INSTALLED in FlowSteps.labels(backend)) return LINUX_INSTALLED
         FlowSteps.run(
             backend,
             listOf(
