@@ -1,15 +1,13 @@
 # Execution: `RELEASE-007`
 
 - **Brief:** [Verify the 1.5.0 candidates and publish Posato 1.5](../specifications/release-007-release-1-5.md)
-- **Status:** `active`: Posato 1.5.0 published 2026-10-22; iOS 1.5.0 waiting
-  for App Review. Pending (`releasing.md` step 9): record the App Review
-  outcome, set `done`, and delete the never-published verification candidate
-  and its throwaway key
+- **Status:** `done`: Posato 1.5.0 published 2026-10-22; iOS 1.5.0 (8)
+  approved and released by App Review
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review and completed-change review
 - **Branch:** `docs/release-007-release-1-5` (#193), closeout `docs/release-007-closeout`
-- **Updated:** 2026-10-22
+- **Updated:** 2026-10-23
 
 ## Plan
 
@@ -252,6 +250,13 @@ helper enabled; the 23:14 schedule started on its own at 23:14:11 and
 blocked `example.com` and Calculator (`231412-7aeb`, `231414-08fd`); a new
 check reported "You're up to date." This proves migration 14 on macOS.
 No upgrade regression.
+
+### App Review and closeout (2026-10-23)
+
+- iOS 1.5.0 (8) passed App Review; with `AFTER_APPROVAL` it was released
+  at once: `store status` reports `READY_FOR_DISTRIBUTION`.
+- The never-published Intel verification candidate 9301 and its throwaway
+  Sparkle key (Keychain account `posato-test-release-007`) are deleted.
 
 ### Follow-ups
 
