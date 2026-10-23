@@ -166,14 +166,14 @@ internal class MacOsHelperClient(
         }
         return try {
             ensureStarted()
+            val sequence = takeSequence()
             activeSelectionProcess = checkNotNull(process)
             check(!isClosed)
-            check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
             val requestIdentifier = randomIdentifier()
             val message = HelperMessage(
                 kind = HelperMessageKind.Request,
                 operation = HelperOperation.SelectApplications,
-                sequence = nextSequence++,
+                sequence = sequence,
                 deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_SELECTION_DEADLINE_MILLISECONDS,
                 connectionIdentifier = connectionIdentifier,
                 sessionIdentifier = sessionIdentifier,
@@ -274,12 +274,11 @@ internal class MacOsHelperClient(
     ): T {
         check(pendingUnknownRequest == null)
         ensureStarted()
-        check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val requestIdentifier = randomIdentifier()
         val message = HelperMessage(
             kind = HelperMessageKind.Request,
             operation = operation,
-            sequence = nextSequence++,
+            sequence = takeSequence(),
             deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS,
             connectionIdentifier = connectionIdentifier,
             sessionIdentifier = sessionIdentifier,
@@ -320,11 +319,10 @@ internal class MacOsHelperClient(
     ): ByteArray? {
         val message = runCatching {
             ensureStarted()
-            check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
             HelperMessage(
                 kind = HelperMessageKind.Request,
                 operation = operation,
-                sequence = nextSequence++,
+                sequence = takeSequence(),
                 deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS,
                 connectionIdentifier = connectionIdentifier,
                 sessionIdentifier = sessionIdentifier,
@@ -362,11 +360,10 @@ internal class MacOsHelperClient(
         }
         check(pendingUnknownRequest == null || operation == HelperOperation.Reconcile)
         ensureStarted()
-        check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val message = HelperMessage(
             kind = HelperMessageKind.Request,
             operation = operation,
-            sequence = nextSequence++,
+            sequence = takeSequence(),
             deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS,
             connectionIdentifier = connectionIdentifier,
             sessionIdentifier = sessionIdentifier,
@@ -398,34 +395,58 @@ internal class MacOsHelperClient(
         input = BufferedInputStream(started.inputStream)
         output = BufferedOutputStream(started.outputStream)
         try {
-            connectionIdentifier = ByteArray(MacOsHelperProtocol.IDENTIFIER_BYTES)
-            nextSequence = 1
-            val requestIdentifier = randomIdentifier()
-            write(
-                HelperMessage(
-                    kind = HelperMessageKind.Hello,
-                    operation = HelperOperation.None,
-                    sequence = nextSequence++,
-                    deadlineMilliseconds = 5_000,
-                    connectionIdentifier = connectionIdentifier,
-                    sessionIdentifier = sessionIdentifier,
-                    requestIdentifier = requestIdentifier,
-                    payload = MacOsHelperProtocol.capabilityPayload(),
-                ),
-            )
-            val welcome = readWithDeadline(5_000)
-            check(welcome.kind == HelperMessageKind.Welcome)
-            check(welcome.operation == HelperOperation.None)
-            check(welcome.sequence == 1)
-            check(welcome.sessionIdentifier.contentEquals(sessionIdentifier))
-            check(welcome.requestIdentifier.contentEquals(requestIdentifier))
-            check(MacOsHelperProtocol.supportsRequiredParentCapabilities(welcome.payload))
-            connectionIdentifier = welcome.connectionIdentifier
-            check(connectionIdentifier.any { it != 0.toByte() })
+            openConnection()
         } catch (error: Exception) {
             terminateProcess()
             throw error
         }
+    }
+
+    /**
+     * ADR 0004 bounds one connection at 256 operations. Before a request would take the last
+     * sequence, which stays free for its Cancel, the same helper process opens a new connection, so
+     * the helper keeps the restrictions it holds, its proxy relay, and its lease. A renewal that
+     * fails ends the process as a broken pipe does, and the request starts a new one.
+     */
+    private fun takeSequence(): Int {
+        if (nextSequence >= MacOsHelperProtocol.MAXIMUM_OPERATIONS) {
+            try {
+                openConnection()
+            } catch (_: Exception) {
+                terminateProcess()
+                ensureStarted()
+            }
+        }
+        return nextSequence++
+    }
+
+    private fun openConnection() {
+        val previous = connectionIdentifier
+        connectionIdentifier = ByteArray(MacOsHelperProtocol.IDENTIFIER_BYTES)
+        nextSequence = 1
+        val requestIdentifier = randomIdentifier()
+        write(
+            HelperMessage(
+                kind = HelperMessageKind.Hello,
+                operation = HelperOperation.None,
+                sequence = nextSequence++,
+                deadlineMilliseconds = 5_000,
+                connectionIdentifier = connectionIdentifier,
+                sessionIdentifier = sessionIdentifier,
+                requestIdentifier = requestIdentifier,
+                payload = MacOsHelperProtocol.capabilityPayload(),
+            ),
+        )
+        val welcome = readWithDeadline(5_000)
+        check(welcome.kind == HelperMessageKind.Welcome)
+        check(welcome.operation == HelperOperation.None)
+        check(welcome.sequence == 1)
+        check(welcome.sessionIdentifier.contentEquals(sessionIdentifier))
+        check(welcome.requestIdentifier.contentEquals(requestIdentifier))
+        check(MacOsHelperProtocol.supportsRequiredParentCapabilities(welcome.payload))
+        connectionIdentifier = welcome.connectionIdentifier
+        check(connectionIdentifier.any { it != 0.toByte() })
+        check(!connectionIdentifier.contentEquals(previous))
     }
 
     private fun write(message: HelperMessage) {

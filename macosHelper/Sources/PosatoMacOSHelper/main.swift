@@ -43,36 +43,24 @@ DispatchQueue(label: "app.posato.macos.helper.pipe").async {
         allowsHelperOnlyOperations: true,
         maximumDeadlineMilliseconds: WireLimits.maximumSelectionDeadlineMilliseconds
       )
+      // ADR 0004 bounds a connection at 256 operations, so the parent opens a new one with a fresh
+      // Hello in the same session; the process keeps what it holds, including the owning connection.
+      if request.kind == .hello, connectionIdentifier != nil {
+        guard request.sessionIdentifier == sessionIdentifier else {
+          throw PipeFailure.invalidFrame
+        }
+        sequenceValidator = WireSequenceValidator()
+      }
       guard sequenceValidator.accept(request.sequence) else {
         throw PipeFailure.invalidFrame
       }
-      if connectionIdentifier == nil {
-        guard request.kind == .hello, request.operation == .none,
-          request.connectionIdentifier == Data(repeating: 0, count: WireLimits.identifierBytes),
-          request.sessionIdentifier.contains(where: { $0 != 0 }),
-          request.requestIdentifier.contains(where: { $0 != 0 }),
-          try WireCapabilities.supports(
-            WireCapabilities.decode(request.payload),
-            required: WireLimits.requiredParentHelperCapabilities
-          )
-        else {
-          throw PipeFailure.invalidFrame
-        }
-        let identifier = try randomIdentifier()
-        connectionIdentifier = identifier
+      if request.kind == .hello {
+        connectionIdentifier = try welcomeParentConnection(hello: request)
         sessionIdentifier = request.sessionIdentifier
-        let welcome = try WireMessage(
-          kind: .welcome,
-          operation: .none,
-          sequence: request.sequence,
-          deadlineMilliseconds: 0,
-          connectionIdentifier: identifier,
-          sessionIdentifier: request.sessionIdentifier,
-          requestIdentifier: request.requestIdentifier,
-          payload: WireCapabilities.encode(WireLimits.requiredParentHelperCapabilities)
-        )
-        try writeFrame(WireCodec.encode(welcome))
         continue
+      }
+      guard connectionIdentifier != nil else {
+        throw PipeFailure.invalidFrame
       }
       if request.kind == .cancel {
         guard request.operation == .none, request.payload.isEmpty,
@@ -267,6 +255,17 @@ DispatchQueue(label: "app.posato.macos.helper.pipe").async {
               failure: .unavailable
             )
           )
+        case .enable where activeRequest != nil:
+          // A failed Enable replaces its connection; the one that owns the pause must stay.
+          response = try withConnectionOfItsOwn { enabler in
+            try performEnableRequest(
+              request: request,
+              receivedAt: receivedAt,
+              service: service,
+              endpoint: endpoint,
+              daemon: &enabler
+            )
+          }
         case .enable:
           response = try performEnableRequest(
             request: request,
@@ -275,6 +274,21 @@ DispatchQueue(label: "app.posato.macos.helper.pipe").async {
             endpoint: endpoint,
             daemon: &daemon
           )
+        case .status where activeRequest != nil,
+          .prepareGrant where activeRequest != nil,
+          .grant where activeRequest != nil,
+          .revokeGrant where activeRequest != nil:
+          // Reads and grant changes during a pause use a connection of their own, as with no pause,
+          // so the owning connection keeps its operations for applying and restoring.
+          response = try withConnectionOfItsOwn { reader in
+            try performDaemonLifecycleRequest(
+              request: request,
+              receivedAt: receivedAt,
+              endpoint: endpoint,
+              reconcilePayload: reconcilePayload,
+              daemon: &reader
+            )
+          }
         default:
           response = try performDaemonLifecycleRequest(
             request: request,

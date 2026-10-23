@@ -278,7 +278,18 @@ ownership reaches Idle; healthy Applied maintenance preserves its lease. A
 background renewal keeps the helper alive only when the daemon explicitly
 returns Success with Applied ownership. Renewal uses a separate authenticated,
 non-owning XPC connection and rotates it before the 257th operation, while the
-original Apply connection remains open as the cleanup owner. Any other outcome,
+original Apply connection remains open as the cleanup owner. `observed`
+(`MACOS-030`, 2026-10-23): the parent pipe and the owning connection had the
+same bound and no rotation, so after 256 operations on one helper process,
+about an hour of a pause's 15-second Status polls or a few days of schedules,
+every request failed before it was sent, restrictions outlived their pause,
+and only a relaunch recovered. The parent now opens a new connection on the
+same pipe with a fresh Hello before its 256th sequence, and the helper keeps
+its process state; each `DaemonConnection` reaches the daemon under the
+identifiers of its first message; and during a pause Status, Enable, and the
+grant operations use a connection per request, so the owning connection
+carries only applies and cleanup. ADR 0004 is unchanged: no connection
+exceeds 256 operations. Any other outcome,
 malformed acknowledgement, transport failure, or timeout invalidates both
 connections and terminates the helper nonzero, closing its inherited pipes so
 the desktop client cannot retain stale enforcement state. A helper that cannot

@@ -46,6 +46,9 @@ final class DaemonConnection: @unchecked Sendable {
   private let connection: NSXPCConnection
   private let callLock = NSLock()
   private var requestSequence = DaemonRequestSequence()
+  // The daemon accepts one connection and session identifier per XPC connection, those of its
+  // first message; the parent's later connections on the pipe keep reaching it under them.
+  private var pinnedIdentity: (connection: Data, session: Data)?
 
   init(requirement: String) throws {
     connection = NSXPCConnection(
@@ -89,13 +92,17 @@ final class DaemonConnection: @unchecked Sendable {
 
   private func sequencedRequest(_ request: WireMessage) throws -> WireMessage {
     let sequence = try requestSequence.take()
+    let identity =
+      pinnedIdentity
+      ?? (connection: request.connectionIdentifier, session: request.sessionIdentifier)
+    pinnedIdentity = identity
     let sequenced = try WireMessage(
       kind: request.kind,
       operation: request.operation,
       sequence: sequence,
       deadlineMilliseconds: request.deadlineMilliseconds,
-      connectionIdentifier: request.connectionIdentifier,
-      sessionIdentifier: request.sessionIdentifier,
+      connectionIdentifier: identity.connection,
+      sessionIdentifier: identity.session,
       requestIdentifier: request.requestIdentifier,
       payload: request.payload
     )
@@ -155,8 +162,8 @@ final class DaemonConnection: @unchecked Sendable {
       operation: response.operation,
       sequence: request.sequence,
       deadlineMilliseconds: response.deadlineMilliseconds,
-      connectionIdentifier: response.connectionIdentifier,
-      sessionIdentifier: response.sessionIdentifier,
+      connectionIdentifier: request.connectionIdentifier,
+      sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: response.requestIdentifier,
       payload: response.payload
     )
