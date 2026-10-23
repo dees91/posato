@@ -3092,3 +3092,18 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: as the first step of promoting the open-source project,
   the hero and the README ask visitors whom Posato helps to star the
   repository; `DESIGN.md` records the hero sentence.
+
+## [2026-10-23] release | RELEASE-007: Posato 1.5.0 published
+
+- Tag `v1.5.0` and its GitHub Release are latest with both DMGs, both feeds
+  (build 30), the first Linux `.deb` packages for arm64 and x86-64, the
+  first release-signed Android APK, and one `SHA256SUMS`; iOS 1.5.0 (8)
+  passed App Review and is released.
+- `observed`: both `.deb` files are built and smoke-tested from the release
+  commit by the `Linux packages` workflow; the APK is signed with
+  `apksigner` outside Gradle, its password piped from the Keychain.
+- `observed`: updating 1.4.0 to 1.5.0 in the app keeps data, the helper,
+  and schedules, and a schedule set on 1.4.0 starts on its own on 1.5.0,
+  which proves migration 14 on macOS.
+- `user-confirmed`: the Android keystore lives outside the repository with
+  a maintainer backup; `releasing.md` now covers Linux and Android.
