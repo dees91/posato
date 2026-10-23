@@ -1,12 +1,12 @@
 # Execution: `MACOS-030`
 
 - **Brief:** [The Mac keeps talking to its helper for as long as Posato runs](../specifications/macos-030-helper-connection-renewal.md)
-- **Status:** `active`
+- **Status:** `done`: fixed and verified in Tart; reviews resolved
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agents (plan review, completed-change review)
 - **Branch:** `macos-030-update-admission`
-- **Updated:** 2026-10-23
+- **Updated:** 2026-10-24
 
 ## Cause
 
@@ -76,11 +76,22 @@ code:
 
 ## Result
 
-- Pending.
+- As planned. The pipe renewal lives in `ParentConnection.swift` to keep
+  `main.swift` within SwiftLint's 400 lines. The domain harness now reads
+  the shared launcher source; the application harness keeps its own variant.
+- Deviation (`agent-delegated`): `AC-03` is proven by the store and
+  admission tests instead of a candidate-feed update, as the brief records.
+- Already installed copies keep the old client. A Mac that shows the
+  symptom recovers when Posato is quit and opened again, which also lets the
+  update through; the next release notes should say so.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved after one correction.
+- **Required findings:** five test lines over the 150-character limit,
+  wrapped.
+- **Advisory findings taken:** the skill's failing-index sentence, the
+  shared launcher source, and two stale comments.
 
 ## Verification
 
@@ -88,3 +99,9 @@ code:
 | --- | --- | --- |
 | Tart 1.5.0, 120-minute pause, helper started 17:55 | fail as reported | `build/verification/runs/20261023-194254-cbfe`, `20261023-200254-5a1f` |
 | Tart 1.5.0, fresh helper 20:03:14, pause from 20:03 | fail at 21:07:51 | `build/verification/runs/20261023-210752-41ea` |
+| `AC-01` harness, client from `main` 3ce85a99 (harness without grant reads), 1.5.0 helper | fail as expected: `status 252 threw IllegalStateException`, the 257th operation | `build/verification/macos-030/before-1.5.0/harness.txt` |
+| `AC-01` harness at 669525fb, development package | pass: 600 and 300 Status, 60 grant reads, two clears, proxy cleared | `build/verification/macos-030/after-fix/harness-final.txt` |
+| `AC-02` 120-minute pause, development package | pass: one helper process, no attention notice, `observe` paused at 78 minutes, proxy off and example.com loaded after the end | `build/verification/macos-030/ac02-session.log`, `runs/20261024-010024-5b0d`, `runs/20261024-015344-f93c` |
+| Final build: start, `observe`, end early, `observe` | pass | `build/verification/runs/20261024-015601-8b1e` |
+| `AC-03` `SqlUpdateMaintenanceStoreTest`, `MaintenanceAdmissionTest` | three new tests failed first, then pass | `:shared:jvmTest` |
+| `./gradlew quality` | pass | `build/verification/macos-030/quality.log` |

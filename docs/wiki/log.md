@@ -3119,3 +3119,13 @@ first removal attempt that does not finish, not to a paused keychain.
 - `superseded`: the `RELEASE-007` record named a missing `/tmp/posato-dbus`
   as the cause; without the file both sides use the X11 autolaunch bus, and
   the failure was the registration delay.
+
+## [2026-10-23] fix | MACOS-030: helper connections renewed before their bound
+
+- `observed`: on 1.5.0 the Mac client stopped at its 257th helper operation
+  and never replaced the helper; a pause showed "Restrictions need attention"
+  after 64 minutes and kept its restrictions past its end. A harness that
+  sends 900 Status requests through the real helper in a Tart guest failed on
+  `main` at the 253rd and passes with the fix.
+- An update is now refused for a running schedule only while it holds
+  restrictions, and a schedule's clear-and-apply runs under one permit.
