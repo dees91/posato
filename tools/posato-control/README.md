@@ -653,8 +653,13 @@ that `posato.vm.linuxGolden` names (its one-time setup is in
   restarts the display manager and waits for the user's new session, so
   autostart entries run; `linux session xorg|wayland` switches the GNOME
   line's session and keeps the clone's data.
+- `launch -t linux` returns once Posato's tree can be read on AT-SPI, up to
+  60 s; the process registers seconds after it starts, and an earlier read
+  failed with "Posato is not on the accessibility bus".
 - `flow onboard -t linux` installs the pausing service; the guest's polkit
-  rule lets the session user approve `pkexec` without a password.
+  rule lets the session user approve `pkexec` without a password. On a clone
+  that already has the service (after `launch --fresh`), the access step
+  shows it installed and the flow continues past it.
 - `observe -t linux --website URL --application PATH` reads `getent ahosts`
   (a pause answers `0.0.0.0` or `::`) and starts the program on Posato's
   session bus, then checks whether a process still runs that file.

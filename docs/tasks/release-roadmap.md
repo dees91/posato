@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 27 (2026-10-22: two backlog rows from the release 1.5 retrospective)
+- **Revision:** 28 (2026-10-23: `QUALITY-013` delivered by the release 1.5 retrospective)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-22
+- **Last amended:** 2026-10-23
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -222,6 +222,10 @@
   shared resident-window core from the Mac and Linux code when Windows
   arrives. It also names `tools/roadmap-mirror` as the way to update the
   GitHub Projects mirror.
+  Revision 28 records `QUALITY-013` as delivered outside a release by the
+  `RELEASE-007` retrospective (`user-confirmed`, 2026-10-23), together with
+  a fix it exposed: `launch -t linux` now returns only once Posato's
+  accessibility tree can be read.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for

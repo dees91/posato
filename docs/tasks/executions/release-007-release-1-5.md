@@ -260,9 +260,11 @@ No upgrade regression.
 
 ### Follow-ups
 
-- `posato-control`: on a fresh Linux clone the launch does not write
-  `/tmp/posato-dbus` when no bus file exists, because `dbus-send` with an
-  empty address reaches the X11 autolaunch bus and the ping passes.
-- `QUALITY-013` (already in the roadmap) met again during this run.
+- `posato-control`: a tree read right after `launch -t linux` failed while
+  Posato registered on AT-SPI (`superseded` diagnosis: the missing
+  `/tmp/posato-dbus` was not the cause); fixed by the release 1.5
+  retrospective.
+- `QUALITY-013` met again during this run; delivered by the release 1.5
+  retrospective.
 - The `.deb` control file names `Posato <Unknown>` as maintainer (review
   Optional finding).
