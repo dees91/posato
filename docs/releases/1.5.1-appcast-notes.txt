@@ -1,0 +1,7 @@
+Posato 1.5.1
+
+After about an hour of a pause, or a few days of schedules, Posato for Mac could lose its connection to its background helper. It then showed "Restrictions need attention", kept websites paused after the pause ended, said the background helper could not be checked or enabled, and refused to install updates. Posato now keeps its helper connected for as long as it runs.
+
+A scheduled pause that could not apply its restrictions no longer holds an update back.
+
+If Posato says the update can't be installed now, quit Posato, open it again, and install the update. During a pause, Posato does not install the update; install it after the pause ends.
