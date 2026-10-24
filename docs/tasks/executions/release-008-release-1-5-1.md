@@ -84,7 +84,25 @@ maintainer's request of 2026-10-24 unless marked):
 
 ## Result
 
-- Pending.
+- **R** = `11eecf6dd362af818f8e11f44d799bfde91389db` (`MARKETING_VERSION =
+  1.5.1` on `main` `59696a51` plus this row's documentation); clean-clone
+  `quality iosSwiftTest` passed. The first run's Swift tests stopped with
+  "The test runner hung before establishing connection" while candidates
+  were building; the rerun passed.
+- **macOS build 31**, both architectures from one clean clone of R, G2
+  Developer ID: `Posato-1.5.1.dmg` `b1c94863…264b`, `appcast.xml`
+  `945e7b50…ec66`, `Posato-1.5.1-intel.dmg` `9943153c…b258`,
+  `appcast-intel.xml` `5d11a382…c174`. Host checks of both DMGs: 38 Mach-O
+  files of the DMG's architecture each, no Rosetta switch or seam key, the
+  stable feed per architecture with one `SUPublicEDKey`, minimum macOS
+  13.0, Temurin 21.0.12.1, strict deep `codesign`, `stapler validate`, and
+  `spctl` (Notarized Developer ID); app, helper, and sync companion
+  entitlements equal 1.5.0's.
+- **Reattached:** the 1.5.0 `.deb` files and APK match the 1.5.0
+  `SHA256SUMS`; the new `SHA256SUMS` lists all seven files.
+- **Never published:** test candidates 9401 and 9402 and the Intel
+  verification candidate 9411, signed with the throwaway key in Keychain
+  account `posato-test-release-008`.
 
 ## Completed-change review
 
@@ -94,6 +112,15 @@ maintainer's request of 2026-10-24 unless marked):
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
+| `primary`, 9401 with a schedule holding restrictions: **Install Update** to 9402 | refused, "The update can't be installed now. End the current pause first" | `runs/20261024-123618-98e0`, `20261024-123649-73b0` |
+| Same, after quitting and reopening during the schedule | restrictions applied again within 15 s; refused again | `20261024-123805-b38f`, `20261024-123820-1c5b` |
+| Same, a website added to the set during the schedule (`replace`) | both websites paused | `20261024-124031-1118` |
+| Same, grant off, quit, reopen: the schedule runs and applies nothing | "Setup required on this Mac", proxy off; 9402 installed, helper, schedule, and websites kept | `20261024-124403-643d`, `20261024-124911-4734` |
+| `primary`, fresh `Posato-1.5.1.dmg`: setup, manual pause, End session early | paused, then loaded | `20261024-125356-730c`, `20261024-125409-95cf` |
+| Same, a schedule starting at 13:16 with the window closed | started on its own, paused | `20261024-131610-d7cc` |
+| Same, `MACOS-030` harness against the installed release helper | pass: 900 Status, two applies and clears, proxy cleared | `build/verification/release-008-harness.txt` |
+| `ventura` (macOS 13.6), `Posato-1.5.1-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; nothing left after Quit | `20261024-1322*` |
+| `ventura`, Intel verification candidate 9411 (x86-64) | setup, a pause paused, after its end loaded | `20261024-134010-024a`, `20261024-134022-fa9a` |
 
 ## GitHub release notes for 1.5.1
 
