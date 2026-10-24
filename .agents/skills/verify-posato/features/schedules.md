@@ -97,8 +97,10 @@ Start from a set-up Mac (the unified setup records the consent) with
   proposes weekdays only and a weekend run would never start.
 - Add schedules with `flow schedule`; the time wheels drop a tap now and
   then, and the command reads the label and corrects in rounds. A hand-written
-  scenario must assert the `Starts HH:MM` label before saving. The 1.2 editor
-  refuses plans shorter than 15 minutes.
+  scenario must assert the `Starts HH:MM` label before saving. The editor
+  refuses plans shorter than 15 minutes and says so below the fields, often
+  below the fold, so a refused plan looks unsaved; `flow schedule` reports
+  that reason. The wheels' minutes stop at 00 and 59 instead of wrapping.
 - A manual session cannot start while a scheduled pause runs; for an
   overlap, start the session first and let a schedule begin inside it. A
   session shorter than 15 minutes ends only when Posato is open at its end.
