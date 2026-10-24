@@ -48,8 +48,9 @@ Preconditions:
 - **Seed data:** add `example.com` as in [Websites](./websites.md) so the
   update can prove that data survives.
 - **Manual update:** open About Posato, tap **Check for Updates…**, then
-  `$PC vm click --line primary --text "Install Update"` and, once the download
-  finishes, `$PC vm click --line primary --text "Install and Relaunch"`. Wait
+  `$PC vm click --line primary --text "Install Update" --exact` and, once the download
+  finishes, `$PC vm click --line primary --text "Install and Relaunch" --exact`; without
+  `--exact` the click can land on the same words in the release notes. Wait
   with `vm wait-text --text "Install and Relaunch" --absent`, then
   `$PC launch -t desktop --vm primary --adopt` tracks the relaunched process.
 - **Proof:** `$PC vm exec --line primary --script 'defaults read
