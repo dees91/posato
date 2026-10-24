@@ -45,8 +45,9 @@ maintainer's request of 2026-10-24 unless marked):
      installs, keeping data and the helper.
    - `peer` (macOS 26), kept for step 7: 1.5.0 from its DMG with the helper,
      a website, and a schedule with consent that has started on its own; a
-     70-minute pause that ends while 1.5.0 shows "Restrictions need
-     attention", left stuck and not reopened, with no schedule running
+     pause that ends while 1.5.0 shows "Restrictions need attention" (a
+     60-minute pause, then a 5-minute one on the same helper), left stuck
+     and not reopened, with no schedule running
      before step 7.
    - `ventura` (macOS 13): the x86-64 release DMG passes Gatekeeper, says
      "This version is for Intel Macs", and leaves nothing after Quit; the
@@ -125,7 +126,7 @@ maintainer's request of 2026-10-24 unless marked):
 | Same, `MACOS-030` harness against the installed release helper | pass: 900 Status, two applies and clears, proxy cleared | `build/verification/release-008-harness.txt` |
 | `ventura` (macOS 13.6), `Posato-1.5.1-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or background item (an empty Application Support folder is expected) | `20261024-132233-1550`, `20261024-132305-dca3`, `20261024-132318-53f9`, `20261024-132327-893f`, `20261024-133337-bfbc` |
 | `peer` (macOS 26), `Posato-1.5.0.dmg`: setup with the helper, `scheduleConsent` true, Focus with example.com, schedule Evening 13:55-14:10 | started on its own with the window closed, paused; after its end loaded | `20261024-135505-da0f`, `20261024-141005-9b59` |
-| `peer`, a 60-minute pause from 14:10 on a helper started at 14:10, then a 5-minute pause | the first ended in time; in the second, "Restrictions need attention" at 15:16; after its end at 15:18, "No session active" with "Restrictions may still apply" and the proxy still on; left stuck, not reopened, no schedule due | `20261024-151252-4015`, `20261024-152030-4cbb` |
+| `peer`, a 60-minute pause from 14:10 on a helper started at 14:10, then a 5-minute pause | the first ended in time; in the second, "Restrictions need attention" at 15:16; after its end at 15:18, "No session active" with "Restrictions may still apply" and the proxy still on; left stuck, not reopened, no schedule due | `20261024-134422-bf0b`, `20261024-151252-4015`, `20261024-151635-b21a`, `20261024-152026-827e`, `20261024-152030-4cbb` |
 | `ventura`, Intel verification candidate 9411 (x86-64) | setup, a pause paused, after its end loaded | `20261024-134010-024a`, `20261024-134022-fa9a` |
 
 ## GitHub release notes for 1.5.1
