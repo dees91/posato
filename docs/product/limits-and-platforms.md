@@ -16,7 +16,7 @@ direction for later releases.
 
 ## Availability
 
-Posato 1.5 for Mac is available from GitHub Releases, as `Posato-1.5.0.dmg` for Apple silicon and `Posato-1.5.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato for Linux and Android is new in 1.5 and available from GitHub Releases: `posato_1.5.0_arm64.deb` and `posato_1.5.0_amd64.deb` for Ubuntu, and `Posato-1.5.0.apk` for Android.
+Posato 1.5.1 for Mac is available from GitHub Releases, as `Posato-1.5.1.dmg` for Apple silicon and `Posato-1.5.1-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato for Linux and Android is new in 1.5 and available from GitHub Releases: `posato_1.5.0_arm64.deb` and `posato_1.5.0_amd64.deb` for Ubuntu, and `Posato-1.5.0.apk` for Android.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
