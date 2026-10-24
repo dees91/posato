@@ -3129,3 +3129,13 @@ first removal attempt that does not finish, not to a paused keychain.
   `main` at the 253rd and passes with the fix.
 - An update is now refused for a running schedule only while it holds
   restrictions, and a schedule's clear-and-apply runs under one permit.
+
+## [2026-10-24] release | Posato 1.5.1 for Mac published
+
+- `observed`: 1.5.1 (build 31) ships the `MACOS-030` fix; a 1.5.0 that lost
+  its helper refuses its own update with "Posato could not confirm that
+  blocking has stopped", and quitting and reopening it lets the update
+  through, as the notes say.
+- The 1.5.1 update gate refused while a schedule held restrictions and
+  admitted the update when the running schedule applied nothing.
+- The 1.5.0 Linux and Android packages are attached again unchanged.
