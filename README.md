@@ -1,10 +1,22 @@
-# Posato
+<h1 align="center">
+  <img src="docs/design/app-icon/forest.svg" width="40" height="40" alt=""> Posato
+</h1>
 
-**A little space. For what matters.**
+<p align="center"><strong>A little space. For what matters.</strong></p>
 
+<p align="center">
 Posato blocks the websites and apps you choose for a timed pause on your Mac,
 iPhone, Linux computer, or Android phone, now or on a schedule, within the
-[limits](#limits) below.
+<a href="#limits">limits</a> below.
+</p>
+
+<p align="center">
+  <a href="https://github.com/dees91/posato/releases/latest"><img src="https://img.shields.io/github/v/release/dees91/posato?display_name=tag&amp;sort=semver" alt="Latest release"></a>
+  <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/macOS-supported-111827?logo=apple&amp;logoColor=white" alt="macOS supported"></a>
+  <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/iOS-supported-2563eb?logo=apple&amp;logoColor=white" alt="iOS supported"></a>
+  <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/Linux-supported-f59e0b?logo=linux&amp;logoColor=white" alt="Linux supported"></a>
+  <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/Android-supported-3ddc84?logo=android&amp;logoColor=white" alt="Android supported"></a>
+</p>
 
 <p align="center">
   <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; one pause set change reaching a Mac, an iPhone, a Linux computer, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device">
