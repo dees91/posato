@@ -1,7 +1,7 @@
 # Execution: `RELEASE-008`
 
 - **Brief:** [Verify and publish Posato 1.5.1 for Mac](../specifications/release-008-release-1-5-1.md)
-- **Status:** `active`
+- **Status:** `done`: Posato 1.5.1 published on 2026-10-24
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** pending
@@ -109,9 +109,30 @@ maintainer's request of 2026-10-24 unless marked):
   verification candidate 9411, signed with the throwaway key in Keychain
   account `posato-test-release-008`.
 
+- **Published** 2026-10-24: #198 squash `628d6e05` on `main` (after #199,
+  which changed only `README.md`); `git diff --name-only R 628d6e05` lists
+  `README.md` and this record, and `Version.xcconfig` and the notices equal
+  R; annotated tag `v1.5.1`; GitHub Release latest with the eight assets,
+  downloaded and compared byte for byte; both public feeds equal the
+  verified ones (build 31). Milestone `1.5.1` closed; `MACOS-030` and
+  `RELEASE-008` Done in the Projects mirror (Release field 1.5, the
+  project has no 1.5.1 option).
+- **Cleaned up:** the Tart clones, the throwaway key
+  `posato-test-release-008`, and candidates 9401, 9402, and 9411; the
+  release key stays in the Keychain.
+- **Follow-ups for a retrospective (not done here):** `flow schedule` fails
+  to reach the end picker in a release window; the editor's "A schedule
+  lasts at least 15 minutes" appears below the fold, so a short schedule
+  looks unsaved; `vm install --replace` cannot drive Finder on macOS 13;
+  full-screen captures on the macOS 26 golden raise a `tart-guest-agent`
+  screen-recording prompt that blocks input; a manual `machine-ledger
+  claim` beside `posato-control`'s own claim counts a clone twice.
+
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved after one correction round: the `peer` rows and
+  the amended manual-pause item (Required) are in the table, with the
+  citations the reviewer named.
 
 ## Verification
 
@@ -128,6 +149,9 @@ maintainer's request of 2026-10-24 unless marked):
 | `peer` (macOS 26), `Posato-1.5.0.dmg`: setup with the helper, `scheduleConsent` true, Focus with example.com, schedule Evening 13:55-14:10 | started on its own with the window closed, paused; after its end loaded | `20261024-135505-da0f`, `20261024-141005-9b59` |
 | `peer`, a 60-minute pause from 14:10 on a helper started at 14:10, then a 5-minute pause | the first ended in time; in the second, "Restrictions need attention" at 15:16; after its end at 15:18, "No session active" with "Restrictions may still apply" and the proxy still on; left stuck, not reopened, no schedule due | `20261024-134422-bf0b`, `20261024-151252-4015`, `20261024-151635-b21a`, `20261024-152026-827e`, `20261024-152030-4cbb` |
 | `ventura`, Intel verification candidate 9411 (x86-64) | setup, a pause paused, after its end loaded | `20261024-134010-024a`, `20261024-134022-fa9a` |
+| `peer` after publication, stuck 1.5.0: **Install Update** to 1.5.1 | refused: "The update can't be installed now. Posato could not confirm that blocking has stopped" | `20261024-154553-f532` |
+| `peer`, quit and reopen 1.5.0, then **Install and Relaunch** | proxy cleared at quit; 1.5.1 (31) runs with "Background helper enabled", example.com, and Evening; Evening moved to 15:58 started on its own, paused | `20261024-155805-51d7` |
+| `posato.app`, the availability page, and the downloads | the site names the 1.5.1 Mac files; every link answers 200 | host `curl`, 2026-10-24 |
 
 ## GitHub release notes for 1.5.1
 
