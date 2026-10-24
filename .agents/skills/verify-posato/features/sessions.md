@@ -174,6 +174,35 @@ Preconditions:
 - **Restore:** End any session this run started and remove example.com if the
   expiry fixture did not already remove it. Preserve the user's other rows.
 
+## Helper operation bound (desktop, `MACOS-030`)
+
+A pause polls the helper every 15 seconds and the helper process lives as
+long as Posato, so the 256 operations ADR 0004 allows one connection are
+used up after about an hour of a pause, or a few days of schedules. Waiting
+for that takes too long; `MacOsHelperOperationBoundHarnessTest` sends the
+same operations in seconds. It runs in the guest against a helper whose
+Posato is onboarded with the standing grant on, while Posato itself is not
+running there:
+
+```shell
+./gradlew :desktopApp:helperHarnessJar
+cc -Wall -Werror -o build/verification/helper-harness/helper-parent desktopApp/src/test/c/helper-parent.c
+codesign --force --sign "<development identity>" --identifier app.posato.macos build/verification/helper-harness/helper-parent
+$PC vm push --line primary --from desktopApp/build/helper-harness/posato-helper-harness.jar --to helper-harness/posato-helper-harness.jar
+$PC vm push --line primary --from build/verification/helper-harness/helper-parent --to helper-harness/helper-parent --executable
+$PC vm exec --line primary --script 'osascript -e "quit app \"Posato\""; cd ~/helper-harness && mkdir -p evidence && \
+  POSATO_HELPER_BOUND_VM=1 POSATO_HELPER_PATH="<Posato.app>/Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper" \
+  POSATO_HELPER_PARENT=$HOME/helper-harness/helper-parent POSATO_HELPER_EVIDENCE=$HOME/helper-harness/evidence \
+  "/Volumes/My Shared Files/jdk/Contents/Home/bin/java" -cp posato-helper-harness.jar \
+  org.junit.runner.JUnitCore app.posato.desktop.macos.MacOsHelperOperationBoundHarnessTest; cat evidence/run.md'
+```
+
+The development identity is `posato.macos.signingIdentity` in
+`local.properties`; the helper accepts a parent of the same team, so this
+also drives a notarized release in `/Applications`. Copy `evidence/run.md`
+into the host run directory. On 1.5.0 it fails at the 253rd Status (the
+257th operation); a passing run ends with `passed` and the proxy cleared.
+
 ## Menu bar presence (desktop, `MACOS-013`)
 
 Posato for Mac stays resident after its window closes (ADR 0009). With the

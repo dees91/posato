@@ -2,6 +2,7 @@ package app.posato.desktop.macos
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -94,7 +95,7 @@ class MacOsBrowserDomainPhysicalHarnessTest {
             ?: error("Signing identity is absent: set $SIGNING_IDENTITY_ENV or $SIGNING_IDENTITY_PROPERTY")
         val source = directory.resolve("helper-parent.c")
         val binary = directory.resolve("helper-parent")
-        Files.writeString(source, helperParentSource)
+        Files.copy(repositoryRoot().resolve(HELPER_PARENT_SOURCE), source, StandardCopyOption.REPLACE_EXISTING)
         runTool("/usr/bin/cc", "-Wall", "-Werror", "-o", binary.toString(), source.toString())
         runTool("/usr/bin/codesign", "--force", "--sign", identity, "--identifier", APPLICATION_IDENTIFIER, binary.toString())
         return binary
@@ -213,44 +214,6 @@ class MacOsBrowserDomainPhysicalHarnessTest {
         const val POLL_MILLISECONDS = 5_000L
         const val TOOL_TIMEOUT_SECONDS = 60L
 
-        val helperParentSource =
-            """
-            #include <errno.h>
-            #include <signal.h>
-            #include <spawn.h>
-            #include <sys/wait.h>
-            #include <unistd.h>
-
-            extern char **environ;
-            static pid_t child;
-
-            static void forward(int number) {
-              if (child > 0) {
-                kill(child, number);
-              }
-            }
-
-            int main(int argc, char **argv) {
-              if (argc != 2) {
-                return 64;
-              }
-              signal(SIGTERM, forward);
-              signal(SIGINT, forward);
-              char *arguments[] = {argv[1], NULL};
-              if (posix_spawn(&child, argv[1], NULL, NULL, arguments, environ) != 0) {
-                return 65;
-              }
-              int status = 0;
-              while (waitpid(child, &status, 0) < 0) {
-                if (errno != EINTR) {
-                  return 66;
-                }
-              }
-              if (WIFEXITED(status)) {
-                return WEXITSTATUS(status);
-              }
-              return 128 + WTERMSIG(status);
-            }
-            """.trimIndent() + "\n"
+        const val HELPER_PARENT_SOURCE = "desktopApp/src/test/c/helper-parent.c"
     }
 }

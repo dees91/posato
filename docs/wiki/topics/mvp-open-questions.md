@@ -1320,6 +1320,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     window close, and start at login beside the Mac's code and kept the Mac
     untouched; when Windows arrives, extract a shared core instead of a third
     copy. Owner: backlog row `PLATFORM-003`.
+54. **The Mac stops talking to its helper after a few days.** `observed`
+    (2026-10-23) in Tart on 1.5.0 and reported on three Macs: one helper
+    process accepts 256 operations, Posato never starts a new connection, so
+    after about an hour of a pause, or a few days of schedules and checks,
+    "Restrictions need attention" stays, restrictions outlive the pause, This
+    Mac reads "could not be checked or enabled", and an update is refused
+    because of a scheduled pause that pauses nothing. Owner: `MACOS-030`.
 
 ## Later platform questions
 

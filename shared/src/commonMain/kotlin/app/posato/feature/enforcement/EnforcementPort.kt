@@ -82,6 +82,17 @@ public interface EnforcementPort {
 
     public suspend fun status(): EnforcementOutcome
 
+    /**
+     * Clears what is held and applies [request] in one step, for a helper that takes a new
+     * configuration only when idle; null when nothing was cleared and the earlier restrictions stay.
+     */
+    public suspend fun replace(request: EnforcementRequest): EnforcementApplyReport? {
+        if (clear() != EnforcementOutcome.CLEARED) {
+            return null
+        }
+        return apply(request)
+    }
+
     public suspend fun holdsSession(sessionId: String): Boolean {
         return false
     }

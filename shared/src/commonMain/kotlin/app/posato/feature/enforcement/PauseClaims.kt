@@ -41,7 +41,7 @@ internal class PauseClaims(
                 else -> replace(combined.withGrantOnly(), Holder.MANUAL)
             }
             if (joined && report.outcome != EnforcementOutcome.APPLIED) {
-                // A failed apply cleared the helper; the manual owner sees that through its status.
+                // A failed apply cleared the helper, or a closed gate kept its earlier request; the manual owner sees either through its status.
                 manualRequest = null
             }
             scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
@@ -74,7 +74,7 @@ internal class PauseClaims(
                 val report = replace(effective.withGrantOnly(), Holder.SCHEDULE)
                 scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
                 if (report.outcome != EnforcementOutcome.APPLIED) {
-                    // A failed apply cleared the helper; the manual owner sees that through its status.
+                    // A failed apply cleared the helper, or a closed gate kept its earlier request; the manual owner sees either through its status.
                     manualRequest = null
                 }
                 report
@@ -164,33 +164,29 @@ internal class PauseClaims(
         return outcome
     }
 
-    /** Applies [request] for [applying] and records what the helper then holds; a failed apply leaves it holding nothing. */
-    private suspend fun send(
-        request: EnforcementRequest,
-        applying: Holder,
-    ): EnforcementApplyReport {
-        return delegate.apply(request).also { report ->
-            val applied = report.outcome == EnforcementOutcome.APPLIED
-            holder = if (applied) applying else Holder.NONE
-            held = request.takeIf { applied }
-        }
-    }
-
     /**
      * The helper takes a new configuration only when idle, so it is cleared and applied again within the
-     * lock the caller holds: nothing reads the moment between the two.
+     * lock the caller holds: nothing reads the moment between the two, and the port keeps an update out of it.
      */
     private suspend fun replace(
         request: EnforcementRequest,
         applying: Holder,
     ): EnforcementApplyReport {
-        if (delegate.clear() != EnforcementOutcome.CLEARED) {
-            // The helper keeps its earlier request in force; the next apply replaces it again.
-            return EnforcementApplyReport(EnforcementOutcome.FAILED, false, false)
-        }
-        holder = Holder.NONE
-        held = null
-        return send(request, applying)
+        // Null: the helper keeps its earlier request in force; the next apply replaces it again.
+        val report = delegate.replace(request) ?: return EnforcementApplyReport(EnforcementOutcome.FAILED, false, false)
+        return record(report, request, applying)
+    }
+
+    /** Records what the helper holds after applying [request] for [applying]; a failed apply leaves it holding nothing. */
+    private fun record(
+        report: EnforcementApplyReport,
+        request: EnforcementRequest,
+        applying: Holder,
+    ): EnforcementApplyReport {
+        val applied = report.outcome == EnforcementOutcome.APPLIED
+        holder = if (applied) applying else Holder.NONE
+        held = request.takeIf { applied }
+        return report
     }
 
     /** Applies [request] on an idle helper, or replaces what the helper still holds. */
@@ -198,7 +194,7 @@ internal class PauseClaims(
         request: EnforcementRequest,
         applying: Holder,
     ): EnforcementApplyReport {
-        return if (holder == Holder.NONE) send(request, applying) else replace(request, applying)
+        return if (holder == Holder.NONE) record(delegate.apply(request), request, applying) else replace(request, applying)
     }
 
     private inner class ManualView : EnforcementPort {
