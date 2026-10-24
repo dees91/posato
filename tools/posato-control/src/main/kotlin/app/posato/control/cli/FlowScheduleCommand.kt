@@ -45,8 +45,10 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         set?.let { chosen -> chooseSet(backend, target, chosen) }
         FlowSteps.run(backend, chooseDays(chosenDays))
         if (!target.isApple) {
-            setTime(backend, WheelKind.START, startTime)
-            setTime(backend, WheelKind.END, endTime)
+            // The Mac presses through accessibility, which needs no scrolling; Android taps the element's centre on screen.
+            val pressInPlace = target == Target.DESKTOP
+            setTime(backend, WheelKind.START, startTime, pressInPlace)
+            setTime(backend, WheelKind.END, endTime, pressInPlace)
         } else {
             setSystemTime(backend, WheelKind.START, startTime)
             setSystemTime(backend, WheelKind.END, endTime)
@@ -55,7 +57,9 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         // is not lazy: a row below the fold is still in the tree.
         // iOS reports the tappable row as a button and the Mac as text, so the row's own words identify it.
         val row = Query(textContains = "$name, ${ScheduleDays.summary(chosenDays)} ")
-        FlowSteps.run(backend, save() + listOf(FlowSteps.waitFor(row)))
+        FlowSteps.run(backend, beforeSave())
+        save(backend)
+        FlowSteps.run(backend, listOf(FlowSteps.screenshot("schedule-saved"), FlowSteps.waitFor(row)))
         return buildJsonObject {
             put("name", name)
             put("days", ScheduleDays.summary(chosenDays))
@@ -92,16 +96,35 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         listOf(FlowSteps.reveal(button), FlowSteps.tap(button))
     }
 
-    private fun save(): List<Step> {
+    private fun beforeSave(): List<Step> {
         val steps = mutableListOf<Step>()
         if (off) {
             // The Mac reads the row as a button and iOS as a switch, so the query names no role.
             val toggle = Query(textContains = "Schedule on,")
             steps += listOf(FlowSteps.reveal(toggle), FlowSteps.tap(toggle))
         }
-        val save = Query(text = "Save schedule", role = FlowSteps.ROLE_BUTTON)
-        steps += listOf(FlowSteps.reveal(save), FlowSteps.tap(save), FlowSteps.waitFor(save, States.ABSENT), FlowSteps.screenshot("schedule-saved"))
+        steps += FlowSteps.reveal(SAVE)
         return steps
+    }
+
+    /**
+     * Presses Save and waits for the editor to close. A plan the editor refuses, such as one under 15 minutes, stays
+     * open with its reason below the fields, often below the fold, so the reason is read back as the labels that
+     * appeared since the press.
+     */
+    private fun save(backend: Backend) {
+        val shownBeforeSave = FlowSteps.labels(backend).toSet()
+        try {
+            FlowSteps.run(backend, listOf(FlowSteps.tap(SAVE), FlowSteps.waitFor(SAVE, States.ABSENT)))
+        } catch (failure: ControlException) {
+            val labels = FlowSteps.labels(backend)
+            val reason = labels.filterNot { it in shownBeforeSave }.takeIf { "Save schedule" in labels }.orEmpty()
+            throw if (reason.isEmpty()) {
+                failure
+            } else {
+                ControlException(ErrorCode.ASSERTION_FAILED, "The editor kept the schedule open: ${reason.joinToString("; ")}", cause = failure)
+            }
+        }
     }
 
     /** Steps one wheel toward [target] in rounds; each round opens the wheel, steps the read difference, and closes it. */
@@ -109,6 +132,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         backend: Backend,
         kind: WheelKind,
         target: WheelTime,
+        pressInPlace: Boolean,
     ) {
         repeat(MAX_ROUNDS) {
             // A small iPhone keeps the time buttons below the fold, where they carry no label.
@@ -116,7 +140,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             val current = kind.read(FlowSteps.labels(backend))
                 ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The editor shows no ${kind.label} time.")
             if (current == target) return
-            FlowSteps.run(backend, kind.round(current, target))
+            FlowSteps.run(backend, kind.round(current, target, pressInPlace))
         }
         FlowSteps.run(backend, listOf(kind.reveal()))
         val reached = kind.read(FlowSteps.labels(backend))
@@ -152,6 +176,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     }
 
     private companion object {
+        val SAVE = Query(text = "Save schedule", role = FlowSteps.ROLE_BUTTON)
         const val SYSTEM_PICKER = "Time Picker"
         const val POPOVER_DISMISS = "PopoverDismissRegion"
         const val PICKER_SETTLE_SECONDS = 1.0
@@ -238,26 +263,38 @@ internal enum class WheelKind(
 
     fun reveal(): Step = FlowSteps.reveal(button)
 
+    /**
+     * On the Mac an open wheel takes the page's scroll events, so with [pressInPlace] its arrows and Done are pressed
+     * where they are: an accessibility press needs no scrolling, and scrolling to a Done below the fold once stopped
+     * every later step (`observed` 2026-10-24 on 1.5.1). Android taps on screen, so it scrolls to each first.
+     */
     fun round(
         current: WheelTime,
         target: WheelTime,
+        pressInPlace: Boolean,
     ): List<Step> {
         val steps = mutableListOf(FlowSteps.reveal(button), FlowSteps.tap(button), FlowSteps.sleep(WHEEL_SETTLE_SECONDS))
-        steps += arrows("hours", target.hour - current.hour)
-        steps += arrows("minutes", target.minute - current.minute)
-        val done = Query(text = "Done", role = FlowSteps.ROLE_BUTTON)
-        steps += listOf(FlowSteps.reveal(done), FlowSteps.tap(done), FlowSteps.sleep(WHEEL_SETTLE_SECONDS))
+        steps += arrows("hours", target.hour - current.hour, pressInPlace)
+        steps += arrows("minutes", target.minute - current.minute, pressInPlace)
+        steps += press(Query(text = "Done", role = FlowSteps.ROLE_BUTTON), pressInPlace) + FlowSteps.sleep(WHEEL_SETTLE_SECONDS)
         return steps
     }
 
     private fun arrows(
         unit: String,
         delta: Int,
+        pressInPlace: Boolean,
     ): List<Step> {
         if (delta == 0) return emptyList()
         val arrow = Query(text = (if (delta > 0) "Increase" else "Decrease") + " $label $unit")
-        return listOf(FlowSteps.reveal(arrow), FlowSteps.tap(arrow).copy(repeat = kotlin.math.abs(delta), seconds = TAP_GAP_SECONDS))
+        val taps = press(arrow, pressInPlace)
+        return taps.dropLast(1) + taps.last().copy(repeat = kotlin.math.abs(delta), seconds = TAP_GAP_SECONDS)
     }
+
+    private fun press(
+        query: Query,
+        pressInPlace: Boolean,
+    ): List<Step> = if (pressInPlace) listOf(FlowSteps.tap(query)) else listOf(FlowSteps.reveal(query), FlowSteps.tap(query))
 
     private companion object {
         const val WHEEL_SETTLE_SECONDS = 1.5

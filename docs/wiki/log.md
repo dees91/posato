@@ -3139,3 +3139,17 @@ first removal attempt that does not finish, not to a paused keychain.
 - The 1.5.1 update gate refused while a schedule held restrictions and
   admitted the update when the running schedule applied nothing.
 - The 1.5.0 Linux and Android packages are attached again unchanged.
+
+## [2026-10-24] tooling | posato-control fixes from the 1.5.1 run
+
+- `observed`: `flow schedule` stopped at "did not become visible within the
+  scrolling limit" because scrolling to an open time wheel's **Done** fails;
+  an accessibility press needs no scrolling, so the wheel's arrows and
+  **Done** are pressed in place. A plan the editor refuses now fails with
+  the editor's reason, such as the 15-minute minimum.
+- A relayed command that captured a window leaves a note, and the next one
+  allows the agent's picker-bypass request if it covers Posato.
+- `superseded`: the `RELEASE-008` record's "`vm install --replace` cannot
+  drive Finder on macOS 13"; a password request left by `sfltool` covered
+  the image's window. A replace on macOS 13 passes, and the drag timeout
+  now names what the screen shows.

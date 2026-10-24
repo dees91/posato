@@ -144,11 +144,16 @@ class GuestScreen(
     ): Pair<RecognizedLine, RecognizedLine> {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (true) {
-            dragEndpoints(read(), from, to)?.let { return it }
+            val lines = read()
+            dragEndpoints(lines, from, to)?.let { return it }
             if (System.currentTimeMillis() >= deadline) {
+                // A system dialog left over the window, such as a password request, hides the labels (`observed`
+                // 2026-10-24), so the error says what the screen shows instead.
                 throw ControlException(
                     ErrorCode.WAIT_TIMEOUT,
                     "'$from' and '$to' did not appear together on the guest screen within ${timeoutMs / MILLIS_PER_SECOND} s.",
+                    "The screen shows: ${shown(lines)}. Answer or close what covers the window (`vm screenshot` shows it), " +
+                        "then run the command again.",
                 )
             }
             Thread.sleep(POLL_MS)
@@ -169,8 +174,11 @@ class GuestScreen(
         }
     }
 
+    private fun shown(lines: List<RecognizedLine>): String = lines.take(SHOWN_LINES).joinToString(" | ") { it.text.trim() }.ifEmpty { "no text" }
+
     private companion object {
         const val POLL_MS = 1_000L
         const val MILLIS_PER_SECOND = 1_000L
+        const val SHOWN_LINES = 12
     }
 }
