@@ -7,6 +7,7 @@ import app.posato.control.core.RunContext
 import app.posato.control.core.readKeychainSecret
 import java.awt.Color
 import java.awt.image.BufferedImage
+import java.nio.file.Files
 import java.nio.file.Path
 
 /** System dialogs answered over VNC; each is located by its text, not by fixed coordinates alone. */
@@ -324,6 +325,40 @@ private fun allowPickerBypass(
 }
 
 private const val BYPASS_ALLOW = "Allow"
+
+/**
+ * A window capture by the guest agent can raise "tart-guest-agent is requesting to bypass the system private window
+ * picker" once the golden VM's approval has lapsed. The request takes the focus, so every later accessibility press
+ * fails as "not frontmost" (`observed` 2026-10-24 on macOS 26). It appears a moment after the capture, so a relayed
+ * command that captured leaves a note, and the next relayed command reads the screen once and allows the request.
+ */
+internal object PickerBypassWatch {
+    fun captured(line: VmLine) {
+        Files.createDirectories(note(line).parent)
+        Files.writeString(note(line), System.currentTimeMillis().toString())
+    }
+
+    /** Reads the screen once, no sooner than [GRACE_MS] after the capture; a failed answer leaves the command to run. */
+    fun answerPending(
+        context: RunContext,
+        line: VmLine,
+    ) {
+        val note = note(line)
+        val capturedAt = runCatching { Files.readString(note).trim().toLong() }.getOrNull() ?: return
+        Files.deleteIfExists(note)
+        val wait = capturedAt + GRACE_MS - System.currentTimeMillis()
+        if (wait > 0) Thread.sleep(wait)
+        runCatching {
+            val screen = guestScreen(context, line)
+            if (screen.read().any { it.matches(PICKER_BYPASS_QUESTION, exact = false) }) allowPickerBypass(screen, ANSWER_MS)
+        }
+    }
+
+    private fun note(line: VmLine): Path = vmDirectory(line).resolve("picker-bypass-check")
+
+    private const val ANSWER_MS = 15_000L
+    private const val GRACE_MS = 3_000L
+}
 
 /**
  * Resume Data Sync can raise "This Mac can't connect to iCloud" over the account password sheet it opens; Later

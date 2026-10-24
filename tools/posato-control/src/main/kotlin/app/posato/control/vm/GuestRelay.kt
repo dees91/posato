@@ -23,6 +23,7 @@ import java.time.Duration
  */
 object GuestRelay {
     private const val OPTION = "--vm"
+    private const val SCREENSHOTS_SEGMENT = "/screenshots/"
     private val HOST_COMMANDS = setOf("vm", "build", "install", "devices")
 
     /** The VM line a command addresses, or null when it runs on the host as before. */
@@ -103,6 +104,7 @@ object GuestRelay {
             requireGuestRoom(context.layout.root, line)
         }
         requireCurrentTooling(context, line)
+        PickerBypassWatch.answerPending(context, line)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         // Read once from either source, so the guard decides on the same text that the guest runs.
         val stdin = when (scenario) {
@@ -117,6 +119,8 @@ object GuestRelay {
             if (removesICloudWorkspace(arguments)) GuestICloudFlow(context, line).resumeIfPaused()
             runInGuest(context, line, arguments, stdin, runId)
         }
+        // A window capture in the guest can raise the agent's picker-bypass request over Posato.
+        if (output.envelope.contains(SCREENSHOTS_SEGMENT)) PickerBypassWatch.captured(line)
         print(output.envelope)
         System.err.print(output.stderr)
         return output.exitCode
