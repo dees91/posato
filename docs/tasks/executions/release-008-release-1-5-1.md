@@ -38,7 +38,9 @@ maintainer's request of 2026-10-24 unless marked):
      to this row): candidate A replaces the release DMG; while a schedule
      holds restrictions, **Install Update** to B refuses with "End the
      current pause first", also after quitting and reopening during it; a
-     manual pause started during the schedule blocks and ends; with the
+     website added to the set during the schedule is paused at once (the
+     `replace` path; Posato for Mac offers no manual pause while a
+     scheduled one runs, so the planned overlap was replaced by this); with the
      automatic-start consent off, a running schedule applies nothing and B
      installs, keeping data and the helper.
    - `peer` (macOS 26), kept for step 7: 1.5.0 from its DMG with the helper,
@@ -51,7 +53,9 @@ maintainer's request of 2026-10-24 unless marked):
      verification candidate passes setup and a blocking pause.
    - Not repeated: `legacy` (macOS 15), the `primary` `--replace` upgrade
      from 1.5.0 (the in-app update on `peer` covers it), the iPhone,
-     iCloud, Linux, Android, and folder sync. Those builds are not rebuilt;
+     iCloud, Linux, Android, folder sync, and a scheduled start on
+     `ventura` (the scheduled start ran on `primary`, and the Intel build
+     shares its code). Those builds are not rebuilt;
      the next iOS, Linux, or Android release must cover the shared
      `PauseClaims` and `EnforcementPort.replace` change.
 5. **Review:** independent completed-change review.
@@ -115,11 +119,11 @@ maintainer's request of 2026-10-24 unless marked):
 | `primary`, 9401 with a schedule holding restrictions: **Install Update** to 9402 | refused, "The update can't be installed now. End the current pause first" | `runs/20261024-123618-98e0`, `20261024-123649-73b0` |
 | Same, after quitting and reopening during the schedule | restrictions applied again within 15 s; refused again | `20261024-123805-b38f`, `20261024-123820-1c5b` |
 | Same, a website added to the set during the schedule (`replace`) | both websites paused | `20261024-124031-1118` |
-| Same, grant off, quit, reopen: the schedule runs and applies nothing | "Setup required on this Mac", proxy off; 9402 installed, helper, schedule, and websites kept | `20261024-124403-643d`, `20261024-124911-4734` |
+| Same, grant off, quit, reopen: the schedule runs and applies nothing | "Setup required on this Mac", proxy off; **Install and Relaunch** to 9402, which runs with "Background helper enabled", the schedule, and both websites | `20261024-124403-643d`, `20261024-124849-a9a3`, `20261024-124903-1e40`, `20261024-124909-37fe`, `20261024-124910-3fc5` |
 | `primary`, fresh `Posato-1.5.1.dmg`: setup, manual pause, End session early | paused, then loaded | `20261024-125356-730c`, `20261024-125409-95cf` |
 | Same, a schedule starting at 13:16 with the window closed | started on its own, paused | `20261024-131610-d7cc` |
 | Same, `MACOS-030` harness against the installed release helper | pass: 900 Status, two applies and clears, proxy cleared | `build/verification/release-008-harness.txt` |
-| `ventura` (macOS 13.6), `Posato-1.5.1-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; nothing left after Quit | `20261024-1322*` |
+| `ventura` (macOS 13.6), `Posato-1.5.1-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or background item (an empty Application Support folder is expected) | `20261024-132233-1550`, `20261024-132305-dca3`, `20261024-132318-53f9`, `20261024-132327-893f`, `20261024-133337-bfbc` |
 | `ventura`, Intel verification candidate 9411 (x86-64) | setup, a pause paused, after its end loaded | `20261024-134010-024a`, `20261024-134022-fa9a` |
 
 ## GitHub release notes for 1.5.1
