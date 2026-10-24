@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 29 (2026-10-23: `MACOS-030` started outside a release)
+- **Revision:** 30 (2026-10-24: release 1.5.1 for Mac with `MACOS-030`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-23
+- **Last amended:** 2026-10-24
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -231,6 +231,11 @@
   stopped talking to its helper after 256 operations, which left
   restrictions in place after a pause and refused updates. It ships with
   the next macOS build.
+  Revision 30 composes release 1.5.1 for Mac at the maintainer's request
+  (`user-confirmed`, 2026-10-24, translated from Polish: "prepare 1.5.1
+  up to the release in the GitHub assets"): `MACOS-030`, merged as #197,
+  moves from the backlog
+  into it, and `RELEASE-008` publishes it.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -564,6 +569,18 @@ to the same wave; `DESIGN-005` lands before `DOCS-006` recaptures.
 | `DOCS-006` | Prepare the public packaging for 1.5 without publishing it: move ADR 0010's limits to the limits page and mark Linux and Android available; describe 1.5, Linux, Android, and folder sync in the README and on `posato.app` with install steps for the `.deb` and the APK; capture Android and Linux screenshots; update the App Store description and What's New for folder sync and joining by link; and draft the GitHub release notes. | Release readiness | delivery | R1.5/W5 | `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003`, `TARGETS-007`, `DESIGN-005` | PR-RELEASE-1-5-MEDIA |
 | `RELEASE-007` | Verify and publish Posato 1.5.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` for arm64 and x86-64 (x86-64 built and smoke-tested on a GitHub Actions runner) and a release-signed Android APK whose signing key stays outside Git. | Release readiness | delivery | R1.5/W6 | `SYNC-018`, `LINUX-001`, `ANDROID-001`, `SESSION-010`, `TARGETS-010`, `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012`, `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003`, `TARGETS-007`, `DESIGN-005`, `DOCS-006` | PR-RELEASE-1-5 |
 
+## Release 1.5.1: the Mac keeps talking to its helper
+
+Theme: a fix release for Mac only. Every Mac that runs Posato for a few days
+lost its helper (`MACOS-030`), which kept restrictions after a pause and
+refused updates. iOS, Linux, and Android do not change; their 1.5.0
+packages stay current.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `MACOS-030` | Keep the Mac talking to its helper for as long as Posato runs: start a new helper connection before the 256-operation bound of ADR 0004 on both the application side and the helper's daemon side, without ending the helper process, its proxy relay, or its lease during a pause; restrictions end when the pause ends; an update is refused only while restrictions are held. Prove it with a test that sends more than 256 operations to the real helper in a Tart VM. | Sessions and enforcement | delivery | R1.5.1/W1 | None | PR-MAC-HELPER-CONNECTION |
+| `RELEASE-008` | Verify and publish Posato 1.5.1 for Mac: notarized arm64 and Intel builds through the `MACOS-011` update path, with the 1.5.0 Linux and Android packages attached again unchanged, so the latest release still offers every platform. | Release readiness | delivery | R1.5.1/W2 | `MACOS-030` | PR-RELEASE-1-5-1 |
+
 ## Backlog
 
 Rows without a release. Each names what would let the maintainer assign it.
@@ -603,7 +620,6 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
 | `QUALITY-013` | Let `posato-control flow onboard -t linux` finish when Posato's pausing service is already installed in the clone: the onboarding page then shows **Continue** instead of **Allow**, and the flow fails waiting for **Allow**. Press whichever of the two is shown, as `flow icloud link` does with its buttons, and cover a rerun on the same clone. | Verification | Idea 52; release 1.5 retrospective | Any planning checkpoint; cheap |
-| `MACOS-030` | Keep the Mac talking to its helper for as long as Posato runs: start a new helper connection before the 256-operation bound of ADR 0004 on both the application side and the helper's daemon side, without ending the helper process, its proxy relay, or its lease during a pause; restrictions end when the pause ends; an update is refused only while restrictions are held. Prove it with a test that sends more than 256 operations to the real helper in a Tart VM. | Sessions and enforcement | Idea 54; reported on three Macs | Started outside a release (revision 29) |
 
 ## Coverage matrix
 
