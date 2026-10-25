@@ -1453,6 +1453,34 @@ val linuxAppJar by tasks.registering(Jar::class) {
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
 }
 
+// Windows spike (PLATFORM-002 feasibility): the Linux jar with the Compose runtime for Windows on ARM, to prove that
+// a Tart Windows guest can run and drive Posato unattended. The Linux entry point degrades without D-Bus and the
+// pausing service, which is enough for that proof. Not a product build.
+val windowsSpikeRuntime: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+dependencies {
+    windowsSpikeRuntime(libs.compose.desktop.windows.arm64)
+}
+
+val windowsSpikeJar by tasks.registering(Jar::class) {
+    group = "verification"
+    description = "Builds the spike jar that runs Posato's interface in a Tart Windows guest."
+    archiveFileName.set("posato-windows-spike.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("windows-spike"))
+    manifest { attributes("Main-Class" to "app.posato.desktop.linux.LinuxMainKt") }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val runtime = configurations.runtimeClasspath
+    dependsOn(runtime, linuxDesktopRuntime, windowsSpikeRuntime)
+    dependsOn(linuxServiceFiles)
+    from(linuxServiceFiles)
+    from(sourceSets.main.map { it.output })
+    from({ (runtime.get() + linuxDesktopRuntime + windowsSpikeRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
+}
+
 val linuxPackageInputs by tasks.registering(Copy::class) {
     group = "distribution"
     description = "Collects the Linux jar and its packaging scripts."
