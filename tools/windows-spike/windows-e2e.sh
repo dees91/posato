@@ -12,9 +12,11 @@ GOLDEN=${POSATO_VM_WINDOWS_GOLDEN:-posato-golden-windows}
 VM=posato-run-windows
 SHARE="$OUT/share"
 HERE=$(cd "$(dirname "$0")" && pwd)
-mkdir -p "$SHARE"; cp "$JAR" "$SHARE/posato.jar"
+# A fresh staging directory, so a jar left by an earlier run can never stand in for a missing one.
 # The probe and the screenshot script travel with each run, so changing them needs no new golden VM
-cp "$HERE/guest/jab_probe.py" "$HERE/guest/screenshot.ps1" "$SHARE/"
+rm -rf "$SHARE" && mkdir -p "$SHARE" && cp "$JAR" "$SHARE/posato.jar" \
+  && cp "$HERE/guest/jab_probe.py" "$HERE/guest/screenshot.ps1" "$SHARE/" \
+  || { echo "FAIL: could not stage $JAR and the guest scripts in $SHARE" >&2; exit 1; }
 t0=$(date +%s); log() { echo "[$(( $(date +%s) - t0 ))s] $*" | tee -a "$OUT/run.log"; }
 fail() { log "FAIL: $*"; "$TART" stop "$VM" --timeout 60 >/dev/null 2>&1; "$TART" delete "$VM" >/dev/null 2>&1; exit 1; }
 gx() { "$TART" exec "$VM" "$@"; }

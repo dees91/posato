@@ -12,11 +12,18 @@ AGENT=${POSATO_TART_WINDOWS_AGENT:?set POSATO_TART_WINDOWS_AGENT to tart-guest-a
 export TART_HOME=${POSATO_TART_WINDOWS_HOME:-$HOME/.tart-windows}
 VM=${POSATO_VM_WINDOWS_GOLDEN:-posato-golden-windows}
 HERE=$(cd "$(dirname "$0")" && pwd)
+# An existing golden VM stays untouched: delete it yourself to build a new one
+if "$TART" get "$VM" >/dev/null 2>&1; then
+  echo "VM $VM already exists in $TART_HOME; delete it first to rebuild it" >&2
+  exit 1
+fi
 WORK=$(mktemp -d)
-# A failed run leaves no half-built golden VM behind, so the next run can start over
+# A failed run leaves no half-built golden VM behind, so the next run can start over;
+# only a VM this run created is deleted
+OWN_VM=0
 cleanup() {
   local rc=$?
-  if [ $rc -ne 0 ]; then
+  if [ $rc -ne 0 ] && [ $OWN_VM -eq 1 ]; then
     "$TART" stop "$VM" --timeout 30 >/dev/null 2>&1 || true
     wait || true
     "$TART" delete "$VM" >/dev/null 2>&1 || true
@@ -26,6 +33,7 @@ cleanup() {
 trap cleanup EXIT
 t0=$(date +%s); log() { echo "[$(( $(date +%s) - t0 ))s] $*"; }
 
+OWN_VM=1
 "$TART" create "$VM" --from-iso "$ISO"
 log "Windows installed"
 
