@@ -3153,3 +3153,12 @@ first removal attempt that does not finish, not to a paused keychain.
   drive Finder on macOS 13"; a password request left by `sfltool` covered
   the image's window. A replace on macOS 13 passes, and the drag timeout
   now names what the screen shows.
+
+## [2026-10-25] decision | Release 1.5.2 for Mac: recover without a press
+
+- `observed` on 1.5.1: a few seconds of load on the Mac ended the helper
+  through one late lease renewal, the daemon restored the proxy, and Session
+  showed "Restrictions need attention" with no website blocked (idea 55).
+- `user-confirmed`: the red notice appears only when Posato cannot recover
+  without the person. Roadmap revision 31 composes 1.5.2 with `MACOS-031`
+  and a widened `MACOS-029`, which folds in `SESSION-009`.

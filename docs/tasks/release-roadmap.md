@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 30 (2026-10-24: release 1.5.1 for Mac with `MACOS-030`)
+- **Revision:** 31 (2026-10-25: release 1.5.2 for Mac with `MACOS-031` and `MACOS-029`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-24
+- **Last amended:** 2026-10-25
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -236,6 +236,14 @@
   up to the release in the GitHub assets"): `MACOS-030`, merged as #197,
   moves from the backlog
   into it, and `RELEASE-008` publishes it.
+  Revision 31 composes release 1.5.2 for Mac at the maintainer's request
+  (`user-confirmed`, 2026-10-25) after "Restrictions need attention"
+  returned on 1.5.1 (idea 55): `MACOS-031` (new) keeps the helper and its
+  daemon through a slow moment, and `MACOS-029` moves from the backlog
+  into the release, widened to a helper lost during a pause and to the rule
+  that the red notice appears only when Posato cannot recover without the
+  person; `SESSION-009` folds into it and leaves the backlog.
+  `RELEASE-009` publishes them.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -581,6 +589,20 @@ packages stay current.
 | `MACOS-030` | Keep the Mac talking to its helper for as long as Posato runs: start a new helper connection before the 256-operation bound of ADR 0004 on both the application side and the helper's daemon side, without ending the helper process, its proxy relay, or its lease during a pause; restrictions end when the pause ends; an update is refused only while restrictions are held. Prove it with a test that sends more than 256 operations to the real helper in a Tart VM. | Sessions and enforcement | delivery | R1.5.1/W1 | None | PR-MAC-HELPER-CONNECTION |
 | `RELEASE-008` | Verify and publish Posato 1.5.1 for Mac: notarized arm64 and Intel builds through the `MACOS-011` update path, with the 1.5.0 Linux and Android packages attached again unchanged, so the latest release still offers every platform. | Release readiness | delivery | R1.5.1/W2 | `MACOS-030` | PR-RELEASE-1-5-1 |
 
+## Release 1.5.2: the Mac recovers on its own
+
+Theme: a fix release for Mac only. On 1.5.1 a pause still lost its
+restrictions when the Mac was busy for a few seconds, and Posato waited for
+the person to press **Retry** although it could apply again by itself
+(idea 55). The red notice should mean that only the person can help. iOS,
+Linux, and Android do not change; their 1.5.0 packages stay current.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `MACOS-031` | Keep a pause's restrictions when the Mac is busy for a few seconds: one late lease renewal or Status answer does not end the helper, the daemon does not exit while a new helper connects to it, and while restrictions do not apply the session screen never says they are active. Prove it in a Tart VM by delaying the daemon beyond the renewal deadline during a pause. High-risk (ADR 0004 lease). | Sessions and enforcement | delivery | R1.5.2/W1 | None | PR-MAC-HELPER-RESILIENCE |
+| `MACOS-029` | The Mac applies restrictions again by itself whenever it can, and shows the red notice only when it cannot recover without the person: with administrator approval on and automatic-start consent valid, a pause received from another device, after sleep, after a login launch, and after the helper or its daemon was lost during a pause applies by itself with bounded retries, without a notice in between; "Restrictions need attention" or **Resume restrictions** remains only when approval is off, the grant is missing, or the retries fail. Includes `SESSION-009` (the notice left after an unresumed session from another device ends). Amends ADR 0004 "Who may request it" and the `DESIGN.md` rule that synchronization and a login launch never apply by themselves, both with the maintainer's acceptance. High-risk plan review (authorization). | Sessions and enforcement | delivery | R1.5.2/W1 | None | PR-MAC-SELF-RECOVERY |
+| `RELEASE-009` | Verify and publish Posato 1.5.2 for Mac: notarized arm64 and Intel builds through the `MACOS-011` update path, with the 1.5.0 Linux and Android packages attached again unchanged. | Release readiness | delivery | R1.5.2/W2 | `MACOS-031`, `MACOS-029` | PR-RELEASE-1-5-2 |
+
 ## Backlog
 
 Rows without a release. Each names what would let the maintainer assign it.
@@ -601,8 +623,6 @@ The idea numbers refer to the wiki idea queue.
 | `IOS-008` | Let one **Remove workspace** press on the iPhone finish a removal when the zone has a long history: `IosCloudKitMailboxProvider` caps a press at `MAX_REMOVAL_CALLS` (10), as the Mac did before `SYNC-021`. Reproduce it on the test iPhone with the `SYNC-021` fixture and apply the same progress-bounded continuation and progress state. | Sessions and enforcement | Idea 34; `SYNC-021` plan review | A reproduction on the test iPhone; release composition |
 | `SYNC-022` | Finish what `SYNC-021` deferred: build the verification-only seeding operation; rebuild the long-history fixture and show a pre-fix failure on it; one press in 3 fresh Tart clones, after a settled link, and across a window close and reopen; then clean the test Apple Account's zone with the `SYNC-021` controls and waits, and run the iPhone check of `AC-05`. The zone is cleaned only after seeding exists or after `IOS-008` has reproduced on the current history. Also decide whether the first sync after a link should page a long history in larger passes (idea 35). | Sessions and enforcement | Idea 35; `SYNC-021` deferrals | A release composition; the test account's long history was removed on 2026-10-21 (`SYNC-024` verification), so it must be rebuilt first |
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
-| `SESSION-009` | Clear the Mac's "Restrictions not active on this Mac" notice when a session that arrived from another device ends unresumed: when the early return in `clearAfterEnd` finds nothing applied (`confirmedClear` and no enforced identity), also clear the pending action and return the view to inactive, so the transition owner stops re-sending transitions in a tight loop that flickers the Resume button and rereads the store. Test first with an isolated regression in the session owner tests, then one linked Mac VM and test-iPhone run. Present since at least 1.0.0; a relaunch clears it. | Sessions and enforcement | Idea 38; maintainer report 2026-10-10 | A release composition |
-| `MACOS-029` | Resume restrictions on the Mac without a press when the administrator approval switch is on: a pause received from another device, after sleep, and after a login launch applies by itself, and "Restrictions not active on this Mac" with **Resume restrictions** remains only when approval is off or applying fails. Revises the `DESIGN.md` rule that synchronization and a login launch never apply by themselves; fold in `SESSION-009`. | Sessions and enforcement | Idea 44 | A release composition; candidate for 1.6; High-risk plan review (authorization) |
 | `SCHEDULE-007` | Take a break in a running scheduled pause: release restrictions for a chosen number of minutes and apply them again automatically until the occurrence's end, on every device of the workspace; decide how many breaks and how long, beside the early-end friction of `SESSION-005`. | Schedules | Idea 45 | A release composition; candidate for 1.6 |
 | `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; discovery before delivery. | Target management | Idea 46 | A release composition; candidate for 1.6 |
 | `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan. | Product discovery | Idea 47 | A release composition; candidate for 1.6 |
