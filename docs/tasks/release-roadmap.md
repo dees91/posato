@@ -623,7 +623,7 @@ folder synchronization, websites and chosen applications blocked during a
 pause, a status-area icon, and a start at login. The person also gains a
 break in a scheduled pause and a website that opens briefly during a pause,
 and a calm history of pauses is decided. The
-[Windows spike](../wiki/topics/unattended-verification.md#windows-guests-platform-002-spike)
+[Windows spike](https://github.com/dees91/posato/pull/206)
 showed that every Windows change can be verified in a Tart guest with no
 person present.
 
