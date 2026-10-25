@@ -1,5 +1,8 @@
 <h1 align="center">
-  <img src="docs/design/app-icon/forest.svg" width="40" height="40" alt=""> Posato
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/mark-dark.svg">
+    <img src=".github/assets/mark-light.svg" width="29" height="40" alt="">
+  </picture> Posato
 </h1>
 
 <p align="center"><strong>A little space. For what matters.</strong></p>
@@ -19,15 +22,19 @@ iPhone, Linux computer, or Android phone, now or on a schedule, within the
 </p>
 
 <p align="center">
+  <a href="https://posato.app"><strong>Website</strong></a> ·
+  <a href="#quick-start"><strong>Download</strong></a> ·
+  <a href="#how-it-works"><strong>How it works</strong></a> ·
+  <a href="#privacy"><strong>Privacy</strong></a>
+</p>
+
+<p align="center">
   <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; one pause set change reaching a Mac, an iPhone, a Linux computer, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device">
 </p>
 
 Watch the [full 53-second walkthrough](https://posato.app/media/walkthrough.mp4),
 which adds opening a pause set, choosing apps on the Mac and the iPhone,
 ending a session early, and a schedule whose pause starts on its own.
-
-[Quick start](#quick-start) · [How it works](#how-it-works) ·
-[Limits](#limits) · [Privacy](#privacy) · [Documentation](#project-documentation)
 
 No Posato account, no analytics, and no Posato-operated server.
 Open source under the [Apache License 2.0](LICENSE).
