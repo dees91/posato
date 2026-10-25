@@ -3162,3 +3162,12 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: the red notice appears only when Posato cannot recover
   without the person. Roadmap revision 31 composes 1.5.2 with `MACOS-031`
   and a widened `MACOS-029`, which folds in `SESSION-009`.
+
+## [2026-10-25] decision | Release 1.6 composed with Posato for Windows
+
+- `user-confirmed`: after the Windows spike, release 1.6 brings Posato to
+  Windows as one delivery row (`PLATFORM-002`) on a shared resident-window
+  core (`PLATFORM-003`), with a break in a scheduled pause, a briefly opened
+  website, and a decision on a calm history of pauses.
+- Idea 56: setup wording names the Mac on Linux, Android, and Windows; owner
+  `ONBOARDING-005` in the same release.

@@ -1285,14 +1285,14 @@ below. This queue retains idea provenance without expanding the original MVP.
     off. Revises a `DESIGN.md` rule. Owner: `MACOS-029` (release 1.5.2).
 45. **A break in a scheduled pause.** `user-confirmed` (2026-10-20): pause
     a running scheduled pause for some minutes, then restrictions return
-    until the occurrence ends. Owner: `SCHEDULE-007` (candidate for 1.6).
+    until the occurrence ends. Owner: `SCHEDULE-007`, release 1.6.
 46. **A website opened briefly every N minutes.** `user-confirmed`
     (2026-10-20): for example a news site once an hour for a few minutes,
-    configurable. Owner: `TARGETS-013` (candidate for 1.6).
+    configurable. Owner: `TARGETS-013`, release 1.6.
 47. **A calm history of pauses.** `user-confirmed` (2026-10-20): a chart
     like GitHub's contribution graph of days kept as planned, chosen in a
     calm form without streaks, scores, or shame (the `DESIGN.md` brand
-    rule). Owner: `HISTORY-001` (candidate for 1.6).
+    rule). Owner: `HISTORY-001`, release 1.6.
 48. **A simpler way to join a folder workspace.** `user-confirmed`
     (2026-10-21): the expanded Folder sync row becomes two steps that can be
     done in either order, choose the shared folder and scan the QR code or
@@ -1319,7 +1319,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     `user-confirmed` (2026-10-22): `LINUX-003` built the Linux status icon,
     window close, and start at login beside the Mac's code and kept the Mac
     untouched; when Windows arrives, extract a shared core instead of a third
-    copy. Owner: backlog row `PLATFORM-003`.
+    copy. Owner: `PLATFORM-003`, release 1.6.
 54. **The Mac stops talking to its helper after a few days.** `observed`
     (2026-10-23) in Tart on 1.5.0 and reported on three Macs: one helper
     process accepts 256 operations, Posato never starts a new connection, so
@@ -1339,6 +1339,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     applies again by itself. Owners: `MACOS-031` (the helper and daemon
     survive a slow moment) and `MACOS-029` (apply again by itself), release
     1.5.2.
+56. **Setup wording names the Mac on other platforms.** `observed`
+    (2026-10-25, the Windows spike): Posato on Windows read "On this Mac",
+    "Saved on this Mac", and "Website pauses are unavailable until Mac setup
+    is complete." `inferred` from the shared code: the notice appears on
+    every platform but iOS, so Linux and Android show it too, and any
+    desktop that is not Linux names itself a Mac. `user-confirmed`
+    (2026-10-25): a separate task. Owner: `ONBOARDING-005`, release 1.6.
 
 ## Later platform questions
 

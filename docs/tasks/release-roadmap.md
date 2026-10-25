@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 31 (2026-10-25: release 1.5.2 for Mac with `MACOS-031` and `MACOS-029`)
+- **Revision:** 32 (2026-10-25: release 1.6 with Posato for Windows)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-25
@@ -244,6 +244,19 @@
   that the red notice appears only when Posato cannot recover without the
   person; `SESSION-009` folds into it and leaves the backlog.
   `RELEASE-009` publishes them.
+  Revision 32 composes release 1.6 at the maintainer's request
+  (`user-confirmed`, 2026-10-25) after the `PLATFORM-002` feasibility spike
+  (PR #206) showed that an agent can verify Posato in a Tart Windows guest
+  with no person present: Windows at parity with Linux and the Mac as one
+  delivery row, `PLATFORM-002`, together with the candidates
+  `SCHEDULE-007`, `TARGETS-013`, and `HISTORY-001`, and a new
+  `ONBOARDING-005` for setup wording that names the Mac on other platforms
+  (idea 56). `PLATFORM-003` joins because `PLATFORM-002` starting is its
+  trigger, so Windows reuses one resident-window core (agent-proposed with
+  this revision). `DOCS-007` and `RELEASE-010` complete the release. All
+  six rows leave the backlog. Release 1.5.2 is still open; if 1.6 product
+  changes reach `main` before it ships, `RELEASE-009` branches from the
+  `v1.5.1` tag, as the planning boundaries require.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -603,6 +616,28 @@ Linux, and Android do not change; their 1.5.0 packages stay current.
 | `MACOS-029` | The Mac applies restrictions again by itself whenever it can, and shows the red notice only when it cannot recover without the person: with administrator approval on and automatic-start consent valid, a pause received from another device, after sleep, after a login launch, and after the helper or its daemon was lost during a pause applies by itself with bounded retries, without a notice in between; "Restrictions need attention" or **Resume restrictions** remains only when approval is off, the grant is missing, or the retries fail. Includes `SESSION-009` (the notice left after an unresumed session from another device ends). Amends ADR 0004 "Who may request it" and the `DESIGN.md` rule that synchronization and a login launch never apply by themselves, both with the maintainer's acceptance. High-risk plan review (authorization). | Sessions and enforcement | delivery | R1.5.2/W1 | None | PR-MAC-SELF-RECOVERY |
 | `RELEASE-009` | Verify and publish Posato 1.5.2 for Mac: notarized arm64 and Intel builds through the `MACOS-011` update path, with the 1.5.0 Linux and Android packages attached again unchanged. | Release readiness | delivery | R1.5.2/W2 | `MACOS-031`, `MACOS-029` | PR-RELEASE-1-5-2 |
 
+## Release 1.6: Posato on Windows, and more ways to pause
+
+Theme: Posato runs on Windows as it does on Linux: the same interface and
+folder synchronization, websites and chosen applications blocked during a
+pause, a status-area icon, and a start at login. The person also gains a
+break in a scheduled pause and a website that opens briefly during a pause,
+and a calm history of pauses is decided. The
+[Windows spike](../wiki/topics/unattended-verification.md#windows-guests-platform-002-spike)
+showed that every Windows change can be verified in a Tart guest with no
+person present.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ONBOARDING-005` | Name the right setup and device on every platform: the last onboarding step says "Website pauses are unavailable until Mac setup is complete." on every platform but iOS, and a desktop that is not Linux calls itself a Mac (idea 56). Reproduce it in a Tart Ubuntu clone and on the Android emulator first, then give each platform its own notice and device name, Windows included. | Platform coverage | delivery | R1.6/W1 | None | PR-PLATFORM-COPY |
+| `PLATFORM-003` | Extract a shared resident-window core from the Mac and Linux code: the window that closes to a status icon, the icon's menu, and the start at login, with each platform keeping only its native layer, so Windows does not make a third copy (idea 53). Mac and Linux behave as before in a Tart clone of each. | Platform coverage | delivery | R1.6/W1 | None | PR-RESIDENT-CORE |
+| `SCHEDULE-007` | Take a break in a running scheduled pause: release restrictions for a chosen number of minutes and apply them again automatically until the occurrence's end, on every device of the workspace; decide how many breaks and how long, beside the early-end friction of `SESSION-005` (idea 45). | Schedules | delivery | R1.6/W1 | None | PR-SCHEDULE-BREAK |
+| `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; the decision is accepted before delivery starts (idea 46). | Target management | delivery | R1.6/W1 | None | PR-TIMED-WEBSITE |
+| `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan (idea 47). | Product discovery | discovery | R1.6/W1 | None | PR-HISTORY-DECISION |
+| `PLATFORM-002` | Ship Posato for Windows 11 on arm64 and x64 at parity with Linux: the shared interface and folder synchronization, websites and chosen applications blocked during a pause by a Windows service installed once with administrator approval, applications chosen from the Start menu, the status icon and start at login on the `PLATFORM-003` core, signed MSI packages, and `posato-control -t windows` driving a Tart Windows guest, ending with a Windows, Linux, and Mac workspace that pauses across all three. Amends ADR 0010 with the Windows row, with the maintainer's acceptance. High-risk plan review (privileged service, signing). | Platform coverage | delivery | R1.6/W2 | `ONBOARDING-005`, `PLATFORM-003` | PR-WINDOWS |
+| `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `PLATFORM-003`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002` | PR-RELEASE-1-6-MEDIA |
+| `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `PLATFORM-003`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007` | PR-RELEASE-1-6 |
+
 ## Backlog
 
 Rows without a release. Each names what would let the maintainer assign it.
@@ -623,13 +658,8 @@ The idea numbers refer to the wiki idea queue.
 | `IOS-008` | Let one **Remove workspace** press on the iPhone finish a removal when the zone has a long history: `IosCloudKitMailboxProvider` caps a press at `MAX_REMOVAL_CALLS` (10), as the Mac did before `SYNC-021`. Reproduce it on the test iPhone with the `SYNC-021` fixture and apply the same progress-bounded continuation and progress state. | Sessions and enforcement | Idea 34; `SYNC-021` plan review | A reproduction on the test iPhone; release composition |
 | `SYNC-022` | Finish what `SYNC-021` deferred: build the verification-only seeding operation; rebuild the long-history fixture and show a pre-fix failure on it; one press in 3 fresh Tart clones, after a settled link, and across a window close and reopen; then clean the test Apple Account's zone with the `SYNC-021` controls and waits, and run the iPhone check of `AC-05`. The zone is cleaned only after seeding exists or after `IOS-008` has reproduced on the current history. Also decide whether the first sync after a link should page a long history in larger passes (idea 35). | Sessions and enforcement | Idea 35; `SYNC-021` deferrals | A release composition; the test account's long history was removed on 2026-10-21 (`SYNC-024` verification), so it must be rebuilt first |
 | `SESSION-008` | Mac VoiceOver reads full duration labels: find out what VoiceOver on the Mac speaks for the quick lengths of a manual pause, and if it speaks "1 h", make it read "1 hour" … "8 hours" as iOS does, keeping the visible labels. | Sessions and enforcement | Idea 36; `SESSION-007` | A release composition |
-| `SCHEDULE-007` | Take a break in a running scheduled pause: release restrictions for a chosen number of minutes and apply them again automatically until the occurrence's end, on every device of the workspace; decide how many breaks and how long, beside the early-end friction of `SESSION-005`. | Schedules | Idea 45 | A release composition; candidate for 1.6 |
-| `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; discovery before delivery. | Target management | Idea 46 | A release composition; candidate for 1.6 |
-| `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan. | Product discovery | Idea 47 | A release composition; candidate for 1.6 |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
-| `PLATFORM-002` | Bring Posato to Windows under ADR 0010: enforcement mechanism, privilege model, packaging, and verification. | Platform coverage | `PLATFORM-001` | A planning checkpoint after release 1.5 |
-| `PLATFORM-003` | When Windows arrives, extract a shared resident-window core from the Mac and Linux code: the window that closes to a status icon, the icon's menu, and the start at login, with each platform keeping only its native layer. `LINUX-003` added the Linux version beside the Mac's and left the Mac untouched, so Windows would otherwise make a third copy. | Platform coverage | Idea 53; `LINUX-003` | `PLATFORM-002` starting |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
 | `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
@@ -670,6 +700,10 @@ The idea numbers refer to the wiki idea queue.
 | Smaller frictions before 1.5 | `TARGETS-011`, `MACOS-028`, `SYNC-023`, `TARGETS-012` | A set without apps shows no warning; the Mac window opens at its size on every path in a Tart clone; the last sync time on each platform; a duplicated set with its websites and this device's apps |
 | Fixes and improvements found while packaging 1.5 | `SYNC-024`, `SYNC-025`, `SYNC-026`, `ANDROID-002`, `LINUX-002`, `LINUX-003`, `TARGETS-007`, `DESIGN-005` | A renamed first set keeps its name when a device creates a workspace; folder wording without iCloud; joining in either order on a phone and a computer; the block screen in Dark Mode; Linux in light and dark; Linux schedules starting with the window closed in a Tart Ubuntu clone; an export imported on a second Mac with add and replace; the warm light palette on each platform |
 | Public packaging for 1.5 | `DOCS-006` | Limits page and README updated, site built, Android and Linux screenshots, store text ready for upload, release notes drafted |
+| Posato on Windows | `PLATFORM-002`, `PLATFORM-003` | Accepted ADR 0010 Windows row; `posato-control` runs in a Tart Windows guest with website and application blocking observed, the status icon and the start at login, and a Windows, Linux, and Mac workspace sharing one folder; Mac and Linux unchanged on the shared resident core; MSI install and removal on arm64 and x64 |
+| Each platform names its own setup and device | `ONBOARDING-005` | Linux, Android, and Windows runs that reproduce the Mac wording before the fix and show each platform's own after it |
+| More ways to pause | `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001` | A break and a briefly opened website applied and restored on each platform in Tart and on the test iPhone; an accepted history decision with a delivery plan |
+| Public packaging for 1.6 | `DOCS-007` | Limits page and README updated, site built, Windows screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates
@@ -681,6 +715,8 @@ The idea numbers refer to the wiki idea queue.
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
 | Automatic scheduled Apply security review | `SCHEDULE-001` | An independent review of the explicit-consent and automatic-start amendments passes, and the maintainer accepts them, before `SCHEDULE-002` implements them. |
+| Windows code signing | `PLATFORM-002` | The maintainer provides an Authenticode signing identity, such as a certificate or a cloud signing service, or accepts unsigned packages with SmartScreen's warning recorded on the limits page, before `RELEASE-010` publishes. |
+| Windows image for verification | `PLATFORM-002` | The maintainer accepts the license of the Windows 11 image that the Tart guests run beyond the spike, or provides another one. |
 | App Review per iOS release | `RELEASE-003`–`RELEASE-006` | The submitted build is approved or the row records the rejection and its clearing condition. |
 
 No credential, signing identity, update signing key, provisioning profile,
