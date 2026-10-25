@@ -1256,7 +1256,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     stays blocked. Not a 1.4 regression: the early return dates from
     `SYNC-012`, present since at least 1.0.0. `inferred`: the trigger was a pause started on the
     iPhone. Filed as an agent proposal under the maintainer's delegation of
-    2026-10-09. Owner: backlog row `SESSION-009`.
+    2026-10-09. Owner: `MACOS-029` (release 1.5.2), which folds in `SESSION-009`.
 39. **A device that links during a running pause adopts it without the
     set's websites.** `observed` (2026-10-11, release 1.5 cross-device run):
     Android started a pause, then a Linux device joined the folder
@@ -1282,7 +1282,7 @@ below. This queue retains idea provenance without expanding the original MVP.
 44. **Resume restrictions without a press.** `user-confirmed` (2026-10-20):
     the red "Restrictions not active on this Mac" notice should not need the
     person when administrator approval is on; it remains when approval is
-    off. Revises a `DESIGN.md` rule. Owner: `MACOS-029` (candidate for 1.6).
+    off. Revises a `DESIGN.md` rule. Owner: `MACOS-029` (release 1.5.2).
 45. **A break in a scheduled pause.** `user-confirmed` (2026-10-20): pause
     a running scheduled pause for some minutes, then restrictions return
     until the occurrence ends. Owner: `SCHEDULE-007` (candidate for 1.6).
@@ -1327,6 +1327,18 @@ below. This queue retains idea provenance without expanding the original MVP.
     "Restrictions need attention" stays, restrictions outlive the pause, This
     Mac reads "could not be checked or enabled", and an update is refused
     because of a scheduled pause that pauses nothing. Owner: `MACOS-030`.
+55. **A busy Mac loses a pause, and Posato waits for a press.** `observed`
+    (2026-10-25, the maintainer's Mac on 1.5.1): while builds and code
+    signing loaded the Mac, the proxy daemon answered one Status in 5.4 s;
+    a lease renewal with its 5 s deadline failed, the helper ended itself,
+    the daemon restored the proxy and exited just as a new helper connected,
+    so that helper ended too. Session kept "Session active" with "Restrictions
+    need attention" and **Retry** while no website was blocked, and polling
+    stopped until the person pressed. `user-confirmed` (2026-10-25): a red
+    notice only when Posato cannot recover without the person; otherwise it
+    applies again by itself. Owners: `MACOS-031` (the helper and daemon
+    survive a slow moment) and `MACOS-029` (apply again by itself), release
+    1.5.2.
 
 ## Later platform questions
 
