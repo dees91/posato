@@ -3174,3 +3174,12 @@ first removal attempt that does not finish, not to a paused keychain.
 - `open`: an x64 target, signing, the pausing mechanism, and the fork's
   dependence on private Virtualization framework settings. Details in
   [Unattended Verification](topics/unattended-verification.md#windows-guests-platform-002-spike).
+
+## [2026-10-25] decision | Release 1.6 composed with Posato for Windows
+
+- `user-confirmed`: after the Windows spike, release 1.6 brings Posato to
+  Windows as one delivery row (`PLATFORM-002`) on a shared resident-window
+  core (`PLATFORM-003`), with a break in a scheduled pause, a briefly opened
+  website, and a decision on a calm history of pauses.
+- Idea 56: setup wording names the Mac on Linux, Android, and Windows; owner
+  `ONBOARDING-005` in the same release.

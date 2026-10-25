@@ -34,6 +34,7 @@ object RoadmapProject {
         "1.3" to Option("1.3", "93a915ea"),
         "1.4" to Option("1.4", "2714e1a7"),
         "1.5" to Option("1.5", "4d38075a"),
+        "1.6" to Option("1.6", "edafbf71"),
         "backlog" to Option("Backlog", "0b94f86b"),
     )
 
