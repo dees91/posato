@@ -3162,6 +3162,18 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: the red notice appears only when Posato cannot recover
   without the person. Roadmap revision 31 composes 1.5.2 with `MACOS-031`
   and a widened `MACOS-029`, which folds in `SESSION-009`.
+## [2026-10-25] experiment | Windows guests can be verified unattended
+
+- `observed`: an unofficial Tart fork, built from source, installs Windows 11
+  ARM64 unattended; its guest agent runs `tart exec` in the signed-in session.
+- `observed`: the Linux jar with Compose's `windows-arm64` runtime starts on
+  Windows, and the Java Access Bridge reads and presses Posato's Compose tree.
+  Disposable clones ran onboarding with seven strict assertions in 58 to
+  63 s in four runs. `jpackage` with WiX 3.14 builds an MSI that installs and uninstalls
+  quietly.
+- `open`: an x64 target, signing, the pausing mechanism, and the fork's
+  dependence on private Virtualization framework settings. Details in
+  [Unattended Verification](topics/unattended-verification.md#windows-guests-platform-002-spike).
 
 ## [2026-10-25] decision | Release 1.6 composed with Posato for Windows
 

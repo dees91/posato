@@ -33,8 +33,8 @@ provenance rather than a parallel public brand.
   process.
 - [topics/unattended-verification.md](topics/unattended-verification.md) —
   how Posato is verified with no person present: Tart macOS guests with a test
-  Apple Account, provisioning of VM clones, guest control, and open
-  measurements.
+  Apple Account, provisioning of VM clones, guest control, the Windows guest
+  spike for `PLATFORM-002`, and open measurements.
 - [../tasks/mvp-roadmap.md](../tasks/mvp-roadmap.md) — accepted Gate 6
   MVP task-stub, dependency, wave, evidence, and integration-group authority;
   complete and retained as history.

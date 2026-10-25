@@ -331,6 +331,63 @@ again; a copy that overlaps a build is untested (`open`). The
 - `open`: the time budget for routine runs with the two new tracks; the
   Linux and Android tracks have not been measured against the 268 s median.
 
+## Windows guests (`PLATFORM-002` spike)
+
+The spike asked whether an agent can verify Posato on Windows with no person
+present, as it does on Linux. The answer for the verification loop is yes;
+enforcement, the privilege model, and distribution are untouched.
+[`tools/windows-spike`](../../../tools/windows-spike/README.md) reproduces it.
+
+- `observed` (2026-10-25): an unofficial Tart fork with Windows guests,
+  reviewed and built from source, installed Windows 11 ARM64 (build 26300)
+  from Microsoft's ISO unattended in about 20 minutes. Setup applied the image
+  in about 3 minutes; Windows took the rest to configure itself. The fork
+  relies on private Virtualization framework settings and was tested by its
+  author only on macOS 26.6 and 27 (`source-claim`).
+- `observed`: with the fork's Windows guest agent started by a scheduled task
+  at sign-in, `tart exec` runs in the interactive console session, so it
+  reaches the desktop. A scheduled task that started Posato through
+  `conhost --headless` showed no window; starting it with `tart exec` did.
+  `cmd /c start ""` through `tart exec` turned the empty title into `\\` and
+  hung.
+- `observed`: Compose Multiplatform 1.10.3 publishes `windows-arm64`
+  artifacts, and the Linux application jar with that runtime starts on
+  Windows: the Linux entry point degrades without D-Bus and without the
+  pausing service, and the shared interface works with its own database.
+- `observed`: the Microsoft Build of OpenJDK 21 for Windows on ARM ships the
+  Java Access Bridge. With `jabswitch -enable` and Python's
+  `java-access-bridge-wrapper`, Posato's Compose tree reads with roles, names,
+  states, bounds, and actions, and buttons press through their accessible
+  `click` action with no synthetic input. Compose refuses JAB's
+  `setTextContents`; text goes in as Unicode `SendInput` after focusing the
+  field. Pressing and releasing Alt to bring the window forward opens its
+  window menu, which swallowed the first typed character until the probe
+  stopped using Alt.
+- `observed`: a disposable clone runs the whole check (agent ready, Posato
+  started, onboarding driven through seven assertions, screenshot, clone
+  deleted) in about a minute. With the final probe, which requires every
+  expected name to be new on screen and the field to hold the typed text,
+  four runs passed in 58 to 63 s; the agent answered after 26 to 31 s.
+  Screenshots come from `CopyFromScreen` in the signed-in session.
+- `observed`: one run failed copying the jar from the shared folder right
+  after boot ("Error performing inpage operation"); the check now retries the
+  copy, and no later run needed a retry.
+- `observed`: `create-golden.sh` built the golden VM from the ISO with no
+  interaction in 1350 s and 1434 s: about 19 minutes for the Windows install
+  and about 4 minutes for the guest setup over SSH.
+- `observed`: `jpackage` in the guest built an app image in 13 s and, with
+  WiX 3.14 under x64 emulation, a per-user MSI in 55 s. The MSI installed and
+  uninstalled with `msiexec /quiet` and exit code 0, the installed Posato
+  started, and the bundled runtime keeps the Java Access Bridge.
+- `observed`: Posato names the device by `os.name`, so Windows shows "Mac"
+  ("On this Mac", "Saved on this Mac"). `inferred` from the shared code: the
+  onboarding notice "Website pauses are unavailable until Mac setup is
+  complete." appears on every platform except iOS, so Linux shows it too.
+- `open`: an x64 Windows target (this Mac runs ARM64 guests only),
+  Authenticode signing and SmartScreen, the pausing mechanism and its
+  elevation prompt, running next to the macOS or Linux guests, and whether the
+  fork keeps working after a macOS update.
+
 ## Observed blocking on macOS
 
 - `observed`: `posato-control observe` in a guest requests a URL through the
