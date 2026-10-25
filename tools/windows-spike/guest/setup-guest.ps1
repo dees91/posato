@@ -25,6 +25,8 @@ function Assert-Exit($what) {
 # vioserial carries the clipboard
 foreach ($inf in "$src\drivers\viosock\viosock.inf", "$src\drivers\vioserial\vioser.inf") {
   pnputil /add-driver $inf /install | Out-Host
+  # 3010: installed, takes effect after the reboot that follows this setup anyway
+  if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) { throw "pnputil $inf failed with exit code $LASTEXITCODE" }
 }
 Set-Service VirtioSocketWSP -StartupType Automatic
 Start-Service VirtioSocketWSP

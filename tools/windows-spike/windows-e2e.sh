@@ -11,7 +11,10 @@ export TART_HOME=${POSATO_TART_WINDOWS_HOME:-$HOME/.tart-windows}
 GOLDEN=${POSATO_VM_WINDOWS_GOLDEN:-posato-golden-windows}
 VM=posato-run-windows
 SHARE="$OUT/share"
+HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$SHARE"; cp "$JAR" "$SHARE/posato.jar"
+# The probe and the screenshot script travel with each run, so changing them needs no new golden VM
+cp "$HERE/guest/jab_probe.py" "$HERE/guest/screenshot.ps1" "$SHARE/"
 t0=$(date +%s); log() { echo "[$(( $(date +%s) - t0 ))s] $*" | tee -a "$OUT/run.log"; }
 fail() { log "FAIL: $*"; "$TART" stop "$VM" --timeout 60 >/dev/null 2>&1; "$TART" delete "$VM" >/dev/null 2>&1; exit 1; }
 gx() { "$TART" exec "$VM" "$@"; }
@@ -24,8 +27,15 @@ for i in $(seq 1 60); do gx cmd /c ver >/dev/null 2>&1 && break; sleep 2; done
 gx cmd /c ver >/dev/null 2>&1 || fail "guest agent never answered"
 log "guest agent answers"
 for i in $(seq 1 30); do gx cmd /c "if exist Z:\\spike\\posato.jar (exit 0) else (exit 1)" >/dev/null 2>&1 && break; sleep 2; done
-gx cmd /c "copy /y Z:\\spike\\posato.jar C:\\Tools\\posato.jar" >/dev/null || fail "jar not reachable on Z:"
-log "jar copied from the shared folder"
+# Right after boot a read from the shared folder can fail with "Error performing inpage operation"; it passes on retry
+for f in posato.jar jab_probe.py screenshot.ps1; do
+  for attempt in 1 2 3 4 5; do
+    gx cmd /c "copy /y Z:\\spike\\$f C:\\Tools\\$f" >/dev/null && break
+    [ $attempt -eq 5 ] && fail "$f not reachable on Z:"
+    log "retrying the copy of $f"; sleep 3
+  done
+done
+log "jar and probe copied from the shared folder"
 gx cmd /c C:\\Tools\\run-posato.cmd &
 for i in $(seq 1 30); do
   W=$(gx powershell -NoProfile -Command '(Get-Process java -ErrorAction SilentlyContinue | Where-Object MainWindowTitle | Select-Object -First 1).MainWindowTitle' 2>/dev/null | tr -d '\r')
@@ -33,20 +43,20 @@ for i in $(seq 1 30); do
 done
 [ "$W" = "Posato" ] || fail "no Posato window"
 log "Posato window shown"
-probe() { gx C:\\Tools\\Python\\python.exe C:\\Tools\\jab_probe.py "$@" 2>/dev/null; }
-step() { local name=$1; shift; probe "$@" > "$OUT/$name.json"; local rc=$?; [ $rc -eq 0 ] || fail "$name (exit $rc)"; log "ok: $name"; }
-probe dump > "$OUT/01-welcome.json"; grep -q '"1 of 5"' "$OUT/01-welcome.json" || fail "welcome step not read"
+probe() { local name=$1; shift; gx C:\\Tools\\Python\\python.exe C:\\Tools\\jab_probe.py "$@" > "$OUT/$name.json" 2> "$OUT/$name.err"; }
+step() { local name=$1; probe "$@"; local rc=$?; [ $rc -eq 0 ] || fail "$name (exit $rc, see $name.err)"; log "ok: $name"; }
+probe 01-welcome dump || fail "welcome step not read (see 01-welcome.err)"
+grep -q '"name": "1 of 5"' "$OUT/01-welcome.json" || fail "welcome step not read"
 log "ok: 01-welcome read through JAB"
 step 02-privacy press "Make some space" expect "2 of 5"
 step 03-access press Continue expect "3 of 5"
 step 04-website press "Not now" expect "4 of 5"
 step 05-typed type - example.com
-grep -q '"example.com"' "$OUT/05-typed.json" || fail "typed text not in the field"
 step 06-added press Add expect "1 website saved"
 step 07-summary press Continue expect "5 of 5"
-step 08-session press "Go to Session" expect "1 website"
+step 08-session press "Go to Session" expect "Start a session"
 gx powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Tools\\screenshot.ps1 -Path Z:\\spike\\session.png >/dev/null || fail screenshot
 cp "$SHARE/session.png" "$OUT/session.png"; log "screenshot captured"
 gx powershell -NoProfile -Command 'Stop-Process -Name java -Force' >/dev/null 2>&1
-"$TART" stop "$VM" --timeout 60 >/dev/null 2>&1; "$TART" delete "$VM"; rm -f "$SHARE/posato.jar"
+"$TART" stop "$VM" --timeout 60 >/dev/null 2>&1; "$TART" delete "$VM"; rm -f "$SHARE/posato.jar" "$SHARE/jab_probe.py" "$SHARE/screenshot.ps1"
 log "PASS: clone deleted"

@@ -13,7 +13,17 @@ export TART_HOME=${POSATO_TART_WINDOWS_HOME:-$HOME/.tart-windows}
 VM=${POSATO_VM_WINDOWS_GOLDEN:-posato-golden-windows}
 HERE=$(cd "$(dirname "$0")" && pwd)
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A failed run leaves no half-built golden VM behind, so the next run can start over
+cleanup() {
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    "$TART" stop "$VM" --timeout 30 >/dev/null 2>&1 || true
+    wait || true
+    "$TART" delete "$VM" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$WORK"
+}
+trap cleanup EXIT
 t0=$(date +%s); log() { echo "[$(( $(date +%s) - t0 ))s] $*"; }
 
 "$TART" create "$VM" --from-iso "$ISO"
@@ -21,7 +31,9 @@ log "Windows installed"
 
 # The fork's install adds storage, display, network and file-sharing drivers; tart exec and the clipboard need
 # viosock and vioserial from the same virtio-win image, which tart create left in its cache
-VIRTIO=$(ls "$TART_HOME"/cache/windows/*.iso | head -1)
+# The cache names files by digest: this is the one VirtioWin.swift pins (virtio-win 0.1.302)
+VIRTIO="$TART_HOME/cache/windows/sha256:303f7ae40dad495d6ae474fdc571df58958a4dbc5c37a522d80f9a203867949d.iso"
+[ -f "$VIRTIO" ] || { echo "no virtio-win 0.1.302 image in $TART_HOME/cache/windows" >&2; exit 1; }
 MOUNT=$(hdiutil attach -readonly -nobrowse -plist "$VIRTIO" | plutil -extract system-entities.0.mount-point raw - 2>/dev/null \
   || hdiutil info | awk '/virtio-win/{f=1} f&&/\/Volumes\//{print $NF; exit}')
 KIT="$WORK/TartSetup"
@@ -54,6 +66,7 @@ log "guest set up"
 # One more boot: the agent must answer in the signed-in session, and UAC is off from now on
 "$TART" run --no-graphics "$VM" > "$WORK/run.log" 2>&1 &
 for _ in $(seq 1 60); do "$TART" exec "$VM" cmd /c ver >/dev/null 2>&1 && break; sleep 5; done
+"$TART" exec "$VM" cmd /c ver >/dev/null || { echo "the guest agent does not answer after the reboot" >&2; exit 1; }
 "$TART" exec "$VM" query user || true  # exits 1 even when it lists the session
 "$TART" stop "$VM" --timeout 120
 wait

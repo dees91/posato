@@ -1,7 +1,7 @@
 """Spike probe: read Posato's Compose tree through the Java Access Bridge, press a button, assert the next step.
 
-usage: python jab_probe.py dump | press <name> [expect <text>] | type <field name or -> <text>
-Prints one JSON object on stdout.
+usage: python jab_probe.py dump | press <name> [expect <exact name on the next screen>] | type <field name or -> <text>
+Prints one JSON object on stdout; exits 1 when the expected result did not appear and 2 when the step cannot start.
 """
 import ctypes
 import glob
@@ -60,10 +60,14 @@ def send_text(jab, text):
     """Compose's editable text refuses setTextContents, so type into the focused window as a keyboard would."""
     user32 = ctypes.windll.user32
     hwnd = user32.FindWindowW(None, WINDOW_TITLE)
-    user32.keybd_event(0x12, 0, 0, 0)  # Alt lets this process move the foreground
-    user32.SetForegroundWindow(hwnd)
-    user32.keybd_event(0x12, 0, 2, 0)
-    time.sleep(0.3)
+    if not hwnd:
+        raise RuntimeError(f"no window titled {WINDOW_TITLE!r} to type into")
+    if user32.GetForegroundWindow() != hwnd:
+        # Any input event lets this process move the foreground. Not Alt: releasing it opens the window menu,
+        # which swallows the first typed character.
+        user32.keybd_event(0, 0, 0, 0)
+        user32.SetForegroundWindow(hwnd)
+        time.sleep(0.3)
     for ch in text:
         for flags in (0x0004, 0x0004 | 0x0002):  # KEYEVENTF_UNICODE, then key up
             event = INPUT(type=1)
@@ -110,23 +114,34 @@ def main():
         time.sleep(0.3)
         send_text(jab, text)
         time.sleep(0.5)
-        print(json.dumps({"ok": True, "typed": text, "after": public(nodes(jab))}, indent=1))
-        return
+        after = nodes(jab)
+        # Proof is the field's own value afterwards; it must not have held the text before
+        held = any(e["role"] == "text" and e["name"] == text for e in before)
+        ok = not held and any(e["role"] == "text" and e["name"] == text for e in after)
+        print(json.dumps({"ok": ok, "after": public(after)}, indent=1))
+        sys.exit(0 if ok else 1)
     name = sys.argv[2]
     target = next((e for e in before if e["name"] == name and e["actions"]), None)
     if target is None:
         print(json.dumps({"ok": False, "error": f"no actionable node named {name!r}", "nodes": public(before)}, indent=1))
         sys.exit(2)
-    target["_node"].click()
     expect = sys.argv[4] if len(sys.argv) > 4 and sys.argv[3] == "expect" else None
+
+    def shows(entries):
+        return any(e["name"] == expect for e in entries)
+
+    # An expected name the screen already showed proves nothing about the press
+    if expect is not None and shows(before):
+        print(json.dumps({"ok": False, "error": f"{expect!r} was already shown before the press", "nodes": public(before)}, indent=1))
+        sys.exit(2)
+    target["_node"].click()
     deadline = time.time() + 10
     while True:
         time.sleep(0.5)
         after = nodes(jab)
-        names = [e["name"] for e in after]
-        if expect is None or any(expect in (n or "") for n in names) or time.time() > deadline:
+        if expect is None or shows(after) or time.time() > deadline:
             break
-    ok = expect is None or any(expect in (n or "") for n in names)
+    ok = expect is None or shows(after)
     print(json.dumps({"ok": ok, "pressed": name, "actions": target["actions"], "expect": expect, "after": public(after)}, indent=1))
     sys.exit(0 if ok else 1)
 

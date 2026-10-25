@@ -360,15 +360,21 @@ enforcement, the privilege model, and distribution are untouched.
   states, bounds, and actions, and buttons press through their accessible
   `click` action with no synthetic input. Compose refuses JAB's
   `setTextContents`; text goes in as Unicode `SendInput` after focusing the
-  field.
-- `observed`: a disposable clone ran the whole check (agent ready, Posato
+  field. Pressing and releasing Alt to bring the window forward opens its
+  window menu, which swallowed the first typed character until the probe
+  stopped using Alt.
+- `observed`: a disposable clone runs the whole check (agent ready, Posato
   started, onboarding driven through seven assertions, screenshot, clone
-  deleted) in 56 to 71 s in four runs on two golden VMs, every run passing;
-  the agent answered after 27 to 31 s. Screenshots come from
-  `CopyFromScreen` in the signed-in session.
+  deleted) in about a minute. With the final probe, which requires every
+  expected name to be new on screen and the field to hold the typed text,
+  four runs passed in 58 to 63 s; the agent answered after 26 to 31 s.
+  Screenshots come from `CopyFromScreen` in the signed-in session.
+- `observed`: one run failed copying the jar from the shared folder right
+  after boot ("Error performing inpage operation"); the check now retries the
+  copy, and no later run needed a retry.
 - `observed`: `create-golden.sh` built the golden VM from the ISO with no
-  interaction in 1350 s: about 18 minutes for the Windows install and about
-  4 minutes for the guest setup over SSH.
+  interaction in 1350 s and 1434 s: about 19 minutes for the Windows install
+  and about 4 minutes for the guest setup over SSH.
 - `observed`: `jpackage` in the guest built an app image in 13 s and, with
   WiX 3.14 under x64 emulation, a per-user MSI in 55 s. The MSI installed and
   uninstalled with `msiexec /quiet` and exit code 0, the installed Posato

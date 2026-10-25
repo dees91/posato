@@ -3168,8 +3168,8 @@ first removal attempt that does not finish, not to a paused keychain.
   ARM64 unattended; its guest agent runs `tart exec` in the signed-in session.
 - `observed`: the Linux jar with Compose's `windows-arm64` runtime starts on
   Windows, and the Java Access Bridge reads and presses Posato's Compose tree.
-  A disposable clone ran onboarding with seven assertions in under a minute,
-  twice. `jpackage` with WiX 3.14 builds an MSI that installs and uninstalls
+  Disposable clones ran onboarding with seven strict assertions in 58 to
+  63 s in four runs. `jpackage` with WiX 3.14 builds an MSI that installs and uninstalls
   quietly.
 - `open`: an x64 target, signing, the pausing mechanism, and the fork's
   dependence on private Virtualization framework settings. Details in

@@ -15,6 +15,8 @@ wiki under [Unattended Verification](../../docs/wiki/topics/unattended-verificat
   `windows-guest-extras` at `e4c623c`, reviewed and built from source:
 
   ```shell
+  git clone https://github.com/mustafaakin/tart.git tart-windows && cd tart-windows
+  git checkout e4c623c
   brew install lld        # rebuilds the fork's embedded UEFI drivers
   make -C Resources/Windows
   swift build -c release --product tart
@@ -29,7 +31,12 @@ wiki under [Unattended Verification](../../docs/wiki/topics/unattended-verificat
 - The Windows guest agent from
   [`mustafaakin/tart-guest-agent`](https://github.com/mustafaakin/tart-guest-agent)
   at `f15198a`:
-  `GOOS=windows GOARCH=arm64 go build -o build/tart-guest-agent.exe ./cmd`.
+
+  ```shell
+  git clone https://github.com/mustafaakin/tart-guest-agent.git && cd tart-guest-agent
+  git checkout f15198a
+  GOOS=windows GOARCH=arm64 go build -o build/tart-guest-agent.exe ./cmd
+  ```
 - A Windows 11 ARM64 ISO from Microsoft. You are responsible for its
   license; the guest is not activated.
 - About 40 GB of free disk for the golden VM and the temporary installation
@@ -62,6 +69,12 @@ network reaches, to run [`guest/setup-guest.ps1`](guest/setup-guest.ps1):
   [probe](guest/jab_probe.py), and the [screenshot](guest/screenshot.ps1)
   script.
 
+The guest keeps the image's `admin`/`admin` account, has UAC off, and
+answers SSH on Tart's NAT network. That is acceptable only for this
+disposable test guest, which holds no personal data. The JDK link follows the
+latest JDK 21 build, so two golden VMs made at different times can differ in
+the JDK patch release.
+
 ## Run the E2E check
 
 ```shell
@@ -74,7 +87,9 @@ The script clones the golden VM, shares the jar into the guest with
 `tart run --dir` (drive `Z:`), starts Posato in the signed-in session, and
 drives onboarding through the Java Access Bridge: it reads the welcome step,
 presses each button by its accessible name, types a website, and asserts every
-following step. It saves each step's accessibility tree as JSON and a
+following step. A press passes only when a name that the screen did not show
+before appears afterwards, and typing passes only when the field holds the
+text. The probe and the screenshot script are copied in on every run. It saves each step's accessibility tree as JSON and a
 screenshot of the Session screen, then deletes the clone. A failed assertion
 exits non-zero.
 
