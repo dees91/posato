@@ -55,6 +55,7 @@ import app.posato.control.cli.VmExecCommand
 import app.posato.control.cli.VmICloudCommand
 import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmKillCommand
+import app.posato.control.cli.VmStallCommand
 import app.posato.control.cli.VmLeasesCommand
 import app.posato.control.cli.VmNetworkCommand
 import app.posato.control.cli.VmOnboardCommand
@@ -130,6 +131,7 @@ private fun vmCommand(): VmCommand {
         VmExecCommand(),
         VmPushCommand(),
         VmKillCommand(),
+        VmStallCommand(),
         VmDialogsCommand(),
         VmOnboardCommand(),
     )

@@ -1,10 +1,10 @@
 package app.posato.desktop.macos
 
+import app.posato.desktop.macos.HelperHarnessGuest.categories
+import app.posato.desktop.macos.HelperHarnessGuest.proxyEnabled
+import app.posato.desktop.macos.HelperHarnessGuest.record
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.time.Instant
-import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -84,24 +84,6 @@ class MacOsHelperOperationBoundHarnessTest {
         assertTrue(!proxyEnabled(), "Proxy settings stayed applied after clearing")
     }
 
-    private fun proxyEnabled(): Boolean {
-        val process = ProcessBuilder("/usr/sbin/scutil", "--proxy").redirectErrorStream(true).start()
-        val output = process.inputStream.readAllBytes().decodeToString()
-        check(process.waitFor(TOOL_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "scutil timed out" }
-        return output.lines().any { line -> line.trim() == "HTTPEnable : 1" }
-    }
-
-    private fun record(
-        log: Path,
-        line: String,
-    ) {
-        Files.writeString(log, "${Instant.now()} $line\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-    }
-
-    private fun HelperResult.categories(): String {
-        return "outcome=$outcome state=$serviceState phase=$ownershipPhase action=$requiredAction failure=$failure"
-    }
-
     private companion object {
         const val GATE = "POSATO_HELPER_BOUND_VM"
         const val HELPER_ENV = "POSATO_HELPER_PATH"
@@ -113,6 +95,5 @@ class MacOsHelperOperationBoundHarnessTest {
         const val SECOND_POLLS = 300
         const val GRANT_READ_INTERVAL = 10
         const val SESSION_MILLISECONDS = 30 * 60 * 1_000L
-        const val TOOL_TIMEOUT_SECONDS = 10L
     }
 }

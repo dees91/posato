@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 
+@testable import PosatoMacOSServiceCore
 @testable import PosatoProxySettingsDaemon
 
 private final class ExitRecorder: @unchecked Sendable {
@@ -80,6 +81,68 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
   coordinator.connectionOpened()
   busy.signal()
   coordinator.queue.sync {}
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
+// MACOS-031: on a busy Mac a restore held the daemon's queue for more than a second. The idle check
+// that fell due behind it ran the moment the restore ended and ended the daemon, while a new helper's
+// connection was still on its way to the listener; that helper lost its daemon and ended too.
+@Test func givenAnIdleCheckDelayedByBusyWorkWhenAConnectionFollowsSoonThenTheDaemonStays() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(500)),
+    terminate: recorder.record
+  )
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: ConnectionState())
+
+  let busy = DispatchSemaphore(value: 0)
+  coordinator.queue.async { busy.wait() }
+  try await Task.sleep(for: .milliseconds(1_500))
+  busy.signal()
+  try await Task.sleep(for: .milliseconds(200))
+  coordinator.connectionOpened()
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
+// A helper that loses the connection owning an applied mutation is replaced by a new one, whose
+// connection passes its code-signing check before it is counted; under load that took more than a
+// second (MACOS-027). After restoring for a lost owner the daemon waits as long as after its start.
+@Test func givenARestoreForALostOwnerWhenTheNextHelperConnectsLateThenTheDaemonStays() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(100)),
+    terminate: recorder.record
+  )
+  let owner = ConnectionState()
+  owner.update(
+    request: try WireMessage(
+      kind: .request,
+      operation: .apply,
+      sequence: 1,
+      deadlineMilliseconds: 5_000,
+      connectionIdentifier: Data(repeating: 1, count: WireLimits.identifierBytes),
+      sessionIdentifier: Data(repeating: 2, count: WireLimits.identifierBytes),
+      requestIdentifier: Data(repeating: 3, count: WireLimits.identifierBytes),
+      payload: Data()
+    ),
+    response: WireResponsePayload(outcome: .success, serviceState: .ready, ownershipPhase: .applied),
+    ownershipVerified: true
+  )
+  #expect(owner.shouldRestoreOnInvalidation())
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: owner)
+
+  try await Task.sleep(for: .milliseconds(1_000))
+  coordinator.connectionOpened()
   let exited = try await eventually(within: 1) { recorder.exits > 0 }
 
   #expect(!exited)
