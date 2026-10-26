@@ -15,6 +15,9 @@ import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.presence.DesktopPresence
 import app.posato.feature.schedules.data.ScheduleSyncStore
 import app.posato.feature.schedules.domain.ScheduleZone
+import app.posato.feature.schedules.host.MacScheduleStartGate
+import app.posato.feature.schedules.host.ScheduleStartGate
+import app.posato.feature.schedules.host.StartGate
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.KeptApplicationRequirements
 import app.posato.feature.session.data.LocalSessionSyncStore
@@ -56,6 +59,7 @@ import app.posato.feature.targets.data.retainSets
 import app.posato.feature.transfer.DesktopPauseSetFiles
 import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.update.DesktopUpdateMaintenance
+import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -148,7 +152,18 @@ internal interface DesktopApplicationGraph :
         applicationMappings: LocalApplicationMappings,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         composition: SessionComposition,
+        macHelper: MacHelperPort,
+        platform: OnboardingPermissionPlatform,
+        admission: MaintenanceAdmission,
     ): SessionTransitionOwner {
+        // MACOS-029: on a Mac a running pause applies again by itself under the scheduled-start gate; an
+        // update that is closing reads as transient. Other hosts re-apply without a prompt already.
+        val automaticApply = if (platform == OnboardingPermissionPlatform.MAC) {
+            val gate = MacScheduleStartGate(macHelper) { macHelper.console?.isOurs() }
+            ScheduleStartGate { if (admission.closed.value == true) StartGate.TRANSIENT else gate.check() }
+        } else {
+            null
+        }
         val owner = SessionTransitionOwner(
             backgroundDispatcher = databaseDispatcher,
             store = sessions,
@@ -157,6 +172,7 @@ internal interface DesktopApplicationGraph :
             loadTargets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
             triggers = sync.sessionTriggers,
             composition = composition,
+            automaticApply = automaticApply,
         )
         sync.sessionObserver = owner
         return owner
