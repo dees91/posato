@@ -21,7 +21,7 @@ Follow `releasing.md`. Differences for 1.5.2:
 - **Mac only:** `MARKETING_VERSION = 1.5.2`; macOS build 32 for both
   architectures (both published feeds hold 31). No iOS build, store
   submission, Android APK, or Linux package is made.
-- **Release assets:** the five macOS assets, plus the 1.5.0
+- **Release assets:** the four macOS assets (two DMGs and two feeds), plus the 1.5.0
   `posato_1.5.0_arm64.deb`, `posato_1.5.0_amd64.deb`, and
   `Posato-1.5.0.apk` attached again byte for byte; one `SHA256SUMS` covers
   the seven files.

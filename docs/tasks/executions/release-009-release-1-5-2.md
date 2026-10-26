@@ -142,7 +142,10 @@ Read the [limits](https://posato.app/limits/) before you rely on Posato.
   `PosatoVerificationSeams` key, the stable feed per architecture with one
   `SUPublicEDKey`, minimum macOS 13.0, build 32, Temurin 21.0.12.1 as in
   1.5.1, strict deep `codesign`, `stapler validate`, and `spctl` (Notarized
-  Developer ID); app, helper, and sync companion entitlements equal 1.5.1's.
+  Developer ID); app, helper, and sync companion entitlements equal 1.5.1's
+  byte for byte on both architectures (`codesign -d --entitlements <file>
+  --xml`, 293, 244, and 652 bytes; the first script compared empty output
+  and was replaced), and `JAVA_VERSION="21.0.12.1"` in all four apps.
 - **Reattached:** the 1.5.0 `.deb` files and APK match the 1.5.0
   `SHA256SUMS`; the new `SHA256SUMS` lists all seven files.
 - **Never published:** the Intel verification candidate 9501
@@ -165,6 +168,17 @@ Read the [limits](https://posato.app/limits/) before you rely on Posato.
 | Same, Posato ended and opened again during the pause | **Restrictions active**, blocked | `20261026-100926-beb7`, `20261026-100929-32fc` |
 | Same, network off | "Applying restrictions again…" from 10:09:58 to about 10:10:30, then the notice with **Retry**; **Retry** with the network back applied without a prompt | `20261026-100958-18b8` to `20261026-101041-3df6`, `20261026-101125-9aba` |
 | Same, End session early, then a schedule Morning 10:15-10:31 with the window closed | loaded after the end; the schedule started on its own (menu "restrictions active"), blocked | `20261026-101136-93f1`, `20261026-101726-a87b` |
-| Same, `MACOS-031` daemon stall harness against the installed release helper, two 8 s stalls at 10:33:47 and 10:34:00 | pass: ten Status `Applied` with the proxy on, change, clear | `build/verification/release-009/stall-harness-release.json` |
-| `ventura` (macOS 13.6), `Posato-1.5.2-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or Application Support folder | host `vm exec`/`vm text`, 2026-10-26 10:4x |
+| Same, `MACOS-031` daemon stall harness against the installed release helper, two 8 s stalls at 10:33:47 and 10:34:00 | pass: ten Status `Applied` with the proxy on, change, clear | `build/verification/release-009/stall-harness-release.json`, stalls `20261026-103347-ca82`, `20261026-103401-b706` |
+| `ventura` (macOS 13.6), `Posato-1.5.2-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or Application Support folder (`ls` found none) | `20261026-104300-43fe`, `20261026-104302-5bb7`, `20261026-104310-1385`, `20261026-104338-c2d2` |
 | `ventura`, Intel verification candidate 9501 | setup, a pause blocked, a killed helper replaced and the pause applied again, after End early loaded | `20261026-104554-f001`, `20261026-104622-d7cc`, `20261026-104633-a587` |
+
+## Completed-change review
+
+- **Verdict:** approved; the reviewer verified both feed and enclosure
+  signatures against the release key, the absence of the throwaway key,
+  and the assets' hashes and lengths.
+- **Recommended, taken:** the entitlement and Temurin comparison is cited
+  from a check that reads real files; the `ventura` and stall rows cite
+  their runs. **Optional, taken:** the brief counts four macOS assets plus
+  `SHA256SUMS`; the snapshots every 12 to 15 s place the network-off notice
+  between 32 and 45 s after the first attempt, within the three attempts.
