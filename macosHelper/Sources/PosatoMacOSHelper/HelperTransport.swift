@@ -7,6 +7,8 @@ enum PipeFailure: Error {
   case invalidFrame
   case unavailable
   case unknownOutcome
+  /// The deadline expired before the daemon answered; the outcome is unknown.
+  case timedOut
 }
 
 /// An invalid connection is the signal for a daemon endpoint that never launched, so it is treated
@@ -131,7 +133,7 @@ final class DaemonConnection: @unchecked Sendable {
     }
     let timeout = DispatchTime.now() + .milliseconds(Int(deadlineMilliseconds))
     guard semaphore.wait(timeout: timeout) == .success else {
-      throw PipeFailure.unknownOutcome
+      throw PipeFailure.timedOut
     }
     guard let response = lock.withLock({ result }) else {
       throw daemonDeliveryFailure(lock.withLock { deliveryFailure })
@@ -167,102 +169,6 @@ final class DaemonConnection: @unchecked Sendable {
       requestIdentifier: response.requestIdentifier,
       payload: response.payload
     )
-  }
-}
-
-final class LeaseRenewalChannel: @unchecked Sendable {
-  private let requirement: String
-  private var connection: DaemonConnection?
-
-  init(requirement: String) {
-    self.requirement = requirement
-  }
-
-  func perform(_ request: WireMessage) throws -> WireMessage {
-    if connection?.hasCapacity != true {
-      let replacement = try DaemonConnection(requirement: requirement)
-      connection?.invalidate()
-      connection = replacement
-    }
-    guard let connection else {
-      throw PipeFailure.unavailable
-    }
-    return try connection.perform(request)
-  }
-
-  func invalidate() {
-    connection?.invalidate()
-    connection = nil
-  }
-}
-
-final class LeaseRenewalGate: @unchecked Sendable {
-  private let lock = NSLock()
-  private var isActive = true
-
-  func run(_ operation: () -> Void) {
-    lock.withLock {
-      guard isActive else {
-        return
-      }
-      operation()
-    }
-  }
-
-  func retire() {
-    lock.withLock {
-      isActive = false
-    }
-  }
-}
-
-final class LeaseRenewer: @unchecked Sendable {
-  private let timer: DispatchSourceTimer
-  private let gate = LeaseRenewalGate()
-  private let channel: LeaseRenewalChannel
-
-  init(
-    ownershipConnection: DaemonConnection,
-    daemonRequirement: String,
-    request: WireMessage
-  ) {
-    channel = LeaseRenewalChannel(requirement: daemonRequirement)
-    timer = DispatchSource.makeTimerSource(
-      queue: DispatchQueue(label: "app.posato.macos.helper.lease")
-    )
-    timer.schedule(deadline: .now() + .seconds(5), repeating: .seconds(5))
-    timer.setEventHandler { [channel, gate] in
-      gate.run {
-        do {
-          let renew = try WireMessage(
-            kind: .request,
-            operation: .renew,
-            sequence: request.sequence,
-            deadlineMilliseconds: 5_000,
-            connectionIdentifier: request.connectionIdentifier,
-            sessionIdentifier: request.sessionIdentifier,
-            requestIdentifier: request.requestIdentifier,
-            payload: Data()
-          )
-          let response = try channel.perform(renew)
-          let payload = try WireResponsePayload.decode(response.payload)
-          guard WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: payload) else {
-            throw PipeFailure.unavailable
-          }
-        } catch {
-          channel.invalidate()
-          ownershipConnection.invalidate()
-          exit(EXIT_FAILURE)
-        }
-      }
-    }
-    timer.resume()
-  }
-
-  func cancelAndWait() {
-    timer.cancel()
-    gate.retire()
-    channel.invalidate()
   }
 }
 

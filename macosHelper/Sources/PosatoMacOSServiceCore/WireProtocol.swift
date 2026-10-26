@@ -12,6 +12,8 @@ public enum WireLimits {
   public static let maximumConfigureDeadlineMilliseconds: UInt32 = 10_000
   public static let maximumSelectionDeadlineMilliseconds: UInt32 = 1_800_000
   public static let maximumOperationsPerConnection: UInt32 = 256
+  /// How long the daemon keeps an applied mutation after its latest Apply or renewal (ADR 0004).
+  public static let leaseMilliseconds = 15_000
   public static let requiredCapabilities: UInt64 = 1
   public static let applicationSelectionCapability: UInt64 = 2
   public static let browserDomainConfigureCapability: UInt64 = 4
