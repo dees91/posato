@@ -159,3 +159,29 @@ Afterwards the iPhone's **Remove workspace** ended twice in "Sync did not
 finish" after the Mac had removed the workspace, the test account's known
 long-history case (the sync recipe's Development zone reset); the Mac clone
 was removed cleanly.
+
+## Completed-change review
+
+- **Verdict:** changes-required, resolved.
+- **Required finding:** (R-1) a recovery could overwrite a state it did not
+  own: a pause that ended during the wait with a failed clear showed
+  "needs attention" instead of the clear-failure notice, and a recovery for
+  one pause could rewrite another pause's notice. Each attempt and the end
+  of a recovery now write only while the owner's desired row is still that
+  active pause; a new test covers the ended-with-failed-clear case and
+  failed first.
+- **Recommended, taken:** one recovery per loss even across threads (an
+  atomic start); Retry clears the caption with the recovery; tests for the
+  per-pause cap and for Retry cancelling a waiting recovery.
+- **Optional:** the `SESSION-009` branch runs on every host, with no visible
+  change outside the Mac (traced by the reviewer); the ADR paragraph beyond
+  the accepted wording is marked `agent-delegated`; `recovering` clears when
+  the recovery stops rather than in the update that sets `Active`, which the
+  UI tolerates because the caption needs an action state.
+
+| Check after the review | Result | Evidence |
+| --- | --- | --- |
+| `SessionAutomaticRecoveryTest` | ten of ten pass; the clear-failure case failed first | `:shared:jvmTest` |
+| Tart, fresh clone, `vm kill --process helper` | a new helper at 08:53:16 applied; **Restrictions active**; `observe --expect blocked` | `build/verification/runs/20261026-085316-80ae` to `20261026-085347-56f0`, `20261026-085348-0260` |
+| Tart, Posato ended and opened again | **Restrictions active**, `observe --expect blocked` | `20261026-085415-3398`, `20261026-085416-af43` |
+| Tart, network off | "Applying restrictions again…" from 08:54:42 to about 08:55:20, then the notice with **Retry** | `20261026-085442-0fe0` to `20261026-085529-5cdb` |

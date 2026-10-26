@@ -98,7 +98,9 @@ internal class SessionTransitionOwner(
     private var lastSettledActive: Boolean = false
     private var hasSettled = false
     private var pendingNativeExpiry: SessionTag? = null
-    private val recovery = SessionAutomaticRecovery(scope, automaticApply, clock, mutableView)
+    private val recovery = SessionAutomaticRecovery(scope, automaticApply, clock, mutableView) { tag ->
+        (stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) } as? LocalSessionStatus.Active)?.let { SessionTag(it.record) } == tag
+    }
 
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
     val status: StateFlow<LocalSessionStatus?> = mutableStatus.asStateFlow()

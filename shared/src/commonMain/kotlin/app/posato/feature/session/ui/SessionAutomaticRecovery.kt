@@ -7,6 +7,7 @@ import app.posato.feature.schedules.host.StartGate
 import app.posato.feature.session.domain.SessionClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -31,9 +32,15 @@ internal class SessionAutomaticRecovery(
     private val gate: ScheduleStartGate?,
     private val clock: SessionClock,
     private val view: MutableStateFlow<EnforcementViewState>,
+    /** Whether [SessionTag] is still the active pause the owner wants; a recovery writes nothing otherwise. */
+    private val isCurrent: suspend (SessionTag) -> Boolean,
 ) {
-    private var job: Job? = null
-    private var jobTag: SessionTag? = null
+    private class Running(
+        val tag: SessionTag,
+        val job: Job,
+    )
+
+    private val running = MutableStateFlow<Running?>(null)
     private val started = mutableMapOf<SessionTag, MutableList<Long>>()
 
     /** Shows [notice] for [tag], or a quiet recovery whose attempts run [reconcile] with the grant. */
@@ -43,27 +50,45 @@ internal class SessionAutomaticRecovery(
         shown: EnforcedSet?,
         reconcile: suspend () -> Unit,
     ) {
-        if (jobTag == tag && job?.isActive == true) return
-        val recovering = gate != null && claim(tag)
+        val current = running.value
+        if (current != null && current.tag == tag && current.job.isActive) return
+        val job = scope.launch(start = CoroutineStart.LAZY) { run(tag, notice, reconcile) }
+        // Two triggers for one loss can arrive on different threads; only one of them starts a recovery.
+        val recovering = gate != null && running.compareAndSet(current, Running(tag, job)) && claim(tag)
         view.update { it.copy(state = notice, enforced = shown ?: it.enforced, recovering = recovering) }
-        if (!recovering) return
-        job?.cancel()
-        jobTag = tag
-        job = scope.launch {
-            var applied = false
-            try {
-                applied = attempts(checkNotNull(gate), notice, reconcile)
-            } finally {
-                view.update { current ->
-                    val restore = !applied && current.state is EnforcementState.ActionRequired
-                    current.copy(state = if (restore) notice else current.state, recovering = false)
-                }
-            }
+        if (recovering) {
+            current?.job?.cancel()
+            job.start()
+        } else {
+            job.cancel()
         }
     }
 
+    /** The person acted, as with Retry: the recovery stops and its caption goes with it. */
     fun cancel() {
-        job?.cancel()
+        running.value?.job?.cancel()
+        view.update { it.copy(recovering = false) }
+    }
+
+    private suspend fun run(
+        tag: SessionTag,
+        notice: EnforcementState.ActionRequired,
+        reconcile: suspend () -> Unit,
+    ) {
+        var applied = false
+        try {
+            applied = attempts(checkNotNull(gate), tag, notice, reconcile)
+        } finally {
+            withContext(NonCancellable) {
+                // A pause that ended or was replaced keeps the state its own transition gave it.
+                val restore = !applied && isCurrent(tag)
+                val latest = running.value?.tag == tag
+                view.update { current ->
+                    val state = if (restore && current.state is EnforcementState.ActionRequired) notice else current.state
+                    current.copy(state = state, recovering = current.recovering && !latest)
+                }
+            }
+        }
     }
 
     private fun claim(tag: SessionTag): Boolean {
@@ -77,24 +102,25 @@ internal class SessionAutomaticRecovery(
 
     private suspend fun attempts(
         gate: ScheduleStartGate,
+        tag: SessionTag,
         notice: EnforcementState.ActionRequired,
         reconcile: suspend () -> Unit,
     ): Boolean {
-        var stop = false
-        for (wait in ATTEMPT_DELAYS_MILLIS) {
-            delay(wait)
-            when (gate.check()) {
-                StartGate.READY -> if (withContext(NonCancellable) { attempt(notice, reconcile) }) return true
-                StartGate.TRANSIENT -> Unit
-                StartGate.SETUP_REQUIRED, StartGate.OTHER_ACCOUNT -> stop = true
-            }
-            if (stop || view.value.state !is EnforcementState.ActionRequired) break
+        var applied = false
+        var stopped = false
+        val waits = ATTEMPT_DELAYS_MILLIS.iterator()
+        while (!applied && !stopped && waits.hasNext()) {
+            delay(waits.next())
+            val answer = if (isCurrent(tag)) gate.check() else StartGate.SETUP_REQUIRED
+            stopped = answer == StartGate.SETUP_REQUIRED || answer == StartGate.OTHER_ACCOUNT
+            applied = answer == StartGate.READY && withContext(NonCancellable) { attempt(tag, notice, reconcile) }
         }
-        return false
+        return applied
     }
 
-    /** One attempt; a pause that ended or was replaced meanwhile leaves its own state and stops the loop. */
+    /** One attempt; it writes the notice back only while its pause is still the one the owner wants. */
     private suspend fun attempt(
+        tag: SessionTag,
         notice: EnforcementState.ActionRequired,
         reconcile: suspend () -> Unit,
     ): Boolean {
@@ -104,13 +130,12 @@ internal class SessionAutomaticRecovery(
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
-            view.update { it.copy(state = notice) }
+            // The state below is checked against the owner's row before the notice is written back.
         } finally {
             view.update { it.copy(busy = false) }
         }
-        val state = view.value.state
-        if (state is EnforcementState.Active) return true
-        if (state != notice) view.update { if (it.state is EnforcementState.Inactive) it else it.copy(state = notice) }
+        if (view.value.state is EnforcementState.Active) return true
+        if (isCurrent(tag)) view.update { if (it.state is EnforcementState.Active) it else it.copy(state = notice) }
         return false
     }
 

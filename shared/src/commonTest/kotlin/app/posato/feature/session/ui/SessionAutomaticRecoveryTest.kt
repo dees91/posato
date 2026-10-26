@@ -152,6 +152,86 @@ class SessionAutomaticRecoveryTest {
         }
     }
 
+    @Test
+    fun `given the pause ends with a failed clear during the wait then the clear notice stays`() = runTest {
+        val port = FakeEnforcementPort(reapplyRequiresPrompt = true)
+        val clock = FakeSessionClock(NOW)
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val store = FakeLocalSessionStore()
+        val gate = CountingGate(StartGate.TRANSIENT)
+        val owner = SessionTransitionOwner(dispatcher, store, clock, port, { targets() }, FakeSessionSyncTriggers(), automaticApply = gate)
+        try {
+            owner.startSession(CURRENT, NOW, END, FROZEN)
+            runCurrent()
+            val active = assertIs<LocalSessionStatus.Active>(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value)
+            port.statusError = IllegalStateException("helper lost")
+            owner.pollNow(active.record)
+            runCurrent()
+            assertTrue(owner.view.value.recovering)
+            port.statusError = null
+            port.clearOutcome = EnforcementOutcome.FAILED
+            clock.nowEpochMillis = END + 1
+            owner.refresh()
+            runCurrent()
+            advanceTimeBy(RECOVERY_WINDOW_MILLIS)
+            runCurrent()
+            assertEquals(EnforcementActionKind.CLEAR_FAILED, assertIs<EnforcementState.ActionRequired>(owner.view.value.state).kind)
+            assertFalse(owner.view.value.recovering)
+        } finally {
+            owner.close()
+        }
+    }
+
+    @Test
+    fun `given a pause lost a fourth time within ten minutes then the notice shows at once`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val store = FakeLocalSessionStore()
+        val port = FakeEnforcementPort(reapplyRequiresPrompt = true)
+        val gate = CountingGate(StartGate.READY)
+        val owner = ownerOf(dispatcher, store, port, gate)
+        try {
+            owner.startSession(CURRENT, NOW, END, FROZEN)
+            runCurrent()
+            val active = assertIs<LocalSessionStatus.Active>(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value)
+            repeat(MAX_RECOVERIES) {
+                port.statusError = IllegalStateException("helper lost")
+                owner.pollNow(active.record)
+                runCurrent()
+                port.statusError = null
+                advanceTimeBy(SECOND_ATTEMPT_MILLIS)
+                runCurrent()
+                assertIs<EnforcementState.Active>(owner.view.value.state)
+            }
+            port.statusError = IllegalStateException("helper lost")
+            owner.pollNow(active.record)
+            runCurrent()
+            assertEquals(EnforcementActionKind.APPLY_FAILED, assertIs<EnforcementState.ActionRequired>(owner.view.value.state).kind)
+            assertFalse(owner.view.value.recovering)
+            assertEquals(2 * MAX_RECOVERIES, gate.checks)
+        } finally {
+            owner.close()
+        }
+    }
+
+    @Test
+    fun `given a recovery waits when the person presses Retry then it stops and no caption remains`() = runTest {
+        val port = FakeEnforcementPort(reapplyRequiresPrompt = true)
+        val owner = receivedPause(port, CountingGate(StartGate.READY), failApplies = true)
+        try {
+            assertTrue(owner.view.value.recovering)
+            val applies = port.calls.count { it == "apply" }
+            owner.retry()
+            runCurrent()
+            assertFalse(owner.view.value.recovering)
+            advanceTimeBy(RECOVERY_WINDOW_MILLIS)
+            runCurrent()
+            assertEquals(applies + 1, port.calls.count { it == "apply" })
+            assertEquals(false, port.lastRequest?.grantOnly)
+        } finally {
+            owner.close()
+        }
+    }
+
     // SESSION-009: after a clean end in the same run, a pause received from another device that ends
     // unresumed left the notice in place, and the transition drain re-read the store without pause.
     @Test
@@ -245,6 +325,8 @@ class SessionAutomaticRecoveryTest {
         const val NOW = 1_000_000_000_000L
         const val END = NOW + 30 * 60_000L
         const val MAX_ATTEMPTS = 3
+        const val MAX_RECOVERIES = 3
+        const val SECOND_ATTEMPT_MILLIS = 20_000L
         const val RECOVERY_WINDOW_MILLIS = 120_000L
         const val READ_LIMIT = 200
         val OLD = SessionId(testIdentifier(93))

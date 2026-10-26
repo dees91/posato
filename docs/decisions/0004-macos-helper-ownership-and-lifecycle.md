@@ -27,10 +27,11 @@ without a foreground Apply. The reach is that of a schedule: Posato's own
 proxy, for a pause the person or a linked device started, with End early
 always available.
 
-The application asks the same gate as a scheduled start
-(`MacScheduleStartGate`), and every such request is grant-only, so it never
-raises the administrator prompt. A pause gets at most three such recoveries
-in ten minutes; then the notice stays.
+Implementation detail (`agent-delegated`, narrowing only): the application
+asks the same gate as a scheduled start (`MacScheduleStartGate`), and every
+such request is grant-only, so it never raises the administrator prompt. A
+pause gets at most three such recoveries in ten minutes; then the notice
+stays.
 
 ## MACOS-024 loopback proxy exceptions amendment
 
