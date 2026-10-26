@@ -89,9 +89,7 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
 // MACOS-031: on a busy Mac a restore held the daemon's queue for more than a second. The idle check
 // that fell due behind it ran the moment the restore ended and ended the daemon, while a new helper's
 // connection was still on its way to the listener; that helper lost its daemon and ended too.
-@Test func givenAnIdleCheckDelayedByBusyWorkWhenAConnectionFollowsSoonThenTheDaemonStays()
-  async throws
-{
+@Test func givenALateIdleCheckWhenAConnectionFollowsSoonThenTheDaemonStays() async throws {
   let recorder = ExitRecorder()
   let coordinator = RequestCoordinator(
     persistence: MemoryOwnershipPersistence(),
@@ -116,8 +114,7 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
 // A helper that loses the connection owning an applied mutation is replaced by a new one, whose
 // connection passes its code-signing check before it is counted; under load that took more than a
 // second (MACOS-027). After restoring for a lost owner the daemon waits as long as after its start.
-@Test func givenARestoreForALostOwnerWhenTheNextHelperConnectsLateThenTheDaemonStays() async throws
-{
+@Test func givenALostOwnerRestoreWhenTheNextHelperIsLateThenTheDaemonStays() async throws {
   let recorder = ExitRecorder()
   let coordinator = RequestCoordinator(
     persistence: MemoryOwnershipPersistence(),

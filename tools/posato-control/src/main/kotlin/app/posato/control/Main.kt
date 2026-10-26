@@ -55,7 +55,6 @@ import app.posato.control.cli.VmExecCommand
 import app.posato.control.cli.VmICloudCommand
 import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmKillCommand
-import app.posato.control.cli.VmStallCommand
 import app.posato.control.cli.VmLeasesCommand
 import app.posato.control.cli.VmNetworkCommand
 import app.posato.control.cli.VmOnboardCommand
@@ -65,6 +64,7 @@ import app.posato.control.cli.VmPushCommand
 import app.posato.control.cli.VmScreenshotCommand
 import app.posato.control.cli.VmScrollCommand
 import app.posato.control.cli.VmShutdownCommand
+import app.posato.control.cli.VmStallCommand
 import app.posato.control.cli.VmSyncCommand
 import app.posato.control.cli.VmSyncFixtureCommand
 import app.posato.control.cli.VmTextCommand
