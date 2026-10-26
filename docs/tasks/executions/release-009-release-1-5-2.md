@@ -126,3 +126,45 @@ Read the [limits](https://posato.app/limits/) before you rely on Posato.
 - macOS 13 or later on Apple silicon or Intel; iOS 18 or later; Ubuntu 24.04 or later; Android 13 or later.
 - Both DMGs are signed with Developer ID and notarized by Apple. The APK is release-signed. `SHA256SUMS` lists the checksums of every file below; `appcast.xml` (Apple silicon) and `appcast-intel.xml` (Intel) are the signed update feeds that Posato for Mac reads.
 ```
+
+## Result
+
+- **R** = `b81414def225468e2ef9cc1c941ef5dcb094da5e` (`MARKETING_VERSION =
+  1.5.2` on `main` `e039672e` plus this row's documentation);
+  `git diff --name-only v1.5.1 <R parent>` showed only the 1.5.2 product
+  changes and the spike's verification task; clean-clone `quality
+  iosSwiftTest` passed (7 min 17 s).
+- **macOS build 32**, both architectures from one clean clone of R, G2
+  Developer ID (`AE452250…D651`): `Posato-1.5.2.dmg` `a531f2ff…b49`,
+  `appcast.xml` `66a6002e…44f`, `Posato-1.5.2-intel.dmg` `4a4c269c…938`,
+  `appcast-intel.xml` `0d40e98e…3f`. Host checks of both DMGs: 38 Mach-O
+  files of the DMG's architecture each, no `PosatoAllowsRosetta` or
+  `PosatoVerificationSeams` key, the stable feed per architecture with one
+  `SUPublicEDKey`, minimum macOS 13.0, build 32, Temurin 21.0.12.1 as in
+  1.5.1, strict deep `codesign`, `stapler validate`, and `spctl` (Notarized
+  Developer ID); app, helper, and sync companion entitlements equal 1.5.1's.
+- **Reattached:** the 1.5.0 `.deb` files and APK match the 1.5.0
+  `SHA256SUMS`; the new `SHA256SUMS` lists all seven files.
+- **Never published:** the Intel verification candidate 9501
+  (`060f471e…335`), signed with the throwaway key in Keychain account
+  `posato-test-release-009`.
+- **Retrospective note:** a harness started with `nohup … &` in one
+  `vm exec` lost its helper and daemon when that exec ended (it worked in
+  `MACOS-031`); running the harness inside a `vm exec` that lasts the whole
+  test, with the stalls from parallel calls, passed. The `MACOS-031` recipe
+  in the verify skill needs that change (outside R's allowed paths, so not
+  here).
+
+## Verification
+
+| Check run | Result | Evidence |
+| --- | --- | --- |
+| `peer` (macOS 26), `Posato-1.5.1.dmg`: setup with the helper, grant, login item, `scheduleConsent` true, Focus with example.com, schedule Evening 10:01-10:21 | started on its own, `observe --expect blocked` | `build/verification/runs/20261026-100308-a4f7` |
+| `primary` (macOS 26), fresh `Posato-1.5.2.dmg` (`vm install`, `vm onboard`): a manual pause | blocked | `20261026-100815-2a58` |
+| Same, `vm kill --process helper` during the pause | a new helper at 10:08:24 applied by itself; **Restrictions active** throughout; blocked | `20261026-100827-4f63` to `20261026-100855-e8a2`, `20261026-100858-4fdb` |
+| Same, Posato ended and opened again during the pause | **Restrictions active**, blocked | `20261026-100926-beb7`, `20261026-100929-32fc` |
+| Same, network off | "Applying restrictions again…" from 10:09:58 to about 10:10:30, then the notice with **Retry**; **Retry** with the network back applied without a prompt | `20261026-100958-18b8` to `20261026-101041-3df6`, `20261026-101125-9aba` |
+| Same, End session early, then a schedule Morning 10:15-10:31 with the window closed | loaded after the end; the schedule started on its own (menu "restrictions active"), blocked | `20261026-101136-93f1`, `20261026-101726-a87b` |
+| Same, `MACOS-031` daemon stall harness against the installed release helper, two 8 s stalls at 10:33:47 and 10:34:00 | pass: ten Status `Applied` with the proxy on, change, clear | `build/verification/release-009/stall-harness-release.json` |
+| `ventura` (macOS 13.6), `Posato-1.5.2-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or Application Support folder | host `vm exec`/`vm text`, 2026-10-26 10:4x |
+| `ventura`, Intel verification candidate 9501 | setup, a pause blocked, a killed helper replaced and the pause applied again, after End early loaded | `20261026-104554-f001`, `20261026-104622-d7cc`, `20261026-104633-a587` |
