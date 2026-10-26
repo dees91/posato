@@ -3201,3 +3201,12 @@ first removal attempt that does not finish, not to a paused keychain.
   retried until no renewal has succeeded for the 15 s lease. The daemon's
   idle exit waits again once after a late check and 10 s after a restore it
   starts itself.
+
+## [2026-10-26] release | Posato 1.5.2 for Mac published
+
+- `observed`: 1.5.2 (build 32) ships `MACOS-031` and `MACOS-029`; on the
+  release a killed helper was replaced and its pause applied again, the
+  daemon stall harness passed against the installed helper, and 1.5.1
+  updated in the app with data, the helper, and schedules kept.
+- A harness started with `nohup` in one `vm exec` loses its helper when
+  that exec ends; run it inside an exec that lasts the whole test.

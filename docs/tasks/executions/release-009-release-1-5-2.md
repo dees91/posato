@@ -1,7 +1,7 @@
 # Execution: `RELEASE-009`
 
 - **Brief:** [Verify and publish Posato 1.5.2 for Mac](../specifications/release-009-release-1-5-2.md)
-- **Status:** `in-progress`
+- **Status:** `done`: Posato 1.5.2 published on 2026-10-26
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agents (plan review, completed-change review)
@@ -151,6 +151,16 @@ Read the [limits](https://posato.app/limits/) before you rely on Posato.
 - **Never published:** the Intel verification candidate 9501
   (`060f471e…335`), signed with the throwaway key in Keychain account
   `posato-test-release-009`.
+- **Published** 2026-10-26: #209 squash `ec25eb06` on `main`; `git diff
+  --name-only R ec25eb06` lists only this row's brief and record, and
+  `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `Version.xcconfig`
+  equal R; annotated tag `v1.5.2`; GitHub Release latest with the eight
+  assets, downloaded from the draft and compared byte for byte; both public
+  feeds equal the verified ones (build 32). Milestone `1.5.2` closed;
+  `MACOS-031`, `MACOS-029`, and `RELEASE-009` Done in the Projects mirror.
+- **Cleaned up:** the Tart clones, the throwaway key
+  `posato-test-release-009`, and candidate 9501; the release key stays in
+  the Keychain.
 - **Retrospective note:** a harness started with `nohup … &` in one
   `vm exec` lost its helper and daemon when that exec ended (it worked in
   `MACOS-031`); running the harness inside a `vm exec` that lasts the whole
@@ -171,6 +181,10 @@ Read the [limits](https://posato.app/limits/) before you rely on Posato.
 | Same, `MACOS-031` daemon stall harness against the installed release helper, two 8 s stalls at 10:33:47 and 10:34:00 | pass: ten Status `Applied` with the proxy on, change, clear | `build/verification/release-009/stall-harness-release.json`, stalls `20261026-103347-ca82`, `20261026-103401-b706` |
 | `ventura` (macOS 13.6), `Posato-1.5.2-intel.dmg` | `spctl` Notarized Developer ID; "This version is for Intel Macs"; after Quit no Posato process, launchd job, or Application Support folder (`ls` found none) | `20261026-104300-43fe`, `20261026-104302-5bb7`, `20261026-104310-1385`, `20261026-104338-c2d2` |
 | `ventura`, Intel verification candidate 9501 | setup, a pause blocked, a killed helper replaced and the pause applied again, after End early loaded | `20261026-104554-f001`, `20261026-104622-d7cc`, `20261026-104633-a587` |
+| `peer` after publication: **Check for Updates** on 1.5.1 | "Posato 1.5.2 is now available-you have 1.5.1"; **Install Update**, **Install and Relaunch**; 1.5.2 (32) runs with "Background helper enabled", the Focus website, and Evening | `build/verification/runs/20261026-110041-3fdf` |
+| `peer` on 1.5.2, a new schedule Late 11:04-11:20 with the window closed | started on its own (menu "restrictions active"), blocked | `20261026-110504-fd1e` |
+| Same, `vm kill --process helper` at 11:05:13 during the scheduled pause | a new helper at 11:06:00 applied again by itself; restrictions active throughout; blocked | `20261026-110639-7914` |
+| `posato.app`, the availability page, and the downloads | the site and the page name the 1.5.2 Mac files; every link answers 200 | host `curl`, 2026-10-26 |
 
 ## Completed-change review
 
