@@ -187,6 +187,10 @@ private fun EnforcementNotice(
     state: SessionUiState,
     onRetryEnforcement: () -> Unit,
 ) {
+    if (state.enforcementRecovering && state.status is LocalSessionStatus.Active && state.enforcement is EnforcementState.ActionRequired) {
+        PosatoCaption("Applying restrictions again…")
+        return
+    }
     when (val enforcement = state.enforcement) {
         is EnforcementState.Active -> {
             if (enforcement.belowPlatformMinimum) {

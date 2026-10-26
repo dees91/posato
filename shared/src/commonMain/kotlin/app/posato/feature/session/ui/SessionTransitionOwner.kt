@@ -8,6 +8,7 @@ import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
+import app.posato.feature.schedules.host.ScheduleStartGate
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionSyncStore
@@ -69,6 +70,7 @@ internal class SessionTransitionOwner(
     private val loadTargets: suspend (PauseSetId) -> SessionTargetsState,
     private val triggers: SessionSyncTriggers,
     private val composition: SessionComposition? = null,
+    private val automaticApply: ScheduleStartGate? = null,
 ) : SessionExchangeObserver {
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val stateMutex = Mutex()
@@ -96,6 +98,9 @@ internal class SessionTransitionOwner(
     private var lastSettledActive: Boolean = false
     private var hasSettled = false
     private var pendingNativeExpiry: SessionTag? = null
+    private val recovery = SessionAutomaticRecovery(scope, automaticApply, clock, mutableView) { tag ->
+        (stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) } as? LocalSessionStatus.Active)?.let { SessionTag(it.record) } == tag
+    }
 
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
     val status: StateFlow<LocalSessionStatus?> = mutableStatus.asStateFlow()
@@ -247,6 +252,7 @@ internal class SessionTransitionOwner(
         if (mutableView.value.busy) {
             return
         }
+        recovery.cancel()
         mutableView.update { view -> view.copy(busy = true) }
         scope.launch {
             try {
@@ -405,16 +411,8 @@ internal class SessionTransitionOwner(
             throw expectedCancellation
         } catch (_: Exception) {
             actionTag = tag
-            mutableView.update { view ->
-                if (view.state is EnforcementState.Inactive) {
-                    view.copy(
-                        state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt),
-                        enforced = frozen?.toEnforcedSet() ?: view.enforced,
-                    )
-                } else {
-                    view
-                }
-            }
+            if (mutableView.value.state !is EnforcementState.Inactive) return
+            askOrRecover(record, tag, frozen, EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt))
         }
     }
 
@@ -457,15 +455,9 @@ internal class SessionTransitionOwner(
             throw expectedCancellation
         } catch (_: Exception) {
             actionTag = tag
-            mutableView.update { view ->
-                view.copy(
-                    state = EnforcementState.ActionRequired(
-                        EnforcementActionKind.APPLY_FAILED,
-                        enforcement.reapplyRequiresPrompt,
-                    ),
-                    enforced = loadTargets(record.setId).toEnforcedSet(),
-                )
-            }
+            val enforced = loadTargets(record.setId).toEnforcedSet()
+            val failed = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)
+            mutableView.update { it.copy(state = failed, enforced = enforced) }
         } finally {
             mutableView.update { view -> view.copy(busy = false) }
         }
@@ -477,7 +469,11 @@ internal class SessionTransitionOwner(
             portMutex.withLock {
                 val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
                 if (current == null || current is LocalSessionStatus.Active || tagOf(current) != expected) return@withLock
-                if (confirmedClear && enforcedIdentity == null) return@withLock
+                if (confirmedClear && enforcedIdentity == null) {
+                    // SESSION-009: a received pause that ended unresumed held nothing; its notice goes too.
+                    actionTag = null
+                    return@withLock mutableView.update { it.copy(state = EnforcementState.Inactive) }
+                }
                 if (mutableView.value.state is EnforcementState.Inactive && enforcement.status() == EnforcementOutcome.CLEARED) {
                     confirmedClear = true
                     return@withLock
@@ -494,6 +490,7 @@ internal class SessionTransitionOwner(
         tag: SessionTag,
         record: SessionRecord,
         frozen: FrozenStartSet?,
+        automatic: Boolean = false,
     ) {
         val sessionId = record.sessionId.reconciliationId()
         if (pendingNativeExpiry != null && pendingNativeExpiry != tag) {
@@ -521,16 +518,10 @@ internal class SessionTransitionOwner(
             mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
         } else if (held) {
             adoptHeld(tag, enforcement.adoptSession(record, frozen, composition.targetsFor(record, loadTargets)))
-        } else if (enforcement.reapplyRequiresPrompt) {
-            actionTag = tag
-            mutableView.update { view ->
-                view.copy(
-                    state = EnforcementActionKind.RESUME_REQUIRED.toAction(true),
-                    enforced = frozen?.toEnforcedSet() ?: view.enforced,
-                )
-            }
+        } else if (enforcement.reapplyRequiresPrompt && !automatic) {
+            askOrRecover(record, tag, frozen, EnforcementActionKind.RESUME_REQUIRED.toAction(true))
         } else {
-            reapplyCurrent(record, tag, frozen)
+            reapplyCurrent(record, tag, frozen, grantOnly = automatic)
         }
     }
 
@@ -555,11 +546,22 @@ internal class SessionTransitionOwner(
         mutableView.update { it.copy(state = EnforcementState.Active(false), enforced = displayed) }
     }
 
+    private fun askOrRecover(
+        record: SessionRecord,
+        tag: SessionTag,
+        frozen: FrozenStartSet?,
+        notice: EnforcementState.ActionRequired,
+    ) {
+        actionTag = tag
+        recovery.askOrRecover(tag, notice, frozen?.toEnforcedSet()) { reconcile(tag, record, frozen, automatic = true) }
+    }
+
     private suspend fun reapplyCurrent(
         record: SessionRecord,
         tag: SessionTag,
         frozen: FrozenStartSet?,
         clearFirst: Boolean = true,
+        grantOnly: Boolean = false,
     ) {
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
@@ -571,7 +573,7 @@ internal class SessionTransitionOwner(
                 null
             } else {
                 confirmedClear = false
-                enforcement.apply(record.toEnforcementRequest(requested, targets)).also {
+                enforcement.apply(record.toEnforcementRequest(requested, targets).let { if (grantOnly) it.withGrantOnly() else it }).also {
                     recordApply(tag, it, frozen?.toEnforcedSet() ?: requested)
                 }
             }
@@ -652,7 +654,8 @@ internal class SessionTransitionOwner(
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
-            mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+            if (enforcement.reapplyRequiresPrompt) askOrRecover(record, tag, frozenStartSet, EnforcementActionKind.APPLY_FAILED.toAction(true))
+            if (!enforcement.reapplyRequiresPrompt) mutableView.update { it.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(false)) }
             return
         }
         if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
@@ -696,7 +699,7 @@ internal class SessionTransitionOwner(
     ) {
         try {
             if (enforcement.reapplyRequiresPrompt) {
-                mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+                askOrRecover(record, tag, frozenStartSet, EnforcementActionKind.APPLY_FAILED.toAction(true))
             } else {
                 reapplyCurrent(record, tag, frozenStartSet)
             }

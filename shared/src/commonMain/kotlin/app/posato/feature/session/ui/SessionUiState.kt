@@ -51,6 +51,7 @@ internal data class SessionUiState(
     val enforcement: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
+    val enforcementRecovering: Boolean = false,
     val setId: PauseSetId? = null,
     val setName: String? = null,
     val pauseSets: PersistentList<PauseSetRow> = persistentListOf(),
@@ -64,6 +65,8 @@ internal data class EnforcementViewState(
     val state: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val busy: Boolean = false,
+    /** The Mac is applying a running pause again by itself; Session shows a quiet caption, not the notice. */
+    val recovering: Boolean = false,
 ) {
     override fun toString(): String {
         return "EnforcementViewState(redacted)"
@@ -191,6 +194,7 @@ internal fun createSessionUiState(
         enforcement = enforcementView.state,
         enforced = enforcementView.enforced,
         enforcementBusy = enforcementView.busy,
+        enforcementRecovering = enforcementView.recovering,
         setId = targets.partSet(active),
         setName = targets.nameOf(targets.partSet(active)),
         pauseSets = targets.sets.choices(targets.applicationCounts),

@@ -53,6 +53,11 @@ internal fun presenceMenuOf(
             PresenceMenu(PresenceState.NO_SESSION, PresenceAction.START_SESSION, null)
         }
 
+        // Posato is applying the pause again by itself; there is nothing for the person to press yet.
+        view.recovering && enforcement is EnforcementState.ActionRequired -> {
+            PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.OPEN_POSATO, end)
+        }
+
         enforcement.isResumable() -> {
             PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.RESUME_RESTRICTIONS, end)
         }

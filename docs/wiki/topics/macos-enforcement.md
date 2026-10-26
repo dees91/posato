@@ -1023,6 +1023,24 @@ measurement, not an interface reproduction, is the reason for the longer
 signing limit. A helper moved out of the bundle or with a broken signature
 still reads as unavailable.
 
+## Applying again by itself (`MACOS-029`)
+
+`user-confirmed` (2026-10-26, ADR 0004 amendment): with the standing grant
+on and automatic starts agreed, the Mac applies a running pause again by
+itself where it used to ask (received or found at launch, a lost helper, a
+failed reconcile), under the scheduled-start conditions. `agent-delegated`
+(execution record): it asks the scheduled-start gate, sends only grant-only
+requests, and caps one pause at three recoveries in ten minutes. `observed`
+in Tart: a killed helper was replaced and applied within
+one 15 s poll; a pause found after a relaunch, and one started on the test
+iPhone, showed **Restrictions active** without Resume restrictions. With the
+network off every attempt fails and the notice returns after about 45 s;
+with the switch off it appears at once. One pause gets at most three
+recoveries in ten minutes per app run. Turning the switch off withdraws the
+automatic-start consent (an existing rule), so recovery stays off until the
+person agrees again. A Tart guest cannot sleep, so the wake path is covered
+by the same poll.
+
 ## A busy Mac and the lease (`MACOS-031`)
 
 `observed` (2026-10-25, the maintainer's Mac on 1.5.1): while code signing and
