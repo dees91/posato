@@ -203,6 +203,37 @@ also drives a notarized release in `/Applications`. Copy `evidence/run.md`
 into the host run directory. On 1.5.0 it fails at the 253rd Status (the
 257th operation); a passing run ends with `passed` and the proxy cleared.
 
+## Daemon stall (desktop, `MACOS-031`)
+
+On a busy Mac the proxy daemon can answer seconds late. The helper must keep
+a pause's restrictions through that, and the daemon must not exit while a new
+helper connects. `MacOsHelperDaemonStallHarnessTest` proves the first in
+about 50 s against the real helper. Prepare the guest as for the operation
+bound above (onboarded, standing grant on, Posato quit, jar and signed
+parent pushed), then start the harness in the background and stall the
+daemon twice from the host; one 8 s stall misses a 5 s renewal period when it
+starts late in it, and two 4.5 s apart cover every phase:
+
+```shell
+$PC vm exec --line primary --script 'cd ~/helper-harness && rm -rf evidence && mkdir -p evidence && \
+  POSATO_HELPER_STALL_VM=1 POSATO_HELPER_PATH="<Posato.app>/Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper" \
+  POSATO_HELPER_PARENT=$HOME/helper-harness/helper-parent POSATO_HELPER_EVIDENCE=$HOME/helper-harness/evidence \
+  nohup "/Volumes/My Shared Files/jdk/Contents/Home/bin/java" -cp posato-helper-harness.jar \
+  org.junit.runner.JUnitCore app.posato.desktop.macos.MacOsHelperDaemonStallHarnessTest > evidence/junit.txt 2>&1 &'
+# wait until evidence/run.md says "applied"
+$PC vm stall --line primary --process daemon --seconds 8; sleep 4.5
+$PC vm stall --line primary --process daemon --seconds 8
+$PC vm exec --line primary --script 'touch ~/helper-harness/evidence/stall-done'
+# about 30 s later: cat evidence/run.md evidence/junit.txt
+```
+
+Before the fix the first stall ends the helper, the daemon restores the
+proxy and exits, so the second `vm stall` finds no daemon and the harness
+reads `phase=Idle`; a passing run ends with `passed`. In the application, a
+pause stalled the same way keeps **Restrictions active** and `observe
+--expect blocked`; a stall longer than the 15 s lease (`--seconds 25`) shows
+"Restrictions need attention" with the proxy off.
+
 ## Menu bar presence (desktop, `MACOS-013`)
 
 Posato for Mac stays resident after its window closes (ADR 0009). With the

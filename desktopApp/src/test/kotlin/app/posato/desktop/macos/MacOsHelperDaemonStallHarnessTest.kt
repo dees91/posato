@@ -5,6 +5,7 @@ import app.posato.desktop.macos.HelperHarnessGuest.proxyEnabled
 import app.posato.desktop.macos.HelperHarnessGuest.record
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -19,9 +20,10 @@ import kotlin.test.assertTrue
  * On a busy Mac the daemon answered one request in 5.4 s, longer than the helper's 5 s renewal
  * deadline, and the helper ended itself, so the daemon restored the proxy in the middle of a pause.
  * After applying, the harness writes `applied` and waits for a `stall-done` file in its evidence
- * directory, which the host writes after `posato-control vm stall --process daemon` has stopped and
- * resumed the daemon. The same helper must then still hold the restrictions past the daemon's
- * lease, and clear them.
+ * directory. The host writes it after two `posato-control vm stall --process daemon --seconds 8`
+ * runs 4.5 s apart: one 8 s stall misses a 5 s renewal period when it starts after the renewal's
+ * first 3 s, and two cover every phase. The same helper must then still hold the restrictions past
+ * the daemon's lease, change them, and clear them.
  */
 class MacOsHelperDaemonStallHarnessTest {
     @Test
@@ -47,6 +49,7 @@ class MacOsHelperDaemonStallHarnessTest {
                 assertTrue(proxyEnabled(), "Proxy settings were not applied")
                 record(log, "applied")
                 awaitStall(stallDone, log)
+                assertTrue(daemonRunning(), "The daemon is still stopped after the stall")
                 repeat(POLLS_AFTER_STALL) { index ->
                     val status = client.status()
                     record(log, "status $index ${status.categories()} proxy=${proxyEnabled()}")
@@ -55,6 +58,11 @@ class MacOsHelperDaemonStallHarnessTest {
                     assertTrue(proxyEnabled(), "Proxy settings were restored $index polls after the stall")
                     Thread.sleep(POLL_MILLISECONDS)
                 }
+                assertEquals(HelperResult.Outcome.Success, enforcer.clear().outcome, "Restrictions did not clear for the change")
+                val changed = enforcer.start(CHANGED_DOMAINS, System.currentTimeMillis() + SESSION_MILLISECONDS, grantOnly = true)
+                record(log, "changed $changed")
+                assertIs<BrowserDomainEnforcementResult.Active>(changed, "Changed restrictions did not apply")
+                assertTrue(proxyEnabled(), "Proxy settings were not applied after the change")
                 val cleared = enforcer.clear()
                 record(log, "cleared ${cleared.categories()}")
                 assertEquals(HelperResult.Outcome.Success, cleared.outcome, "Restrictions did not clear")
@@ -78,6 +86,16 @@ class MacOsHelperDaemonStallHarnessTest {
         record(log, "stall done")
     }
 
+    /** A process stopped by SIGSTOP shows `T` in its state. */
+    private fun daemonRunning(): Boolean {
+        val process = ProcessBuilder("/bin/sh", "-c", "ps -o stat= -p \"$(pgrep -x PosatoProxySettingsDaemon)\"")
+            .redirectErrorStream(true)
+            .start()
+        val state = process.inputStream.readAllBytes().decodeToString().trim()
+        check(process.waitFor(TOOL_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "ps timed out" }
+        return state.isNotEmpty() && 'T' !in state
+    }
+
     private companion object {
         const val GATE = "POSATO_HELPER_STALL_VM"
         const val HELPER_ENV = "POSATO_HELPER_PATH"
@@ -86,6 +104,8 @@ class MacOsHelperDaemonStallHarnessTest {
         const val DEFAULT_EVIDENCE = "build/verification/helper-stall"
         const val STALL_DONE = "stall-done"
         const val DOMAIN = "example.com"
+        val CHANGED_DOMAINS = listOf("example.com", "example.org")
+        const val TOOL_TIMEOUT_SECONDS = 10L
         const val SESSION_MILLISECONDS = 30 * 60 * 1_000L
         const val STALL_WAIT_MILLISECONDS = 120_000L
         const val WAIT_STEP_MILLISECONDS = 200L

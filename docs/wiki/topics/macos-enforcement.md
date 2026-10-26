@@ -1022,3 +1022,27 @@ Each signing command may take 30 s, the whole check 45 s. The 6.9 s
 measurement, not an interface reproduction, is the reason for the longer
 signing limit. A helper moved out of the bundle or with a broken signature
 still reads as unavailable.
+
+## A busy Mac and the lease (`MACOS-031`)
+
+`observed` (2026-10-25, the maintainer's Mac on 1.5.1): while code signing and
+Swift tests loaded the Mac, the daemon answered one Status in 5.4 s. The
+helper renewed every 5 s with a 5 s deadline and ended itself on the first
+timeout, although the daemon's lease runs 15 s from the last renewal. The
+daemon restored the proxy for the lost owner; idle checks that fell due
+behind that slow restore ran right after it, and the daemon exited while a
+new helper's connection was still on its way, so that helper ended too.
+Session showed "Restrictions need attention" with no website blocked.
+
+`observed` in Tart: stopping the daemon with SIGSTOP for 8 s twice, 4.5 s
+apart (`posato-control vm stall`), reproduces it in seconds; on 1.5.1 code
+the helper ends after the first stall and the daemon exits. The fix
+(`user-confirmed` ADR 0004 amendment): a renewal that only times out is
+retried on the next period until no renewal has succeeded for 15 s; an idle
+check that runs well after it fell due waits its delay again; after a
+restore the daemon starts itself (lost owner, lease expiry, power
+transition) it waits 10 s, as after its start, while a Restore the helper
+sends keeps the short exit for updates. A stall longer than the lease still
+ends the pause with the notice and the proxy off. Left risk: a launchd start
+that takes minutes on a saturated disk still fails a request; `MACOS-029`
+applies again by itself after such a loss.

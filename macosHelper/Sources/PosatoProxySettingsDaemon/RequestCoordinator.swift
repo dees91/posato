@@ -97,6 +97,7 @@ final class RequestCoordinator: @unchecked Sendable {
   private var powerMonitor: SystemPowerMonitor?
   private let idleExit: DaemonIdleExit
   private let terminate: @Sendable () -> Void
+  private static let lateIdleCheck: DispatchTimeInterval = .milliseconds(250)
 
   init(
     persistence: OwnershipPersistence = DurableOwnershipStore(),
@@ -155,7 +156,7 @@ final class RequestCoordinator: @unchecked Sendable {
     connections.close()
     queue.async {
       if state.shouldRestoreOnInvalidation() {
-        self.recordCleanupAttempt(try? self.engine.restore())
+        self.recordCleanupAttempt(try? self.engine.restore(), restoredByDaemon: true)
       } else {
         self.scheduleIdleExit()
       }
@@ -184,7 +185,7 @@ final class RequestCoordinator: @unchecked Sendable {
   private func scheduleLeaseCheck() {
     queue.asyncAfter(deadline: .now() + .seconds(1)) {
       if let deadline = self.leaseDeadline, DispatchTime.now() >= deadline {
-        self.recordCleanupAttempt(try? self.engine.restore())
+        self.recordCleanupAttempt(try? self.engine.restore(), restoredByDaemon: true)
       } else if self.leaseDeadline != nil {
         let phase = try? self.engine.maintain()
         if WireLifecyclePolicy.cleanupCompleted(phase) {
@@ -198,18 +199,31 @@ final class RequestCoordinator: @unchecked Sendable {
     }
   }
 
-  private func recordCleanupAttempt(_ phase: OwnershipPhase?) {
+  /// A restore the daemon starts itself, for a lost owner, an expired lease, or a power transition,
+  /// usually precedes a new helper that connects to apply again, so the daemon then waits as long as
+  /// after its start. A Restore a helper sends keeps the short wait, so an update does not reach the
+  /// old daemon.
+  private func recordCleanupAttempt(_ phase: OwnershipPhase?, restoredByDaemon: Bool = false) {
     leaseDeadline = WireLifecyclePolicy.cleanupCompleted(phase) ? nil : .now()
-    scheduleIdleExit()
+    scheduleIdleExit(afterDaemonRestore: restoredByDaemon)
   }
 
   private func restoreForPowerTransition() {
-    recordCleanupAttempt(try? engine.restore())
+    recordCleanupAttempt(try? engine.restore(), restoredByDaemon: true)
   }
 
-  func scheduleIdleExit() {
-    let delay = connections.anyOpened ? idleExit.afterDisconnect : idleExit.startupGrace
-    queue.asyncAfter(deadline: .now() + delay) {
+  func scheduleIdleExit(afterDaemonRestore: Bool = false) {
+    let delay =
+      connections.anyOpened && !afterDaemonRestore
+      ? idleExit.afterDisconnect : idleExit.startupGrace
+    let due = DispatchTime.now() + delay
+    queue.asyncAfter(deadline: due) {
+      // A check that runs well after it fell due waited behind busy work, such as a slow restore, and
+      // a helper's connection may still be on its way to the listener, so it waits its delay again.
+      if DispatchTime.now() > due + Self.lateIdleCheck {
+        self.scheduleIdleExit(afterDaemonRestore: afterDaemonRestore)
+        return
+      }
       let graceEnd = self.startedAt + self.idleExit.startupGrace
       let pastStartupGrace = self.connections.anyOpened || DispatchTime.now() >= graceEnd
       // The connection count is read last, after the ownership file, so a connection accepted
