@@ -111,6 +111,28 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
   #expect(!exited)
 }
 
+// A late check waits again only once, so neither busy work nor timer slack keeps an idle daemon
+// running, and an update relaunch reaches the new daemon.
+@Test func givenALateIdleCheckWhenNothingConnectsThenTheDaemonStillExits() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(500)),
+    terminate: recorder.record
+  )
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: ConnectionState())
+
+  let busy = DispatchSemaphore(value: 0)
+  coordinator.queue.async { busy.wait() }
+  try await Task.sleep(for: .milliseconds(1_500))
+  busy.signal()
+  let exited = try await eventually(within: 3) { recorder.exits > 0 }
+
+  #expect(exited)
+}
+
 // A helper that loses the connection owning an applied mutation is replaced by a new one, whose
 // connection passes its code-signing check before it is counted; under load that took more than a
 // second (MACOS-027). After restoring for a lost owner the daemon waits as long as after its start.

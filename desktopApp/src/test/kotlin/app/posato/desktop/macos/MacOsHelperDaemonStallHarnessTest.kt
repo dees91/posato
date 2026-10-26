@@ -49,7 +49,7 @@ class MacOsHelperDaemonStallHarnessTest {
                 assertTrue(proxyEnabled(), "Proxy settings were not applied")
                 record(log, "applied")
                 awaitStall(stallDone, log)
-                assertTrue(daemonRunning(), "The daemon is still stopped after the stall")
+                assertTrue(daemonRunning(), "The daemon is not running, or still stopped, after the stall")
                 repeat(POLLS_AFTER_STALL) { index ->
                     val status = client.status()
                     record(log, "status $index ${status.categories()} proxy=${proxyEnabled()}")
@@ -88,7 +88,7 @@ class MacOsHelperDaemonStallHarnessTest {
 
     /** A process stopped by SIGSTOP shows `T` in its state. */
     private fun daemonRunning(): Boolean {
-        val process = ProcessBuilder("/bin/sh", "-c", "ps -o stat= -p \"$(pgrep -x PosatoProxySettingsDaemon)\"")
+        val process = ProcessBuilder("/bin/sh", "-c", "pid=$(pgrep -x PosatoProxySettingsDaemon) && ps -o stat= -p \"${'$'}pid\"")
             .redirectErrorStream(true)
             .start()
         val state = process.inputStream.readAllBytes().decodeToString().trim()

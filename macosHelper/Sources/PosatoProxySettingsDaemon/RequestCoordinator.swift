@@ -97,7 +97,21 @@ final class RequestCoordinator: @unchecked Sendable {
   private var powerMonitor: SystemPowerMonitor?
   private let idleExit: DaemonIdleExit
   private let terminate: @Sendable () -> Void
-  private static let lateIdleCheck: DispatchTimeInterval = .milliseconds(250)
+
+  /// libdispatch may fire a timer up to about a tenth of its delay late; more than that, plus a margin,
+  /// means the daemon's queue was busy.
+  private static func timerSlack(for delay: DispatchTimeInterval) -> DispatchTimeInterval {
+    let milliseconds: Int
+    switch delay {
+    case .seconds(let value): milliseconds = value * 1_000
+    case .milliseconds(let value): milliseconds = value
+    case .microseconds(let value): milliseconds = value / 1_000
+    case .nanoseconds(let value): milliseconds = value / 1_000_000
+    case .never: milliseconds = 0
+    @unknown default: milliseconds = 0
+    }
+    return .milliseconds(milliseconds / 10 + 250)
+  }
 
   init(
     persistence: OwnershipPersistence = DurableOwnershipStore(),
@@ -212,16 +226,18 @@ final class RequestCoordinator: @unchecked Sendable {
     recordCleanupAttempt(try? engine.restore(), restoredByDaemon: true)
   }
 
-  func scheduleIdleExit(afterDaemonRestore: Bool = false) {
+  func scheduleIdleExit(afterDaemonRestore: Bool = false, rearmed: Bool = false) {
     let delay =
       connections.anyOpened && !afterDaemonRestore
       ? idleExit.afterDisconnect : idleExit.startupGrace
     let due = DispatchTime.now() + delay
+    let late = due + Self.timerSlack(for: delay)
     queue.asyncAfter(deadline: due) {
       // A check that runs well after it fell due waited behind busy work, such as a slow restore, and
-      // a helper's connection may still be on its way to the listener, so it waits its delay again.
-      if DispatchTime.now() > due + Self.lateIdleCheck {
-        self.scheduleIdleExit(afterDaemonRestore: afterDaemonRestore)
+      // a helper's connection may still be on its way to the listener, so it waits its delay again,
+      // once: timer slack alone must never keep the daemon running.
+      if !rearmed, DispatchTime.now() > late {
+        self.scheduleIdleExit(afterDaemonRestore: afterDaemonRestore, rearmed: true)
         return
       }
       let graceEnd = self.startedAt + self.idleExit.startupGrace

@@ -3183,3 +3183,12 @@ first removal attempt that does not finish, not to a paused keychain.
   website, and a decision on a calm history of pauses.
 - Idea 56: setup wording names the Mac on Linux, Android, and Windows; owner
   `ONBOARDING-005` in the same release.
+
+## [2026-10-26] fix | A busy Mac keeps a pause's restrictions (`MACOS-031`)
+
+- `observed` in Tart: two 8 s daemon stalls ended the helper and the pause
+  on 1.5.1 code; with the fix the same helper holds them past the lease.
+- `user-confirmed` ADR 0004 amendment: a renewal that only times out is
+  retried until no renewal has succeeded for the 15 s lease. The daemon's
+  idle exit waits again once after a late check and 10 s after a restore it
+  starts itself.

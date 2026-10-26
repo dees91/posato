@@ -1,12 +1,12 @@
 # Execution: `MACOS-031`
 
 - **Brief:** [A pause keeps its restrictions when the Mac is busy for a few seconds](../specifications/macos-031-helper-resilience.md)
-- **Status:** `planned`: brief only; implementation waits for the maintainer
+- **Status:** `done`: fixed and verified in Tart; reviews resolved
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agents (plan review, completed-change review)
 - **Branch:** `macos-031-helper-resilience`
-- **Updated:** 2026-10-25
+- **Updated:** 2026-10-26
 
 ## Cause
 
@@ -91,3 +91,41 @@ only) and in the code:
   cleanup path cancels the renewer explicitly. Session shows the existing
   notice once the helper ends; while the daemon stays frozen past its
   lease nothing can restore, which is a known limit.
+
+## Result
+
+- As planned. The renewal moved into `LeaseRenewal.swift` to keep
+  `HelperTransport.swift` within SwiftLint's 400 lines; the lease length is
+  `WireLimits.leaseMilliseconds`, shared by the daemon and the helper.
+- A late idle check waits again once, when it ran more than a tenth of its
+  delay plus 250 ms late; timer slack alone can therefore delay an exit by at
+  most one more period.
+- Not taken (Optional R11): `main.swift` is at SwiftLint's 400 lines, so the
+  cleanup path still drops the renewer without `cancelAndWait()`; a renewal
+  that times out there no longer ends anything that matters.
+- Known effects: while the daemon is stalled, each renewal holds the gate for
+  up to 5 s, so a Clear or Restore can wait that long before it runs, for up
+  to 15 s in total. A stall longer than the lease still ends the pause with
+  "Restrictions need attention" and the proxy off.
+
+## Completed-change review
+
+- **Verdict:** changes-required, resolved.
+- **Required finding:** (R1) the late-check re-arm fired on ordinary timer
+  slack (libdispatch may fire about 10 % late; a `Background` daemon
+  coalesces more), so an idle daemon could keep running and an update could
+  reach the old one. Fixed with the slack-relative threshold and a single
+  re-arm, and a test that an idle daemon still exits after a late check.
+- **Advisory findings taken:** the record closeout, the known 5 s gate
+  effect above, and a clearer harness message when no daemon runs.
+
+## Verification
+
+| Check run | Result | Evidence |
+| --- | --- | --- |
+| `AC-01` harness on the package before the fix (`ffc0c1a1`, helper and daemon as on `main`), two 8 s stalls | fail as expected after the first stall: the second `vm stall` found no daemon, Status read `phase=Idle`, `proxy=false` | `build/verification/macos-031/before/harness.json` |
+| `AC-01` harness on the final package | pass: ten Status `Applied` with the proxy on past the lease, change, clear; the daemon exited afterwards | `build/verification/macos-031/after/harness-final.json` |
+| `AC-02` `DaemonIdleExitTests` | the two race cases failed on `main`, then all seven pass | `swift test --filter DaemonIdleExitTests` |
+| `AC-03` application, pause with two 8 s daemon stalls | **Restrictions active**, `observe --expect blocked` passes | `build/verification/runs/20261026-070031-1d52`, `20261026-070035-8c88` |
+| `AC-03` application, 25 s daemon stall | "Restrictions need attention", proxy off | `build/verification/runs/20261026-070142-d3cb` |
+| `./gradlew quality` on the final tip | pass | `build/verification/macos-031/quality.log` |
