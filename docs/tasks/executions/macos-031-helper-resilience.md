@@ -125,7 +125,8 @@ only) and in the code:
 | --- | --- | --- |
 | `AC-01` harness on the package before the fix (`ffc0c1a1`, helper and daemon as on `main`), two 8 s stalls | fail as expected after the first stall: the second `vm stall` found no daemon, Status read `phase=Idle`, `proxy=false` | `build/verification/macos-031/before/harness.json` |
 | `AC-01` harness on the final package | pass: ten Status `Applied` with the proxy on past the lease, change, clear; the daemon exited afterwards | `build/verification/macos-031/after/harness-final.json` |
-| `AC-02` `DaemonIdleExitTests` | the two race cases failed on `main`, then all seven pass | `swift test --filter DaemonIdleExitTests` |
+| `AC-02` `DaemonIdleExitTests` | the two race cases failed on `main`, then all seven pass; the two-connection lost-owner case (both close orders) failed before the shared restore wait, then all nine pass | `swift test --filter DaemonIdleExitTests` |
 | `AC-03` application, pause with two 8 s daemon stalls | **Restrictions active**, `observe --expect blocked` passes | `build/verification/runs/20261026-070031-1d52`, `20261026-070035-8c88` |
+| Shared restore wait, application: helper killed during a pause, then Retry, then an 8 s daemon stall | **Restrictions active**, `observe --expect blocked` passes after the Retry and after the stall | `build/verification/runs/20261026-072824-7a57`, `20261026-072841-7361`, `20261026-072844-de4e` |
 | `AC-03` application, 25 s daemon stall | "Restrictions need attention", proxy off | `build/verification/runs/20261026-070142-d3cb` |
 | `./gradlew quality` on the final tip | pass | `build/verification/macos-031/quality.log` |

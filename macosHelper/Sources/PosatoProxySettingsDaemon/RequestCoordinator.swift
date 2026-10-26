@@ -94,6 +94,9 @@ final class RequestCoordinator: @unchecked Sendable {
   var leaseDeadline: DispatchTime?
   private let connections = OpenConnections()
   private let startedAt = DispatchTime.now()
+  /// The end of the latest daemon restore's wait, which no idle check, also a shorter one already
+  /// pending for another connection, may cut short.
+  private var restoreGraceEnd: DispatchTime?
   private var powerMonitor: SystemPowerMonitor?
   private let idleExit: DaemonIdleExit
   private let terminate: @Sendable () -> Void
@@ -231,6 +234,9 @@ final class RequestCoordinator: @unchecked Sendable {
       connections.anyOpened && !afterDaemonRestore
       ? idleExit.afterDisconnect : idleExit.startupGrace
     let due = DispatchTime.now() + delay
+    if afterDaemonRestore && !rearmed {
+      restoreGraceEnd = max(restoreGraceEnd ?? due, due)
+    }
     let late = due + Self.timerSlack(for: delay)
     queue.asyncAfter(deadline: due) {
       // A check that runs well after it fell due waited behind busy work, such as a slow restore, and
@@ -238,6 +244,10 @@ final class RequestCoordinator: @unchecked Sendable {
       // once: timer slack alone must never keep the daemon running.
       if !rearmed, DispatchTime.now() > late {
         self.scheduleIdleExit(afterDaemonRestore: afterDaemonRestore, rearmed: true)
+        return
+      }
+      // The restore's own check, due at that end, decides then.
+      if let restoreGraceEnd = self.restoreGraceEnd, DispatchTime.now() < restoreGraceEnd {
         return
       }
       let graceEnd = self.startedAt + self.idleExit.startupGrace

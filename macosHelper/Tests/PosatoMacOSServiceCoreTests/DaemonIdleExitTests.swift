@@ -156,6 +156,37 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
   #expect(!exited)
 }
 
+// The helper also holds a renewal connection that owns nothing. Its own short check, scheduled
+// before or after the lost owner's restore, must not end the daemon within the restore's wait.
+@Test(arguments: [true, false])
+func givenALostOwnerAndARenewalConnectionWhenBothCloseThenTheDaemonStays(
+  ownerClosesFirst: Bool
+) async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(100)),
+    terminate: recorder.record
+  )
+  let owner = try applyingOwner()
+  coordinator.connectionOpened()
+  coordinator.connectionOpened()
+  if ownerClosesFirst {
+    coordinator.connectionInvalidated(state: owner)
+    coordinator.connectionInvalidated(state: ConnectionState())
+  } else {
+    coordinator.connectionInvalidated(state: ConnectionState())
+    coordinator.connectionInvalidated(state: owner)
+  }
+
+  try await Task.sleep(for: .milliseconds(1_000))
+  coordinator.connectionOpened()
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
 // A pause that ends, or Posato that quits, sends Restore itself; the connection then owns nothing,
 // and the daemon still exits soon after it, so an update relaunch reaches the new daemon.
 @Test func givenAHelperRestoreWhenItsConnectionClosesThenTheDaemonExitsSoon() async throws {
