@@ -3193,3 +3193,11 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed` in Tart and with the test iPhone: a killed helper, a relaunch,
   and a pause received from the iPhone all ended at **Restrictions active**
   without a press; `SESSION-009`'s stale notice and drain loop are fixed.
+## [2026-10-26] fix | A busy Mac keeps a pause's restrictions (`MACOS-031`)
+
+- `observed` in Tart: two 8 s daemon stalls ended the helper and the pause
+  on 1.5.1 code; with the fix the same helper holds them past the lease.
+- `user-confirmed` ADR 0004 amendment: a renewal that only times out is
+  retried until no renewal has succeeded for the 15 s lease. The daemon's
+  idle exit waits again once after a late check and 10 s after a restore it
+  starts itself.

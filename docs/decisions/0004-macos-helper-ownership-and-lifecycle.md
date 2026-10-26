@@ -27,11 +27,17 @@ without a foreground Apply. The reach is that of a schedule: Posato's own
 proxy, for a pause the person or a linked device started, with End early
 always available.
 
-Implementation detail (`agent-delegated`, narrowing only): the application
-asks the same gate as a scheduled start (`MacScheduleStartGate`), and every
-such request is grant-only, so it never raises the administrator prompt. A
-pause gets at most three such recoveries in ten minutes; then the notice
-stays.
+## MACOS-031 lease renewal amendment
+
+`user-confirmed`: accepted by the maintainer on 2026-10-25 after a busy Mac
+delayed the daemon for 5.4 s and one late renewal ended a pause
+([`MACOS-031` execution record](../tasks/executions/macos-031-helper-resilience.md)).
+A renewal that only times out is retried on the next period, and the helper
+gives up only when no renewal has succeeded for the daemon's 15 s lease; a
+rejected, malformed, or failed renewal still ends it at once. The daemon's
+lease, connection invalidation, and Restore are unchanged. The renewal
+paragraph in the [MACOS-003 implementation amendment](#macos-003-implementation-amendment)
+carries the wording.
 
 ## MACOS-024 loopback proxy exceptions amendment
 
@@ -566,8 +572,12 @@ registration intact. Renewal requires the durable session and request owner.
 Periodic renewal uses a separate authenticated XPC connection that never owns
 cleanup. The helper rotates that connection before its 257th operation while
 keeping the original Apply connection open as the cleanup owner. A rejected,
-malformed, timed-out, or failed renewal still invalidates the ownership
-connection and terminates the helper nonzero.
+malformed, or failed renewal invalidates the ownership connection and
+terminates the helper nonzero. A renewal that only times out is retried on
+the next period; the helper gives up the same way only when no renewal has
+succeeded for the daemon's lease length (15 s). The daemon's lease is
+unchanged, so restrictions still end within the same bound when the helper is
+gone (`MACOS-031`, `user-confirmed` 2026-10-25).
 When the daemon is unavailable, registration or rule absence alone never proves
 cleanup. Apply preflights the exact durable session, request, and canonical
 input digest before authorization so a rejected peer cannot acquire another

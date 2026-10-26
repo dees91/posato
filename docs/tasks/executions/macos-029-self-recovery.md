@@ -140,6 +140,11 @@ active on this Mac." with **Resume restrictions**.
   waiting outside the count; End early does not cancel a waiting recovery,
   whose next attempt finds the pause ended and stops (Retry still cancels
   it).
+- Implementation detail (`agent-delegated`, narrowing the accepted ADR 0004
+  amendment, not part of it): the application asks the same gate as a
+  scheduled start (`MacScheduleStartGate`), and every such request is
+  grant-only, so it never raises the administrator prompt. A pause gets at
+  most three such recoveries in ten minutes; then the notice stays.
 
 ## Verification
 
@@ -175,7 +180,7 @@ was removed cleanly.
   per-pause cap and for Retry cancelling a waiting recovery.
 - **Optional:** the `SESSION-009` branch runs on every host, with no visible
   change outside the Mac (traced by the reviewer); the ADR paragraph beyond
-  the accepted wording is marked `agent-delegated`; `recovering` clears when
+  the accepted wording now lives under Result as `agent-delegated`; `recovering` clears when
   the recovery stops rather than in the update that sets `Active`, which the
   UI tolerates because the caption needs an action state.
 

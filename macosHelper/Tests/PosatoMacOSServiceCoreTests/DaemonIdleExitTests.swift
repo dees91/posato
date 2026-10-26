@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 
+@testable import PosatoMacOSServiceCore
 @testable import PosatoProxySettingsDaemon
 
 private final class ExitRecorder: @unchecked Sendable {
@@ -83,4 +84,148 @@ private func eventually(within seconds: Double, _ condition: () -> Bool) async t
   let exited = try await eventually(within: 1) { recorder.exits > 0 }
 
   #expect(!exited)
+}
+
+// MACOS-031: on a busy Mac a restore held the daemon's queue for more than a second. The idle check
+// that fell due behind it ran the moment the restore ended and ended the daemon, while a new helper's
+// connection was still on its way to the listener; that helper lost its daemon and ended too.
+@Test func givenALateIdleCheckWhenAConnectionFollowsSoonThenTheDaemonStays() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(500)),
+    terminate: recorder.record
+  )
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: ConnectionState())
+
+  let busy = DispatchSemaphore(value: 0)
+  coordinator.queue.async { busy.wait() }
+  try await Task.sleep(for: .milliseconds(1_500))
+  busy.signal()
+  try await Task.sleep(for: .milliseconds(200))
+  coordinator.connectionOpened()
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
+// A late check waits again only once, so neither busy work nor timer slack keeps an idle daemon
+// running, and an update relaunch reaches the new daemon.
+@Test func givenALateIdleCheckWhenNothingConnectsThenTheDaemonStillExits() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(500)),
+    terminate: recorder.record
+  )
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: ConnectionState())
+
+  let busy = DispatchSemaphore(value: 0)
+  coordinator.queue.async { busy.wait() }
+  try await Task.sleep(for: .milliseconds(1_500))
+  busy.signal()
+  let exited = try await eventually(within: 3) { recorder.exits > 0 }
+
+  #expect(exited)
+}
+
+// A helper that loses the connection owning an applied mutation is replaced by a new one, whose
+// connection passes its code-signing check before it is counted; under load that took more than a
+// second (MACOS-027). After restoring for a lost owner the daemon waits as long as after its start.
+@Test func givenALostOwnerRestoreWhenTheNextHelperIsLateThenTheDaemonStays() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(100)),
+    terminate: recorder.record
+  )
+  let owner = try applyingOwner()
+  #expect(owner.shouldRestoreOnInvalidation())
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: owner)
+
+  try await Task.sleep(for: .milliseconds(1_000))
+  coordinator.connectionOpened()
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
+// The helper also holds a renewal connection that owns nothing. Its own short check, scheduled
+// before or after the lost owner's restore, must not end the daemon within the restore's wait.
+@Test(arguments: [true, false])
+func givenALostOwnerAndARenewalConnectionWhenBothCloseThenTheDaemonStays(
+  ownerClosesFirst: Bool
+) async throws {
+  let recorder = ExitRecorder()
+  let coordinator = RequestCoordinator(
+    persistence: MemoryOwnershipPersistence(),
+    configuration: MemoryProxyConfiguration(),
+    idleExit: DaemonIdleExit(startupGrace: .seconds(3), afterDisconnect: .milliseconds(100)),
+    terminate: recorder.record
+  )
+  let owner = try applyingOwner()
+  coordinator.connectionOpened()
+  coordinator.connectionOpened()
+  if ownerClosesFirst {
+    coordinator.connectionInvalidated(state: owner)
+    coordinator.connectionInvalidated(state: ConnectionState())
+  } else {
+    coordinator.connectionInvalidated(state: ConnectionState())
+    coordinator.connectionInvalidated(state: owner)
+  }
+
+  try await Task.sleep(for: .milliseconds(1_000))
+  coordinator.connectionOpened()
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(!exited)
+}
+
+// A pause that ends, or Posato that quits, sends Restore itself; the connection then owns nothing,
+// and the daemon still exits soon after it, so an update relaunch reaches the new daemon.
+@Test func givenAHelperRestoreWhenItsConnectionClosesThenTheDaemonExitsSoon() async throws {
+  let recorder = ExitRecorder()
+  let coordinator = idleCoordinator(recorder)
+  let owner = try applyingOwner()
+  owner.update(
+    request: try wireRequest(.restore),
+    response: WireResponsePayload(outcome: .success, serviceState: .ready, ownershipPhase: .idle),
+    ownershipVerified: true
+  )
+  #expect(!owner.shouldRestoreOnInvalidation())
+  coordinator.connectionOpened()
+  coordinator.connectionInvalidated(state: owner)
+  let exited = try await eventually(within: 1) { recorder.exits > 0 }
+
+  #expect(exited)
+}
+
+private func wireRequest(_ operation: WireOperation) throws -> WireMessage {
+  return try WireMessage(
+    kind: .request,
+    operation: operation,
+    sequence: 1,
+    deadlineMilliseconds: 5_000,
+    connectionIdentifier: Data(repeating: 1, count: WireLimits.identifierBytes),
+    sessionIdentifier: Data(repeating: 2, count: WireLimits.identifierBytes),
+    requestIdentifier: Data(repeating: 3, count: WireLimits.identifierBytes),
+    payload: Data()
+  )
+}
+
+private func applyingOwner() throws -> ConnectionState {
+  let owner = ConnectionState()
+  owner.update(
+    request: try wireRequest(.apply),
+    response: WireResponsePayload(
+      outcome: .success, serviceState: .ready, ownershipPhase: .applied),
+    ownershipVerified: true
+  )
+  return owner
 }

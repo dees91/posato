@@ -174,7 +174,7 @@ extension RequestCoordinator {
       canonicalInputDigest: canonicalInputDigest,
       port: UInt16(port[port.startIndex]) << 8 | UInt16(port[port.startIndex + 1])
     )
-    leaseDeadline = .now() + .seconds(15)
+    leaseDeadline = .now() + .milliseconds(WireLimits.leaseMilliseconds)
     return phase
   }
 
@@ -212,7 +212,7 @@ extension RequestCoordinator {
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier
     )
-    leaseDeadline = phase == .applied ? .now() + .seconds(15) : nil
+    leaseDeadline = phase == .applied ? .now() + .milliseconds(WireLimits.leaseMilliseconds) : nil
     return phase
   }
 

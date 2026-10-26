@@ -7,11 +7,13 @@ import app.posato.control.vm.VmLine
 import app.posato.control.vm.requireGuestRoom
 import app.posato.control.vm.shellQuote
 import app.posato.control.vm.vmAdminPassword
+import com.github.ajalt.clikt.parameters.options.check
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -93,6 +95,49 @@ class VmKillCommand :
     }
 }
 
+/**
+ * Stops a guest process with SIGSTOP and resumes it with SIGCONT, for runs where the helper or the
+ * daemon answers late, as on a busy Mac. The resume runs in the same guest command, after the wait or
+ * when the wait is interrupted.
+ */
+class VmStallCommand :
+    ControlCommand(
+        "stall",
+        "Stop the guest's session helper or proxy-settings daemon for some seconds with SIGSTOP, then resume it, " +
+            "for runs where it answers late.",
+    ) {
+    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val process by option("--process", help = "helper or daemon.").choice("helper", "daemon").required()
+    private val seconds by option("--seconds", help = "How long the process stays stopped, 1 to $MAX_STALL_SECONDS.")
+        .int()
+        .required()
+        .check("must be between 1 and $MAX_STALL_SECONDS") { it in 1..MAX_STALL_SECONDS }
+
+    override fun execute(session: Session): JsonElement {
+        val line = VmLine.parse(lineOption)
+        val name = if (process == "helper") HELPER_PROCESS else DAEMON_PROCESS
+        val script = "trap 'pkill -CONT -x $name' EXIT; pkill -STOP -x $name || exit 3; sleep $seconds"
+        val tart = Tart(session.context)
+        val output = tart.exec(
+            line.cloneName,
+            "sudo -S -p '' sh -c ${shellQuote(script)}",
+            stdin = vmAdminPassword(session.context) + "\n",
+        )
+        if (!output.succeeded) {
+            throw ControlException(
+                ErrorCode.COMMAND_FAILED,
+                "No running $process process was stalled in ${line.cloneName} (exit code ${output.exitCode}).",
+                "Start a session first; the helper and the daemon run only while Posato enforces or reconciles.",
+            )
+        }
+        return buildJsonObject {
+            put("vm", line.cloneName)
+            put("stalled", process)
+            put("seconds", seconds)
+        }
+    }
+}
+
 private fun pushSource(from: String): Path {
     val source = Path.of(from)
     if (!source.isRegularFile() || Files.size(source) > MAX_PUSH_BYTES) {
@@ -112,6 +157,8 @@ private fun guestSegments(to: String): List<String> {
 }
 
 private const val MAX_PUSH_BYTES = 64L * 1024 * 1024
+
+private const val MAX_STALL_SECONDS = 60
 
 private const val HELPER_PROCESS = "PosatoMacOSHelper"
 

@@ -94,9 +94,27 @@ final class RequestCoordinator: @unchecked Sendable {
   var leaseDeadline: DispatchTime?
   private let connections = OpenConnections()
   private let startedAt = DispatchTime.now()
+  /// The end of the latest daemon restore's wait, which no idle check, also a shorter one already
+  /// pending for another connection, may cut short.
+  private var restoreGraceEnd: DispatchTime?
   private var powerMonitor: SystemPowerMonitor?
   private let idleExit: DaemonIdleExit
   private let terminate: @Sendable () -> Void
+
+  /// libdispatch may fire a timer up to about a tenth of its delay late; more than that, plus a margin,
+  /// means the daemon's queue was busy.
+  private static func timerSlack(for delay: DispatchTimeInterval) -> DispatchTimeInterval {
+    let milliseconds: Int
+    switch delay {
+    case .seconds(let value): milliseconds = value * 1_000
+    case .milliseconds(let value): milliseconds = value
+    case .microseconds(let value): milliseconds = value / 1_000
+    case .nanoseconds(let value): milliseconds = value / 1_000_000
+    case .never: milliseconds = 0
+    @unknown default: milliseconds = 0
+    }
+    return .milliseconds(milliseconds / 10 + 250)
+  }
 
   init(
     persistence: OwnershipPersistence = DurableOwnershipStore(),
@@ -155,7 +173,7 @@ final class RequestCoordinator: @unchecked Sendable {
     connections.close()
     queue.async {
       if state.shouldRestoreOnInvalidation() {
-        self.recordCleanupAttempt(try? self.engine.restore())
+        self.recordCleanupAttempt(try? self.engine.restore(), restoredByDaemon: true)
       } else {
         self.scheduleIdleExit()
       }
@@ -184,7 +202,7 @@ final class RequestCoordinator: @unchecked Sendable {
   private func scheduleLeaseCheck() {
     queue.asyncAfter(deadline: .now() + .seconds(1)) {
       if let deadline = self.leaseDeadline, DispatchTime.now() >= deadline {
-        self.recordCleanupAttempt(try? self.engine.restore())
+        self.recordCleanupAttempt(try? self.engine.restore(), restoredByDaemon: true)
       } else if self.leaseDeadline != nil {
         let phase = try? self.engine.maintain()
         if WireLifecyclePolicy.cleanupCompleted(phase) {
@@ -198,18 +216,40 @@ final class RequestCoordinator: @unchecked Sendable {
     }
   }
 
-  private func recordCleanupAttempt(_ phase: OwnershipPhase?) {
+  /// A restore the daemon starts itself, for a lost owner, an expired lease, or a power transition,
+  /// usually precedes a new helper that connects to apply again, so the daemon then waits as long as
+  /// after its start. A Restore a helper sends keeps the short wait, so an update does not reach the
+  /// old daemon.
+  private func recordCleanupAttempt(_ phase: OwnershipPhase?, restoredByDaemon: Bool = false) {
     leaseDeadline = WireLifecyclePolicy.cleanupCompleted(phase) ? nil : .now()
-    scheduleIdleExit()
+    scheduleIdleExit(afterDaemonRestore: restoredByDaemon)
   }
 
   private func restoreForPowerTransition() {
-    recordCleanupAttempt(try? engine.restore())
+    recordCleanupAttempt(try? engine.restore(), restoredByDaemon: true)
   }
 
-  func scheduleIdleExit() {
-    let delay = connections.anyOpened ? idleExit.afterDisconnect : idleExit.startupGrace
-    queue.asyncAfter(deadline: .now() + delay) {
+  func scheduleIdleExit(afterDaemonRestore: Bool = false, rearmed: Bool = false) {
+    let delay =
+      connections.anyOpened && !afterDaemonRestore
+      ? idleExit.afterDisconnect : idleExit.startupGrace
+    let due = DispatchTime.now() + delay
+    if afterDaemonRestore && !rearmed {
+      restoreGraceEnd = max(restoreGraceEnd ?? due, due)
+    }
+    let late = due + Self.timerSlack(for: delay)
+    queue.asyncAfter(deadline: due) {
+      // A check that runs well after it fell due waited behind busy work, such as a slow restore, and
+      // a helper's connection may still be on its way to the listener, so it waits its delay again,
+      // once: timer slack alone must never keep the daemon running.
+      if !rearmed, DispatchTime.now() > late {
+        self.scheduleIdleExit(afterDaemonRestore: afterDaemonRestore, rearmed: true)
+        return
+      }
+      // The restore's own check, due at that end, decides then.
+      if let restoreGraceEnd = self.restoreGraceEnd, DispatchTime.now() < restoreGraceEnd {
+        return
+      }
       let graceEnd = self.startedAt + self.idleExit.startupGrace
       let pastStartupGrace = self.connections.anyOpened || DispatchTime.now() >= graceEnd
       // The connection count is read last, after the ownership file, so a connection accepted

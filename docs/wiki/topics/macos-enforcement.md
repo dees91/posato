@@ -1028,8 +1028,10 @@ still reads as unavailable.
 `user-confirmed` (2026-10-26, ADR 0004 amendment): with the standing grant
 on and automatic starts agreed, the Mac applies a running pause again by
 itself where it used to ask (received or found at launch, a lost helper, a
-failed reconcile), under the scheduled-start gate and only with grant-only
-requests. `observed` in Tart: a killed helper was replaced and applied within
+failed reconcile), under the scheduled-start conditions. `agent-delegated`
+(execution record): it asks the scheduled-start gate, sends only grant-only
+requests, and caps one pause at three recoveries in ten minutes. `observed`
+in Tart: a killed helper was replaced and applied within
 one 15 s poll; a pause found after a relaunch, and one started on the test
 iPhone, showed **Restrictions active** without Resume restrictions. With the
 network off every attempt fails and the notice returns after about 45 s;
@@ -1038,3 +1040,27 @@ recoveries in ten minutes per app run. Turning the switch off withdraws the
 automatic-start consent (an existing rule), so recovery stays off until the
 person agrees again. A Tart guest cannot sleep, so the wake path is covered
 by the same poll.
+
+## A busy Mac and the lease (`MACOS-031`)
+
+`observed` (2026-10-25, the maintainer's Mac on 1.5.1): while code signing and
+Swift tests loaded the Mac, the daemon answered one Status in 5.4 s. The
+helper renewed every 5 s with a 5 s deadline and ended itself on the first
+timeout, although the daemon's lease runs 15 s from the last renewal. The
+daemon restored the proxy for the lost owner; idle checks that fell due
+behind that slow restore ran right after it, and the daemon exited while a
+new helper's connection was still on its way, so that helper ended too.
+Session showed "Restrictions need attention" with no website blocked.
+
+`observed` in Tart: stopping the daemon with SIGSTOP for 8 s twice, 4.5 s
+apart (`posato-control vm stall`), reproduces it in seconds; on 1.5.1 code
+the helper ends after the first stall and the daemon exits. The fix
+(`user-confirmed` ADR 0004 amendment): a renewal that only times out is
+retried on the next period until no renewal has succeeded for 15 s; an idle
+check that runs well after it fell due waits its delay again; after a
+restore the daemon starts itself (lost owner, lease expiry, power
+transition) it waits 10 s, as after its start, while a Restore the helper
+sends keeps the short exit for updates. A stall longer than the lease still
+ends the pause with the notice and the proxy off. Left risk: a launchd start
+that takes minutes on a saturated disk still fails a request; `MACOS-029`
+applies again by itself after such a loss.
