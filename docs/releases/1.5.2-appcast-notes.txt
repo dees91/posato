@@ -1,0 +1,7 @@
+Posato 1.5.2
+
+When the Mac was busy for a few seconds, a pause could lose its restrictions and show "Restrictions need attention". Posato now keeps them through such a moment.
+
+When Posato is set up to start pauses on its own (Open Posato at login and Start sessions without the password on), it applies a running pause again by itself after losing its background helper, after it opens again, and when a pause arrives from your other devices. It asks you only when it cannot.
+
+During a pause, Posato does not install the update; install it after the pause ends.
