@@ -61,3 +61,33 @@ only) and in the code:
   succeeded for the daemon's lease length (15 s). The daemon's lease is
   unchanged, so restrictions still end within the same bound when the
   helper is gone."
+
+## High-risk plan review
+
+- **Verdict:** changes-required, resolved before implementation; no
+  further ADR change.
+- **Required findings and resolutions:**
+  - (R1) One 8 s stall breaks a 5 s renewal period only when a renewal is
+    sent in its first 3 s. The host now stalls the daemon twice for 8 s,
+    4.5 s apart, which covers every timer phase; with the fix the daemon's
+    lease check never sees more than 13 s without a renewal.
+  - (R2) The daemon fix is a re-armed check: an idle check that runs well
+    after it fell due, because the queue was busy, waits its delay again
+    instead of exiting, which is what the busy-queue test exercises.
+  - (R3) A deadline that expires becomes its own `PipeFailure.timedOut`;
+    an interrupted or invalid connection keeps ending the helper at once.
+  - (R4) The 10 s wait applies only to restores the daemon starts itself
+    (lost owner, lease expiry, power transition). A Restore the helper
+    sends when a pause ends or Posato quits keeps the short exit, so an
+    update never reaches the old daemon.
+  - (R5) Left risk, recorded: a plain disconnect still allows an exit after
+    about 1 s, and a launchd start can take minutes on a saturated disk; a
+    Status that meets it fails as before. `MACOS-029` makes the
+    application apply again by itself after such a loss.
+- **Recommended, taken:** the give-up window counts from the send time of
+  the last successful renewal, from one shared lease constant; one renewal
+  per timer tick, never a loop under the gate; the harness also changes the
+  domain list after the stalls and checks that the daemon runs again; the
+  cleanup path cancels the renewer explicitly. Session shows the existing
+  notice once the helper ends; while the daemon stays frozen past its
+  lease nothing can restore, which is a known limit.
