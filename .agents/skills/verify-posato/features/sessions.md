@@ -4,8 +4,9 @@ Session provides a bounded timer from five minutes to 24 hours, backed by
 persisted session state. Linked Apple devices exchange session intent through
 the [sync flow](sync.md); each applies its own authorized local selections.
 The frozen summary describes the start; reapplication uses the current local
-policy. A received timer alone is not enforcement proof: Mac adoption
-can require Resume restrictions and an attended administrator confirmation.
+policy. A received timer alone is not enforcement proof: without the
+standing grant and automatic starts, Mac adoption requires Resume
+restrictions and an administrator confirmation (`MACOS-029`).
 
 ## Sub-features
 
@@ -203,6 +204,29 @@ also drives a notarized release in `/Applications`. Copy `evidence/run.md`
 into the host run directory. On 1.5.0 it fails at the 253rd Status (the
 257th operation); a passing run ends with `passed` and the proxy cleared.
 
+## Applying again by itself (desktop, `MACOS-029`)
+
+With **Start sessions without the password** on and automatic starts agreed
+(a fresh `vm onboard` does both), a running pause whose restrictions are lost
+applies again by itself under the scheduled-start gate:
+
+- `vm kill --process helper` during a pause: within about one poll (15 s) a
+  new helper applies, Session keeps or returns to **Restrictions active**,
+  and `observe --expect blocked` passes; "Applying restrictions again…" may
+  show for a second or two.
+- Ending Posato (`vm exec --script 'pkill -x Posato'`) and `launch` again:
+  the pause found at launch applies by itself.
+- `vm network --state off` during a pause makes every attempt fail: the
+  caption shows for about 45 s, then "Restrictions need attention" with
+  **Retry**. Turn the network on afterwards.
+- With the switch off, the notice appears at once and **Retry** asks for the
+  administrator; turning the switch off also withdraws the automatic-start
+  consent, so a later run needs a fresh clone.
+- One pause gets at most three recoveries in ten minutes in one app run; a
+  fourth loss shows the notice at once. Start a new pause between checks.
+- A Tart guest cannot sleep (`pmset sleepnow` returns `0xe00002e2`); a wake
+  reaches the same recovery through the poll.
+
 ## Menu bar presence (desktop, `MACOS-013`)
 
 Posato for Mac stays resident after its window closes (ADR 0009). With the
@@ -257,7 +281,8 @@ wait up to 30 seconds for a window and continue without one.
   false "Restrictions active" and a stale record (`MACOS-020`); do not use that path as a
   cleanup step.
 - The active summary shows the frozen start set; reapplication uses the current
-  local policy. Relaunching the Mac app during a session needs Resume restrictions.
+  local policy. Relaunching the Mac app during a session applies it again by itself when
+  the switch is on and automatic starts are agreed; otherwise it needs Resume restrictions.
 - There is no minutes text field. Read the displayed duration and review deadline
   before starting; repeated driver decrease taps are not proof of the final value.
   The attended SYNC-012 run requested twenty decreases after 25 min but persisted

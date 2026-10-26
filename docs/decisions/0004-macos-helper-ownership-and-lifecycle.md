@@ -7,6 +7,31 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-029 automatic re-apply amendment
+
+`user-confirmed`: accepted by the maintainer on 2026-10-26
+([`MACOS-029` execution record](../tasks/executions/macos-029-self-recovery.md)),
+after a lost helper left a pause unenforced until the person pressed
+**Retry**.
+
+The resident application may also request Apply with grant without a
+person's action to restore a pause that is already active in this Mac's
+record (started here, received from a linked device, or found at launch or
+wake), under the same conditions as a scheduled start: a Status confirms the
+grant, the automatic-start consent is valid, and this account has the
+console. Each loss gets at most three attempts, spaced over about a minute;
+when they fail, or the conditions do not hold, the Mac shows Resume
+restrictions as before. This replaces the SCHEDULE-001 "Received sessions"
+rule and the sentence that a login launch or relaunch never re-applies
+without a foreground Apply. The reach is that of a schedule: Posato's own
+proxy, for a pause the person or a linked device started, with End early
+always available.
+
+The application asks the same gate as a scheduled start
+(`MacScheduleStartGate`), and every such request is grant-only, so it never
+raises the administrator prompt. A pause gets at most three such recoveries
+in ten minutes; then the notice stays.
+
 ## MACOS-024 loopback proxy exceptions amendment
 
 `user-confirmed`: proposed and accepted by the maintainer on 2026-09-30
@@ -122,7 +147,8 @@ implements it.
   waits, and this is never shown as "Setup required" or notified as a
   failure. A console refusal from the daemon is classified the same way. A
   locked screen keeps the same console user.
-- **Received sessions.** `RESUME_REQUIRED` for a session received from
+- **Received sessions.** `superseded` by the MACOS-029 amendment above.
+  `RESUME_REQUIRED` for a session received from
   another device stays, as a user-experience rule, not a security control:
   the grant already lets schedules apply without a person. A received manual
   session is not enforced by a running occurrence. When the occurrence ends
@@ -404,7 +430,7 @@ state and the person can turn it off.
 | Grant theft | The record has no secret and is root-only. Its entries are bound to the account's generated UID and this Mac's platform UUID. Copying or editing it needs root. | `R-02`: an administrator or root can create a grant. |
 | Stale grants after removal, reinstallation, or account deletion | The revocation rules above, the generated UID binding, and deletion when a rule goes missing or changes. | Trash without Remove followed by a reinstall keeps the grant. Status shows it, and the switch or Remove clears it. |
 | Rule tampering | Only root changes the authorization database. A missing or mismatched right deletes the grants. | `R-02`. |
-| Silent apply | The application rule in "Who may request it", protected by the JVM hardening. A check in the daemon cannot see whether a person acted. | `T-07`: code with Accessibility access, as in the row above. |
+| Silent apply | The application rule in "Who may request it", protected by the JVM hardening. A check in the daemon cannot see whether a person acted. Automatic Apply restores only a pause already active in this Mac's record, under the scheduled-start gate (MACOS-029 amendment). | `T-07`: code with Accessibility access, as in the row above. A linked device can make this Mac apply a manual pause again, not only a schedule. |
 | Version skew | The new operations are sent only when Status reports the capability flag; otherwise the application uses the prompted path. An older helper never requests a grant. | After a downgrade, Remove leaves the standing right in place. It authorizes nothing by itself. |
 | Lost reply | Grant, Revoke, and Prepare are idempotent. Status settles them, and the switch shows only what Status confirms. | None. |
 
@@ -882,9 +908,9 @@ The daemon reconciles durable state after:
 
 The desktop application may remain resident with no window (ADR 0009,
 applied by `MACOS-013`). Window visibility is not a lifecycle event for the
-helper or daemon. A login launch or any relaunch never re-applies ownership
-without a new foreground Apply authorized as above; an active session found at
-launch waits in the Resume state.
+helper or daemon. A login launch or any relaunch re-applies ownership for an
+active session found at launch only under the MACOS-029 amendment above;
+otherwise the session waits in the Resume state.
 
 Sleep, wake, and network-service changes trigger revalidation. Posato never
 silently transfers an applied mutation to another network service. Cleanup

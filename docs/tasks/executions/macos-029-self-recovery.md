@@ -1,12 +1,12 @@
 # Execution: `MACOS-029`
 
 - **Brief:** [The Mac applies restrictions again by itself and asks the person only when it must](../specifications/macos-029-self-recovery.md)
-- **Status:** `planned`: brief only; implementation waits for the maintainer
+- **Status:** `in-review`: implemented and verified in Tart and on the test iPhone
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agents (plan review, completed-change review)
 - **Branch:** `macos-029-self-recovery`
-- **Updated:** 2026-10-25
+- **Updated:** 2026-10-26
 
 ## Cause
 
@@ -123,3 +123,39 @@ active on this Mac." with **Resume restrictions**.
 | Tart, package from `main`, pause, `vm kill --process helper` | "Restrictions need attention" with **Retry**; `observe --expect allowed` passes | `build/verification/runs/20261026-072015-a1b3`, `20261026-072019-a6c9` |
 | Tart, Posato ended and opened again during the pause | "Restrictions not active on this Mac." with **Resume restrictions** | `build/verification/runs/20261026-072057-c24f` |
 | `SessionAutomaticRecoveryTest` on the owner from `main` | five of seven fail | `:shared:jvmTest` |
+
+## Result
+
+- `SessionAutomaticRecovery` holds the attempt loop, the per-pause cap, and
+  the view while it runs; the owner only routes its four starting points to
+  it and runs `reconcile(automatic = true)` as one attempt, whose prompt
+  branch re-applies with `grantOnly`. `SessionTransitionOwner` was at
+  Detekt's `LargeClass` limit already, so one equivalent block in
+  `applyAfterStart` was written shorter to stay within it.
+- `recovering` is cleared only when a recovery stops; Session and the menu
+  bar read it together with an action state, so a stale flag never hides an
+  active state.
+- Deviations (`agent-delegated`): an update admission that is closing reads
+  as a transient gate answer and so counts as an attempt, rather than
+  waiting outside the count; End early does not cancel a waiting recovery,
+  whose next attempt finds the pause ended and stops (Retry still cancels
+  it).
+
+## Verification
+
+| Check run | Result | Evidence |
+| --- | --- | --- |
+| `SessionAutomaticRecoveryTest` | five of seven failed before the fix; all seven pass | `:shared:jvmTest` |
+| `AC-02` Tart, Posato ended and opened again during a pause (switch on, consent on) | **Restrictions active** within seconds, no notice; `observe --expect blocked` | `build/verification/runs/20261026-073254-012f`, `20261026-073304-99b9` |
+| `AC-01` Tart, `vm kill --process helper` during the pause | a new helper started 12 s later and applied; **Restrictions active** throughout; `observe --expect blocked`; automatic-start consent still on | `20261026-073311-db7d` to `20261026-073346-3905`, `20261026-073348-5ab7` |
+| Every attempt fails: `vm network --state off` during a new pause | "Applying restrictions again…" for about 45 s, then "Restrictions need attention" with **Retry** | `20261026-073919-5c91` to `20261026-074007-f0e3` |
+| Cap: a fourth loss of one pause within ten minutes | the notice at once | `20261026-073656-4ad6` |
+| `AC-03` switch off, `vm kill --process helper` | the notice at once with **Retry**, `observe --expect allowed`; **Retry** with `vm prompt admin` applies again | `20261026-074318-29f9`, `20261026-074349-ee8a`, `20261026-074423-ebcb`, `20261026-074426-46f8` |
+| `AC-02` a pause started on the test iPhone (linked to the primary clone through the test Apple Account) | it reached the Mac at 08:21 and showed **Restrictions active** at once, never Resume restrictions; `observe --expect blocked` | `build/verification/runs/20261026-082108-0c74`, `20261026-082122-8eeb` |
+| `AC-02` sleep and wake | evidence limit: a Tart guest cannot sleep (`pmset sleepnow`: `Unable to sleep system: error 0xe00002e2`); after a wake a loss reaches recovery through the same poll as the helper kill | none |
+| `AC-02` login launch | not run separately: a login launch opens Posato through the same launch path as the relaunch run | none |
+
+Afterwards the iPhone's **Remove workspace** ended twice in "Sync did not
+finish" after the Mac had removed the workspace, the test account's known
+long-history case (the sync recipe's Development zone reset); the Mac clone
+was removed cleanly.

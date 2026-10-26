@@ -3183,3 +3183,13 @@ first removal attempt that does not finish, not to a paused keychain.
   website, and a decision on a calm history of pauses.
 - Idea 56: setup wording names the Mac on Linux, Android, and Windows; owner
   `ONBOARDING-005` in the same release.
+
+## [2026-10-26] decision | The Mac applies a pause again by itself (`MACOS-029`)
+
+- `user-confirmed` ADR 0004 amendment: with the grant and automatic starts
+  on, a running pause is applied again by itself under the scheduled-start
+  gate; the red notice appears only when the attempts fail or the switch is
+  off. `DESIGN.md` adds the "Applying restrictions again…" caption.
+- `observed` in Tart and with the test iPhone: a killed helper, a relaunch,
+  and a pause received from the iPhone all ended at **Restrictions active**
+  without a press; `SESSION-009`'s stale notice and drain loop are fixed.

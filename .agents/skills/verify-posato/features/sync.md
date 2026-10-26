@@ -114,8 +114,10 @@ own golden VM line, and address them with `--vm primary|peer`.
   the test Apple Account; select zone `PosatoSyncV1` and **Delete Zone**.
   Then reinstall the test iPhone, which still names the deleted workspace.
 - A session started on the primary reaches the peer at the peer's next
-  exchange (`menu --open` starts one, as does **Sync now**); the peer shows
-  Resume restrictions and needs its own `vm prompt admin`.
+  exchange (`menu --open` starts one, as does **Sync now**). A peer onboarded
+  with the switch on and automatic starts agreed (`vm onboard` does both)
+  applies it by itself (`MACOS-029`); otherwise it shows Resume restrictions
+  and needs its own `vm prompt admin`.
   Application choices stay local, so only the website is paused there.
 
 ### Between a Mac VM and the test iPhone

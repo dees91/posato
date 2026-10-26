@@ -627,12 +627,22 @@ when its window closes and lives in the menu bar.
   starting, or changing enforcement. When its state cannot be confirmed, it
   is disabled with "Posato could not confirm this setting. Check again." With
   the switch on, starting a session and **Resume restrictions** apply
-  without a prompt. The menu, a login launch, and synchronization still
-  never apply by themselves.
+  without a prompt. `user-confirmed` (2026-10-26, `MACOS-029`, ADR 0004
+  amendment): with the switch on and automatic starts agreed, Posato also
+  applies a running pause again by itself after a relaunch, a login launch,
+  a wake, a pause received from another device, or a lost helper. The menu
+  never applies by itself.
 - **Session notice.** The `RESUME_REQUIRED` notice no longer blames closing
   the app. It reads "Restrictions not active on this Mac." It keeps
   **Resume restrictions**, because quitting, sleep, a login launch, and a
-  session received from another device all lead there.
+  session received from another device all lead there when Posato cannot
+  apply again by itself.
+- **Applying again.** `user-confirmed` (2026-10-26, `MACOS-029`): while
+  Posato applies a running pause again by itself (up to about a minute), the
+  Session status line reads "Applying restrictions again…" in the quiet
+  caption style, with no red notice and no button, and the menu bar reads
+  "Restrictions not active on this Mac" with **Open Posato**. The red
+  notice appears only when the attempts fail or the switch is off.
 
 #### Status icon on Linux
 
