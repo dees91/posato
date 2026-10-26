@@ -64,6 +64,8 @@ internal data class EnforcementViewState(
     val state: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val busy: Boolean = false,
+    /** The Mac is applying a running pause again by itself; Session shows a quiet caption, not the notice. */
+    val recovering: Boolean = false,
 ) {
     override fun toString(): String {
         return "EnforcementViewState(redacted)"

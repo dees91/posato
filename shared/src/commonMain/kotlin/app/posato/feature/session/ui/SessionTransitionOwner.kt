@@ -8,6 +8,7 @@ import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
+import app.posato.feature.schedules.host.ScheduleStartGate
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionSyncStore
@@ -69,6 +70,7 @@ internal class SessionTransitionOwner(
     private val loadTargets: suspend (PauseSetId) -> SessionTargetsState,
     private val triggers: SessionSyncTriggers,
     private val composition: SessionComposition? = null,
+    private val automaticApply: ScheduleStartGate? = null,
 ) : SessionExchangeObserver {
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val stateMutex = Mutex()
