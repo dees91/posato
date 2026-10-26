@@ -7,3 +7,57 @@
 - **Reviewer:** independent agents (plan review, completed-change review)
 - **Branch:** `macos-031-helper-resilience`
 - **Updated:** 2026-10-25
+
+## Cause
+
+`observed` on the maintainer's Mac (1.5.1, 2026-10-25, unified log read
+only) and in the code:
+
+- Under load from code signing and Swift tests, the daemon answered one
+  Status in 5.4 s. `LeaseRenewer` renews every 5 s with a 5 s deadline and
+  ends the helper (`exit(EXIT_FAILURE)`) on the first failure, including a
+  timeout, although the daemon's lease runs 15 s from the last renewal.
+- The daemon saw its owner disconnect and restored the proxy. The idle
+  checks scheduled 1 s after the other connections closed waited on the
+  daemon's queue behind that slow restore and ran right after it: the daemon
+  was `Idle` with no counted connection and exited, while a new helper's
+  connection had not reached its listener yet. That helper got
+  `XPC_ERROR_CONNECTION_INTERRUPTED` and ended too.
+- Session then showed "Restrictions need attention" with the proxy off, and
+  polling stopped until a press (the latter belongs to `MACOS-029`).
+
+## Plan
+
+1. `AC-01` first: `posato-control vm stall --process daemon --seconds N`
+   (SIGSTOP, wait, SIGCONT with the guest administrator password, next to
+   `vm kill`). A gated harness, `MacOsHelperDaemonStallHarnessTest`, applies
+   with the standing grant, waits while the host stalls the daemon for 8 s,
+   then asserts the same helper still answers Status `Applied`, the proxy is
+   still on, and restrictions clear. Shown failing on the released 1.5.1
+   helper.
+2. `AC-02` first: a `DaemonIdleExitTests` case where an idle check is due
+   while a restore runs and a connection arrives after the short delay; it
+   must not exit. E2E cannot hit that window reliably, so the race is tested
+   in isolation on `RequestCoordinator` with its existing seams.
+3. Helper: a timed-out renewal is retried on the next period; the helper
+   gives up only when no renewal succeeded for the lease length (15 s), or
+   at once for a rejected, malformed, or unhealthy answer or a lost
+   connection. ADR 0004 amended with the accepted wording.
+4. Daemon: an idle exit waits for a quiet period measured from the latest
+   event; after a restore that period is the 10 s startup grace, so a helper
+   that reconnects after losing its owner is not cut off; a plain
+   disconnect keeps about 1 s for an update.
+5. `AC-03` in Tart through `posato-control`: a pause with the daemon stalled
+   for 8 s keeps "Restrictions active"; Session with a daemon stalled past
+   the lease shows the notice, not "Restrictions active".
+6. `./gradlew quality`, completed-change review, record, wiki.
+
+## Plan decisions
+
+- `user-confirmed` (2026-10-25): ADR 0004 amendment, "A rejected, malformed,
+  or failed renewal invalidates the ownership connection and terminates the
+  helper nonzero. A renewal that only times out is retried on the next
+  period; the helper gives up the same way only when no renewal has
+  succeeded for the daemon's lease length (15 s). The daemon's lease is
+  unchanged, so restrictions still end within the same bound when the
+  helper is gone."
