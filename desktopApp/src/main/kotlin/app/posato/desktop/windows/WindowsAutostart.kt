@@ -1,5 +1,6 @@
 package app.posato.desktop.windows
 
+import app.posato.desktop.resident.LoginLaunch
 import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.Win32Exception
 import com.sun.jna.platform.win32.WinReg
@@ -12,8 +13,8 @@ import java.nio.file.Path
  */
 internal class WindowsAutostart(
     private val launcher: Path,
-) {
-    fun isEnabled(): Boolean {
+) : LoginLaunch {
+    override fun isEnabled(): Boolean {
         return try {
             Advapi32Util.registryValueExists(WinReg.HKEY_CURRENT_USER, RUN_KEY, VALUE_NAME) &&
                 Advapi32Util.registryGetStringValue(WinReg.HKEY_CURRENT_USER, RUN_KEY, VALUE_NAME).isNotBlank()
@@ -22,7 +23,7 @@ internal class WindowsAutostart(
         }
     }
 
-    fun setEnabled(enabled: Boolean) {
+    override fun setEnabled(enabled: Boolean) {
         if (enabled) {
             Advapi32Util.registrySetStringValue(WinReg.HKEY_CURRENT_USER, RUN_KEY, VALUE_NAME, "\"$launcher\" $BACKGROUND")
         } else if (Advapi32Util.registryValueExists(WinReg.HKEY_CURRENT_USER, RUN_KEY, VALUE_NAME)) {
