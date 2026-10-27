@@ -66,8 +66,9 @@ internal class StartMenuCatalog(
     ): CatalogEntry? {
         val link = read(shortcut)?.let(ShellLink::parse) ?: return null
         // A shortcut with arguments starts something other than the program alone, such as a web app through a
-        // browser's proxy (`--app-id`, `chrome_proxy.exe`) or Squirrel's `Update.exe --processStart`.
-        if (link.arguments.isNotBlank()) return null
+        // browser's proxy (`--app-id`, `chrome_proxy.exe`) or Squirrel's `Update.exe --processStart`. Chrome's and
+        // Edge's own shortcuts only say where they were started from, so they still start the browser alone.
+        if (link.arguments.replace(shortcutLocation, "").isNotBlank()) return null
         val target = link.target?.let(::canonicalExecutable) ?: return null
         val name = shortcut.nameWithoutExtension.takeIf { it.isNotBlank() } ?: return null
         if (name.contains("posato", ignoreCase = true) || target.contains("posato", ignoreCase = true)) return null
@@ -102,6 +103,7 @@ internal class StartMenuCatalog(
         chosen: Set<String>,
     ): List<CatalogEntry>? {
         val dialog = JDialog(null as java.awt.Frame?, "Choose apps", true)
+        windowIconImage()?.let { dialog.setIconImage(it) }
         val boxes = entries.map { entry -> JCheckBox(entry.name, entry.key in chosen) }
         val list = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -134,6 +136,9 @@ internal class StartMenuCatalog(
         const val PADDING = 12
         const val WIDTH = 420
         const val HEIGHT = 520
+
+        /** Chromium's note of the shortcut that started it, such as `--source-shortcut-location=start-menu`. */
+        val shortcutLocation = Regex("--source-shortcut-location=[A-Za-z-]+")
 
         /** The service's grammar: a drive letter, plain names, and an `.exe`. */
         val localExecutable = Regex("[A-Za-z]:\\\\[^/:*?\"<>|]+\\.[eE][xX][eE]")
