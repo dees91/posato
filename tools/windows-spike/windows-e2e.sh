@@ -10,6 +10,9 @@ TART=${POSATO_TART_WINDOWS:?set POSATO_TART_WINDOWS to the Tart build with Windo
 export TART_HOME=${POSATO_TART_WINDOWS_HOME:-$HOME/.tart-windows}
 GOLDEN=${POSATO_VM_WINDOWS_GOLDEN:-posato-golden-windows}
 VM=posato-run-windows
+# Copy the jar shows with the pausing access deferred at the access step
+SUMMARY_NOTICE="Website pauses are unavailable until Mac setup is complete."
+DEVICE_NOUN=Mac
 SHARE="$OUT/share"
 HERE=$(cd "$(dirname "$0")" && pwd)
 # A fresh staging directory, so a jar left by an earlier run can never stand in for a missing one.
@@ -56,7 +59,12 @@ step 04-website press "Not now" expect "4 of 5"
 step 05-typed type - example.com
 step 06-added press Add expect "1 website saved"
 step 07-summary press Continue expect "5 of 5"
+# The summary names the setup still needed and where the choices are saved; the sidebar names the device
+has() { grep -qF "\"name\": \"$2\"" "$OUT/$1.json" || fail "$1 does not show \"$2\""; log "ok: $1 shows \"$2\""; }
+has 07-summary "$SUMMARY_NOTICE"
+has 07-summary "Saved on this $DEVICE_NOUN"
 step 08-session press "Go to Session" expect "Start a session"
+has 08-session "On this $DEVICE_NOUN"
 gx powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Tools\\screenshot.ps1 -Path Z:\\spike\\session.png >/dev/null || fail screenshot
 cp "$SHARE/session.png" "$OUT/session.png"; log "screenshot captured"
 gx powershell -NoProfile -Command 'Stop-Process -Name java -Force' >/dev/null 2>&1
