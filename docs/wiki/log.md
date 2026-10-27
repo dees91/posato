@@ -3210,3 +3210,12 @@ first removal attempt that does not finish, not to a paused keychain.
   updated in the app with data, the helper, and schedules kept.
 - A harness started with `nohup` in one `vm exec` loses its helper when
   that exec ends; run it inside an exec that lasts the whole test.
+
+## [2026-10-27] fix | Each platform names its own setup and device (`ONBOARDING-005`)
+
+- `observed` in Tart Linux and Windows guests and on the Android emulator:
+  the last onboarding step said "Website pauses are unavailable until Mac
+  setup is complete.", and Windows called itself a Mac. Linux and Android
+  now show their access text; a desktop is a Mac only when `os.name` says
+  so, otherwise a computer. Mac and iOS wording is unchanged (Tart macOS
+  VM, test iPhone). Idea 56 is resolved.

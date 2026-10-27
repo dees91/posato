@@ -1346,6 +1346,11 @@ below. This queue retains idea provenance without expanding the original MVP.
     every platform but iOS, so Linux and Android show it too, and any
     desktop that is not Linux names itself a Mac. `user-confirmed`
     (2026-10-25): a separate task. Owner: `ONBOARDING-005`, release 1.6.
+    `observed` (2026-10-27): resolved by `ONBOARDING-005`. The notice was
+    reproduced on Linux, Android, and Windows first. Linux and Android now
+    show their own access text on the last step; only "Mac" makes a desktop
+    a Mac, so Windows reads "computer" and uses the Linux access text until
+    `PLATFORM-002` gives it its own. Mac and iOS wording is unchanged.
 
 ## Later platform questions
 

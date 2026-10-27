@@ -19,7 +19,7 @@ internal actual fun platformDevice(): PosatoDevice {
     return desktopDevice(System.getProperty("os.name").orEmpty())
 }
 
-/** Only a Mac is called a Mac; any other desktop takes the Windows entry, a plain computer without Mac or GNOME paths. */
+/** Only a Mac is called a Mac; any other desktop takes the Windows entry: the Linux non-Mac layout without GNOME theming. */
 internal fun desktopDevice(osName: String): PosatoDevice {
     return when {
         osName.startsWith("Mac") -> PosatoDevice.Mac

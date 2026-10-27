@@ -383,6 +383,9 @@ enforcement, the privilege model, and distribution are untouched.
   ("On this Mac", "Saved on this Mac"). `inferred` from the shared code: the
   onboarding notice "Website pauses are unavailable until Mac setup is
   complete." appears on every platform except iOS, so Linux shows it too.
+  `superseded` (2026-10-27) by `ONBOARDING-005`: Windows now reads "On this
+  computer" and Linux, Android, and Windows show their own access text
+  (idea 56 in `mvp-open-questions.md`).
 - `open`: an x64 Windows target (this Mac runs ARM64 guests only),
   Authenticode signing and SmartScreen, the pausing mechanism and its
   elevation prompt, running next to the macOS or Linux guests, and whether the
