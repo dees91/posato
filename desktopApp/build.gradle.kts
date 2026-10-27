@@ -26,9 +26,13 @@ import org.gradle.process.ExecOperations
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -37,6 +41,7 @@ import java.time.Instant
 import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import javax.imageio.ImageIO
 import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
 
@@ -1457,32 +1462,82 @@ val linuxAppJar by tasks.registering(Jar::class) {
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
 }
 
-// Windows spike (PLATFORM-002 feasibility): the Linux jar with the Compose runtime for Windows on ARM, to prove that
-// a Tart Windows guest can run and drive Posato unattended. The Linux entry point degrades without D-Bus and the
-// pausing service, which is enough for that proof. Not a product build.
-val windowsSpikeRuntime: Configuration by configurations.creating {
+// Windows (ADR 0010): one application jar with the Compose runtime for both Windows architectures, JNA, and the
+// pausing service; `windows/package-msi.ps1` turns it into an MSI with jpackage on a Windows machine of the target
+// architecture. JNA's native library for that architecture is taken out of the jar there, next to the launchers.
+val windowsDesktopRuntime: Configuration by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
 
 dependencies {
-    windowsSpikeRuntime(libs.compose.desktop.windows.arm64)
+    windowsDesktopRuntime(libs.compose.desktop.windows.arm64)
+    windowsDesktopRuntime(libs.compose.desktop.windows.x64)
+    windowsDesktopRuntime(project(":windowsHelper"))
+    windowsDesktopRuntime(libs.jna)
+    windowsDesktopRuntime(libs.jna.platform)
 }
 
-val windowsSpikeJar by tasks.registering(Jar::class) {
-    group = "verification"
-    description = "Builds the spike jar that runs Posato's interface in a Tart Windows guest."
-    archiveFileName.set("posato-windows-spike.jar")
-    destinationDirectory.set(layout.buildDirectory.dir("windows-spike"))
-    manifest { attributes("Main-Class" to "app.posato.desktop.linux.LinuxMainKt") }
+val windowsAppJar by tasks.registering(Jar::class) {
+    group = "distribution"
+    description = "Builds the Windows application jar that windows/package-msi.ps1 packages."
+    archiveFileName.set("posato.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("windows/jar"))
+    manifest { attributes("Main-Class" to "app.posato.desktop.windows.WindowsMainKt") }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     val runtime = configurations.runtimeClasspath
-    dependsOn(runtime, linuxDesktopRuntime, windowsSpikeRuntime)
-    dependsOn(linuxServiceFiles)
-    from(linuxServiceFiles)
+    dependsOn(runtime, windowsDesktopRuntime)
     from(sourceSets.main.map { it.output })
-    from({ (runtime.get() + linuxDesktopRuntime + windowsSpikeRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
+    from({ (runtime.get() + windowsDesktopRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
+}
+
+// The installer's icon: the app icon as PNG images inside one `.ico`, which Windows reads since Vista.
+val windowsIcon by tasks.registering {
+    val source = rootProject.layout.projectDirectory.file("iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/forest.png")
+    val output = layout.buildDirectory.file("windows/icon/posato.ico")
+    inputs.file(source)
+    outputs.file(output)
+    doLast {
+        val original = ImageIO.read(source.asFile)
+        val images = listOf(256, 48, 32, 16).map { size ->
+            val scaled = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+            scaled.createGraphics().apply {
+                setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                drawImage(original, 0, 0, size, size, null)
+                dispose()
+            }
+            size to ByteArrayOutputStream().also { ImageIO.write(scaled, "png", it) }.toByteArray()
+        }
+        val header = 6
+        val entry = 16
+        val ico = ByteBuffer.allocate(header + entry * images.size + images.sumOf { it.second.size })
+            .order(ByteOrder.LITTLE_ENDIAN)
+        ico.putShort(0).putShort(1).putShort(images.size.toShort())
+        var offset = header + entry * images.size
+        images.forEach { (size, png) ->
+            // A width or height of 256 is written as 0.
+            ico.put((size % 256).toByte()).put((size % 256).toByte()).put(0).put(0)
+            ico.putShort(1).putShort(32).putInt(png.size).putInt(offset)
+            offset += png.size
+        }
+        images.forEach { ico.put(it.second) }
+        output.get().asFile.apply { parentFile.mkdirs() }.writeBytes(ico.array())
+    }
+}
+
+val windowsPackageInputs by tasks.registering(Copy::class) {
+    group = "distribution"
+    description = "Collects the Windows jar, its icon and version, and its packaging scripts."
+    val version = posatoMarketingVersion
+    inputs.property("version", version)
+    from(windowsAppJar)
+    from(windowsIcon)
+    from(layout.projectDirectory.dir("windows"))
+    // The license and the third-party notices travel with the package (they land in the installation's app folder).
+    from(rootProject.layout.projectDirectory.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
+    into(layout.buildDirectory.dir("windows/package"))
+    doLast { destinationDir.resolve("version.txt").writeText("$version\n") }
 }
 
 val linuxPackageInputs by tasks.registering(Copy::class) {

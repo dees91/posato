@@ -1,0 +1,107 @@
+# Builds the Posato for Windows x64 MSI and checks that it installs its pausing service, that the service answers
+# its owner over the pipe and holds a pause's filters, and that removing the MSI leaves no service, filter, or
+# process. The arm64 MSI is built in a Tart Windows guest (tools/posato-control, `build -t windows`). Pull requests
+# run it only when the Windows host, service, or packaging changes; a release dispatches it with its commit as `ref`.
+name: Windows package
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, branch, or tag to package
+        required: true
+  pull_request:
+    paths:
+      - .github/workflows/windows-package.yml
+      - desktopApp/windows/**
+      - desktopApp/src/main/kotlin/app/posato/desktop/windows/**
+      - windowsHelper/**
+      - tools/posato-control/src/main/resources/windows/posato-checks.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  msi:
+    name: MSI x64
+    runs-on: windows-latest
+    env:
+      CHECKS: tools/posato-control/src/main/resources/windows/posato-checks.ps1
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build the application jar
+        shell: bash
+        run: ./gradlew :desktopApp:windowsPackageInputs --no-daemon
+      # WiX 3 comes from the pinned download in package-msi.ps1; signing runs only when POSATO_WINDOWS_SIGNING is set.
+      - name: Package
+        shell: pwsh
+        run: |
+          $msi = & desktopApp/build/windows/package/package-msi.ps1 -Output "$PWD\out" -JavaHome $env:JAVA_HOME | Select-Object -Last 1
+          if (-not (Test-Path $msi)) { throw "No MSI at $msi" }
+          "MSI=$msi" >> $env:GITHUB_ENV
+          "COMMIT=$(git rev-parse HEAD)" >> $env:GITHUB_ENV
+      - name: Install quietly
+        shell: pwsh
+        run: |
+          $install = Start-Process msiexec.exe -ArgumentList '/i', $env:MSI, '/qn', '/norestart', '/l*v', "$env:RUNNER_TEMP\install.log" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\install.log" -Tail 200; throw "msiexec /i exited with $($install.ExitCode)" }
+          if (-not (Test-Path 'C:\Program Files\Posato\Posato.exe')) { throw 'Posato.exe is not installed' }
+          if (-not (Test-Path 'C:\Program Files\Posato\posato-helper.exe')) { throw 'posato-helper.exe is not installed' }
+      - name: Check the service, its pipe, and a pause's filters
+        shell: pwsh
+        run: |
+          function Check($request) { & $env:CHECKS -Request ($request | ConvertTo-Json -Compress) | ConvertFrom-Json }
+          $service = Check @{ check = 'service'; name = 'PosatoHelper' }
+          if ($service.state -ne 'Running') { throw "PosatoHelper is $($service.state)" }
+          $status = Check @{ check = 'pipe'; pipe = 'app.posato.helper'; line = 'status' }
+          if (-not $status.connected -or -not "$($status.reply)".StartsWith("ok`t")) { throw "status answered: $($status | ConvertTo-Json -Compress)" }
+          $refused = Check @{ check = 'pipe'; pipe = 'app.posato.helper'; line = "apply`tx" }
+          if ($refused.reply -ne "error`trequest") { throw "a malformed request answered: $($refused.reply)" }
+          $end = [DateTimeOffset]::UtcNow.AddMinutes(10).ToUnixTimeMilliseconds()
+          $apply = Check @{ check = 'pipe'; pipe = 'app.posato.helper'; line = "apply`tci-smoke`t$end`texample.org`t" }
+          if ($apply.reply -ne 'ok') { throw "apply answered: $($apply.reply)" }
+          $filters = Check @{ check = 'filters'; match = 'Posato' }
+          if (-not $filters.present) { throw 'A pause added no Posato filters' }
+          "Service running, pipe answering, $($filters.count) filters during the pause"
+      - name: Uninstall quietly and check nothing is left
+        shell: pwsh
+        run: |
+          function Check($request) { & $env:CHECKS -Request ($request | ConvertTo-Json -Compress) | ConvertFrom-Json }
+          $remove = Start-Process msiexec.exe -ArgumentList '/x', $env:MSI, '/qn', '/norestart', '/l*v', "$env:RUNNER_TEMP\uninstall.log" -Wait -PassThru
+          if ($remove.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\uninstall.log" -Tail 200; throw "msiexec /x exited with $($remove.ExitCode)" }
+          if ((Check @{ check = 'service'; name = 'PosatoHelper' }).present) { throw 'PosatoHelper is still registered' }
+          if ((Check @{ check = 'filters'; match = 'Posato' }).present) { throw 'Posato filters are left' }
+          foreach ($name in 'Posato', 'posato-helper') {
+            if ((Check @{ check = 'process'; name = $name }).running) { throw "$name is still running" }
+          }
+          if (Test-Path 'C:\Program Files\Posato') { throw 'The installation folder is left' }
+          if (Test-Path "$env:ProgramData\Posato") { throw 'The service state folder is left' }
+      - name: Record the checksum and the commit
+        shell: pwsh
+        run: |
+          $name = Split-Path -Leaf $env:MSI
+          "$((Get-FileHash -Algorithm SHA256 $env:MSI).Hash.ToLowerInvariant())  $name" | Set-Content -Encoding ascii "$env:MSI.sha256"
+          $env:COMMIT | Set-Content -Encoding ascii "$env:MSI.commit"
+          Get-Content "$env:MSI.sha256", "$env:MSI.commit"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: windows-msi-x64
+          path: |
+            out/*.msi
+            out/*.msi.sha256
+            out/*.msi.commit
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: msiexec-logs
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
