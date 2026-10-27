@@ -16,7 +16,16 @@ internal actual fun platformTheme(): PlatformTheme {
 }
 
 internal actual fun platformDevice(): PosatoDevice {
-    return if (System.getProperty("os.name").orEmpty().startsWith("Linux")) PosatoDevice.Linux else PosatoDevice.Mac
+    return desktopDevice(System.getProperty("os.name").orEmpty())
+}
+
+/** Only a Mac is called a Mac; any other desktop takes the Windows entry: the Linux non-Mac layout without GNOME theming. */
+internal fun desktopDevice(osName: String): PosatoDevice {
+    return when {
+        osName.startsWith("Mac") -> PosatoDevice.Mac
+        osName.startsWith("Linux") -> PosatoDevice.Linux
+        else -> PosatoDevice.Windows
+    }
 }
 
 internal actual val platformUsesCupertinoChrome: Boolean = false

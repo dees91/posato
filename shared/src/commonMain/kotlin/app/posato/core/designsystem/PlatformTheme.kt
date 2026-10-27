@@ -65,6 +65,7 @@ internal enum class PosatoDevice(
     IPhone("iPhone"),
     IPad("iPad"),
     Linux("computer"),
+    Windows("computer"),
     Android("phone"),
 }
 
@@ -81,7 +82,7 @@ internal fun navigationPlacement(
     landscape: Boolean
 ): PosatoNavigationPlacement {
     return when (device) {
-        PosatoDevice.Mac, PosatoDevice.Linux -> PosatoNavigationPlacement.Sidebar
+        PosatoDevice.Mac, PosatoDevice.Linux, PosatoDevice.Windows -> PosatoNavigationPlacement.Sidebar
         PosatoDevice.IPad -> if (landscape) PosatoNavigationPlacement.Sidebar else PosatoNavigationPlacement.Bottom
         PosatoDevice.IPhone, PosatoDevice.Android -> PosatoNavigationPlacement.Bottom
     }

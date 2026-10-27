@@ -63,6 +63,14 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   whitelist'` lists `app.posato.android`, on Linux `$PC linux exec --script
   'systemctl is-active posato-helper'` prints `active`. `install -t android`
   without `--grants` gives every grant, for runs that do not test onboarding.
+- **Deferred access:** after `install -t linux` on a clone with no pausing
+  service, or `install -t android --grants none`, run
+  `onboarding-deferred-access-<linux|android>.json`. It presses Not now at
+  the access step and asserts Summary: "Allow pausing on this computer before
+  pausing websites or apps." and "Saved on this computer" on Linux, then the
+  sidebar "On this computer" after Go to Session; "Allow access before
+  pausing websites or apps." and "Saved on this phone" on Android. Neither
+  may name a Mac.
 - **Sets, sessions, schedules:** `flow set`, `flow session [--set S]
   [--minutes M]`, and `flow schedule` as on the Mac.
 - **Website pause:** start a pause with `example.org` in its set. Proof: `$PC

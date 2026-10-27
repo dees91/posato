@@ -306,10 +306,10 @@ internal fun SummaryStep(
             PosatoNotice(tone = PosatoTone.Caution) {
                 Text(
                     stringResource(
-                        if (permissionPlatform == OnboardingPermissionPlatform.IOS) {
-                            Res.string.onboarding_summary_access_note
-                        } else {
-                            Res.string.onboarding_summary_helper_note
+                        when (permissionPlatform) {
+                            OnboardingPermissionPlatform.IOS -> Res.string.onboarding_summary_access_note
+                            OnboardingPermissionPlatform.MAC -> Res.string.onboarding_summary_helper_note
+                            OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> permissionPlatform.accessCopy().required
                         },
                     ),
                 )
