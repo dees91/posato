@@ -99,11 +99,14 @@
    - JNA: `jnidispatch.dll` ships in the install folder; the helper's
      launcher configuration sets `jna.nounpack=true` and
      `jna.boot.library.path`; the service binary path is quoted.
-   - MSI: `install` on `NOT Installed AND NOT REMOVE`, a rollback action that
-     deletes the service, `uninstall` on `REMOVE="ALL"`, binaries referenced
-     as `"[INSTALLDIR]..."`; a repair keeps the recorded user; a major upgrade
-     keeps the state file, so an active pause re-applies when the new service
-     starts. `[LogonUser]` is resolved qualified with the computer name;
+   - MSI: `install` on `NOT Installed AND NOT REMOVE`, accepting an existing
+     state file after its owner and access checks; a rollback action that
+     deletes the service; `uninstall` (stop and delete the service) on
+     `REMOVE="ALL"`, and `purge` (state, `%ProgramData%\Posato`, `Run` value)
+     only on `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`; binaries referenced
+     as `"[INSTALLDIR]..."`; a repair keeps the recorded user. A major upgrade
+     therefore keeps the state, and the new service re-applies an active
+     pause; one guest run proves it (old MSI, pause, new MSI, pause holds). `[LogonUser]` is resolved qualified with the computer name;
      SYSTEM and service accounts are refused, and the limits say only the
      installing account is served.
    - Filters carry an `FWPM_CONDITION_ALE_USER_ID` condition for the
@@ -142,7 +145,9 @@
   JNA unpacks native code to a temp folder for a LocalSystem service; MSI
   custom actions without conditions, rollback, or upgrade behavior; no
   unattended proof of a refused foreign caller.
-- **Resolution:** step 9; second pass pending
+- **Resolution:** step 9. Second pass: changes-required for the major
+  upgrade (old package's uninstall would delete the state); fixed by
+  splitting `uninstall` and `purge`; approved after that correction.
 
 ## Result
 
