@@ -67,9 +67,25 @@ private object NioFolderReads : FolderReads {
         }
     }
 
+    /**
+     * A directory Posato can create files in. Some Windows file systems, such as virtual drives and virtio-fs shares,
+     * answer no access list, so Java reads them as not writable; a file created and deleted there settles it.
+     */
     override fun isWritableDirectory(path: String): Boolean {
         val directory = path.toPathOrNull() ?: return false
-        return Files.isDirectory(directory) && Files.isWritable(directory)
+        if (!Files.isDirectory(directory)) return false
+        return Files.isWritable(directory) || canCreateFileIn(directory)
+    }
+
+    private fun canCreateFileIn(directory: Path): Boolean {
+        return try {
+            Files.delete(Files.createTempFile(directory, ".posato-", ".probe"))
+            true
+        } catch (_: IOException) {
+            false
+        } catch (_: UnsupportedOperationException) {
+            false
+        }
     }
 }
 
