@@ -12,7 +12,7 @@ import app.posato.desktop.resident.residentStartup
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.unavailableMacHelper
-import app.posato.feature.presence.loadLinuxPresenceCopy
+import app.posato.feature.presence.loadWindowsPresenceCopy
 import app.posato.feature.targets.data.CatalogApplicationMappings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
         applicationAccess = WindowsApplicationAccess(client),
     )
     mappings.keptTargets = graph.keptApplicationRequirements::of
-    val copy = runBlocking { loadLinuxPresenceCopy() }
+    val copy = runBlocking { loadWindowsPresenceCopy() }
     val launcher = System.getProperty(LAUNCHER_PROPERTY)?.let(Paths::get)
     val residence = DesktopResidence(launcher?.let(::WindowsAutostart) ?: NoLoginLaunch)
     // Without a notification area the tray reads as no icon, and closing the window follows the no-icon rules; a

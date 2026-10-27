@@ -258,6 +258,8 @@ For what matters.</string>
     <string name="presence_linux_not_enforcing">Restrictions not active on this computer</string>
     <string name="presence_linux_first_close">Posato is still running, so your pause and schedules keep working. Open it again from its icon or the applications menu.</string>
     <string name="presence_linux_first_close_no_icon">Posato is still running, so your pause and schedules keep working. Open it again from the applications menu.</string>
+    <string name="presence_windows_first_close">Posato is still running, so your pause and schedules keep working. Open it again from its icon in the notification area or the Start menu.</string>
+    <string name="presence_windows_first_close_no_icon">Posato is still running, so your pause and schedules keep working. Open it again from the Start menu.</string>
     <string name="presence_linux_quit_schedules">Scheduled pauses won't start until you open Posato again. A running pause still ends on time.</string>
     <string name="mac_standing_grant">Start sessions without the password</string>
     <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions apply only during a pause you start or a schedule you set.</string>
