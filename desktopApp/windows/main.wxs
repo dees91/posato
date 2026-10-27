@@ -118,11 +118,11 @@
     <Icon Id="JpARPPRODUCTICON" SourceFile="$(var.JpIcon)"/>
     <?endif?>
 
-    <!-- Posato: the pausing service's deferred steps, run as the system with the installing user's name. -->
+    <!-- Posato: the pausing service's deferred steps, run as the system with the installing user's SID. -->
     <CustomAction Id="PosatoHelperInstallRollback" Directory="INSTALLDIR" Execute="rollback" Impersonate="no" Return="ignore"
       ExeCommand='"[INSTALLDIR]posato-helper.exe" uninstall' />
     <CustomAction Id="PosatoHelperInstall" Directory="INSTALLDIR" Execute="deferred" Impersonate="no" Return="check"
-      ExeCommand='"[INSTALLDIR]posato-helper.exe" install --user "[LogonUser]"' />
+      ExeCommand='"[INSTALLDIR]posato-helper.exe" install --user-sid "[UserSID]"' />
     <CustomAction Id="PosatoHelperUninstall" Directory="INSTALLDIR" Execute="deferred" Impersonate="no" Return="check"
       ExeCommand='"[INSTALLDIR]posato-helper.exe" uninstall' />
     <CustomAction Id="PosatoHelperPurge" Directory="INSTALLDIR" Execute="deferred" Impersonate="no" Return="ignore"

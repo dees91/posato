@@ -3,7 +3,6 @@ package app.posato.windows.helper
 import com.sun.jna.Native
 import com.sun.jna.platform.win32.Advapi32
 import com.sun.jna.platform.win32.Advapi32Util
-import com.sun.jna.platform.win32.Kernel32Util
 import com.sun.jna.platform.win32.Win32Exception
 import com.sun.jna.platform.win32.WinReg
 import com.sun.jna.platform.win32.Winsvc
@@ -17,8 +16,8 @@ import com.sun.jna.platform.win32.Winsvc
 internal class Installer(
     private val folder: HelperFolder = HelperFolder(),
 ) {
-    fun install(logonUser: String): Int {
-        val config = recordedUser() ?: newUser(logonUser) ?: return USER_REFUSED
+    fun install(userSid: String): Int {
+        val config = recordedUser() ?: newUser(userSid) ?: return USER_REFUSED
         if (!folder.prepare()) return FOLDER_FAILED
         if (folder.read(folder.config)?.let(HelperConfig::decode) != config && !folder.write(folder.config, config.encode())) return FOLDER_FAILED
         // A state file that is not the system's own is never trusted; the next pause writes a new one.
@@ -55,14 +54,19 @@ internal class Installer(
         return folder.read(folder.config)?.let(HelperConfig::decode)
     }
 
-    private fun newUser(logonUser: String): HelperConfig? {
-        val name = InstallingUser.qualify(logonUser, Kernel32Util.getComputerName()) ?: return null
-        val account = try {
-            Advapi32Util.getAccountByName(null, name)
+    /**
+     * The installing account from Windows Installer's `UserSID`, which names local, domain, and Microsoft Entra
+     * accounts alike; its name is kept for people reading the configuration, and the SID itself when the name cannot
+     * be looked up.
+     */
+    private fun newUser(userSid: String): HelperConfig? {
+        if (!InstallingUser.isPerson(userSid)) return null
+        val name = try {
+            Advapi32Util.getAccountBySid(userSid).fqn
         } catch (_: Win32Exception) {
-            return null
+            null
         }
-        return HelperConfig(name, account.sidString).takeIf { InstallingUser.isPerson(it.sid) }
+        return HelperConfig(name?.takeIf(InstallingUser::isAccountName) ?: userSid, userSid)
     }
 
     private fun removeStartAtLogin(sid: String) {
