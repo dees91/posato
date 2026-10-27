@@ -15,6 +15,7 @@ import app.posato.desktop.macos.SETUP_OFFER_DISMISSED_KEY
 import app.posato.desktop.mappings.ApplicationRequirements
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.mappings.keptApplications
+import app.posato.desktop.resident.FirstCloseMarker
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
 import app.posato.desktop.update.createUpdaterController
@@ -30,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
+import java.nio.file.Path
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
@@ -78,8 +80,10 @@ fun main(args: Array<String>) {
             val presenceCopy = runBlocking { loadPresenceCopy() }
             val launchedAtLogin = MacPresenceNative.launchedAtLogin()
 
+            val firstClose = FirstCloseMarker(Path.of(System.getProperty("user.home"), "Library/Application Support/Posato/presence-first-close"))
+
             application {
-                ResidentPosato(applicationGraph, updater, presenceCopy, launchedAtLogin)
+                MacResidentPosato(applicationGraph, updater, presenceCopy, firstClose, launchedAtLogin)
             }
         }
     }

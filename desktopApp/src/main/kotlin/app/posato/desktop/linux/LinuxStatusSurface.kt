@@ -1,11 +1,14 @@
 package app.posato.desktop.linux
 
 import app.posato.desktop.PresenceMenuActionId
+import app.posato.desktop.PresenceMenuModel
 import app.posato.desktop.linux.status.LinuxStatusArea
-import app.posato.di.DesktopApplicationComponents
-import app.posato.feature.presence.LinuxPresenceCopy
+import app.posato.desktop.linux.status.StatusAreaState
+import app.posato.desktop.linux.status.statusMenuEntries
+import app.posato.desktop.resident.StatusSurface
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
@@ -34,13 +37,17 @@ internal class LinuxHostEvents {
     }
 }
 
-/** What a Linux launch hands to the resident application. */
-internal class LinuxResidentHost(
-    val graph: DesktopApplicationComponents,
-    val copy: LinuxPresenceCopy,
-    val events: LinuxHostEvents,
-    val statusArea: LinuxStatusArea?,
-    val residence: LinuxResidence,
-    val firstClose: LinuxFirstCloseMarker,
-    val startHidden: Boolean,
-)
+/** The Linux status icon on the session bus, with the requests that reach it, as the resident core sees them. */
+internal class LinuxStatusSurface(
+    private val area: LinuxStatusArea,
+    events: LinuxHostEvents,
+) : StatusSurface {
+    override val iconShown: StateFlow<Boolean> = area.watcherPresent
+    override val showRequests: Flow<Unit> = events.showRequests
+    override val actions: Flow<PresenceMenuActionId> = events.actions
+    override val menuOpened: Flow<Unit> = events.menuOpened
+
+    override fun update(model: PresenceMenuModel) {
+        area.update(StatusAreaState(statusMenuEntries(model), "Posato", model.accessibilityDescription, model.filled))
+    }
+}

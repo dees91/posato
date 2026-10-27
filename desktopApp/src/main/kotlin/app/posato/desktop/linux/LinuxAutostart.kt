@@ -1,5 +1,6 @@
 package app.posato.desktop.linux
 
+import app.posato.desktop.resident.LoginLaunch
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -16,16 +17,16 @@ import kotlin.io.path.readLines
  */
 internal class LinuxAutostart(
     private val directory: Path,
-) {
+) : LoginLaunch {
     private val entry: Path = directory.resolve(ENTRY_NAME)
 
-    fun isEnabled(): Boolean {
+    override fun isEnabled(): Boolean {
         if (!entry.exists()) return false
         val lines = runCatching { entry.readLines() }.getOrDefault(emptyList()).map(String::trim)
         return HIDDEN !in lines && GNOME_DISABLED !in lines
     }
 
-    fun setEnabled(enabled: Boolean) {
+    override fun setEnabled(enabled: Boolean) {
         if (!enabled) {
             entry.deleteIfExists()
             return

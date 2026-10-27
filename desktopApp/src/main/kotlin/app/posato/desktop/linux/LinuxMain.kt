@@ -4,6 +4,10 @@ import androidx.compose.ui.window.application
 import app.posato.desktop.linux.status.LINUX_ICON_THEME_PATH
 import app.posato.desktop.linux.status.LinuxStatusArea
 import app.posato.desktop.linux.status.StatusIcons
+import app.posato.desktop.resident.DesktopResidence
+import app.posato.desktop.resident.FirstCloseMarker
+import app.posato.desktop.resident.ResidentHost
+import app.posato.desktop.resident.ResidentPosato
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.unavailableMacHelper
@@ -43,7 +47,7 @@ fun main(args: Array<String>) {
     )
     mappings.keptTargets = graph.keptApplicationRequirements::of
     val copy = runBlocking { loadLinuxPresenceCopy() }
-    val residence = LinuxResidence(LinuxAutostart(linuxAutostartDirectory(System.getenv(), System.getProperty("user.home"))))
+    val residence = DesktopResidence(LinuxAutostart(linuxAutostartDirectory(System.getenv(), System.getProperty("user.home"))))
     val events = LinuxHostEvents()
     val statusArea = LinuxStatusArea(
         icons = StatusIcons(LINUX_ICON_THEME_PATH),
@@ -53,10 +57,11 @@ fun main(args: Array<String>) {
         // The session ended under Posato: the desktop is logging out.
         onBusLost = { exitProcess(0) },
     ).takeIf { it.start() }
-    val host = LinuxResidentHost(graph, copy, events, statusArea, residence, LinuxFirstCloseMarker(data.resolve("first-close")), background)
+    val status = statusArea?.let { LinuxStatusSurface(it, events) }
+    val host = ResidentHost(graph, copy, status, residence, FirstCloseMarker(data.resolve("first-close")), background)
     // The lock and the bus connection end with the process, which application {} exits.
     application {
-        LinuxResidentPosato(host)
+        ResidentPosato(host)
     }
 }
 

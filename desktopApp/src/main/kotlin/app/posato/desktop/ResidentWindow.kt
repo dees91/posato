@@ -19,20 +19,20 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.rememberWindowState
 import app.posato.ApplicationNavigation
+import app.posato.desktop.resident.FirstCloseMarker
+import app.posato.desktop.resident.LOADING_MENU
+import app.posato.desktop.resident.StatusMenuRefreshEffect
+import app.posato.desktop.resident.windowRequestOf
 import app.posato.desktop.update.MacUpdateSettings
 import app.posato.desktop.update.MacUpdater
 import app.posato.desktop.update.UpdaterController
 import app.posato.di.DesktopApplicationComponents
 import app.posato.feature.about.ApplicationUpdates
 import app.posato.feature.presence.DesktopPresence
-import app.posato.feature.presence.PresenceAction
 import app.posato.feature.presence.PresenceCopy
 import app.posato.feature.presence.PresenceMenu
-import app.posato.feature.presence.PresenceState
-import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.presence.quitPromptFor
 import app.posato.feature.update.loadUpdaterCopy
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.awt.Desktop
 import java.awt.Dimension
@@ -57,10 +57,11 @@ internal class ResidentWindow(
 }
 
 @Composable
-internal fun ApplicationScope.ResidentPosato(
+internal fun ApplicationScope.MacResidentPosato(
     graph: DesktopApplicationComponents,
     updater: UpdaterController,
     copy: PresenceCopy,
+    firstClose: FirstCloseMarker,
     launchedAtLogin: Boolean,
 ) {
     val presence = graph.presence
@@ -92,7 +93,7 @@ internal fun ApplicationScope.ResidentPosato(
     if (window.visible) {
         PosatoWindow(graph, windowState, navigation, updates, onCloseRequest = {
             scope.launch {
-                when (firstCloseChoice(menu, copy)) {
+                when (firstCloseChoice(menu, copy, firstClose)) {
                     FirstCloseChoice.HIDE -> window.hide()
                     FirstCloseChoice.QUIT -> quit()
                 }
@@ -113,12 +114,7 @@ private fun StatusMenuEffects(
     var menuOpen by remember { mutableStateOf(false) }
     val latestQuit by rememberUpdatedState(onQuit)
     val latestPowerOff by rememberUpdatedState(onPowerOff)
-    LaunchedEffect(menu, menuOpen) {
-        do {
-            MacPresenceNative.updateMenu(presenceMenuModel(menu, copy, System.currentTimeMillis(), ::formatClockTime))
-            if (menuOpen) delay(MENU_REFRESH_MILLIS)
-        } while (menuOpen)
-    }
+    StatusMenuRefreshEffect(menu, copy, ticking = menuOpen, publish = MacPresenceNative::updateMenu)
     LaunchedEffect(Unit) {
         MacPresenceEvents.menuEvents.collect { event ->
             when (event) {
@@ -151,15 +147,9 @@ private suspend fun handleMenuAction(
     window: ResidentWindow,
     quit: suspend () -> Unit,
 ) {
-    val request = when (action) {
-        PresenceMenuActionId.START_SESSION -> SessionWindowRequest.START_SESSION
-        PresenceMenuActionId.END_SESSION_EARLY -> SessionWindowRequest.END_SESSION_EARLY
-        PresenceMenuActionId.RESUME_RESTRICTIONS -> SessionWindowRequest.SESSION
-        PresenceMenuActionId.OPEN_POSATO -> null
-        PresenceMenuActionId.QUIT -> return quit()
-    }
+    if (action == PresenceMenuActionId.QUIT) return quit()
     window.show()
-    request?.let(presence::request)
+    windowRequestOf(action)?.let(presence::request)
 }
 
 @Composable
@@ -207,7 +197,5 @@ private fun PosatoWindow(
     }
 }
 
-private val LOADING_MENU = PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null)
 private const val MINIMUM_WINDOW_WIDTH: Int = 614
 private const val MINIMUM_WINDOW_HEIGHT: Int = 480
-private const val MENU_REFRESH_MILLIS: Long = 60_000L
