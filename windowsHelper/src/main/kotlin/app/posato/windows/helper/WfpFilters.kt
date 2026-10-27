@@ -129,7 +129,7 @@ internal class WfpFilters(
         private val descriptor = SecurityDescriptor("O:SYG:SYD:(A;;CC;;;$sid)")
         val blob: Memory = Memory(BLOB_SIZE).apply {
             setInt(0, descriptor.size)
-            setPointer(POINTER_OFFSET, descriptor.pointer)
+            setPointer(POINTER_OFFSET, descriptor.address)
         }
 
         override fun close() {

@@ -109,8 +109,8 @@ internal class HelperFolder(
         val dacl = PointerByReference()
         val present = IntByReference()
         val defaulted = IntByReference()
-        val readable = Advapi32Extra.INSTANCE.getSecurityDescriptorOwner(descriptor.pointer, owner, defaulted) &&
-            Advapi32Extra.INSTANCE.getSecurityDescriptorDacl(descriptor.pointer, present, dacl, defaulted)
+        val readable = Advapi32Extra.INSTANCE.getSecurityDescriptorOwner(descriptor.address, owner, defaulted) &&
+            Advapi32Extra.INSTANCE.getSecurityDescriptorDacl(descriptor.address, present, dacl, defaulted)
         if (!readable) return false
         val information = WinNT.OWNER_SECURITY_INFORMATION or WinNT.DACL_SECURITY_INFORMATION or WinNT.PROTECTED_DACL_SECURITY_INFORMATION
         return Advapi32.INSTANCE.SetNamedSecurityInfo(folder.toString(), SE_FILE_OBJECT, information, owner.value, null, dacl.value, null) == 0

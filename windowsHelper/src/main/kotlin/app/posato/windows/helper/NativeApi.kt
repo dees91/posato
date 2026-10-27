@@ -135,7 +135,7 @@ private inline fun <reified T : Library> load(name: String): T {
 internal class SecurityDescriptor(
     sddl: String,
 ) : AutoCloseable {
-    val pointer: Pointer
+    val address: Pointer
     val size: Int
 
     init {
@@ -144,19 +144,19 @@ internal class SecurityDescriptor(
         check(Advapi32Extra.INSTANCE.convertStringSecurityDescriptorToSecurityDescriptorW(WString(sddl), SDDL_REVISION_1, descriptor, length)) {
             "security descriptor ${Native.getLastError()}"
         }
-        pointer = descriptor.value
+        address = descriptor.value
         size = length.value
     }
 
     fun attributes(): WinBase.SECURITY_ATTRIBUTES {
         return WinBase.SECURITY_ATTRIBUTES().apply {
-            lpSecurityDescriptor = pointer
+            lpSecurityDescriptor = address
             bInheritHandle = false
         }
     }
 
     override fun close() {
-        Kernel32.INSTANCE.LocalFree(pointer)
+        Kernel32.INSTANCE.LocalFree(address)
     }
 
     private companion object {

@@ -50,7 +50,8 @@ internal class WindowsHelperClient {
         while (System.nanoTime() < deadline) {
             val pipe = Kernel32.INSTANCE.CreateFile(
                 PIPE_NAME,
-                WinNT.GENERIC_READ or WinNT.GENERIC_WRITE,
+                // GENERIC_WRITE would ask for FILE_CREATE_PIPE_INSTANCE too, which the service's access list withholds.
+                WinNT.GENERIC_READ or FILE_WRITE_DATA,
                 0,
                 null,
                 WinNT.OPEN_EXISTING,
@@ -144,6 +145,7 @@ internal class WindowsHelperClient {
         const val SERVICE_NAME = "PosatoHelper"
         const val SYSTEM_SID = "S-1-5-18"
         const val FILE_FLAG_OVERLAPPED = 0x40000000
+        const val FILE_WRITE_DATA = 0x0002
         const val SECURITY_SQOS_PRESENT = 0x00100000
         const val SECURITY_IDENTIFICATION = 0x00010000
         const val ERROR_PIPE_BUSY = 231
@@ -243,7 +245,8 @@ private class PipeOperation(
             PipeApi.INSTANCE.getOverlappedResult(handle, pointer, transferred, true)
             return null
         }
-        return transferred.value.takeIf { PipeApi.INSTANCE.getOverlappedResult(handle, pointer, transferred, false) }
+        val completed = PipeApi.INSTANCE.getOverlappedResult(handle, pointer, transferred, false)
+        return if (completed) transferred.value else null
     }
 
     override fun close() {

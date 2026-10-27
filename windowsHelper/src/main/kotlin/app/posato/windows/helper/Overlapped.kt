@@ -47,7 +47,8 @@ internal class Overlapped(
             Kernel32Extra.INSTANCE.getOverlappedResult(handle, pointer, transferred, true)
             return null
         }
-        return transferred.value.takeIf { Kernel32Extra.INSTANCE.getOverlappedResult(handle, pointer, transferred, false) }
+        val completed = Kernel32Extra.INSTANCE.getOverlappedResult(handle, pointer, transferred, false)
+        return if (completed) transferred.value else null
     }
 
     override fun close() {
