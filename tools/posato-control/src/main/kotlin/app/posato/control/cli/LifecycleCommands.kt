@@ -25,6 +25,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.validate
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.path
 import kotlinx.serialization.Serializable
@@ -42,10 +43,24 @@ class BuildCommand : ControlCommand("build", "Build the application for the targ
         help = "Desktop: build the development package with the verification-only zone seams, for iCloud fixture runs only.",
     ).flag()
 
-    override fun execute(session: Session): JsonElement = ControlJson.pretty.encodeToJsonElement(
-        BuildResult.serializer(),
-        session.backend().build(BuildOptions(signingIdentity, verify, driver, verificationSeams)),
-    )
+    private val windowsVersion by option(
+        "--windows-version",
+        help = "Windows: package this major.minor.patch version instead of the app's, such as a higher one for a major-upgrade check.",
+    ).validate { require(Regex("""\d+\.\d+\.\d+""").matches(it)) { "use major.minor.patch, such as 1.6.0" } }
+
+    override fun execute(session: Session): JsonElement {
+        val backend = session.backend()
+        windowsVersion?.let { version ->
+            if (backend !is WindowsBackend) {
+                throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--windows-version applies to the windows target.")
+            }
+            backend.packageVersion = version
+        }
+        return ControlJson.pretty.encodeToJsonElement(
+            BuildResult.serializer(),
+            backend.build(BuildOptions(signingIdentity, verify, driver, verificationSeams)),
+        )
+    }
 }
 
 class InstallCommand : ControlCommand("install", "Install the built application on the simulator, device, Android, or the Linux or Windows clone.") {

@@ -37,6 +37,9 @@ class WindowsLifecycle(
     /** The MSI `install` installs instead of the last one `build` made. */
     var packageFile: Path? = null
 
+    /** The version `build` packages instead of the app's, such as a higher one for a major-upgrade check. */
+    var packageVersion: String? = null
+
     override fun doctor(): List<DoctorCheck> {
         val golden = runCatching { guest.goldenExists() }
         val goldenCheck = when {
@@ -73,8 +76,9 @@ class WindowsLifecycle(
         Files.list(packageInputs).use { files -> files.filter(Files::isRegularFile).toList() }.forEach { file ->
             guest.tools.push(file, "$BUILD_INPUTS\\${file.fileName}")
         }
+        val version = packageVersion?.let { " -Version ${psQuote(it)}" }.orEmpty()
         val script = "\$jdk = (Get-ChildItem ${psQuote(WindowsGuest.TOOLS)} -Directory -Filter 'jdk-21*' | Sort-Object Name)[-1].FullName\n" +
-            "& ${psQuote("$BUILD_INPUTS\\package-msi.ps1")} -Output ${psQuote(BUILD_OUTPUT)} -JavaHome \$jdk 2>&1 | Out-String -Width 400\n" +
+            "& ${psQuote("$BUILD_INPUTS\\package-msi.ps1")} -Output ${psQuote(BUILD_OUTPUT)} -JavaHome \$jdk$version 2>&1 | Out-String -Width 400\n" +
             "if (-not \$?) { exit 1 }"
         val output = guest.powershell(script, timeout = Duration.ofMinutes(PACKAGE_MINUTES))
         val guestMsi = output.stdout.lines().map(String::trim).lastOrNull { it.endsWith(".msi", ignoreCase = true) }

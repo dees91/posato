@@ -2,6 +2,9 @@
 # MSI on a Windows machine of the target architecture: a Tart Windows guest for arm64, a GitHub Actions runner for x64.
 #
 # Usage: package-msi.ps1 -Output <directory> [-JavaHome <JDK 21>] [-Wix <folder with candle.exe and light.exe>]
+#                        [-Version <major.minor.patch>]
+#
+# -Version packages that version instead of version.txt's, such as a higher one for a major-upgrade check in a guest.
 #
 # jpackage needs WiX 3. Without -Wix, candle.exe on PATH, or WIX, the pinned WiX 3.14.1 binaries are downloaded once
 # into %LOCALAPPDATA%\posato-build and checked against their SHA-256. When POSATO_WINDOWS_SIGNING names a code-signing
@@ -11,7 +14,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$Output,
     [string]$JavaHome = $env:JAVA_HOME,
-    [string]$Wix = ''
+    [string]$Wix = '',
+    [string]$Version = ''
 )
 $ErrorActionPreference = 'Stop'
 $inputs = $PSScriptRoot
@@ -86,7 +90,7 @@ $arch = switch -Regex ($properties) {
     default { throw 'The JDK is neither Windows on ARM64 nor x64.' }
 }
 $jnaFolder = @{ arm64 = 'win32-aarch64'; x64 = 'win32-x86-64' }[$arch]
-$version = (Get-Content (Join-Path $inputs 'version.txt') -Raw).Trim()
+$version = if ($Version) { $Version } else { (Get-Content (Join-Path $inputs 'version.txt') -Raw).Trim() }
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected version '$version'." }
 Use-Wix
 

@@ -707,7 +707,9 @@ through the Tart fork in `posato.vm.windowsTart` with its own
   copies them into the running clone, runs `desktopApp/windows/package-msi.ps1`
   there (jpackage with the golden VM's JDK and WiX 3.14, downloaded once into
   the clone), and copies the arm64 MSI back to
-  `desktopApp/build/windows/msi/`. `install -t windows` installs that MSI, or
+  `desktopApp/build/windows/msi/`; `--windows-version 1.6.0` packages another
+  version than the app's (`package-msi.ps1 -Version`), such as a higher one
+  for a major-upgrade check. `install -t windows` installs that MSI, or
   the one `--package <file>.msi` names, with `msiexec /i /qn /l*v` and keeps
   the end of the log under the run's `logs/` on failure; `windows uninstall [--package <file>.msi] [--product Posato]`
   removes it with `msiexec /x`. The clone has UAC off, so the one

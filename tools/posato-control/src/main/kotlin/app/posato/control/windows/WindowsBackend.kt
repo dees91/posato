@@ -27,6 +27,13 @@ class WindowsBackend private constructor(
             windowsLifecycle.packageFile = value
         }
 
+    /** The version `build -t windows` packages instead of the app's. */
+    var packageVersion: String?
+        get() = windowsLifecycle.packageVersion
+        set(value) {
+            windowsLifecycle.packageVersion = value
+        }
+
     /** Removes Posato with `msiexec /x`: [msi], or the product registered as [productName]; returns what was removed. */
     fun uninstall(
         msi: Path?,
