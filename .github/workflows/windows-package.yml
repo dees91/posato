@@ -1,7 +1,7 @@
 # Builds the Posato for Windows x64 MSI and checks that it installs its pausing service, that the service answers
 # its owner over the pipe and holds a pause's filters, and that removing the MSI leaves no service, filter, or
 # process. The arm64 MSI is built in a Tart Windows guest (tools/posato-control, `build -t windows`). Pull requests
-# run it only when the Windows host, service, or packaging changes; a release dispatches it with its commit as `ref`.
+# run it only when something the MSI is built from changes; a release dispatches it with its commit as `ref`.
 name: Windows package
 
 on:
@@ -12,10 +12,28 @@ on:
         required: true
   pull_request:
     paths:
+      # Everything the MSI is built from: the Windows host and the resident core it shares with the Mac and Linux,
+      # the shared module's JVM sources and resources, the service, the build and its versions, the icon, and the
+      # notices that the package carries.
       - .github/workflows/windows-package.yml
       - desktopApp/windows/**
-      - desktopApp/src/main/kotlin/app/posato/desktop/windows/**
+      - desktopApp/src/main/**
+      - desktopApp/build.gradle.kts
       - windowsHelper/**
+      - shared/build.gradle.kts
+      - shared/src/commonMain/**
+      - shared/src/jvmCommonMain/**
+      - shared/src/jvmMain/**
+      - build.gradle.kts
+      - settings.gradle.kts
+      - gradle.properties
+      - gradle/**
+      - buildSrc/**
+      - Version.xcconfig
+      - iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/forest.png
+      - LICENSE
+      - NOTICE
+      - THIRD_PARTY_NOTICES.md
       - tools/posato-control/src/main/resources/windows/posato-checks.ps1
 
 permissions:
