@@ -1,5 +1,7 @@
 package app.posato.desktop.windows
 
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toPainter
 import androidx.compose.ui.window.application
 import app.posato.desktop.resident.DesktopResidence
 import app.posato.desktop.resident.FirstCloseMarker
@@ -20,6 +22,7 @@ import java.lang.ref.Reference
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import javax.imageio.ImageIO
 import kotlin.system.exitProcess
 
 /**
@@ -55,12 +58,20 @@ fun main(args: Array<String>) {
     // second launch still shows the window. The socket closes with the process, which application {} exits.
     val tray = WindowsTray().apply { start() }
     ShowRequests(showSocket).listen(onShow = tray::show)
-    val host = ResidentHost(graph, copy, tray, residence, FirstCloseMarker(data.resolve("first-close")), background)
+    val host = ResidentHost(graph, copy, tray, residence, FirstCloseMarker(data.resolve("first-close")), background, windowIcon())
     application {
         ResidentPosato(host)
     }
     // A collected lock's channel is closed by its cleaner, which would let a second Posato start.
     Reference.reachabilityFence(lock)
+}
+
+/**
+ * Posato's icon for its windows' title bars and the taskbar, which Windows takes from the window rather than from
+ * `Posato.exe`; the Windows jar carries it. Without it (run outside the package) Java's default stays.
+ */
+private fun windowIcon(): Painter? = object {}.javaClass.getResourceAsStream(WINDOW_ICON)?.use { stream ->
+    ImageIO.read(stream)?.toPainter()
 }
 
 /** A second launch asks the running Posato to show its window, retrying while that Posato is still starting. */
@@ -93,3 +104,4 @@ private const val INSTANCE_LOCK = "instance.lock"
 private const val SHOW_SOCKET = "show.sock"
 private const val FORWARD_ATTEMPTS = 3
 private const val FORWARD_RETRY_MILLIS = 500L
+private const val WINDOW_ICON = "/app/posato/desktop/windows/posato-icon.png"

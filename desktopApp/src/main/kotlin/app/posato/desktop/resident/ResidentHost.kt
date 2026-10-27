@@ -1,5 +1,6 @@
 package app.posato.desktop.resident
 
+import androidx.compose.ui.graphics.painter.Painter
 import app.posato.desktop.PresenceMenuActionId
 import app.posato.desktop.PresenceMenuModel
 import app.posato.di.DesktopApplicationComponents
@@ -68,7 +69,8 @@ internal class FirstCloseMarker(
 
 /**
  * What a host that draws its own window hands to [ResidentPosato]. [status] is null when nothing could show a hidden
- * Posato again (Linux without a session bus): there is no icon, and closing the window quits.
+ * Posato again (Linux without a session bus): there is no icon, and closing the window quits. [windowIcon] is the
+ * title bar's icon where the system does not take it from the installed application (Windows); null keeps the default.
  */
 internal class ResidentHost(
     val graph: DesktopApplicationComponents,
@@ -77,4 +79,5 @@ internal class ResidentHost(
     val residence: DesktopResidence,
     val firstClose: FirstCloseMarker,
     val startHidden: Boolean,
+    val windowIcon: Painter? = null,
 )

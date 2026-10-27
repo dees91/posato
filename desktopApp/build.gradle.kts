@@ -1489,6 +1489,11 @@ val windowsAppJar by tasks.registering(Jar::class) {
     dependsOn(runtime, windowsDesktopRuntime)
     from(sourceSets.main.map { it.output })
     from({ (runtime.get() + windowsDesktopRuntime).filter { it.name.endsWith(".jar") }.map { zipTree(it) } })
+    // The windows' title-bar and taskbar icon, which Windows takes from the window, not from Posato.exe.
+    from(rootProject.layout.projectDirectory.file("iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/forest.png")) {
+        into("app/posato/desktop/windows")
+        rename { "posato-icon.png" }
+    }
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC", "module-info.class", "META-INF/versions/*/module-info.class")
 }
 

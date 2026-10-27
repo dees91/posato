@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -81,6 +82,7 @@ internal fun ApplicationScope.ResidentPosato(host: ResidentHost) {
                 }
             },
             title = "Posato",
+            icon = host.windowIcon,
             state = resident.state,
             onPreviewKeyEvent = { event -> event.isQuitKey().also { quitKey -> if (quitKey) quit() } },
         ) {
@@ -96,7 +98,7 @@ internal fun ApplicationScope.ResidentPosato(host: ResidentHost) {
             )
         }
     }
-    notice?.let { shown -> NoticeWindow(shown, host.copy, onDismiss = { notice = null }, onQuit = ::exitApplication) }
+    notice?.let { shown -> NoticeWindow(shown, host.copy, host.windowIcon, onDismiss = { notice = null }, onQuit = ::exitApplication) }
 }
 
 /** Posato's window, which comes and goes while Posato stays. */
@@ -153,6 +155,7 @@ private fun StatusSurfaceEffects(
 private fun NoticeWindow(
     notice: ResidentNotice,
     copy: ResidentPresenceCopy,
+    icon: Painter?,
     onDismiss: () -> Unit,
     onQuit: () -> Unit,
 ) {
@@ -161,6 +164,7 @@ private fun NoticeWindow(
         onCloseRequest = onDismiss,
         state = state,
         title = "Posato",
+        icon = icon,
         resizable = false,
         alwaysOnTop = true,
         onPreviewKeyEvent = { event ->
