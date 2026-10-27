@@ -14,12 +14,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Walks first-run onboarding on Android or Linux the way a person does: past the welcome and privacy steps, through
+ * Walks first-run onboarding on Android, Linux, or Windows the way a person does: past the welcome and privacy steps, through
  * device access, an optional first website, and the summary to Session. On Android every system request that access
  * raises (the VPN, notifications, the battery exemption) is answered with its allow button, so the grants `install
- * --grants settings` leaves out are given as a person gives them. The Mac uses `vm onboard`, iOS its scenario.
+ * --grants settings` leaves out are given as a person gives them. Windows meets the access step as Linux does, with the
+ * same labels, until its own host names its access; the spike jar, which has no pausing service, needs --skip-access.
+ * The Mac uses `vm onboard`, iOS its scenario.
  */
-class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk first-run onboarding to Session, allowing every request.") {
+class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows: walk first-run onboarding to Session, allowing every request.") {
     private val website by option("--website", help = "A first website to add on the website step.")
     private val skipAccess by option("--skip-access", help = "Press Not now on the access step instead of allowing access.").flag()
 
@@ -56,10 +58,10 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
 
     private fun requireTarget(session: Session): Target {
         val target = session.target()
-        if (target != Target.ANDROID && target != Target.LINUX) {
+        if (target != Target.ANDROID && target != Target.LINUX && target != Target.WINDOWS) {
             throw ControlException(
                 ErrorCode.UNSUPPORTED_ON_TARGET,
-                "flow onboard walks the android and linux targets.",
+                "flow onboard walks the android, linux, and windows targets.",
                 "On the Mac run `vm onboard`; on iOS run the onboarding scenario.",
             )
         }

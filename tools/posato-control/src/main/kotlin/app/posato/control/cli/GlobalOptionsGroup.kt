@@ -16,7 +16,7 @@ class GlobalOptionsGroup : OptionGroup(name = "Common options") {
         "--target",
         "-t",
         envvar = "POSATO_CONTROL_TARGET",
-        help = "desktop, simulator (sim), device, android, or linux.",
+        help = "desktop, simulator (sim), device, android, linux, or windows.",
     ).choice(Target.choices)
     private val udid by option("--udid", help = "Simulator or iPhone identifier (or name), or an Android adb serial, overriding local.properties.")
     private val runId by option("--run-id", help = "Reuse a run directory name instead of generating one.")

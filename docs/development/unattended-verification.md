@@ -6,7 +6,8 @@ Application verification). The macOS application never runs on the host Mac:
 the host builds the package and `posato-control` refuses to drive it there. This guide sets up the environment in which an
 agent verifies a Posato change with no person at the Mac or the phone: the macOS app inside Tart virtual
 machines and the iOS app on a dedicated test iPhone, both signed in to a
-dedicated test Apple Account, the Linux app in a Tart Ubuntu VM, and the
+dedicated test Apple Account, the Linux app in a Tart Ubuntu VM, the Windows
+app in a Tart Windows VM, and the
 Android app on an emulator. After the one-time setup below, the
 `posato-control` driver answers every system dialog itself. Background,
 measurements, and platform limits are in the
@@ -320,6 +321,74 @@ turns off, strict private DNS, which bypasses website pausing, and a screen
 lock, after which a reboot needs one unlock by a person. The emulator has
 none of these.
 
+## The Windows golden VM
+
+Windows (`PLATFORM-002`) runs in a Tart Windows 11 ARM64 guest. Upstream
+Tart runs only macOS and Linux guests, so Windows needs a separately built
+fork with its own `TART_HOME`, which keeps its VMs apart from the others.
+The fork relies on private Virtualization framework settings (PMU and trap
+emulation), which a macOS update may remove.
+
+1. Build the unofficial fork
+   [`mustafaakin/tart`](https://github.com/mustafaakin/tart), branch
+   `windows-guest-extras` at `e4c623c`, after reviewing it:
+
+   ```shell
+   git clone https://github.com/mustafaakin/tart.git tart-windows && cd tart-windows
+   git checkout e4c623c
+   brew install lld        # rebuilds the fork's embedded UEFI drivers
+   make -C Resources/Windows
+   swift build -c release --product tart
+   mkdir -p build/tart.app/Contents/MacOS
+   cp .build/release/tart build/tart.app/Contents/MacOS/tart
+   cp Resources/Info.plist build/tart.app/Contents/Info.plist
+   codesign --sign - --entitlements Resources/tart-dev.entitlements --force build/tart.app
+   ```
+
+2. Build the Windows guest agent from
+   [`mustafaakin/tart-guest-agent`](https://github.com/mustafaakin/tart-guest-agent)
+   at `f15198a`:
+
+   ```shell
+   git clone https://github.com/mustafaakin/tart-guest-agent.git && cd tart-guest-agent
+   git checkout f15198a
+   GOOS=windows GOARCH=arm64 go build -o build/tart-guest-agent.exe ./cmd
+   ```
+
+3. Download a Windows 11 ARM64 ISO from Microsoft. You are responsible for
+   its license; the guest is not activated. Keep about 40 GB free for the
+   golden VM and the installation media.
+4. Create the golden VM with no interaction (about 25 minutes):
+
+   ```shell
+   export POSATO_TART_WINDOWS=<tart-fork>/build/tart.app/Contents/MacOS/tart
+   export POSATO_TART_WINDOWS_AGENT=<tart-guest-agent>/build/tart-guest-agent.exe
+   export POSATO_TART_WINDOWS_HOME=~/.tart-windows
+   tools/posato-control/windows/create-golden.sh <Win11_Arm64.iso>
+   ```
+
+   `tart create --from-iso` installs Windows unattended in two boots. The
+   script then uses the image's `admin`/`admin` account over SSH, which only
+   Tart's NAT network reaches, to run
+   [`setup-guest.ps1`](../../tools/posato-control/windows/setup-guest.ps1):
+   the `viosock` and `vioserial` drivers, the guest agent as a scheduled task
+   at sign-in (so `tart exec` reaches the desktop), UAC, sleep, and the screen
+   saver off, Windows Update off and Defender exclusions for the driver's
+   folders, JDK 21 for Windows on ARM with the Java Access Bridge on, and
+   Python with `java-access-bridge-wrapper`. The guest keeps `admin`/`admin`,
+   has UAC off, and answers SSH on Tart's NAT network, which is acceptable only
+   for this disposable test guest without personal data. The JDK link follows
+   the latest JDK 21 build, so golden VMs made at different times can differ in
+   the JDK patch release.
+5. Set `posato.vm.windowsTart` (the fork's binary), and, when they differ
+   from the defaults, `posato.vm.windowsTartHome` (`~/.tart-windows`) and
+   `posato.vm.windowsGolden` (`posato-golden-windows`). The environment
+   variables above override them.
+
+`posato-control windows create` clones it as `posato-run-windows` (about 30
+seconds until the agent answers); the driver copies its own guest scripts in
+on each boot, so changing them needs no new golden VM.
+
 ## Register the VMs for development signing
 
 The sync companion's development profile only runs on registered devices.
@@ -349,6 +418,7 @@ posato.vm.peerGolden=<peer-golden>
 posato.vm.legacyGolden=<legacy-golden>
 posato.vm.venturaGolden=<ventura-golden>
 posato.vm.linuxGolden=<linux-golden>
+posato.vm.windowsTart=<tart-fork>/build/tart.app/Contents/MacOS/tart
 posato.android.serial=<emulator-serial>
 posato.vm.adminKeychainService=<vm-admin-item>
 posato.vm.adminKeychainAccount=<guest-user>

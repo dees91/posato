@@ -1,12 +1,12 @@
 ---
 name: verify-posato
-description: "Drive the real Posato macOS desktop app, iOS app (Simulator or connected iPhone), Linux app (Tart Ubuntu clone), and Android app (phone or own emulator) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, androidApp/, linuxHelper/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
+description: "Drive the real Posato macOS desktop app, iOS app (Simulator or connected iPhone), Linux app (Tart Ubuntu clone), Windows app (Tart Windows clone), and Android app (phone or own emulator) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, androidApp/, linuxHelper/, macosHelper/, windowsHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
 ---
 
 # Verify Posato
 
-Posato is a Kotlin Multiplatform app with three destinations on four hosts:
-Compose Desktop apps for macOS and Linux, a Compose iOS app, and an Android
+Posato is a Kotlin Multiplatform app with three destinations on five hosts:
+Compose Desktop apps for macOS, Linux, and Windows, a Compose iOS app, and an Android
 app. The destinations are `Session` (the screen shown
 after every launch), `Pause sets` (a list of sets, each with its own websites
 and this device's apps), and `Schedules`.
@@ -93,6 +93,15 @@ never from the Apple Developer portal. With the one-time setup in
   accessibility tree on AT-SPI. The guest's polkit rule approves the service
   installation. Never run it together with a macOS clone. Finish with `$PC
   linux destroy`. Recipes: [Linux and Android](./features/linux-and-android.md).
+- **Windows in a Tart Windows clone.** `$PC windows create` (the Tart fork
+  in `posato.vm.windowsTart`), then the shared commands and flows with `-t
+  windows` (`build`, `install [--package <file>.msi]`, `launch`, `flow
+  onboard`, `flow session`, `snapshot`, `tap`, `type`, `run`,
+  `screenshot`); the tree is Posato's Compose tree on the Java Access
+  Bridge. Guest facts come from `$PC windows check
+  connect|process|service|filters|run-value|pipe`, and `--as-other-user`
+  plays a second, standard local user. Finish with `$PC windows destroy`.
+  Recipes: [Windows](./features/windows.md).
 - **Android on a phone or Posato's own emulator.** `-t android` with
   `--udid <adb serial>` or `posato.android.serial`; another person's emulator
   is never used. `install -t android` gives every grant, so no step is

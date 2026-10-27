@@ -1,6 +1,7 @@
 #!/bin/bash
-# Creates the Windows golden VM for the PLATFORM-002 spike from a Windows 11 ARM64 ISO, with no interaction:
-# unattended install, then the guest agent, drivers, JDK, Python and the probe over SSH.
+# Creates the Windows golden VM for posato-control's Windows target from a Windows 11 ARM64 ISO, with no interaction:
+# unattended install, then the guest agent, drivers, JDK, and Python over SSH. posato-control copies its own guest
+# scripts into each clone, so they are not part of the golden VM.
 # usage: create-golden.sh <Windows 11 ARM64 ISO>
 # Environment: POSATO_TART_WINDOWS (the Tart build with Windows guests, required), POSATO_TART_WINDOWS_AGENT
 # (tart-guest-agent.exe built for windows/arm64, required), POSATO_TART_WINDOWS_HOME (default ~/.tart-windows),
@@ -50,7 +51,7 @@ cp "$MOUNT"/viosock/w11/ARM64/* "$KIT/drivers/viosock/"
 cp "$MOUNT"/vioserial/w11/ARM64/* "$KIT/drivers/vioserial/"
 hdiutil detach "$MOUNT" >/dev/null
 cp "$AGENT" "$KIT/tart-guest-agent.exe"
-cp "$HERE"/guest/setup-guest.ps1 "$HERE"/guest/jab_probe.py "$HERE"/guest/screenshot.ps1 "$KIT/"
+cp "$HERE"/setup-guest.ps1 "$KIT/"
 
 # The fork's image signs in as admin/admin with SSH open on Tart's NAT network; the agent isn't there yet.
 # OpenSSH runs commands through cmd.exe, which leaves a stray quote on a nested `cmd /c`, so commands run bare.

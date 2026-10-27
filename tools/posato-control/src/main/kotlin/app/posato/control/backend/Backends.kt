@@ -9,6 +9,7 @@ import app.posato.control.core.RunContext
 import app.posato.control.core.Target
 import app.posato.control.desktop.DesktopBackend
 import app.posato.control.linux.LinuxBackend
+import app.posato.control.windows.WindowsBackend
 
 object Backends {
     fun create(
@@ -24,6 +25,7 @@ object Backends {
             Target.DEVICE -> DeviceBackend.create(context, udid)
             Target.ANDROID -> AndroidBackend.create(context, udid)
             Target.LINUX -> LinuxBackend.create(context)
+            Target.WINDOWS -> WindowsBackend.create(context)
         }
     }
 

@@ -105,8 +105,9 @@ Preconditions:
   | Windows (spike jar) | the Linux text | Saved on this computer | On this computer |
 
   Apple runs also decline iCloud, so the local-only noun is shown. Windows
-  is asserted by `tools/windows-spike/windows-e2e.sh` at `07-summary` and
-  `08-session`. Verify the initial state first: no Mac helper (`doctor`), no
+  with the spike jar runs `$PC run -t windows
+  onboarding-deferred-access-linux.json` after `launch -t windows --fresh`,
+  since it shows the Linux text. Verify the initial state first: no Mac helper (`doctor`), no
   Screen Time grant, no Linux service (`systemctl is-active posato-helper`
   not `active`), Android installed with `--grants none`.
 - **Upgrade:** back up the desktop databases, `reset -t desktop`, restore a

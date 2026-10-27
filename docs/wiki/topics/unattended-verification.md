@@ -336,7 +336,9 @@ again; a copy that overlaps a build is untested (`open`). The
 The spike asked whether an agent can verify Posato on Windows with no person
 present, as it does on Linux. The answer for the verification loop is yes;
 enforcement, the privilege model, and distribution are untouched.
-[`tools/windows-spike`](../../../tools/windows-spike/README.md) reproduces it.
+`posato-control -t windows` replaced the spike's scripts
+(`PLATFORM-002`, see the driver README, "Windows"); the golden VM setup lives
+in `tools/posato-control/windows`.
 
 - `observed` (2026-10-25): an unofficial Tart fork with Windows guests,
   reviewed and built from source, installed Windows 11 ARM64 (build 26300)
