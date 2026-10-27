@@ -1394,6 +1394,10 @@ dependencies {
     // Linux only (LINUX-003): the status icon and the single-instance name on the session bus. The Mac never loads
     // these classes, so they compile here and ship only in the Linux jar (linuxDesktopRuntime below).
     compileOnly(libs.dbus.java.core)
+    // Windows only (PLATFORM-002): the helper pipe, the Start menu, and the Run key. Only the Windows entry point loads
+    // these classes, so they compile here and ship only in the Windows jar.
+    compileOnly(libs.jna)
+    compileOnly(libs.jna.platform)
     testImplementation(libs.dbus.java.core)
     testImplementation(libs.dbus.java.transport.native.unixsocket)
     testImplementation(kotlin("test"))
