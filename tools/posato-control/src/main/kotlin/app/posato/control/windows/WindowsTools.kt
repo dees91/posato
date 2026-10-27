@@ -18,8 +18,8 @@ import java.util.Base64
  * The driver's side of the Windows clone: files travel on the guest command's standard input, not over the directory
  * share, whose first reads after boot can fail with "Error performing inpage operation". The guest scripts under
  * `resources/windows` are copied in on each boot, so changing them needs no new golden VM: [PROBE] reads and presses
- * Posato's Compose tree through the Java Access Bridge, [SCREENSHOT] captures the primary screen, and [CHECKS] reads
- * the facts that acceptance checks need.
+ * Posato's Compose tree through the Java Access Bridge, [SCREENSHOT] captures the primary screen, [CHECKS] reads
+ * the facts that acceptance checks need, and [LIMITED] runs a command with the filtered token when UAC is on.
  */
 class WindowsTools(
     private val guest: WindowsGuest,
@@ -53,9 +53,35 @@ class WindowsTools(
     }
 
     fun installScripts() {
-        mapOf(PROBE_RESOURCE to PROBE, SCREENSHOT_RESOURCE to SCREENSHOT, CHECKS_RESOURCE to CHECKS, LIMITED_RESOURCE to LIMITED).forEach { (resource, guestPath) ->
+        val resources = mapOf(PROBE_RESOURCE to PROBE, SCREENSHOT_RESOURCE to SCREENSHOT, CHECKS_RESOURCE to CHECKS, LIMITED_RESOURCE to LIMITED)
+        resources.forEach { (resource, guestPath) ->
             push(checkNotNull(WindowsTools::class.java.getResourceAsStream(resource)).use { it.readBytes() }, guestPath)
         }
+    }
+
+    /**
+     * Whether UAC is on in the clone (the golden VM has it off). The guest agent then runs elevated, so Posato and the
+     * bridge probe run through [runLimited] and [startLimited] with the signed-in user's filtered token, as a person's
+     * Posato does.
+     */
+    val uacOn: Boolean by lazy {
+        guest.run(listOf("reg", "query", POLICIES_KEY, "/v", "EnableLUA")).stdout.lines().any { "EnableLUA" in it && it.trim().endsWith("0x1") }
+    }
+
+    /** Runs [command] as the signed-in user with the filtered token and returns its output and exit code. */
+    fun runLimited(
+        command: List<String>,
+        stdin: ByteArray? = null,
+        timeout: Duration = LIMITED_TIMEOUT,
+    ): ProcessOutput {
+        val arguments = listOf("-CommandLine", commandLine(command), "-TimeoutSeconds", timeout.seconds.toString()) +
+            listOfNotNull(if (stdin != null) "-HasInput" else null)
+        return guest.run(WindowsGuest.POWERSHELL + listOf("-File", LIMITED) + arguments, stdin, timeout.plusSeconds(LIMITED_SLACK_SECONDS))
+    }
+
+    /** Starts a cmd.exe [commandLine] as the signed-in user with the filtered token and returns without waiting. */
+    fun startLimited(commandLine: String): ProcessOutput {
+        return guest.run(WindowsGuest.POWERSHELL + listOf("-File", LIMITED, "-CommandLine", commandLine, "-NoWait"))
     }
 
     /** Runs the Java Access Bridge probe with [arguments], which travel as JSON so quotes and non-ASCII text arrive intact. */
@@ -64,7 +90,7 @@ class WindowsTools(
         val command = listOf(PYTHON, PROBE, "-")
         val input = json.toByteArray(Charsets.UTF_8)
         // With UAC on, an elevated probe cannot reach Posato's window, so it runs at Posato's own level.
-        return if (guest.uacOn) guest.runLimited(command, input) else guest.run(command, stdin = input)
+        return if (uacOn) runLimited(command, input) else guest.run(command, stdin = input)
     }
 
     fun screenshot(file: Path): Path {
@@ -103,7 +129,13 @@ class WindowsTools(
         private const val CHECKS_RESOURCE = "/windows/posato-checks.ps1"
         private const val LIMITED_RESOURCE = "/windows/posato-limited.ps1"
         private const val MAX_DETAIL = 600
+        private const val POLICIES_KEY = "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"
+        private const val LIMITED_SLACK_SECONDS = 30L
+        private val LIMITED_TIMEOUT: Duration = Duration.ofMinutes(5)
         private val COPY_TIMEOUT: Duration = Duration.ofMinutes(10)
         private val CHECK_TIMEOUT: Duration = Duration.ofMinutes(3)
+
+        /** A cmd.exe command line: each argument with a space or nothing in it is quoted. */
+        fun commandLine(command: List<String>): String = command.joinToString(" ") { if (it.isEmpty() || ' ' in it) "\"$it\"" else it }
     }
 }

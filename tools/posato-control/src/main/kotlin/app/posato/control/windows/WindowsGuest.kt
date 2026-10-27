@@ -125,31 +125,6 @@ class WindowsGuest(
         return run(POWERSHELL + listOf("-EncodedCommand", encoded), stdin, timeout)
     }
 
-    /**
-     * Whether UAC is on in the clone (the golden VM has it off). The guest agent then runs elevated, so Posato and the
-     * bridge probe run through [runLimited] and [startLimited] with the signed-in user's filtered token, as a person's
-     * Posato does.
-     */
-    val uacOn: Boolean by lazy {
-        run(listOf("reg", "query", POLICIES_KEY, "/v", "EnableLUA")).stdout.lines().any { "EnableLUA" in it && it.trim().endsWith("0x1") }
-    }
-
-    /** Runs [command] as the signed-in user with the filtered token and returns its output and exit code. */
-    fun runLimited(
-        command: List<String>,
-        stdin: ByteArray? = null,
-        timeout: Duration = DEFAULT_TIMEOUT,
-    ): ProcessOutput {
-        val arguments = listOf("-CommandLine", commandLine(command), "-TimeoutSeconds", timeout.seconds.toString()) +
-            listOfNotNull(if (stdin != null) "-HasInput" else null)
-        return run(POWERSHELL + listOf("-File", WindowsTools.LIMITED) + arguments, stdin, timeout.plusSeconds(LIMITED_SLACK_SECONDS))
-    }
-
-    /** Starts a cmd.exe [commandLine] as the signed-in user with the filtered token and returns without waiting. */
-    fun startLimited(commandLine: String): ProcessOutput {
-        return run(POWERSHELL + listOf("-File", WindowsTools.LIMITED, "-CommandLine", commandLine, "-NoWait"))
-    }
-
     /** Runs a program in the guest directly, such as the probe's Python or a resource script. */
     fun run(
         command: List<String>,
@@ -180,12 +155,6 @@ class WindowsGuest(
         private const val PROBE_SECONDS = 15L
         private const val POLL_MILLIS = 2_000L
         private val DEFAULT_TIMEOUT: Duration = Duration.ofMinutes(5)
-
-        private const val POLICIES_KEY = "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"
-        private const val LIMITED_SLACK_SECONDS = 30L
-
-        /** A cmd.exe command line: each argument with a space or nothing in it is quoted. */
-        fun commandLine(command: List<String>): String = command.joinToString(" ") { if (it.isEmpty() || ' ' in it) "\"$it\"" else it }
 
         /** A PowerShell single-quoted string, in which only the quote itself needs doubling. */
         fun psQuote(text: String): String = "'" + text.replace("'", "''") + "'"

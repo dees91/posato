@@ -88,7 +88,7 @@ class WindowsExecCommand : ControlCommand("exec", "Run a PowerShell script in th
         if (asOtherUser) return WindowsChecks(guest).asOtherUser(script)
         val output = if (limited) {
             val encoded = Base64.getEncoder().encodeToString(script.toByteArray(Charsets.UTF_16LE))
-            guest.runLimited(WindowsGuest.POWERSHELL + listOf("-EncodedCommand", encoded))
+            guest.tools.runLimited(WindowsGuest.POWERSHELL + listOf("-EncodedCommand", encoded))
         } else {
             guest.powershell(script)
         }
