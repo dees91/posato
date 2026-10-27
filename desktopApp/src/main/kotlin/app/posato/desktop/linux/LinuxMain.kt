@@ -6,8 +6,11 @@ import app.posato.desktop.linux.status.LinuxStatusArea
 import app.posato.desktop.linux.status.StatusIcons
 import app.posato.desktop.resident.DesktopResidence
 import app.posato.desktop.resident.FirstCloseMarker
+import app.posato.desktop.resident.InstanceLock
 import app.posato.desktop.resident.ResidentHost
 import app.posato.desktop.resident.ResidentPosato
+import app.posato.desktop.resident.ResidentStartup
+import app.posato.desktop.resident.residentStartup
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.unavailableMacHelper
@@ -15,6 +18,7 @@ import app.posato.feature.presence.loadLinuxPresenceCopy
 import app.posato.feature.targets.data.CatalogApplicationMappings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.lang.ref.Reference
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
@@ -29,10 +33,10 @@ fun main(args: Array<String>) {
     val data = dataDirectory()
     val background = BACKGROUND_ARGUMENT in args
     val token = System.getenv("XDG_ACTIVATION_TOKEN") ?: System.getenv("DESKTOP_STARTUP_ID").orEmpty()
-    val lock = LinuxInstanceLock(data.resolve("instance.lock"))
-    when (linuxStartup(lock) { if (background) true else forwardShowWithRetry(token) }) {
-        LinuxStartup.RUN -> Unit
-        LinuxStartup.FORWARDED, LinuxStartup.EXIT -> exitProcess(0)
+    val lock = InstanceLock(data.resolve("instance.lock"))
+    when (residentStartup(lock) { if (background) true else forwardShowWithRetry(token) }) {
+        ResidentStartup.RUN -> Unit
+        ResidentStartup.FORWARDED, ResidentStartup.EXIT -> exitProcess(0)
     }
     val client = LinuxHelperClient()
     val installer = LinuxHelperInstaller(client)
@@ -63,6 +67,8 @@ fun main(args: Array<String>) {
     application {
         ResidentPosato(host)
     }
+    // A collected lock's channel is closed by its cleaner, which would let a second Posato start.
+    Reference.reachabilityFence(lock)
 }
 
 /** A second launch asks the running Posato to show its window, retrying while that Posato is still starting. */

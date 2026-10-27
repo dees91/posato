@@ -1,11 +1,11 @@
-package app.posato.desktop.linux
+package app.posato.desktop.resident
 
 import java.nio.file.Path
 
-object LinuxInstanceLockProbeMain {
+object InstanceLockProbeMain {
     @JvmStatic
     fun main(arguments: Array<String>) {
-        val lock = LinuxInstanceLock(Path.of(arguments[0]))
+        val lock = InstanceLock(Path.of(arguments[0]))
         println(if (lock.tryAcquire()) "held" else "refused")
         System.out.flush()
         System.`in`.read()

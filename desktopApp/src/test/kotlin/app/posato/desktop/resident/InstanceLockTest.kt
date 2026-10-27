@@ -1,4 +1,4 @@
-package app.posato.desktop.linux
+package app.posato.desktop.resident
 
 import java.io.BufferedReader
 import java.nio.file.Files
@@ -10,8 +10,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class LinuxInstanceLockTest {
-    private val directory: Path = Files.createTempDirectory("posato-linux-lock")
+class InstanceLockTest {
+    private val directory: Path = Files.createTempDirectory("posato-instance-lock")
     private val path: Path = directory.resolve("instance.lock")
     private val probes = mutableListOf<Process>()
 
@@ -26,16 +26,16 @@ class LinuxInstanceLockTest {
     fun `given another process holds the lock and its bus name is unreachable when Posato starts then it exits without the database`() {
         startProbe().expect("held")
 
-        val decision = linuxStartup(LinuxInstanceLock(path), forwardShow = { false })
+        val decision = residentStartup(InstanceLock(path), forwardShow = { false })
 
-        assertEquals(LinuxStartup.EXIT, decision)
+        assertEquals(ResidentStartup.EXIT, decision)
     }
 
     @Test
     fun `given another process holds the lock when the running one shows its window then this launch only forwards`() {
         startProbe().expect("held")
 
-        assertEquals(LinuxStartup.FORWARDED, linuxStartup(LinuxInstanceLock(path), forwardShow = { true }))
+        assertEquals(ResidentStartup.FORWARDED, residentStartup(InstanceLock(path), forwardShow = { true }))
     }
 
     @Test
@@ -45,12 +45,12 @@ class LinuxInstanceLockTest {
         holder.outputStream.flush()
         assertTrue(holder.waitFor(10, TimeUnit.SECONDS))
 
-        assertEquals(LinuxStartup.RUN, linuxStartup(LinuxInstanceLock(path), forwardShow = { error("not called") }))
+        assertEquals(ResidentStartup.RUN, residentStartup(InstanceLock(path), forwardShow = { error("not called") }))
     }
 
     private fun startProbe(): Process {
         val java = Path.of(System.getProperty("java.home"), "bin", "java").toString()
-        val probe = ProcessBuilder(java, "-cp", System.getProperty("java.class.path"), LinuxInstanceLockProbeMain::class.java.name, path.toString())
+        val probe = ProcessBuilder(java, "-cp", System.getProperty("java.class.path"), InstanceLockProbeMain::class.java.name, path.toString())
             .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
         probes += probe

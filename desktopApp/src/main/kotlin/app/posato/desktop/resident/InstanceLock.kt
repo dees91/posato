@@ -1,4 +1,4 @@
-package app.posato.desktop.linux
+package app.posato.desktop.resident
 
 import java.io.Closeable
 import java.io.IOException
@@ -10,11 +10,11 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
 /**
- * One Posato for Linux per user (LINUX-003): an exclusive lock on `instance.lock` next to the database, taken before
- * the database opens, held until the process ends. The operating system drops it with the process, so a crash
- * leaves no stale lock.
+ * One Posato per user on a host that draws its own window (LINUX-003, PLATFORM-002): an exclusive lock on
+ * `instance.lock` next to the database, taken before the database opens, held until the process ends. The operating
+ * system drops it with the process, so a crash leaves no stale lock.
  */
-internal class LinuxInstanceLock(
+internal class InstanceLock(
     private val path: Path,
 ) : Closeable {
     private var channel: FileChannel? = null
@@ -52,16 +52,16 @@ internal class LinuxInstanceLock(
     }
 }
 
-internal enum class LinuxStartup { RUN, FORWARDED, EXIT }
+internal enum class ResidentStartup { RUN, FORWARDED, EXIT }
 
 /**
  * Whether this launch runs Posato: with the lock it does; without it, it asks the running Posato to show its window
  * and exits either way, never opening the database a second time.
  */
-internal fun linuxStartup(
-    lock: LinuxInstanceLock,
+internal fun residentStartup(
+    lock: InstanceLock,
     forwardShow: () -> Boolean,
-): LinuxStartup {
-    if (lock.tryAcquire()) return LinuxStartup.RUN
-    return if (forwardShow()) LinuxStartup.FORWARDED else LinuxStartup.EXIT
+): ResidentStartup {
+    if (lock.tryAcquire()) return ResidentStartup.RUN
+    return if (forwardShow()) ResidentStartup.FORWARDED else ResidentStartup.EXIT
 }
