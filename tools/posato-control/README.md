@@ -720,7 +720,9 @@ through the Tart fork in `posato.vm.windowsTart` with its own
   `posato-error.log` for `logs`, and returns once the tree can be read.
   `--fresh` removes `%LOCALAPPDATA%\Posato`.
 - The tree is Posato's Compose tree on the Java Access Bridge, read by
-  `src/main/resources/windows/posato-jab.py` in the guest. `tap` runs the
+  `src/main/resources/windows/posato-jab.py` in the guest. While a modal
+  dialog of Posato, such as Swing's **Choose apps**, takes the input, the
+  tree is that dialog's, as a person's clicks would reach it. `tap` runs the
   element's accessible click action with no pointer input; Compose refuses
   the bridge's text setter, so `type` focuses the field and sends Unicode
   keyboard input to Posato's window, and `press` sends keys such as

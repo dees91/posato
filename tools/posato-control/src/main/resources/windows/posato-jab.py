@@ -3,7 +3,7 @@
 usage: python posato-jab.py dump | press <path> [<name>] | focus <path> [<name>] | type <text> | key <combo>
        python posato-jab.py -    (the arguments as a JSON array of strings on standard input, in UTF-8)
 
-`dump` prints the window's accessible tree as JSON: each element with its role, name, description, text, states,
+`dump` prints the window's accessible tree (Posato's window, or a dialog of Posato that takes input over it) as JSON: each element with its role, name, description, text, states,
 bounds, actions, and path (child indexes from the window, joined by "."). `press` runs an element's click action,
 `focus` clicks it and requests focus, `type` sends Unicode keyboard input to the focused window, and `key` sends one
 key combination such as `ctrl+a` or `return`. Exits 2 when the window or the element is missing, 1 on another failure.
@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import queue
+import re
 import sys
 import threading
 import time
@@ -143,11 +144,29 @@ def describe(node, path):
     }
 
 
+def window_title(jab):
+    """The window to read: Posato's main window, or the topmost visible window of its process that takes input.
+
+    A modal dialog, such as Swing's "Choose apps", disables the main window while it is open, so the reader and its
+    presses follow the dialog, as a person's clicks would.
+    """
+    windows = jab.get_windows()
+    main = next((window for window in windows if window.title == WINDOW_TITLE), None)
+    if main is None:
+        return WINDOW_TITLE
+    user32 = ctypes.windll.user32
+    for window in windows:  # EnumWindows lists top-level windows from the top of the z-order
+        if window.pid == main.pid and window.title and user32.IsWindowVisible(window.hwnd) and user32.IsWindowEnabled(window.hwnd):
+            return window.title
+    return WINDOW_TITLE
+
+
 def tree(jab):
+    title = window_title(jab)
     try:
-        jab.switch_window_by_title(WINDOW_TITLE)
+        jab.switch_window_by_title(re.escape(title) + "$")
     except Exception as missing:  # noqa: BLE001 - the wrapper raises a bare Exception for a missing window
-        raise LookupError(f"no Java window titled {WINDOW_TITLE!r}: {missing}") from missing
+        raise LookupError(f"no Java window titled {title!r}: {missing}") from missing
     return ContextTree(jab).root
 
 

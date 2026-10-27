@@ -58,7 +58,11 @@ verification guide, `posato.vm.windowsTart` set, and room in
   a fresh browser profile and a host with stable addresses when a browser
   is the proof; DNS over HTTPS in a browser and connections already open are
   outside the filters.
-- **Application:** choose it in **Choose apps**, start a pause, then `$PC
+- **Application:** **Manage apps**, **Apps**, **Choose apps**; the Swing
+  dialog is then the tree, so `$PC tap -t windows --text "7-Zip File
+  Manager"` ticks a program and `$PC tap -t windows --text Choose --role
+  button` closes it. Store applications (Notepad, Paint) have no Start menu
+  shortcut and are never listed. Start a pause, then `$PC
   windows check process --name <image> --expect absent` after starting it
   with `$PC windows exec --script 'Start-Process <path>'`.
 - **Foreign caller:** `$PC windows check pipe --line status --expect
