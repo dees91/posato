@@ -50,8 +50,10 @@ for a sync service. Start the relay detached, in its own session, so it
 outlives the command that started it, and never start a second one.
 
 - **Relay:** `$PC relay --line primary --android emulator-5560
-  --duration-seconds 5400` for a Mac guest and the emulator, or `--linux`
-  for the Linux clone. Proof: its final envelope reports `copies`.
+  --duration-seconds 5400` for a Mac guest and the emulator, `--linux`
+  for the Linux clone, or `--windows` for the Windows clone, whose Posato
+  links `Z:\posato-sync` (`flow folder link -t windows --path
+  'Z:\posato-sync'`). Proof: its final envelope reports `copies`.
 - **Mac creates:** `$PC flow folder link -t desktop --vm primary --path
   '/Users/posato/PosatoSync'`. Proof: `outcome` is `linked`.
 - **Mac offers and another Mac joins:** `flow folder offer` returns `code`;

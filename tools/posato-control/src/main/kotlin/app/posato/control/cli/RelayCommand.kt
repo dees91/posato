@@ -8,6 +8,7 @@ import app.posato.control.relay.RelayEndpoint
 import app.posato.control.relay.ShellEndpoint
 import app.posato.control.vm.Tart
 import app.posato.control.vm.VmLine
+import app.posato.control.windows.WindowsGuest
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
@@ -29,6 +30,7 @@ class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Pos
     private val lines by option("--line", help = "A Tart line whose guest folder joins; repeat for more.").multiple()
     private val androidSerials by option("--android", help = "An adb serial whose folder joins; repeat for more.").multiple()
     private val linux by option("--linux", help = "The Linux clone's folder joins.").flag()
+    private val windows by option("--windows", help = "The Windows clone's folder (Z:\\posato-sync in the guest) joins.").flag()
     private val intervalSeconds by option("--interval-seconds", help = "Pause between rounds.").long().default(DEFAULT_INTERVAL_SECONDS)
     private val durationSeconds by option("--duration-seconds", help = "How long to keep relaying.").long().default(DEFAULT_DURATION_SECONDS)
 
@@ -45,6 +47,15 @@ class RelayCommand : ControlCommand("relay", "Synchronize the devices' local Pos
                 ShellEndpoint("linux", "'" + LinuxGuest.syncShare(session.context) + "'", { script, stdin ->
                     session.context.subprocess.run(listOf("/bin/sh", "-c", script), stdin = stdin)
                         .requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying the Linux folder").stdout
+                })
+            } else {
+                null
+            },
+            if (windows) {
+                // So is the Windows clone's: Posato there uses the share Z:\posato-sync itself.
+                ShellEndpoint("windows", "'" + WindowsGuest.syncShare(session.context) + "'", { script, stdin ->
+                    session.context.subprocess.run(listOf("/bin/sh", "-c", script), stdin = stdin)
+                        .requireSuccess(ErrorCode.COMMAND_FAILED, "Relaying the Windows folder").stdout
                 })
             } else {
                 null
