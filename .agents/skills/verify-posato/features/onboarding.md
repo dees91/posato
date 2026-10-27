@@ -89,6 +89,26 @@ Preconditions:
   after a fresh launch or reset. It writes nothing except the completion row;
   confirm with one `local_setup_state` row and an immediate Session landing
   on the next launch.
+- **Deferred access summary:** with access or Mac setup deferred (Not now on
+  the access step) and nothing granted beforehand, Summary names the setup
+  still needed and where the choices are saved, and after Go to Session the
+  desktop sidebar names the device. Run
+  `onboarding-deferred-access-<mac|ios|linux|android>.json`; each asserts its
+  platform's texts, screenshots and snapshots Summary and Session:
+
+  | Platform | Summary notice | Summary noun | Sidebar |
+  | --- | --- | --- | --- |
+  | Mac | Website pauses are unavailable until Mac setup is complete. | Saved on this Mac | On this Mac |
+  | iPhone | Allow Screen Time access in Pause sets before pausing websites or apps. | Saved on this iPhone | none |
+  | Linux | Allow pausing on this computer before pausing websites or apps. | Saved on this computer | On this computer |
+  | Android | Allow access before pausing websites or apps. | Saved on this phone | none |
+  | Windows (spike jar) | the Linux text | Saved on this computer | On this computer |
+
+  Apple runs also decline iCloud, so the local-only noun is shown. Windows
+  is asserted by `tools/windows-spike/windows-e2e.sh` at `07-summary` and
+  `08-session`. Verify the initial state first: no Mac helper (`doctor`), no
+  Screen Time grant, no Linux service (`systemctl is-active posato-helper`
+  not `active`), Android installed with `--grants none`.
 - **Upgrade:** back up the desktop databases, `reset -t desktop`, restore a
   database that already holds a domain, policy, bootstrap row, or session,
   and launch. The app opens on Session with no flow. Restore the backup

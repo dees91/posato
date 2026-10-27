@@ -16,7 +16,7 @@
     {"name":"website-reveal","action":"scrollTo","query":{"text":"Not now","role":"button"},"timeoutSeconds":60},
     {"name":"website-skip","action":"tap","query":{"text":"Not now","role":"button"}},
     {"name":"summary-ready","action":"waitFor","state":"exists","query":{"text":"Go to Session","role":"button"}},
-    {"name":"summary-notice","action":"assert","state":"exists","query":{"text":"Website pauses are unavailable until Mac setup is complete."}},
+    {"name":"summary-notice","action":"assert","state":"exists","query":{"text":"Allow pausing on this computer before pausing websites or apps."}},
     {"name":"summary-noun","action":"assert","state":"exists","query":{"text":"Saved on this computer"}},
     {"name":"summary-shot","action":"screenshot"},
     {"name":"summary-tree","action":"snapshot"},
