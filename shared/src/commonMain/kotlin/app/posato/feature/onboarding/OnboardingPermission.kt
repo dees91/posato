@@ -94,7 +94,10 @@ internal fun ApplicationAccessResult.accessMessage(platform: OnboardingPermissio
 internal fun OnboardingViewState.permissionSummary(permissionPlatform: OnboardingPermissionPlatform): String {
     val copy = permissionPlatform.accessCopy()
     return when (permissionPlatform) {
-        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
+        OnboardingPermissionPlatform.IOS,
+        OnboardingPermissionPlatform.LINUX,
+        OnboardingPermissionPlatform.ANDROID,
+        OnboardingPermissionPlatform.WINDOWS -> {
             when (val result = accessResult) {
                 is ApplicationAccessResult.Determined -> {
                     if (result.access == LocalApplicationMappingsAccess.READY) {
@@ -156,21 +159,15 @@ internal fun PermissionStep(
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
             } else {
                 OnboardingActions(layout) {
-                    when (platform) {
-                        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
-                            if (state.accessResult != ApplicationAccessResult.Unavailable) {
-                                OnboardingPrimaryAction(
-                                    stringResource(platform.accessCopy().action),
-                                    layout,
-                                    onRequestAccess,
-                                    enabled = !state.permissionRunning,
-                                )
-                            }
-                        }
-
-                        OnboardingPermissionPlatform.MAC -> {
-                            MacPermissionActions(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
-                        }
+                    if (platform == OnboardingPermissionPlatform.MAC) {
+                        MacPermissionActions(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
+                    } else if (state.accessResult != ApplicationAccessResult.Unavailable) {
+                        OnboardingPrimaryAction(
+                            stringResource(platform.accessCopy().action),
+                            layout,
+                            onRequestAccess,
+                            enabled = !state.permissionRunning,
+                        )
                     }
                     PosatoButton(
                         onClick = onContinue,
@@ -210,7 +207,10 @@ internal fun PermissionStatus(
     platform: OnboardingPermissionPlatform,
 ) {
     when (platform) {
-        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
+        OnboardingPermissionPlatform.IOS,
+        OnboardingPermissionPlatform.LINUX,
+        OnboardingPermissionPlatform.ANDROID,
+        OnboardingPermissionPlatform.WINDOWS -> {
             val message = state.accessResult?.accessMessage(platform)
             if (message != null) {
                 PosatoNotice(
@@ -283,7 +283,10 @@ private fun MacHelperApprovalActions(
 
 internal fun OnboardingViewState.hasDeviceAccess(platform: OnboardingPermissionPlatform): Boolean {
     return when (platform) {
-        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> {
+        OnboardingPermissionPlatform.IOS,
+        OnboardingPermissionPlatform.LINUX,
+        OnboardingPermissionPlatform.ANDROID,
+        OnboardingPermissionPlatform.WINDOWS -> {
             (accessResult as? ApplicationAccessResult.Determined)?.access == LocalApplicationMappingsAccess.READY
         }
 
@@ -295,7 +298,11 @@ internal fun OnboardingViewState.hasDeviceAccess(platform: OnboardingPermissionP
 
 internal fun OnboardingViewState.canDeferPermission(platform: OnboardingPermissionPlatform): Boolean {
     return when (platform) {
-        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> !permissionRunning
+        OnboardingPermissionPlatform.IOS,
+        OnboardingPermissionPlatform.LINUX,
+        OnboardingPermissionPlatform.ANDROID,
+        OnboardingPermissionPlatform.WINDOWS -> !permissionRunning
+
         OnboardingPermissionPlatform.MAC -> true
     }
 }

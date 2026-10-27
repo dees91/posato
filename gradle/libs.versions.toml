@@ -13,6 +13,7 @@ navigationevent = "1.0.1"
 compose-rules = "0.6.4"
 coroutines = "1.10.2"
 immutable-collections = "0.5.1"
+jna = "5.19.1"
 detekt = "2.0.0-alpha.6"
 kotlin = "2.4.10"
 kotlinx-serialization = "1.11.0"
@@ -45,6 +46,8 @@ compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.re
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 kuri = { module = "org.dexpace:kuri", version.ref = "kuri" }
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "immutable-collections" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }

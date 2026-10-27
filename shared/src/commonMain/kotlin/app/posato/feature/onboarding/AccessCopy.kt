@@ -43,6 +43,10 @@ import app.posato.generated.resources.onboarding_permission_mac_unavailable
 import app.posato.generated.resources.onboarding_permission_required
 import app.posato.generated.resources.onboarding_permission_title
 import app.posato.generated.resources.onboarding_permission_unavailable
+import app.posato.generated.resources.onboarding_permission_windows_action
+import app.posato.generated.resources.onboarding_permission_windows_body
+import app.posato.generated.resources.onboarding_permission_windows_denied
+import app.posato.generated.resources.onboarding_permission_windows_required
 import app.posato.generated.resources.onboarding_summary_access_off
 import app.posato.generated.resources.onboarding_summary_access_on
 import app.posato.generated.resources.onboarding_summary_access_unchecked
@@ -54,6 +58,7 @@ import app.posato.generated.resources.onboarding_summary_helper_on
 import app.posato.generated.resources.onboarding_summary_linux_off
 import app.posato.generated.resources.onboarding_summary_linux_on
 import app.posato.generated.resources.onboarding_summary_linux_unchecked
+import app.posato.generated.resources.onboarding_summary_windows_off
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -78,6 +83,16 @@ internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
             Res.string.onboarding_summary_linux_unchecked,
             Res.string.onboarding_permission_linux_denied,
             Res.string.onboarding_permission_linux_required,
+        )
+
+        OnboardingPermissionPlatform.WINDOWS -> AccessCopy(
+            Res.string.onboarding_permission_windows_body,
+            Res.string.onboarding_permission_windows_action,
+            Res.string.onboarding_summary_linux_on,
+            Res.string.onboarding_summary_windows_off,
+            Res.string.onboarding_summary_linux_unchecked,
+            Res.string.onboarding_permission_windows_denied,
+            Res.string.onboarding_permission_windows_required,
         )
 
         OnboardingPermissionPlatform.ANDROID -> AccessCopy(

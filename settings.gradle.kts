@@ -46,6 +46,7 @@ include(":prototypeDesignSystem")
 include(":quality-rules")
 include(":roadmap-mirror")
 include(":shared")
+include(":windowsHelper")
 
 project(":posato-control").projectDir = file("tools/posato-control")
 project(":posato-provisioning").projectDir = file("tools/posato-provisioning")

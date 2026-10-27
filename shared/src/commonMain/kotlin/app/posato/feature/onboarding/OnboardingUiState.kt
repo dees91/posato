@@ -38,6 +38,7 @@ public enum class OnboardingPermissionPlatform {
     MAC,
     LINUX,
     ANDROID,
+    WINDOWS,
 }
 
 internal data class OnboardingViewState(
