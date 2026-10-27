@@ -96,7 +96,9 @@ except that an executable is an absolute Windows path to an `.exe`.
   installing user, whom the service resolves to a security identifier.
 - **Websites.** The service resolves each blocked host and its `www`
   counterpart through the system resolver and adds block filters for the
-  resulting addresses at the outbound connect layers, in one dynamic
+  resulting addresses at the outbound connect layers, limited to the
+  installing user's connections so system services are never blocked, in
+  one dynamic
   Windows Filtering Platform session with its own sublayer. It resolves
   again every minute while the pause runs and only adds addresses until the
   pause ends. Loopback, unspecified, link-local, multicast, and private
@@ -271,14 +273,17 @@ page and `RELEASE-010` publishes them with release 1.6:
   paused website's name resolves to. A site that shares addresses with
   other sites, such as one behind a large content network, can block those
   sites too while the pause runs, and a site that moves to new addresses
-  can open until Posato sees them, within about a minute. There is no pause
-  page, and visiting a site through a VPN or a proxy bypasses it.
+  can open until Posato sees them, within about a minute. A browser that
+  uses its own DNS over HTTPS can reach addresses Posato has not seen, and a
+  connection already open when the pause starts stays open. There is no
+  pause page, and visiting a site through a VPN or a proxy bypasses it.
 - On Windows, the Posato installer sets up a system service with
   administrator approval. While a pause runs, the service ends the paused
   apps you chose, so unsaved work in them can be lost. It clears the pause
   at its end time even when Posato is closed, and uninstalling Posato clears
   an active pause. Apps from the Microsoft Store and shortcuts that start a
-  script or a command line cannot be paused.
+  script or a command line cannot be paused. Posato pauses only the
+  Windows account that installed it.
 
 ## Consequences
 

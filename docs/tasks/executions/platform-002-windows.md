@@ -84,11 +84,65 @@
 8. Independent completed-change review, `./gradlew quality`, wiki and log,
    `pr-evidence`, ready, `babysit-pr adopt`.
 
+9. **Plan-review corrections (all Required, chosen Recommended).**
+   - Client: opens the pipe through JNA with `SECURITY_SQOS_PRESENT |
+     SECURITY_IDENTIFICATION`, waits on `ERROR_PIPE_BUSY`, and sends nothing
+     unless `GetNamedPipeServerProcessId` names a process whose token is
+     SYSTEM and whose image is the installed `posato-helper.exe`.
+   - Server: DACL grants the user `0x0012018B` (no `FILE_CREATE_PIPE_INSTANCE`);
+     the caller SID comes from `ImpersonateNamedPipeClient` and
+     `OpenThreadToken`.
+   - `install` creates or takes over `%ProgramData%\Posato` with owner
+     SYSTEM and a protected DACL (SYSTEM, Administrators); the service checks
+     owner and no reparse point before each write and writes through an
+     NTFS-specific atomic write, not the Linux `writeAtomically`.
+   - JNA: `jnidispatch.dll` ships in the install folder; the helper's
+     launcher configuration sets `jna.nounpack=true` and
+     `jna.boot.library.path`; the service binary path is quoted.
+   - MSI: `install` on `NOT Installed AND NOT REMOVE`, a rollback action that
+     deletes the service, `uninstall` on `REMOVE="ALL"`, binaries referenced
+     as `"[INSTALLDIR]..."`; a repair keeps the recorded user; a major upgrade
+     keeps the state file, so an active pause re-applies when the new service
+     starts. `[LogonUser]` is resolved qualified with the computer name;
+     SYSTEM and service accounts are refused, and the limits say only the
+     installing account is served.
+   - Filters carry an `FWPM_CONDITION_ALE_USER_ID` condition for the
+     installing user, so system services are never blocked; IPv4-mapped
+     connects are tested once in the guest.
+   - Service: `SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO` with the minimum
+     privileges, a restricted service SID where WFP allows it, automatic
+     start; process ending checks the image and terminates through one
+     handle.
+   - Start menu: shortcuts with launch arguments (Squirrel `Update.exe`,
+     browser `--app-id` and `chrome_proxy.exe`) are not offered; targets are
+     sent as long canonical paths.
+   - Resident core: menu-open is optional in `StatusSurface`; Windows
+     refreshes the tray menu on state changes; `FirstCloseChoice`'s
+     `Library/...` path moves into the host's first-close marker.
+   - Shared: `NioFolderFileSystem` restricts to owner through
+     `AclFileAttributeView` where POSIX modes are absent; `WindowsMain`
+     passes `%LOCALAPPDATA%\Posato` for the database and key.
+   - Uninstall deletes the installing user's `Run` value when that hive is
+     loaded, otherwise the value stays and is inert (the launcher is gone);
+     the record names it.
+   - Verification: a second standard user in the clone tries the pipe from a
+     scheduled task and is refused; a malformed line answers
+     `error\trequest`; AC-02 uses a fresh browser profile and a host with
+     stable addresses, and the limits name DNS over HTTPS in browsers and
+     connections already open; a three-guest smoke (Windows, Ubuntu, Mac
+     running at once) runs before the service work.
+   - The resident-core extraction lands as its own commit with the `AC-06`
+     evidence before Windows code.
+
 ## High-risk plan review
 
-- **Verdict:** pending
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** changes-required (first pass, independent agent)
+- **Critical or Required findings:** client trusts a squatted pipe while
+  the service is down; `%ProgramData%\Posato` can be pre-created by a user;
+  JNA unpacks native code to a temp folder for a LocalSystem service; MSI
+  custom actions without conditions, rollback, or upgrade behavior; no
+  unattended proof of a refused foreign caller.
+- **Resolution:** step 9; second pass pending
 
 ## Result
 
