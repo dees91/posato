@@ -28,6 +28,9 @@ jobs:
     env:
       CHECKS: tools/posato-control/src/main/resources/windows/posato-checks.ps1
     steps:
+      # The runner's Git converts line endings to CRLF, which the version and packaging files must not carry.
+      - name: Keep line endings as committed
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
