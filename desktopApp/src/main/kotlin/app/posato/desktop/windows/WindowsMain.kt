@@ -38,7 +38,9 @@ fun main(args: Array<String>) {
         ResidentStartup.RUN -> Unit
         ResidentStartup.FORWARDED, ResidentStartup.EXIT -> exitProcess(0)
     }
-    val client = WindowsHelperClient()
+    val launcher = System.getProperty(LAUNCHER_PROPERTY)?.let(Paths::get)
+    // The service runs posato-helper.exe beside the installed Posato.exe; outside the package there is none to name.
+    val client = WindowsHelperClient(launcher?.resolveSibling(HELPER_EXECUTABLE)?.toString())
     val mappings = CatalogApplicationMappings(data.resolve("application-choices"), StartMenuCatalog(), Dispatchers.IO)
     val graph = createDesktopApplicationGraph(
         applicationMappings = mappings,
@@ -50,7 +52,6 @@ fun main(args: Array<String>) {
     )
     mappings.keptTargets = graph.keptApplicationRequirements::of
     val copy = runBlocking { loadWindowsPresenceCopy() }
-    val launcher = System.getProperty(LAUNCHER_PROPERTY)?.let(Paths::get)
     val residence = DesktopResidence(launcher?.let(::WindowsAutostart) ?: NoLoginLaunch)
     // Without a notification area the tray reads as no icon, and closing the window follows the no-icon rules; a
     // second launch still shows the window. The socket closes with the process, which application {} exits.
@@ -90,6 +91,7 @@ private object NoLoginLaunch : LoginLaunch {
 /** The installed `Posato.exe`, which jpackage's launcher names in this property. */
 private const val LAUNCHER_PROPERTY = "jpackage.app-path"
 private const val BACKGROUND_ARGUMENT = "--background"
+private const val HELPER_EXECUTABLE = "posato-helper.exe"
 private const val INSTANCE_LOCK = "instance.lock"
 private const val SHOW_SOCKET = "show.sock"
 private const val FORWARD_ATTEMPTS = 3

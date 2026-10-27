@@ -7,7 +7,6 @@ import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.WString
 import com.sun.jna.platform.win32.Advapi32
-import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.Kernel32
 import com.sun.jna.platform.win32.WinBase
 import com.sun.jna.platform.win32.WinNT
@@ -19,11 +18,15 @@ import java.nio.charset.StandardCharsets
 
 /**
  * One line to the Windows service of ADR 0010 and its one-line answer, or null when the service is not there. Before
- * anything is sent, the pipe's server must be a process of the system running the binary that the Service Control
- * Manager registered for the service, so a pipe squatted while the service is down receives nothing. The pipe is
- * opened at the identification level, so the service can read who calls but never act as this user.
+ * anything is sent, the pipe's server must be the process that the Service Control Manager reports for the service,
+ * which runs as LocalSystem from [helperExecutable], so a pipe squatted while the service is down receives nothing. The
+ * check reads the service's configuration and status, which any signed-in user may, and never opens the service's
+ * process, which a user without elevation may not. The pipe is opened at the identification level, so the service can
+ * read who calls but never act as this user.
  */
-internal class WindowsHelperClient {
+internal class WindowsHelperClient(
+    private val helperExecutable: String?,
+) {
     /** Whether the service answers; a registered service that is stopped does not count. */
     fun installed(): Boolean {
         return send("status")?.startsWith("ok") == true
@@ -31,19 +34,27 @@ internal class WindowsHelperClient {
 
     /** Whether the service is registered, answering or not; a missing one means nothing is installed to hold a pause. */
     fun present(): Boolean {
-        return serviceImage() != null
+        return service() != null
     }
 
     /** Sends one line; a service that does not answer within the timeout counts as not answering. */
     fun send(request: String): String? {
-        val image = serviceImage() ?: return null
+        if (service()?.let(::isTrusted) != true) return null
         val deadline = System.nanoTime() + TIMEOUT_NANOS
         val pipe = open(deadline) ?: return null
         return try {
-            if (isServer(pipe, image)) exchange(pipe, "$request\n", deadline) else null
+            // The service is read again with the pipe open, so the process compared is the one that serves it now.
+            val service = service()
+            if (service != null && isTrusted(service) && isServer(pipe, service.processId)) exchange(pipe, "$request\n", deadline) else null
         } finally {
             Kernel32.INSTANCE.CloseHandle(pipe)
         }
+    }
+
+    /** The service runs as LocalSystem from the installed `posato-helper.exe` (any, when Posato runs outside its package). */
+    private fun isTrusted(service: HelperServiceInfo): Boolean {
+        val image = helperExecutable?.let { service.image.equals(it, ignoreCase = true) } ?: true
+        return image && service.account.equals(LOCAL_SYSTEM, ignoreCase = true) && service.processId != 0
     }
 
     private fun open(deadline: Long): WinNT.HANDLE? {
@@ -65,32 +76,13 @@ internal class WindowsHelperClient {
         return null
     }
 
-    /** The server process must run [image] under the system account. */
+    /** The pipe's server is the service's own process. */
     private fun isServer(
         pipe: WinNT.HANDLE,
-        image: String,
+        servicePid: Int,
     ): Boolean {
         val pid = IntByReference()
-        if (!PipeApi.INSTANCE.getNamedPipeServerProcessId(pipe, pid)) return false
-        val process = Kernel32.INSTANCE.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid.value) ?: return false
-        try {
-            val buffer = CharArray(MAX_PATH_CHARS)
-            val length = IntByReference(buffer.size)
-            if (!Kernel32.INSTANCE.QueryFullProcessImageName(process, 0, buffer, length)) return false
-            return String(buffer, 0, length.value).equals(image, ignoreCase = true) && owner(process) == SYSTEM_SID
-        } finally {
-            Kernel32.INSTANCE.CloseHandle(process)
-        }
-    }
-
-    private fun owner(process: WinNT.HANDLE): String? {
-        val token = WinNT.HANDLEByReference()
-        if (!Advapi32.INSTANCE.OpenProcessToken(process, WinNT.TOKEN_QUERY, token)) return null
-        return try {
-            runCatching { Advapi32Util.getTokenAccount(token.value).sidString }.getOrNull()
-        } finally {
-            Kernel32.INSTANCE.CloseHandle(token.value)
-        }
+        return PipeApi.INSTANCE.getNamedPipeServerProcessId(pipe, pid) && pid.value == servicePid
     }
 
     private fun exchange(
@@ -117,11 +109,11 @@ internal class WindowsHelperClient {
         }
     }
 
-    /** The binary that the Service Control Manager starts for the service, from its quoted path. */
-    private fun serviceImage(): String? {
+    /** The binary, account, and running process that the Service Control Manager records for the service. */
+    private fun service(): HelperServiceInfo? {
         val manager = Advapi32.INSTANCE.OpenSCManager(null, null, Winsvc.SC_MANAGER_CONNECT) ?: return null
         try {
-            val service = Advapi32.INSTANCE.OpenService(manager, SERVICE_NAME, SERVICE_QUERY_CONFIG) ?: return null
+            val service = Advapi32.INSTANCE.OpenService(manager, SERVICE_NAME, SERVICE_QUERY_CONFIG or SERVICE_QUERY_STATUS) ?: return null
             try {
                 val needed = IntByReference()
                 ServiceConfigApi.INSTANCE.queryServiceConfigW(service, null, 0, needed)
@@ -129,7 +121,12 @@ internal class WindowsHelperClient {
                 val config = Memory(needed.value.toLong())
                 if (!ServiceConfigApi.INSTANCE.queryServiceConfigW(service, config, needed.value, needed)) return null
                 val command = config.getPointer(BINARY_PATH_OFFSET)?.getWideString(0) ?: return null
-                return command.removePrefix("\"").substringBefore('"').takeIf { command.startsWith('"') }
+                val image = command.removePrefix("\"").substringBefore('"').takeIf { command.startsWith('"') } ?: return null
+                val account = config.getPointer(START_NAME_OFFSET)?.getWideString(0) ?: return null
+                val status = Winsvc.SERVICE_STATUS_PROCESS()
+                val running = Advapi32.INSTANCE.QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, status, status.size(), IntByReference()) &&
+                    status.dwCurrentState == Winsvc.SERVICE_RUNNING
+                return HelperServiceInfo(image, account, if (running) status.dwProcessId else 0)
             } finally {
                 Advapi32.INSTANCE.CloseServiceHandle(service)
             }
@@ -143,23 +140,34 @@ internal class WindowsHelperClient {
     private companion object {
         const val PIPE_NAME = "\\\\.\\pipe\\app.posato.helper"
         const val SERVICE_NAME = "PosatoHelper"
-        const val SYSTEM_SID = "S-1-5-18"
+        const val LOCAL_SYSTEM = "LocalSystem"
         const val FILE_FLAG_OVERLAPPED = 0x40000000
         const val FILE_WRITE_DATA = 0x0002
         const val SECURITY_SQOS_PRESENT = 0x00100000
         const val SECURITY_IDENTIFICATION = 0x00010000
         const val ERROR_PIPE_BUSY = 231
-        const val PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
         const val SERVICE_QUERY_CONFIG = 0x0001
-        const val MAX_PATH_CHARS = 32_768
+        const val SERVICE_QUERY_STATUS = 0x0004
+        const val SC_STATUS_PROCESS_INFO = 0
         const val RESPONSE_BYTES = 4_096
 
-        /** `QUERY_SERVICE_CONFIGW`: three DWORDs, then the binary path pointer on a 64-bit boundary. */
+        /**
+         * `QUERY_SERVICE_CONFIGW` on 64-bit Windows: three DWORDs, then pointers on 64-bit boundaries: the binary path,
+         * the load order group, the tag (a DWORD), the dependencies, and the account the service starts as.
+         */
         const val BINARY_PATH_OFFSET = 16L
+        const val START_NAME_OFFSET = 48L
         const val TIMEOUT_NANOS = 5_000_000_000L
         const val NANOS_PER_MILLI = 1_000_000L
     }
 }
+
+/** What the Service Control Manager records for the service; [processId] is 0 unless it runs. */
+private class HelperServiceInfo(
+    val image: String,
+    val account: String,
+    val processId: Int,
+)
 
 /** The pipe and service calls that `jna-platform` lacks or binds with Java arrays, which overlapped I/O cannot use. */
 internal interface PipeApi : StdCallLibrary {
