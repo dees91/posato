@@ -697,7 +697,16 @@ through the Tart fork in `posato.vm.windowsTart` with its own
   disposable clone, since both otherwise starve the guest within minutes, and
   copies the guest scripts in. `windows boot`, `stop`, and `destroy` manage
   the clone; `destroy` also ends the lease.
-- `windows exec --script S [--as-other-user]` runs a PowerShell script in the
+- A clone with UAC on (`EnableLUA` 1, set in the guest and followed by a
+  guest restart such as `shutdown /r`, not `windows stop`, after which the
+  guest agent did not come back) runs as a person's computer does: the guest
+  agent stays elevated, but `launch` starts Posato and the bridge probe reads
+  it with the signed-in user's filtered token, through a one-time interactive
+  scheduled task (`src/main/resources/windows/posato-limited.ps1`), because
+  an elevated probe cannot reach a window of a lower integrity level. `windows
+  exec --limited` runs a script the same way, and `whoami /groups` there shows
+  Administrators as deny-only.
+- `windows exec --script S [--as-other-user] [--limited]` runs a PowerShell script in the
   signed-in administrator's console session, which reaches the desktop, and
   prints its exit code and output. The guest agent passes only the low byte
   of an exit code (msiexec's 1620 arrives as 84), so a script that reports a

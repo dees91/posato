@@ -65,6 +65,13 @@ verification guide, `posato.vm.windowsTart` set, and room in
   shortcut and are never listed. Start a pause, then `$PC
   windows check process --name <image> --expect absent` after starting it
   with `$PC windows exec --script 'Start-Process <path>'`.
+- **UAC on:** the golden VM has UAC off. To run as a person's computer does,
+  `$PC windows exec --script 'Set-ItemProperty
+  HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name
+  EnableLUA -Value 1; shutdown.exe /r /t 5 /f'` and wait until `windows exec`
+  answers again; then `launch` and every bridge command run Posato with the
+  filtered token. Proof: `$PC windows exec --limited --script 'whoami
+  /groups'` lists Administrators as "Group used for deny only".
 - **Foreign caller:** `$PC windows check pipe --line status --expect
   connected` as the installing user, and `$PC windows check pipe --line
   status --as-other-user --expect refused` as `posato-other`, a standard

@@ -22,6 +22,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.util.Base64
 
 /** Every `windows` subcommand. */
 fun windowsCommand(): WindowsCommand = WindowsCommand().subcommands(
@@ -77,11 +78,20 @@ class WindowsExecCommand : ControlCommand("exec", "Run a PowerShell script in th
         "--as-other-user",
         help = "Run it as ${WindowsChecks.OTHER_USER}, a standard local user created in the clone, through a scheduled task.",
     ).flag()
+    private val limited by option(
+        "--limited",
+        help = "Run it as the signed-in user with the filtered token that UAC gives a standard session, as Posato runs with UAC on.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val guest = WindowsGuest(session.context).also { it.requireRunning() }
         if (asOtherUser) return WindowsChecks(guest).asOtherUser(script)
-        val output = guest.powershell(script)
+        val output = if (limited) {
+            val encoded = Base64.getEncoder().encodeToString(script.toByteArray(Charsets.UTF_16LE))
+            guest.runLimited(WindowsGuest.POWERSHELL + listOf("-EncodedCommand", encoded))
+        } else {
+            guest.powershell(script)
+        }
         return buildJsonObject {
             put("exitCode", output.exitCode)
             put("stdout", output.stdout)

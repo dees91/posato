@@ -53,7 +53,7 @@ class WindowsTools(
     }
 
     fun installScripts() {
-        mapOf(PROBE_RESOURCE to PROBE, SCREENSHOT_RESOURCE to SCREENSHOT, CHECKS_RESOURCE to CHECKS).forEach { (resource, guestPath) ->
+        mapOf(PROBE_RESOURCE to PROBE, SCREENSHOT_RESOURCE to SCREENSHOT, CHECKS_RESOURCE to CHECKS, LIMITED_RESOURCE to LIMITED).forEach { (resource, guestPath) ->
             push(checkNotNull(WindowsTools::class.java.getResourceAsStream(resource)).use { it.readBytes() }, guestPath)
         }
     }
@@ -61,7 +61,10 @@ class WindowsTools(
     /** Runs the Java Access Bridge probe with [arguments], which travel as JSON so quotes and non-ASCII text arrive intact. */
     fun probe(vararg arguments: String): ProcessOutput {
         val json = JsonArray(arguments.map(::JsonPrimitive)).toString()
-        return guest.run(listOf(PYTHON, PROBE, "-"), stdin = json.toByteArray(Charsets.UTF_8))
+        val command = listOf(PYTHON, PROBE, "-")
+        val input = json.toByteArray(Charsets.UTF_8)
+        // With UAC on, an elevated probe cannot reach Posato's window, so it runs at Posato's own level.
+        return if (guest.uacOn) guest.runLimited(command, input) else guest.run(command, stdin = input)
     }
 
     fun screenshot(file: Path): Path {
@@ -93,10 +96,12 @@ class WindowsTools(
         const val PROBE = "$TOOLS\\posato-control\\posato-jab.py"
         const val SCREENSHOT = "$TOOLS\\posato-control\\screenshot.ps1"
         const val CHECKS = "$TOOLS\\posato-control\\posato-checks.ps1"
+        const val LIMITED = "$TOOLS\\posato-control\\posato-limited.ps1"
         private const val SCREEN_FILE = "C:\\Windows\\Temp\\posato-screen.png"
         private const val PROBE_RESOURCE = "/windows/posato-jab.py"
         private const val SCREENSHOT_RESOURCE = "/windows/screenshot.ps1"
         private const val CHECKS_RESOURCE = "/windows/posato-checks.ps1"
+        private const val LIMITED_RESOURCE = "/windows/posato-limited.ps1"
         private const val MAX_DETAIL = 600
         private val COPY_TIMEOUT: Duration = Duration.ofMinutes(10)
         private val CHECK_TIMEOUT: Duration = Duration.ofMinutes(3)

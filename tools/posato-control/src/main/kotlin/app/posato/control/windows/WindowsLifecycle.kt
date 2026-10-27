@@ -134,9 +134,14 @@ class WindowsLifecycle(
         // Start-Process goes through the shell, so the new process inherits no handle of the agent's command and the
         // command returns (its own redirection would inherit them, and the command would wait for Posato). A hidden cmd
         // keeps Posato's output in the logs that `logs` reads.
-        val command = "\"\"$executable\" $arguments > \"$LOG\" 2> \"$ERROR_LOG\"\""
-        val start = "Start-Process cmd.exe -WindowStyle Hidden -ArgumentList ${psQuote("/c $command")}"
-        guest.powershell(start).requireSuccess(ErrorCode.COMMAND_FAILED, "Starting Posato in ${WindowsGuest.CLONE}")
+        val inner = "\"$executable\" $arguments > \"$LOG\" 2> \"$ERROR_LOG\""
+        if (guest.uacOn) {
+            // With UAC on, Posato starts as a person's does: not elevated.
+            guest.startLimited(inner).requireSuccess(ErrorCode.COMMAND_FAILED, "Starting Posato in ${WindowsGuest.CLONE}")
+        } else {
+            val start = "Start-Process cmd.exe -WindowStyle Hidden -ArgumentList ${psQuote("/c \"$inner\"")}"
+            guest.powershell(start).requireSuccess(ErrorCode.COMMAND_FAILED, "Starting Posato in ${WindowsGuest.CLONE}")
+        }
         awaitTree()
         val pid = pid()
         stateStore.update(Target.WINDOWS, LaunchedProcess(pid = pid, startedAt = System.currentTimeMillis(), runId = context.runId))
