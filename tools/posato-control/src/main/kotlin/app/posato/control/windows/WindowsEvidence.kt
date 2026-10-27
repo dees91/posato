@@ -30,7 +30,9 @@ class WindowsEvidence(
     ): LogsResult {
         guest.requireRunning()
         streamSeconds?.let { Thread.sleep(it * MILLIS_PER_SECOND) }
-        val text = guest.powershell("Get-Content ${psQuote(WindowsLifecycle.LOG)} -Tail $tail -ErrorAction SilentlyContinue").stdout
+        val text = guest.powershell(
+            "Get-Content ${psQuote(WindowsLifecycle.LOG)}, ${psQuote(WindowsLifecycle.ERROR_LOG)} -Tail $tail -ErrorAction SilentlyContinue",
+        ).stdout
         val file = context.artifactPath("logs", "windows-posato.log")
         Files.writeString(file, text)
         context.recordArtifact(file)
@@ -69,7 +71,6 @@ class WindowsEvidence(
         if (!keepInstall) {
             val installer = lifecycle.installer
             if (installer.productCode(WindowsInstaller.PRODUCT_NAME) != null) installer.uninstall(null, WindowsInstaller.PRODUCT_NAME)
-            guest.powershell("Remove-Item ${psQuote(WindowsLifecycle.JAR)} -ErrorAction SilentlyContinue")
         }
         return ResetPlan(plan, uninstall = !keepInstall, performed = true, backupDirectory = backup?.let(context.layout::relativize))
     }

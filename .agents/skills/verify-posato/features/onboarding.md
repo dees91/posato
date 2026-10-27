@@ -102,12 +102,11 @@ Preconditions:
   | iPhone | Allow Screen Time access in Pause sets before pausing websites or apps. | Saved on this iPhone | none |
   | Linux | Allow pausing on this computer before pausing websites or apps. | Saved on this computer | On this computer |
   | Android | Allow access before pausing websites or apps. | Saved on this phone | none |
-  | Windows (spike jar) | the Linux text | Saved on this computer | On this computer |
+  | Windows | Posato needs its pausing service before pausing websites or apps. Install Posato again to set it up. | Saved on this computer | On this computer |
 
-  Apple runs also decline iCloud, so the local-only noun is shown. Windows
-  with the spike jar runs `$PC run -t windows
-  onboarding-deferred-access-linux.json` after `launch -t windows --fresh`,
-  since it shows the Linux text. Verify the initial state first: no Mac helper (`doctor`), no
+  Apple runs also decline iCloud, so the local-only noun is shown. On
+  Windows the MSI installs the service, so the deferred-access notice shows
+  only when the service is stopped. Verify the initial state first: no Mac helper (`doctor`), no
   Screen Time grant, no Linux service (`systemctl is-active posato-helper`
   not `active`), Android installed with `--grants none`.
 - **Upgrade:** back up the desktop databases, `reset -t desktop`, restore a

@@ -20,7 +20,7 @@ class WindowsBackend private constructor(
     Interaction by interaction {
     override val target: Target = Target.WINDOWS
 
-    /** The MSI `install` installs instead of the spike jar. */
+    /** The MSI `install` installs instead of the last one `build -t windows` made. */
     var packageFile: Path?
         get() = windowsLifecycle.packageFile
         set(value) {

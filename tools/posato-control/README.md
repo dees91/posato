@@ -703,20 +703,20 @@ through the Tart fork in `posato.vm.windowsTart` with its own
   of an exit code (msiexec's 1620 arrives as 84), so a script that reports a
   larger code prints it. Commands avoid WMI (`Get-CimInstance`), whose
   provider has hung in the guest.
-- `build -t windows` builds `:desktopApp:windowsSpikeJar`, the Linux
-  application jar with the Windows Compose runtime, until the Windows package
-  exists. `install -t windows` copies that jar to `C:\Tools\posato.jar`;
-  `install -t windows --package <file>.msi` installs an MSI with `msiexec /i
-  /qn /l*v` and keeps the end of the log under the run's `logs/` on
-  failure; `windows uninstall [--package <file>.msi] [--product Posato]`
+- `build -t windows` builds `:desktopApp:windowsPackageInputs` on the host,
+  copies them into the running clone, runs `desktopApp/windows/package-msi.ps1`
+  there (jpackage with the golden VM's JDK and WiX 3.14, downloaded once into
+  the clone), and copies the arm64 MSI back to
+  `desktopApp/build/windows/msi/`. `install -t windows` installs that MSI, or
+  the one `--package <file>.msi` names, with `msiexec /i /qn /l*v` and keeps
+  the end of the log under the run's `logs/` on failure; `windows uninstall [--package <file>.msi] [--product Posato]`
   removes it with `msiexec /x`. The clone has UAC off, so the one
   administrator approval a person gives is not driven.
 - `launch -t windows [--fresh]` starts the installed `Posato.exe` (the MSI's
-  registered install location, else `C:\Program Files\Posato`), or the
-  spike jar on the golden VM's JDK with its output in `C:\Tools\posato.log`,
-  through `Start-Process`, and returns once the tree can be read. `--fresh`
-  removes `%USERPROFILE%\.local\share\Posato` (the spike jar's data) and
-  `%LOCALAPPDATA%\Posato`.
+  registered install location, else `C:\Program Files\Posato`) through a
+  hidden `cmd` that keeps its output in `C:\Tools\posato.log` and
+  `posato-error.log` for `logs`, and returns once the tree can be read.
+  `--fresh` removes `%LOCALAPPDATA%\Posato`.
 - The tree is Posato's Compose tree on the Java Access Bridge, read by
   `src/main/resources/windows/posato-jab.py` in the guest. `tap` runs the
   element's accessible click action with no pointer input; Compose refuses
@@ -726,9 +726,8 @@ through the Tart fork in `posato.vm.windowsTart` with its own
   input, so quotes and non-ASCII text arrive intact.
 - `screenshot -t windows` captures the primary screen (the fork's guest also
   reports a second display).
-- `flow onboard -t windows` meets the access step as on Linux, with the same
-  labels, until the Windows host names its own; the spike jar has no pausing
-  service, so it needs `--skip-access`. `flow session --end-early-after S`
+- `flow onboard -t windows` meets the access step with **Check the pausing
+  service**, since the MSI installed the service. `flow session --end-early-after S`
   ends the started pause with **End session early** after S seconds, on
   every target.
 - `windows check` reads a fact in the guest with

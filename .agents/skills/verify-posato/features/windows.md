@@ -4,9 +4,8 @@ Posato on Windows 11 (`PLATFORM-002`) shows the same Session, Pause sets, and
 Schedules screens as Linux. During a pause a Windows service blocks
 connections to the chosen websites' addresses with Windows Filtering Platform
 filters and ends the chosen applications; the per-machine MSI installs the
-service. Until that package exists, the driver runs the `windowsSpikeJar`
-build, the Linux application jar with the Windows Compose runtime, which
-drives the shared interface but pauses nothing.
+service. Closing the window keeps Posato running with its icon in the
+notification area; a second launch shows the window again.
 
 ## Sub-features
 
@@ -33,16 +32,25 @@ Preconditions: the Windows golden VM and the Tart fork from the unattended
 verification guide, `posato.vm.windowsTart` set, and room in
 `machine-ledger host` for a 4 GiB guest. Run `$PC doctor -t windows` first.
 
-- **Clone and install:** `$PC windows create`, then either `$PC build -t
-  windows && $PC install -t windows` (spike jar) or `$PC install -t windows
-  --package <file>.msi`. A failed MSI install reports msiexec's code and keeps
-  the end of its log under the run's `logs/`. Proof for the MSI: `$PC
-  windows check service --expect present --state Running`.
+- **Build the arm64 MSI:** `$PC windows create`, `$PC build -t windows`
+  (about 2 minutes: the package inputs on the host, jpackage and WiX in the
+  clone; the MSI lands in `desktopApp/build/windows/msi/`), then `$PC windows
+  destroy` so that the install runs in a fresh clone.
+- **Clone and install:** `$PC windows create`, then `$PC install -t windows`
+  (the last built MSI) or `$PC install -t windows --package <file>.msi`. A
+  failed MSI install reports msiexec's code and keeps the end of its log under
+  the run's `logs/`. Proof: `$PC windows check service --expect present
+  --state Running`.
 - **Onboarding:** `$PC launch -t windows --fresh`, then `$PC flow onboard -t
-  windows --website example.org` (with the spike jar add `--skip-access`; it
-  has no service). Proof: the flow ends on Session with its screenshot;
-  `onboarding-deferred-access-linux.json` asserts the summary and sidebar
-  nouns for the spike jar.
+  windows --website example.org`. The access step only checks the service the
+  MSI installed. Proof: the flow ends on Session with its screenshot.
+- **Close and show again:** close the window with `$PC windows exec --script
+  'Get-Process Posato | Where-Object { $_.MainWindowHandle -ne 0 } |
+  ForEach-Object { $_.CloseMainWindow() }'`; the first close shows the
+  "still running" notice (`$PC tap -t windows --text OK`). Starting
+  `C:\Program Files\Posato\Posato.exe` again shows the same window with no
+  new process. `launch` writes Posato's output to `C:\Tools\posato.log` and
+  `posato-error.log`, which `logs -t windows` reads.
 - **Session and early end:** `$PC flow session -t windows --minutes 25
   --end-early-after 30`. Proof while it runs: `$PC windows check connect
   --host example.org --expect blocked` and `$PC windows check filters
@@ -61,7 +69,7 @@ verification guide, `posato.vm.windowsTart` set, and room in
 - **Login:** `$PC windows check run-value --expect present`, then `$PC
   windows stop && $PC windows boot` and `$PC windows check process --name
   Posato --expect running`.
-- **Removal:** `$PC windows uninstall`, then `service --expect absent`,
+- **Removal:** `$PC windows uninstall -t windows`, then `service --expect absent`,
   `filters --expect absent`, and `process --name Posato --expect absent`.
 - Finish with `$PC windows destroy`.
 
@@ -75,6 +83,10 @@ verification guide, `posato.vm.windowsTart` set, and room in
   create` turns both down, but a guest that still crawls is deleted and
   cloned again, never repaired.
 - The tray icon's menu, the UAC prompt, and the Windows file dialogs are not
-  drivable yet.
+  drivable yet. The icon's registration shows under `HKCU:\Control
+  Panel\NotifyIconSettings` (an entry whose `ExecutablePath` ends in
+  `Posato\Posato.exe`), and a hidden Posato keeps running with no main window.
+- jpackage's Windows launchers run the application in a child process of
+  themselves, so `Posato` and `posato-helper` each show two processes.
 - The fork's guest reports a second display; `screenshot` captures the
   primary one, where Posato opens.

@@ -64,10 +64,14 @@ function Get-RunValue($name) {
 }
 
 # Connects to the named pipe, sends one line when given, and reads one answer line; a refusal is a result, not a failure.
+# It asks for read and write data only, as Posato does: PipeDirection.InOut would ask for GENERIC_WRITE, which includes
+# creating a pipe instance and which the service's access list withholds from everyone but the system.
 function Invoke-Pipe($pipe, $line) {
   $result = [ordered]@{ pipe = $pipe; user = "$env:USERDOMAIN\$env:USERNAME"; connected = $false }
   try {
-    $client = New-Object System.IO.Pipes.NamedPipeClientStream('.', $pipe, [System.IO.Pipes.PipeDirection]::InOut)
+    $rights = [System.IO.Pipes.PipeAccessRights]'ReadData, WriteData, ReadAttributes, Synchronize'
+    $client = New-Object System.IO.Pipes.NamedPipeClientStream('.', $pipe, $rights, [System.IO.Pipes.PipeOptions]::None,
+      [System.Security.Principal.TokenImpersonationLevel]::Identification, [System.IO.HandleInheritability]::None)
     $client.Connect(3000)
     $result.connected = $true
     if ($line) {
