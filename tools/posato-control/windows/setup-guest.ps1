@@ -1,6 +1,6 @@
-# One-time setup of the Windows golden VM for unattended verification (PLATFORM-002 spike).
+# One-time setup of the Windows golden VM for posato-control's Windows target (PLATFORM-002).
 # Run elevated over SSH after `tart create --from-iso`, with C:\TartSetup holding:
-#   drivers\viosock and drivers\vioserial (virtio-win w11\ARM64), tart-guest-agent.exe, jab_probe.py, screenshot.ps1
+#   drivers\viosock and drivers\vioserial (virtio-win w11\ARM64), tart-guest-agent.exe
 # Reboot the guest afterwards, so that the agent starts in the signed-in session and UAC is off.
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -70,9 +70,13 @@ if (-not (Test-Path "$tools\Python\python.exe")) { throw 'Python did not install
 & "$tools\Python\python.exe" -m pip install -q java-access-bridge-wrapper==2.0.0
 Assert-Exit 'pip install'
 
-Copy-Item "$src\jab_probe.py", "$src\screenshot.ps1" $tools -Force
-# Starts the jar that windows-e2e.sh copies to C:\Tools\posato.jar
-"@echo off`r`n`"$jdk\bin\java.exe`" -jar $tools\posato.jar > $tools\posato.log 2>&1" |
-  Set-Content -Encoding ASCII "$tools\run-posato.cmd"
+# A clone that runs for a while otherwise starts Windows Update and a full Defender scan, which starve the guest;
+# posato-control also turns the update services off in each clone, for golden VMs made before this step
+foreach ($service in 'wuauserv', 'UsoSvc') {
+  sc.exe config $service start= disabled | Out-Null
+  sc.exe stop $service | Out-Null
+}
+Add-MpPreference -ExclusionPath $tools, "$env:SystemRoot\Temp"
+Add-MpPreference -ExclusionProcess 'powershell.exe', 'python.exe', 'java.exe', 'javaw.exe'
 
 Write-Host 'setup-guest done'

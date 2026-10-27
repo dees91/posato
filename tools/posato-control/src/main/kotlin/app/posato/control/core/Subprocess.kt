@@ -44,6 +44,7 @@ class Subprocess(
         environment: Map<String, String> = emptyMap(),
         timeout: Duration = defaultTimeout,
         stdin: String? = null,
+        stdinBytes: ByteArray? = null,
     ): ProcessOutput {
         transcript.record("$ " + command.joinToString(" "))
         val builder = ProcessBuilder(command)
@@ -59,7 +60,7 @@ class Subprocess(
             } catch (exception: IOException) {
                 throw ControlException(ErrorCode.COMMAND_FAILED, "Could not start ${command.first()}: ${exception.message}", cause = exception)
             }
-            process.outputStream.use { stream -> stdin?.let { stream.write(it.toByteArray()) } }
+            process.outputStream.use { stream -> (stdinBytes ?: stdin?.toByteArray())?.let(stream::write) }
             if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 process.destroyForcibly()
                 throw ControlException(ErrorCode.COMMAND_FAILED, "${command.first()} did not finish within ${timeout.toSeconds()} s.")

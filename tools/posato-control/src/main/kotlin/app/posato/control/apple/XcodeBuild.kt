@@ -118,7 +118,7 @@ class XcodeBuild(
             listOf("-destination", "generic/platform=iOS")
         }
 
-        Target.DESKTOP, Target.ANDROID, Target.LINUX -> {
+        Target.DESKTOP, Target.ANDROID, Target.LINUX, Target.WINDOWS -> {
             throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "xcodebuild builds only the iOS application.")
         }
     }
@@ -137,7 +137,7 @@ class XcodeBuild(
             listOf("-allowProvisioningUpdates", "DEVELOPMENT_TEAM=$team", "CODE_SIGN_STYLE=Automatic")
         }
 
-        Target.DESKTOP, Target.ANDROID, Target.LINUX -> {
+        Target.DESKTOP, Target.ANDROID, Target.LINUX, Target.WINDOWS -> {
             emptyList()
         }
     }

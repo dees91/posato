@@ -74,6 +74,7 @@ import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
 import app.posato.control.cli.androidCommand
 import app.posato.control.cli.linuxCommand
+import app.posato.control.cli.windowsCommand
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Envelope
@@ -100,7 +101,7 @@ private val englishLocalization = object : Localization {}
 class PosatoControl : CliktCommand(name = "posato-control") {
     override fun help(context: Context): String =
         "Agent-facing driver for the Posato macOS and iOS applications: build, launch, drive, inspect, screenshot, and reset. " +
-            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device|android|linux."
+            "Every command prints a JSON envelope and accepts --target/-t desktop|simulator|device|android|linux|windows."
 
     override fun run() = Unit
 }
@@ -182,6 +183,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     UpdateConsentCommand(),
     RelayCommand(),
     linuxCommand(),
+    windowsCommand(),
     androidCommand(),
     flowCommand(),
     vmCommand(),

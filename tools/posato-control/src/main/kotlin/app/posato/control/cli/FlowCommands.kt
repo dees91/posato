@@ -1,5 +1,6 @@
 package app.posato.control.cli
 
+import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
@@ -32,11 +33,13 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
     private val minutes by option("--minutes", help = "Length: 5 to 59 minutes, or a quick choice of 60, 120, 240, or 480.")
         .int().default(DEFAULT_MINUTES)
     private val untilEndOfDay by option("--until-end-of-day", help = "End the pause at the next midnight instead of after --minutes.").flag()
+    private val endEarlyAfter by option(
+        "--end-early-after",
+        help = "After the pause starts, wait this many seconds, then end it early with End session early and End session.",
+    ).int()
 
     override fun execute(session: Session): JsonElement {
-        if (!untilEndOfDay && minutes !in MIN_MINUTES..MAX_WHEEL_MINUTES && minutes !in PRESETS) {
-            throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or a quick choice of 60, 120, 240, or 480.")
-        }
+        validate()
         val backend = session.backend()
         val target = session.target()
         val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
@@ -64,10 +67,37 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
                 FlowSteps.screenshot("session-started"),
             ),
         )
+        endEarlyAfter?.let { seconds -> endEarly(backend, seconds) }
         return buildJsonObject {
             set?.let { put("set", it) }
             if (untilEndOfDay) put("untilEndOfDay", true) else put("minutes", minutes)
+            endEarlyAfter?.let { put("endedEarlyAfterSeconds", it) }
         }
+    }
+
+    private fun validate() {
+        if (endEarlyAfter?.let { it < 0 } == true) throw ControlException(ErrorCode.USAGE, "--end-early-after takes 0 or more seconds.")
+        if (!untilEndOfDay && minutes !in MIN_MINUTES..MAX_WHEEL_MINUTES && minutes !in PRESETS) {
+            throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or a quick choice of 60, 120, 240, or 480.")
+        }
+    }
+
+    /** Ends the running pause the way a person does: End session early, then End session in the confirmation. */
+    private fun endEarly(
+        backend: Backend,
+        seconds: Int,
+    ) {
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.sleep(seconds.toDouble()),
+                FlowSteps.button("End session early"),
+                FlowSteps.waitFor(Query(text = "Ready to return?")),
+                FlowSteps.button("End session"),
+                FlowSteps.waitFor(Query(text = "Start a session", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
+                FlowSteps.screenshot("session-ended-early"),
+            ),
+        )
     }
 
     /** A quick choice's label: the Mac shows and exposes "25 min" or "2 h"; iOS exposes the spoken "25 minutes" or "2 hours". */

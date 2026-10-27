@@ -64,6 +64,9 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` / `posato.vm.venturaGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` / `POSATO_VM_VENTURA_GOLDEN` | Tart golden VMs of the primary, peer, legacy (previous macOS version), and ventura (macOS 13 with Rosetta, for the x86-64 build) lines. |
 | `posato.vm.linuxGolden` | `POSATO_VM_LINUX_GOLDEN` | Tart golden VM of the Ubuntu guest that `linux create` clones. |
 | `posato.vm.linuxGnomeGolden` | `POSATO_VM_LINUX_GNOME_GOLDEN` | Tart golden VM of the GNOME Ubuntu guest that `linux create --golden gnome` clones (default `posato-golden-linux-gnome`). |
+| `posato.vm.windowsTart` | `POSATO_TART_WINDOWS` | The Tart fork with Windows guests that every `windows` command and `-t windows` run (no default; see the unattended verification guide). |
+| `posato.vm.windowsTartHome` | `POSATO_TART_WINDOWS_HOME` | The fork's `TART_HOME` (default `~/.tart-windows`), which keeps its VMs apart from the others. |
+| `posato.vm.windowsGolden` | `POSATO_VM_WINDOWS_GOLDEN` | Windows golden VM that `windows create` clones (default `posato-golden-windows`). |
 | `posato.android.serial` | `POSATO_ANDROID_SERIAL` | adb serial of the Posato emulator that `android` commands drive; use an emulator of your own, never one someone else works on. |
 | `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
 | `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
@@ -114,8 +117,9 @@ a removal on the test iPhone, which shares the account, are not checked.
 
 ## Targets and the JSON envelope
 
-Every command takes `--target/-t desktop|simulator|device|android|linux`
-(`sim` is an alias; see [Linux and Android](#linux-and-android)) plus the
+Every command takes `--target/-t desktop|simulator|device|android|linux|windows`
+(`sim` is an alias; see [Linux and Android](#linux-and-android) and
+[Windows](#windows)) plus the
 common options `--udid` (on Android, the adb serial), `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
 `posato-control launch -t desktop --vm primary`. `--human` prints plain text
@@ -673,6 +677,92 @@ that `posato.vm.linuxGolden` names (its one-time setup is in
 - `observe -t linux --website URL --application PATH` reads `getent ahosts`
   (a pause answers `0.0.0.0` or `::`) and starts the program on Posato's
   session bus, then checks whether a process still runs that file.
+
+## Windows
+
+`-t windows` drives Posato in a Tart Windows 11 ARM64 clone,
+`posato-run-windows`, of the golden VM that `posato.vm.windowsGolden` names,
+through the Tart fork in `posato.vm.windowsTart` with its own
+`posato.vm.windowsTartHome` (one-time setup in
+[the unattended verification guide](../../docs/development/unattended-verification.md#the-windows-golden-vm)).
+`doctor`, `build`, `install`, `launch`, `terminate`, `status`, `snapshot`,
+`find`, `tap`, `type`, `press`, `wait`, `run`, `screenshot`, `logs`, `db`,
+`reset`, `cleanup`, `flow onboard`, `flow set`, and `flow session` take it.
+
+- `windows create` claims a `machine-ledger` lease with the golden's memory,
+  clones the golden, boots it headless with
+  `build/verification/windows-share/posato-sync` shared as `Z:\posato-sync`,
+  and waits for the guest agent (about 30 s). On each boot it turns Windows
+  Update off and adds Defender exclusions for the driver's folders in the
+  disposable clone, since both otherwise starve the guest within minutes, and
+  copies the guest scripts in. `windows boot`, `stop`, and `destroy` manage
+  the clone; `destroy` also ends the lease.
+- `windows exec --script S [--as-other-user]` runs a PowerShell script in the
+  signed-in administrator's console session, which reaches the desktop, and
+  prints its exit code and output. The guest agent passes only the low byte
+  of an exit code (msiexec's 1620 arrives as 84), so a script that reports a
+  larger code prints it. Commands avoid WMI (`Get-CimInstance`), whose
+  provider has hung in the guest.
+- `build -t windows` builds `:desktopApp:windowsSpikeJar`, the Linux
+  application jar with the Windows Compose runtime, until the Windows package
+  exists. `install -t windows` copies that jar to `C:\Tools\posato.jar`;
+  `install -t windows --package <file>.msi` installs an MSI with `msiexec /i
+  /qn /l*v` and keeps the end of the log under the run's `logs/` on
+  failure; `windows uninstall [--package <file>.msi] [--product Posato]`
+  removes it with `msiexec /x`. The clone has UAC off, so the one
+  administrator approval a person gives is not driven.
+- `launch -t windows [--fresh]` starts the installed `Posato.exe` (the MSI's
+  registered install location, else `C:\Program Files\Posato`), or the
+  spike jar on the golden VM's JDK with its output in `C:\Tools\posato.log`,
+  through `Start-Process`, and returns once the tree can be read. `--fresh`
+  removes `%USERPROFILE%\.local\share\Posato` (the spike jar's data) and
+  `%LOCALAPPDATA%\Posato`.
+- The tree is Posato's Compose tree on the Java Access Bridge, read by
+  `src/main/resources/windows/posato-jab.py` in the guest. `tap` runs the
+  element's accessible click action with no pointer input; Compose refuses
+  the bridge's text setter, so `type` focuses the field and sends Unicode
+  keyboard input to Posato's window, and `press` sends keys such as
+  `return` or `ctrl+a`. Arguments travel to the probe as JSON on standard
+  input, so quotes and non-ASCII text arrive intact.
+- `screenshot -t windows` captures the primary screen (the fork's guest also
+  reports a second display).
+- `flow onboard -t windows` meets the access step as on Linux, with the same
+  labels, until the Windows host names its own; the spike jar has no pausing
+  service, so it needs `--skip-access`. `flow session --end-early-after S`
+  ends the started pause with **End session early** after S seconds, on
+  every target.
+- `windows check` reads a fact in the guest with
+  `src/main/resources/windows/posato-checks.ps1`, and `--expect` turns it
+  into an assertion that fails with `ASSERTION_FAILED`:
+  - `connect --host H [--port 80|443] [--expect allowed|blocked]`: the
+    addresses the name resolves to, `Test-NetConnection`'s TCP result, and
+    `curl.exe`'s exit code and HTTP status;
+  - `process --name N [--expect running|absent]`: processes with that image
+    name, with path, session, and owner;
+  - `service [--name PosatoHelper] [--state Running] [--expect
+    present|absent]`: the service's state, start type, and `sc qc` output;
+  - `filters [--match Posato] [--expect present|absent]`: Windows Filtering
+    Platform filters whose name or description matches, or whose provider or
+    sublayer name does, from `netsh wfp show filters` and `show state`;
+  - `run-value [--name Posato] [--expect present|absent]`: the signed-in
+    user's start-at-login value under `HKCU\...\CurrentVersion\Run`;
+  - `pipe [--name app.posato.helper] [--line L] [--as-other-user] [--expect
+    connected|refused]`: connects to the named pipe, sends one line, and
+    reads one answer; a refused connection is a result, not a failure.
+- `--as-other-user` runs as `posato-other`, a standard local user (member of
+  Users only) that the check creates in the clone, through a one-time
+  scheduled task. The user gets the batch logon right that a scheduled task
+  needs; its password is new on each call and travels only on standard
+  input. It proves what a foreign caller gets, such as a refused pipe.
+- The service name, pipe name, filter text, and product name are the
+  defaults `PosatoHelper`, `app.posato.helper`, `Posato`, and `Posato`;
+  each check takes another with its option.
+
+Not drivable yet: the tray icon and its menu (the Java Access Bridge does
+not reach the notification area), the UAC prompt (off in the clone), the
+Windows file dialogs that export and import open, and an `observe -t
+windows` equivalent (use `windows check connect` and `windows check
+process`).
 
 The folder workspace runs between any of these devices and Mac guests with
 `flow folder` and `relay` between their folders. Each device keeps its own

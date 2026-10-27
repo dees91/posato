@@ -8,6 +8,7 @@ enum class Target(
     DEVICE("device"),
     ANDROID("android"),
     LINUX("linux"),
+    WINDOWS("windows"),
     ;
 
     /** The iOS targets, driven through Xcode. */
@@ -22,6 +23,7 @@ enum class Target(
             "device" to DEVICE,
             "android" to ANDROID,
             "linux" to LINUX,
+            "windows" to WINDOWS,
         )
     }
 }
