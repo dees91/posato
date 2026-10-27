@@ -388,5 +388,10 @@ For what matters.</string>
     <string name="onboarding_permission_linux_denied">The pausing service was not installed. Try again and enter your administrator password.</string>
     <string name="onboarding_permission_android_denied">Some permissions are still off. Allow them to pause websites and apps on this phone.</string>
     <string name="onboarding_permission_linux_required">Allow pausing on this computer before pausing websites or apps.</string>
+    <string name="onboarding_permission_windows_body">The Posato installer set up the small service that pauses the websites and apps you choose on this %1$s.</string>
+    <string name="onboarding_permission_windows_action">Check the pausing service</string>
+    <string name="onboarding_summary_windows_off">Pausing service not running</string>
+    <string name="onboarding_permission_windows_denied">The pausing service is not running. Restart the computer, or install Posato again to set it up.</string>
+    <string name="onboarding_permission_windows_required">Posato needs its pausing service before pausing websites or apps. Install Posato again to set it up.</string>
     <string name="onboarding_permission_android_required">Allow access before pausing websites or apps.</string>
 </resources>
