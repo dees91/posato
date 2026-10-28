@@ -1,7 +1,7 @@
 # Execution: `I18N-002`
 
 - **Brief:** [i18n-002-de-fr-es-pt.md](../specifications/i18n-002-de-fr-es-pt.md)
-- **Status:** `active`
+- **Status:** `closed`
 - **Review tier:** `standard`
 - **Implementer:** Claude Code, with one translating agent per language in its own worktree
 - **Reviewer:** an independent Claude Code agent for the copy, with back-translation; another for the completed change
@@ -36,7 +36,18 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pending | |
+| `./gradlew quality` on `62baa6cf` | pass | `BUILD SUCCESSFUL` in 4m 45s. An earlier run beside the Simulator captures failed on a hung iOS test runner, and two on swift-format and ktlint, fixed in `c9110f47` and `b049fd95`. |
+| `verifyEnglishText`, `verifyCatalogs`, `verifyLocaleLists` with five shipped languages | pass | Part of `quality`; also after each translation merge. |
+| Site build and `/`, `/de/`, `/fr/`, `/es/`, `/pt/` with their privacy pages at 390 and 1280 px | pass | 30 pages; no horizontal scroll; `lang`, self canonical, `hreflang` for six languages and x-default; the footer list marks the current language. Run `site-20261028-171514`. |
+| Mac `primary` guest at `62baa6cf`, English: `vm onboard`, `flow session --set Work`, `observe --expect blocked` | pass | `outcome: paused`. Runs `20261028-190349-ffdb`, `20261028-190540-a449`, `20261028-190554-01da`. |
+| Mac, app only in each language: Safari pause page, then Session, Pause sets, Schedules after `resize-window` | pass | Pause page "bis 21:05 pausiert", "jusqu'à", "pausa hasta 21:05", "pausado até 21:05"; window 614 × 780 for each language with no clipped label; End early by id, then `observe --expect allowed` on `example.org`. Runs `20261028-190620-41b3`, `20261028-190705-ba6e`, `20261028-190749-abe6`, `20261028-190831-a5ea`, `20261028-190919-82bd`. |
+| Test iPhone 13 mini at `62baa6cf`: `flow set`, `flow schedule --off`, `flow session --set Work`, then each language through `launch --arg -AppleLanguages` | pass | Session, Pause sets with one and other counts, and Schedules in each language, tabs on one line; then End early, and the set and schedule removed. Runs `20261028-190339-1bf0`, `20261028-190611-7be8`. |
+| Android phone at `62baa6cf`: `flow session`, Clock blocked, app locale per language, End early | pass | The block screen, Session, Pause sets, and Schedules in each language; `observe` blocked, then allowed. Runs `20261028-190720-428d`, `20261028-190754-e7d8`, `20261028-190953-a140`. |
+| `store capture --prepare` on iPhone 17 Pro Max and iPad Pro 13-inch (M5) for each locale | pass | 1320 × 2868 and 2064 × 2752 PNGs in `docs/store/<locale>/screenshots`. The German iPad set was recaptured after a run beside `quality` timed out. Runs `20261028-181826-c13f`, `20261028-185224-911a`, `20261028-183503-34da`, `20261028-183646-5f4b`, `20261028-184054-9f9b`, `20261028-184234-d080`, `20261028-184636-ee64`, `20261028-184817-f2c1`. |
+| `store capture` on iPhone 16e for each locale (long-text pass) | pass | No clipped label; iOS shortens a long back-button title such as "Ensembl…" itself. Runs `20261028-185443-ece6`, `20261028-183907-0e57`, `20261028-184452-2f0f`, `20261028-185033-18c8`. |
+| `DevicectlCommandTest` before and after the launch fix | fail, then pass | The red run showed the result-file flag after the application's arguments. |
+
+Linux and Windows take the language from the session locale and share the catalog the runs above exercise; `posato-control` has no language recipe for them, as `I18N-001` recorded.
 
 ## Blockers and accepted risks
 
@@ -47,5 +58,5 @@
 
 ## Final
 
-- **Status:** active
-- **Outcome:** pending the final runs at the pull request's head.
+- **Status:** closed
+- **Outcome:** met; `AC-01` to `AC-05` are proven above. Shipping waits on the maintainer's acceptance of the copy from the review report.
