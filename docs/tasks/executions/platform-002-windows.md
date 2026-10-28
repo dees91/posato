@@ -112,7 +112,7 @@ until the maintainer confirms them.
 | `AC-02` MSI install, onboarding, Edge and Chrome blocked, app ended, early end, end while closed, malformed and foreign requests | Pass | `runs/ac02-20261027` |
 | `AC-02` again with UAC on, Posato on a filtered token | Pass | `runs/ac02-uac-696d8ec6`, `runs/smoke-uac-724fa6d2` |
 | `AC-03` schedule with the window closed; start at login after a restart | Pass | `runs/ac03-20261027` |
-| `AC-04` Windows, Ubuntu, and Mac guests in one folder workspace | Pass (Windows MSI built from `a97154be`); rerun at the final head pending | `runs/ac04-750c964d` |
+| `AC-04` Windows, Ubuntu, and Mac guests in one folder workspace | Pass (Windows MSI built from `a97154be`, with the folder-path fix); accepted for the head (`user-confirmed` 2026-10-28), later changes covered by the UAC-on runs | `runs/ac04-750c964d` |
 | `AC-05` arm64 upgrade during a pause and clean uninstall | Pass | `runs/ac05-750c964d`, `runs/ac05-uac-696d8ec6` |
 | `AC-05` x64 build, install, pause, uninstall on CI | Pass | "Windows package" workflow |
 | `AC-06` Mac VM and Linux clone on the shared core | Pass | `runs/ac06-mac-750c964d`, `runs/ac06-linux-750c964d` |
