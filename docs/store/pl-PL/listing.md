@@ -35,10 +35,30 @@ skupienie,pauza,rozproszenia,strony,aplikacje,czas przed ekranem,koncentracja,pr
 
 ## Screenshots
 
-iPhone 6.9-inch and iPad 13-inch captures from the Polish interface are not
-in this directory yet. They are taken during verification, from the Polish
-app, with the same recipe as [the English set](../en-US/listing.md). Nothing
-is uploaded.
+The set repeats the English screens from the Polish interface on the same
+Simulators, in Dark Mode, with the synthetic websites `news.example`,
+`social.example`, and `video.example` in the unnamed first set, which the
+Polish app names "Mój zestaw", and one weekday schedule "Głęboka praca":
+
+- [Paused websites](screenshots/iphone-6.9/01-paused-websites.png)
+- [Session duration](screenshots/iphone-6.9/02-session-duration.png)
+- [Schedules](screenshots/iphone-6.9/03-schedules.png)
+- [About Posato](screenshots/iphone-6.9/04-about-posato.png)
+
+The iPad set shows the same screens in portrait:
+
+- [Paused websites](screenshots/ipad-13/01-paused-websites.png)
+- [Session duration](screenshots/ipad-13/02-session-duration.png)
+- [Schedules](screenshots/ipad-13/03-schedules.png)
+- [About Posato](screenshots/ipad-13/04-about-posato.png)
+
+`I18N-001` captured them on 2026-10-28 with the [English recipe](../en-US/listing.md#capture-recipe),
+launching the app with `--arg -AppleLanguages --arg "(pl)" --arg -AppleLocale --arg pl_PL`
+while the Simulator stays English. The iPhone is the iPhone 17 Pro Max
+Simulator with iOS 26.5 (1320 × 2868), the iPad the iPad Pro 13-inch (M5) Simulator with iOS 27.0
+(2064 × 2752); both are RGB PNGs without an alpha channel. About shows
+version 1.5.2, the build's `MARKETING_VERSION`; `DOCS-007` recaptures the set
+for 1.6. Nothing is uploaded.
 
 ## What's New in 1.5.0
 

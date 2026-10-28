@@ -13,6 +13,7 @@ final class ScenarioExecutor {
   private static let pollInterval: TimeInterval = 0.25
   private static let settleInterval: TimeInterval = 0.5
   private static let scrollAttempts = 80
+  private static let uncoverAttempts = 3
   private static let revealAttempts = 8
   private static let keyboardSettle: TimeInterval = 0.3
   private static let extraDeletes = 3
@@ -655,11 +656,16 @@ final class ScenarioExecutor {
     var previous: [String]?
     var forward = true
     var unchanged = 0
+    var uncoverRounds = 0
     for _ in 0..<Self.scrollAttempts {
       if let element = resolve(step.query, action: step.action), element.exists,
         !element.frame.isEmpty, Self.isVisible(element, in: app.frame)
       {
-        return
+        // An identifier stays in the tree under the bottom bar, where its centre is on screen but a tap
+        // lands on the bar, so it is reached once nothing covers it.
+        // Some Compose elements never report themselves hittable, so a few pans are the limit for those.
+        if element.isHittable || uncoverRounds >= Self.uncoverAttempts { return }
+        uncoverRounds += 1
       }
       let current = Self.scrollLabels(SnapshotSerializer.node(from: try labelRoot.snapshot()))
       unchanged = current == previous ? unchanged + 1 : 0
