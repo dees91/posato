@@ -77,36 +77,50 @@ from `IOS-004`:
 
 ### Capture recipe
 
-Repeat these steps for each Simulator: iPhone 17 Pro Max (1320 × 2868) and
-iPad Pro 13-inch (M5) in portrait (2064 × 2752). When Xcode no longer lists the
-iPhone, create it with `xcrun simctl create` from the
+Capture each store locale on two Simulators: iPhone 17 Pro Max (1320 × 2868)
+and iPad Pro 13-inch (M5) in portrait (2064 × 2752). When Xcode no longer lists
+the iPhone, create it with `xcrun simctl create` from the
 `com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max` device type and an
-installed iOS 26 runtime. Drive the app with
-[`posato-control`](../../../tools/posato-control/README.md) and name the booted
-Simulator with `--udid <udid>`.
+installed iOS 26 runtime. The About screen shows the build's
+`MARKETING_VERSION`; capture from a build of the release version, even when
+`Version.xcconfig` is bumped only for the capture.
 
-1. Run `xcrun simctl ui <udid> appearance dark`.
-2. Install fresh with `launch -t sim --fresh`, then run
-   `tools/posato-control/fixtures/scenarios/first-install-skip.json`.
-3. In **Pause sets**, rename the first set to `Focus` and add the synthetic
-   websites `news.example`, `social.example`, and `video.example` to it, then
-   add a schedule named `Deep work` with the default set, weekdays, and hours.
-   The About screen shows the build's `MARKETING_VERSION`; capture from a build
-   of the release version, even when `Version.xcconfig` is bumped only for the
-   capture.
-4. Relaunch without `--fresh` before the first capture, so the field shows the
-   default hint instead of the feedback shown after an add.
-5. Capture the session duration screen first, with the 25-minute preset
-   selected. Before capturing, run
-   `xcrun simctl status_bar <udid> override --time <HH:MM now> --batteryState discharging --batteryLevel 100 --wifiBars 3`,
-   so the status bar matches the "Ends at" time.
-6. Capture About Posato, the Focus set, and Schedules with the same
-   status-bar time. The About screen hides the tab bar, so go Back before
-   switching tabs.
-7. Capture each screen with `xcrun simctl io <udid> screenshot raw.png`. Then
-   remove the alpha channel with `ffmpeg -i raw.png -pix_fmt rgb24 <out>.png`,
-   naming the output after the files above.
-8. Clear the override with `xcrun simctl status_bar <udid> clear`.
+One [`posato-control`](../../../tools/posato-control/README.md) command
+captures a locale's set:
+
+```bash
+tools/posato-control/build/install/posato-control/bin/posato-control \
+  store capture -t sim --udid <udid> --locale en-US \
+  --out docs/store/en-US/screenshots/iphone-6.9 --prepare
+```
+
+`--locale` names a directory here, and its `capture.json` gives the launch
+language and locale (`en`, `en_US`), the schedule name (`Deep work`), and the
+optional set name (`Focus`). A new language needs only its own directory with
+a `capture.json`. The command switches the Simulator to Dark Mode, launches
+Posato in that language while the Simulator stays English, sets the status bar
+to the current time (so it matches Session's "Ends at"), battery 100 %, and
+three Wi-Fi bars, and writes `01-paused-websites.png`,
+`02-session-duration.png`, `03-schedules.png`, and `04-about-posato.png` as RGB
+PNGs without an alpha channel. It clears the status-bar override even when a
+step fails. Every control is pressed by its id, so the path is the same in
+every language.
+
+`--prepare` first resets Posato, skips onboarding with
+`first-install-skip.json`, adds `news.example`, `social.example`, and
+`video.example` to the first set, renames that set when `capture.json` names
+one, and adds the schedule for 09:00-12:00 on weekdays with the default set.
+It does this in English with a 24-hour clock (`en_GB`), because the
+onboarding scenario and the schedule editor flow read English labels and turn
+24-hour wheels; the names come from `capture.json`. Leave
+`--prepare` out to capture a Simulator that is already prepared, such as for
+a second language on the same data. A set without a `setName` keeps the
+name the app gives the first set in each language.
+
+For a narrow pass, run the same command on a small Simulator, such as iPhone
+16e or iPhone SE, with `--out build/verification/store-narrow-<locale>/`, and
+look for truncated or wrapped text before accepting a translation. Those
+captures stay in ignored `build/verification/`.
 
 `posato-provisioning store prepare --screenshots docs/store/en-US/screenshots`
 uploads both sets in file-name order; see the

@@ -128,7 +128,12 @@ internal fun SessionBarScreen(
                     // The system's info symbol keeps the bar light, so the title never truncates beside it at large sizes.
                     val about = stringResource(Res.string.about_title)
                     onOpenAbout?.let { open ->
-                        PosatoBarButton(onClick = open, modifier = Modifier.semantics { contentDescription = about }) {
+                        // Only iOS carries the id: a desktop verification host would announce it instead of "About Posato".
+                        PosatoBarButton(
+                            onClick = open,
+                            modifier = Modifier.semantics { contentDescription = about },
+                            controlId = "about_title".takeIf { platformUsesCupertinoChrome },
+                        ) {
                             PosatoIcon(PosatoIcons.Info, null, Modifier.size(PosatoSize.LargeIcon))
                         }
                     }

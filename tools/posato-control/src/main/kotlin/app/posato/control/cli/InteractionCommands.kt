@@ -229,7 +229,7 @@ class RunCommand : ControlCommand("run", "Run a JSON scenario file (or - for std
     }
 }
 
-private fun parseScenario(text: String): Scenario {
+internal fun parseScenario(text: String): Scenario {
     val parsed = try {
         ControlJson.lenient.decodeFromString(Scenario.serializer(), text)
     } catch (exception: SerializationException) {

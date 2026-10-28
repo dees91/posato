@@ -53,9 +53,13 @@ The iPad set shows the same screens in portrait:
 - [Schedules](screenshots/ipad-13/03-schedules.png)
 - [About Posato](screenshots/ipad-13/04-about-posato.png)
 
-`I18N-001` captured them on 2026-10-28 with the [English recipe](../en-US/listing.md#capture-recipe),
-launching the app with `--arg -AppleLanguages --arg "(pl)" --arg -AppleLocale --arg pl_PL`
-while the Simulator stays English. The iPhone is the iPhone 17 Pro Max
+`I18N-001` captured them on 2026-10-28 by hand, launching the app with
+`--arg -AppleLanguages --arg "(pl)" --arg -AppleLocale --arg pl_PL`
+while the Simulator stays English. Recapture them with the
+[capture command](../en-US/listing.md#capture-recipe), which reads
+[capture.json](capture.json):
+`posato-control store capture -t sim --udid <udid> --locale pl-PL --out docs/store/pl-PL/screenshots/iphone-6.9 --prepare`,
+and `ipad-13` on the iPad. The iPhone is the iPhone 17 Pro Max
 Simulator with iOS 26.5 (1320 × 2868), the iPad the iPad Pro 13-inch (M5) Simulator with iOS 27.0
 (2064 × 2752); both are RGB PNGs without an alpha channel. About shows
 version 1.5.2, the build's `MARKETING_VERSION`; `DOCS-007` recaptures the set

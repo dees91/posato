@@ -3267,3 +3267,14 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: Spanish ships as `es-ES` and Portuguese as `pt-BR`.
   Copy in a language the maintainer does not review directly is accepted
   from an independent review with a back-translation.
+## [2026-10-28] tooling | Store screenshots in one command
+
+- `posato-control store capture -t sim --locale <dir> --out <dir> [--prepare]`
+  replaces the hand-run capture recipe in `docs/store/en-US/listing.md`; each
+  store locale adds a `capture.json` with its launch language, locale, and
+  synthetic names. Controls are pressed by id, so one path serves every
+  language; the iOS pause set row (`pause_set_row`) and the iOS About bar
+  button (`about_title`) gained ids for it.
+- `observed`: a Simulator launched with `-AppleLocale en_US` shows a 12-hour
+  schedule time picker, which `flow schedule`'s 24-hour wheel values cannot
+  turn, so preparation runs in `en_GB`.

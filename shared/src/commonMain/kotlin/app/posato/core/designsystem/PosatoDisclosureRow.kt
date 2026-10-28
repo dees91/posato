@@ -32,12 +32,13 @@ internal fun PosatoDisclosureRow(
     trailingContent: @Composable () -> Unit = { PosatoIcon(PosatoIcons.Chevron, null) },
     onClickLabel: String? = null,
     customActions: List<CustomAccessibilityAction> = emptyList(),
+    controlId: String? = null,
 ) {
     Column(modifier = modifier) {
+        val sized = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control)
+        val tagged = controlId?.let { sized.controlId(it) } ?: sized
         Box(
-            modifier = Modifier.fillMaxWidth().heightIn(
-                min = PosatoSize.Control,
-            ).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+            modifier = tagged.clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
                 .semantics { if (customActions.isNotEmpty()) this.customActions = customActions },
         ) {
             Row(
