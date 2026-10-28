@@ -8,7 +8,7 @@
     <string name="action_choose_applications">Elegir aplicaciones</string>
     <string name="action_review_applications">Revisar aplicaciones</string>
     <string name="action_edit">Editar</string>
-    <string name="action_reload">Volver a cargar la lista guardada</string>
+    <string name="action_reload">Recargar la lista guardada</string>
     <string name="action_remove">Eliminar</string>
     <string name="action_retry">Reintentar</string>
     <string name="action_save">Guardar cambio</string>
@@ -142,7 +142,7 @@ Para lo que importa.</string>
     <string name="onboarding_action_continue">Continuar</string>
     <string name="onboarding_action_not_now">Ahora no</string>
     <string name="onboarding_action_open_session">Ir a Sesión</string>
-    <string name="onboarding_permission_title">Haz sitio en este dispositivo.</string>
+    <string name="onboarding_permission_title">Prepara tu espacio en este dispositivo.</string>
     <string name="onboarding_permission_ios_body">El acceso a Tiempo de uso permite a Posato pausar los sitios web y las apps que elijas en este %1$s.</string>
     <string name="onboarding_permission_ios_action">Permitir acceso a Tiempo de uso</string>
     <string name="onboarding_permission_check_failed">No se ha podido comprobar el acceso. Puedes permitirlo más tarde desde Conjuntos de pausa.</string>
@@ -165,7 +165,7 @@ Para lo que importa.</string>
     <string name="onboarding_summary_one_website">1 sitio web guardado</string>
     <string name="onboarding_summary_websites">%1$d sitios web guardados</string>
     <string name="onboarding_progress">%1$d de %2$d</string>
-    <string name="onboarding_action_begin">Hazte un hueco</string>
+    <string name="onboarding_action_begin">Date un poco de espacio</string>
     <string name="onboarding_privacy_intro">Sin cuenta de Posato. Sin registro de actividad. Tú eliges qué pausar y cuándo.</string>
     <string name="onboarding_privacy_collection_detail">Sin registros de navegación, puntuaciones de uso, telemetría ni envío de informes de fallos.</string>
     <string name="onboarding_privacy_encryption_detail">Si sincronizas tus dispositivos, los cambios se cifran en este dispositivo antes de salir de él.</string>
@@ -207,7 +207,7 @@ Para lo que importa.</string>
     <string name="mac_setup_not_enabled">El asistente en segundo plano no está activado en este Mac.</string>
     <string name="mac_setup_unavailable">No se ha podido comprobar ni activar el asistente en segundo plano. Vuelve a comprobarlo.</string>
     <string name="mac_setup_uncertain">La última solicitud al asistente no terminó. Vuelve a intentarlo para completarla.</string>
-    <string name="mac_setup_recovery">El asistente en segundo plano está registrado, pero no se ha podido iniciar. Vuelve a comprobarlo. No lo elimines de los ítems de inicio mientras no se pueda confirmar la limpieza.</string>
+    <string name="mac_setup_recovery">El asistente en segundo plano está registrado, pero no se ha podido iniciar. Vuelve a comprobarlo. No lo elimines de Ítems de inicio de sesión mientras no se pueda confirmar la limpieza.</string>
     <string name="mac_setup_unchanged">Se ha vuelto a obtener el mismo resultado. El siguiente paso admitido es reiniciar este Mac; reiniciar no repara el registro por sí solo.</string>
     <string name="mac_setup_remove">Eliminar de este Mac</string>
     <string name="mac_setup_removing">Eliminando el asistente en segundo plano…</string>
@@ -478,11 +478,11 @@ Para lo que importa.</string>
     <string name="schedules_prepare_ipad">Prepara este iPad para los horarios.</string>
     <string name="schedules_prepare_computer">Prepara este ordenador para los horarios.</string>
     <string name="schedules_prepare_phone">Prepara este teléfono para los horarios.</string>
-    <string name="session_short_pause_mac">Pausa corta: el Mac solo la aplica mientras la app sigue abierta.</string>
-    <string name="session_short_pause_iphone">Pausa corta: el iPhone solo la aplica mientras la app sigue abierta.</string>
-    <string name="session_short_pause_ipad">Pausa corta: el iPad solo la aplica mientras la app sigue abierta.</string>
-    <string name="session_short_pause_computer">Pausa corta: el ordenador solo la aplica mientras la app sigue abierta.</string>
-    <string name="session_short_pause_phone">Pausa corta: el teléfono solo la aplica mientras la app sigue abierta.</string>
+    <string name="session_short_pause_mac">Pausa corta: el Mac solo la aplica mientras la app siga abierta.</string>
+    <string name="session_short_pause_iphone">Pausa corta: el iPhone solo la aplica mientras la app siga abierta.</string>
+    <string name="session_short_pause_ipad">Pausa corta: el iPad solo la aplica mientras la app siga abierta.</string>
+    <string name="session_short_pause_computer">Pausa corta: el ordenador solo la aplica mientras la app siga abierta.</string>
+    <string name="session_short_pause_phone">Pausa corta: el teléfono solo la aplica mientras la app siga abierta.</string>
     <string name="weekday_monday">Lunes</string>
     <string name="weekday_tuesday">Martes</string>
     <string name="weekday_wednesday">Miércoles</string>
@@ -528,7 +528,7 @@ Para lo que importa.</string>
     <string name="action_back_to_pause_sets">Volver a los conjuntos de pausa</string>
     <string name="action_back_to_schedules">Volver a los horarios</string>
     <string name="action_duplicate">Duplicar</string>
-    <string name="action_reload_short">Volver a cargar</string>
+    <string name="action_reload_short">Recargar</string>
     <string name="action_finish_setup">Terminar configuración</string>
     <string name="action_end_early">Terminar antes</string>
     <string name="action_end_pause">Terminar pausa</string>
@@ -578,7 +578,7 @@ necesitas?</string>
     <string name="session_review_eyebrow">UN ÚLTIMO VISTAZO</string>
     <string name="session_review_lead">Revisa lo que has elegido y la hora de fin de esta sesión.</string>
     <string name="session_until">Hasta %1$s</string>
-    <string name="session_start_applies">Así empieza la sesión y se aplican las restricciones elegidas en este dispositivo.</string>
+    <string name="session_start_applies">Esto inicia la sesión y aplica las restricciones elegidas en este dispositivo.</string>
     <string name="session_hero_scheduled">Pausa programada</string>
     <string name="session_hero_active">Sesión activa</string>
     <string name="session_hero_room_you">Un poco de espacio.
@@ -587,7 +587,7 @@ Solo para ti.</string>
     <string name="session_hero_scheduled_running">Hay una pausa programada en curso en este dispositivo.</string>
     <string name="session_hero_timer_running">El temporizador de tu sesión está en marcha en este dispositivo.</string>
     <string name="session_hero_finish_setup">Termina de configurar el bloqueo y luego elige cuándo hacer una pausa.</string>
-    <string name="session_hero_start_website">Empieza por un sitio web o una app del que te gustaría tomar un poco de distancia.</string>
+    <string name="session_hero_start_website">Empieza por un sitio web o una app de los que te gustaría tomar un poco de distancia.</string>
     <string name="session_hero_quiet">Una pausa tranquila te espera cuando quieras. Date un poco de espacio frente a lo que te distrae.</string>
     <string name="session_saved_on_device">Guardado en este dispositivo. Las restricciones solo se aplican durante una pausa que inicies o un horario que configures.</string>
     <string name="session_setup_incomplete">Configuración incompleta. Posato no está bloqueando sitios web ni apps en este Mac. Termina la configuración para iniciar una pausa.</string>
@@ -599,7 +599,7 @@ Solo para ti.</string>
     <string name="session_restrictions_not_active_mac">Restricciones no activas en este Mac.</string>
     <string name="session_frozen_counts">Estos recuentos se mantienen como al inicio de la sesión. Los elementos añadidos se pausan ahora. Los eliminados siguen en pausa hasta que termine esta sesión.</string>
     <string name="session_showing_set">Se muestran los elementos del conjunto de esta pausa.</string>
-    <string name="session_ready_return">¿Listo para volver?</string>
+    <string name="session_ready_return">¿Todo listo para volver?</string>
     <string name="session_end_this_pause">TERMINAR ESTA PAUSA</string>
     <string name="session_end_scheduled">Así terminan %1$s y cualquier sesión en curso, aquí y en tus otros dispositivos. El horario se sigue repitiendo.</string>
     <string name="session_end_scheduled_full">Así terminan %1$s y cualquier sesión en curso, aquí y en tus otros dispositivos. El horario se sigue repitiendo. Un dispositivo con una fecha distinta, en otra zona horaria cerca de la medianoche, mantiene su propia pausa hasta que termine allí.</string>
@@ -637,7 +637,7 @@ Solo para ti.</string>
     <string name="schedule_starts_at">Empieza: %1$s</string>
     <string name="schedule_ends_at">Termina: %1$s</string>
     <string name="schedule_ends_at_next">Termina: %1$s del día siguiente</string>
-    <string name="schedule_repeat_on">Repetir los</string>
+    <string name="schedule_repeat_on">Repetir los días</string>
     <string name="schedule_error_name">Ponle al horario un nombre de hasta 80 caracteres, sin saltos de línea.</string>
     <string name="schedule_error_day">Elige al menos un día.</string>
     <string name="schedule_error_short">Un horario dura al menos 15 minutos.</string>
@@ -703,7 +703,7 @@ Solo para ti.</string>
     <string name="targets_nothing_added">No se ha añadido nada. Tu borrador se conserva para que puedas reintentarlo.</string>
     <string name="targets_added_check">%1$d añadidos. Revisa las entradas restantes o la capacidad de la lista.</string>
     <string name="targets_add_websites">Añadir sitios web</string>
-    <string name="targets_added_duplicates">%1$d añadidos · %2$d ya estaban en tu lista</string>
+    <string name="targets_added_duplicates">%1$d añadidos · %2$d ya en tu lista</string>
     <string name="targets_add_hint">Añade uno o pega varios. Se incluye la variante www; los demás subdominios, no.</string>
     <string name="targets_choose_apps">Elegir apps</string>
     <string name="targets_apps_private">Revisa tu selección privada en el selector del sistema.</string>
@@ -781,7 +781,7 @@ Solo para ti.</string>
     <string name="transfer_becomes">%1$s pasa a ser %2$s y conserva las apps de este dispositivo.</string>
     <string name="transfer_removes_schedules">Elimina horarios: %1$s.</string>
     <string name="transfer_switched_off">%1$s sin activar.</string>
-    <string name="transfer_stays_first">%1$s sigue primero y conserva las apps de este dispositivo.</string>
+    <string name="transfer_stays_first">%1$s sigue en primer lugar y conserva las apps de este dispositivo.</string>
     <string name="transfer_nothing_to_add">No hay nada nuevo que añadir.</string>
     <string name="transfer_too_many_sets">Así habría más de 10 conjuntos de pausa. Combina los conjuntos con el mismo nombre o sustituye tus conjuntos.</string>
     <string name="transfer_too_many_websites">Así habría más de 1024 sitios web. Sustituye tus conjuntos o elimina antes algunos sitios web.</string>

@@ -28,7 +28,7 @@ Enregistrez vos ensembles de pause, leurs sites et vos programmations dans un fi
 
 PAS DE COMPTE POSATO
 
-Pas d’outil d’analyse, de score d’utilisation, de série ni de serveur exploité par Posato. Vos choix restent sur vos appareils, sauf si vous activez la synchronisation. Posato est open source sous licence Apache License 2.0.
+Pas d’outil d’analyse, de score d’utilisation, de série ni de serveur exploité par Posato. Vos choix restent sur vos appareils, sauf si vous activez la synchronisation. Posato est open source sous licence Apache 2.0.
 
 AVANT DE COMMENCER
 

@@ -154,7 +154,8 @@ synchronisierte Daten nicht wiederherstellen.
 
 Auf dem iPhone verwendet Posato das Bildschirmzeit-Framework von Apple, um
 die Websites und Apps zu blockieren, die du auswählst. Deine App-Auswahl
-besteht aus undurchsichtigen Systemauswahlen, die auf dem Gerät bleiben;
+besteht aus Systemauswahlen, deren Inhalt Posato nicht einsehen kann und die
+auf dem Gerät bleiben;
 Posato erhält von Bildschirmzeit keine App-Namen und keine Nutzungsdaten.
 Damit ein Zeitplan starten kann, während Posato geschlossen ist, bewahrt
 Posato eine Kopie deiner Zeitpläne sowie der Websites und App-Auswahl jedes
@@ -219,10 +220,10 @@ Einstellungen von Android erteilt werden:
   sie.
 - **Zugriff auf Nutzungsdaten.** Während eine Pause mit Apps läuft, prüft
   Posato etwa zweimal pro Sekunde, welche App im Vordergrund ist, damit es eine
-  pausierte App mit seinem Sperrbildschirm verdecken kann. Es behält nur die
+  pausierte App mit seinem Pausenbildschirm verdecken kann. Es behält nur die
   App, die in diesem Moment im Vordergrund ist, im Arbeitsspeicher und
   zeichnet die App-Nutzung nicht auf.
-- **Über anderen Apps einblenden**, um den Sperrbildschirm anzuzeigen.
+- **Über anderen Apps einblenden**, um den Pausenbildschirm anzuzeigen.
 - **Benachrichtigungen, genaue Wecker und Ausführung ohne
   Akkubeschränkungen**, damit Pausen und Zeitpläne pünktlich beginnen und
   enden, während Posato geschlossen ist. Eine lautlose Benachrichtigung wird
@@ -253,7 +254,7 @@ sendet selbst nichts irgendwohin.
   und nicht speichert. Der Code hält zufällige Leser einer Datei ab, die an die
   falsche Person gelangt, aber wer die Datei hat und viel Rechenleistung zum
   Erraten einsetzt, könnte sie öffnen; sende die Datei und den Code also nur
-  dorthin, wo du ihnen vertraust.
+  an Stellen, denen du vertraust.
 - Auf dem iPhone ist eine geteilte Datei eine temporäre Kopie, die Posato
   löscht, wenn das Teilen-Menü geschlossen wird, und eine importierte Datei
   wird aus einer temporären Kopie gelesen, die Posato nach dem Lesen löscht.

@@ -71,7 +71,7 @@
     <string name="no_session_active">Nenhuma sessão ativa</string>
     <string name="no_session_description">Comece uma pausa tranquila nos sites e apps abaixo.</string>
     <string name="session_active_until">Sessão ativa até %1$s</string>
-    <string name="session_ended_expired">A sessão terminou às %1$s.</string>
+    <string name="session_ended_expired">A sessão terminou: %1$s.</string>
     <string name="session_ended_early">A sessão terminou antes da hora.</string>
     <string name="session_remaining_minutes">Faltam %1$d min</string>
     <string name="session_remaining_soon">Falta menos de um minuto</string>
@@ -80,7 +80,7 @@
     <string name="session_items_unavailable">Não é possível escolher apps nesta versão do Posato.</string>
     <string name="session_items_empty">Nada para pausar ainda.</string>
     <string name="action_start_session">Iniciar sessão</string>
-    <string name="action_end_session_early">Encerrar sessão antes</string>
+    <string name="action_end_session_early">Encerrar sessão agora</string>
     <string name="action_confirm_end_session">Encerrar sessão</string>
     <string name="action_open_paused_items">Itens pausados</string>
     <string name="action_open_session">Sessão</string>
@@ -89,13 +89,13 @@
     <string name="session_duration_label">Minutos</string>
     <string name="session_duration_decrease">Sessão mais curta</string>
     <string name="session_duration_increase">Sessão mais longa</string>
-    <string name="session_setup_preview">Termina às %1$s</string>
+    <string name="session_setup_preview">Término: %1$s</string>
     <string name="session_setup_continue">Revisar sessão</string>
     <string name="session_setup_error_short">Digite 5 minutos ou mais.</string>
     <string name="session_setup_error_long">Digite no máximo 24 horas (1.440 minutos).</string>
     <string name="session_setup_error_past">Esse horário já passou.</string>
     <string name="session_review_title">Revisar sessão</string>
-    <string name="session_review_end">Termina às %1$s</string>
+    <string name="session_review_end">Término: %1$s</string>
     <string name="session_review_description">Confira o que esta sessão pausa antes de iniciá-la.</string>
     <string name="session_action_no_items">Este conjunto ainda não tem sites nem apps neste %1$s.</string>
     <string name="session_action_mappings_failed">Não foi possível carregar os apps escolhidos. Nada foi alterado.</string>
@@ -106,7 +106,7 @@
     <string name="session_loading">Carregando sessão</string>
     <string name="session_starting">Iniciando</string>
     <string name="session_ending">Encerrando</string>
-    <string name="end_session_confirm_title">Encerrar a sessão antes?</string>
+    <string name="end_session_confirm_title">Encerrar a sessão antes da hora?</string>
     <string name="end_session_confirm_body">Os sites e apps pausados voltam a ficar disponíveis.</string>
     <string name="action_sync_now">Sincronizar agora</string>
     <string name="sync_pending">As alterações estão salvas neste dispositivo e aguardando sincronização. Escolha Sincronizar agora para tentar.</string>
@@ -233,7 +233,7 @@ Para o que importa.</string>
     <string name="presence_not_enforcing">Restrições inativas neste Mac</string>
     <string name="presence_maintenance">Atualização em andamento</string>
     <string name="presence_start_session">Iniciar uma sessão…</string>
-    <string name="presence_end_session_early">Encerrar sessão antes…</string>
+    <string name="presence_end_session_early">Encerrar sessão agora…</string>
     <string name="presence_resume_restrictions">Retomar restrições…</string>
     <string name="presence_open">Abrir o Posato</string>
     <string name="presence_quit">Encerrar o Posato</string>
@@ -281,11 +281,11 @@ Para o que importa.</string>
     <string name="mac_unified_overview_block">Bloqueie os sites e apps que você escolheu.</string>
     <string name="mac_unified_overview_login">Inicie discretamente ao iniciar a sessão, sem abrir uma janela.</string>
     <string name="mac_unified_overview_password">Inicie pausas manuais e agendamentos sem digitar a senha toda vez.</string>
-    <string name="mac_unified_overview_schedules">Depois que este Mac estiver configurado, seus agendamentos começam sozinhos, inclusive os adicionados nos seus outros dispositivos, e se atualizam quando você inicia a sessão ou tira este Mac do repouso durante um deles. A configuração em si não cria nenhum agendamento.</string>
+    <string name="mac_unified_overview_schedules">Depois que este Mac estiver configurado, seus agendamentos começam sozinhos, inclusive os adicionados nos seus outros dispositivos, e começam mesmo com atraso quando você inicia a sessão ou tira este Mac do repouso durante um deles. A configuração em si não cria nenhum agendamento.</string>
     <string name="mac_unified_action">Configurar o Posato</string>
     <string name="mac_unified_confirm_access">O macOS pode pedir que você confirme o acesso. Você pode revisá-lo ou revogá-lo depois nos ajustes de Este Mac.</string>
     <string name="mac_unified_blocking_settings">Ajustes de bloqueio</string>
-    <string name="mac_unified_blocking_settings_caption">Verifique ou repita uma etapa sozinha se a configuração precisar de ajuda.</string>
+    <string name="mac_unified_blocking_settings_caption">Verifique ou repita uma única etapa, separadamente, se a configuração precisar de ajuda.</string>
     <string name="mac_unified_defer">Você pode concluir a configuração depois e continuar editando seus itens pausados. O bloqueio fica indisponível até o auxiliar estar pronto.</string>
     <string name="mac_unified_offer_body">Uma única configuração para pausas manuais e agendamentos, que depois começam sozinhos, inclusive os adicionados nos seus outros dispositivos. Você pode revisar ou revogar o acesso nos ajustes de Este Mac.</string>
     <string name="notification_pause_over_title">Pausa encerrada</string>
@@ -530,7 +530,7 @@ Para o que importa.</string>
     <string name="action_duplicate">Duplicar</string>
     <string name="action_reload_short">Recarregar</string>
     <string name="action_finish_setup">Concluir configuração</string>
-    <string name="action_end_early">Encerrar antes</string>
+    <string name="action_end_early">Encerrar agora</string>
     <string name="action_end_pause">Encerrar pausa</string>
     <string name="action_keep_pausing">Continuar a pausa</string>
     <string name="action_keep_this_pause">Manter esta pausa</string>
@@ -585,10 +585,10 @@ você precisa?</string>
 Só para você.</string>
     <string name="session_hero_room_matters">Espaço para o que importa.</string>
     <string name="session_hero_scheduled_running">Uma pausa agendada está em andamento neste dispositivo.</string>
-    <string name="session_hero_timer_running">O cronômetro da sua sessão está correndo neste dispositivo.</string>
+    <string name="session_hero_timer_running">O temporizador da sua sessão está em andamento neste dispositivo.</string>
     <string name="session_hero_finish_setup">Conclua a configuração do bloqueio e depois escolha quando fazer uma pausa.</string>
     <string name="session_hero_start_website">Comece com um site ou app do qual você gostaria de se afastar um pouco.</string>
-    <string name="session_hero_quiet">Uma pausa tranquila está pronta quando você quiser. Dê a si mesmo um pouco de espaço do que tira você do foco.</string>
+    <string name="session_hero_quiet">Uma pausa tranquila está pronta quando você quiser. Escolha se afastar um pouco do que tira você do foco.</string>
     <string name="session_saved_on_device">Salvo neste dispositivo. As restrições valem só durante uma pausa que você inicia ou um agendamento que você define.</string>
     <string name="session_setup_incomplete">Configuração incompleta. O Posato não está bloqueando sites nem apps neste Mac. Conclua a configuração para iniciar uma pausa.</string>
     <string name="session_applying">Aplicando as restrições de novo…</string>
@@ -599,7 +599,7 @@ Só para você.</string>
     <string name="session_restrictions_not_active_mac">Restrições inativas neste Mac.</string>
     <string name="session_frozen_counts">Estas contagens ficam como estavam no início da sessão. Os itens adicionados são pausados agora. Os itens removidos continuam pausados até esta sessão terminar.</string>
     <string name="session_showing_set">Mostrando os itens do conjunto desta pausa.</string>
-    <string name="session_ready_return">Pronto para voltar?</string>
+    <string name="session_ready_return">Quer voltar agora?</string>
     <string name="session_end_this_pause">ENCERRAR ESTA PAUSA</string>
     <string name="session_end_scheduled">Isso encerra %1$s e qualquer sessão em andamento agora, aqui e nos seus outros dispositivos. O agendamento continua se repetindo.</string>
     <string name="session_end_scheduled_full">Isso encerra %1$s e qualquer sessão em andamento agora, aqui e nos seus outros dispositivos. O agendamento continua se repetindo. Um dispositivo com outra data, em outro fuso horário perto da meia-noite, mantém a própria pausa até ela terminar lá.</string>
@@ -757,7 +757,7 @@ Só para você.</string>
     <string name="transfer_nothing_new">Nada novo foi adicionado.</string>
     <string name="transfer_schedules_on">Os agendamentos importados estão ativados.</string>
     <string name="transfer_schedules_off">Os agendamentos importados estão desativados: %1$s. Ative-os aqui ou depois em Agendamentos</string>
-    <string name="transfer_would_start">%1$s iniciaria uma pausa imediatamente.</string>
+    <string name="transfer_would_start">Isto iniciaria uma pausa imediatamente: %1$s.</string>
     <string name="transfer_schedules_failed">Não foi possível ativar os agendamentos. Tente de novo em Agendamentos.</string>
     <string name="transfer_sets_changed">Conjuntos de pausa alterados: %1$s.</string>
     <string name="transfer_removed">Removidos: %1$s.</string>
@@ -777,10 +777,10 @@ Só para você.</string>
     <string name="transfer_file_name">Conjuntos de pausa do Posato.posato</string>
     <string name="transfer_adds">Adiciona %1$s.</string>
     <string name="transfer_adds_websites">Adiciona sites a %1$s.</string>
-    <string name="transfer_removes_apps">Remove %1$s e os apps dele neste dispositivo.</string>
+    <string name="transfer_removes_apps">Remove %1$s e os respectivos apps neste dispositivo.</string>
     <string name="transfer_becomes">%1$s passa a ser %2$s e mantém os apps deste dispositivo.</string>
     <string name="transfer_removes_schedules">Remove agendamentos: %1$s.</string>
-    <string name="transfer_switched_off">%1$s desativado.</string>
+    <string name="transfer_switched_off">%1$s.</string>
     <string name="transfer_stays_first">%1$s continua em primeiro e mantém os apps deste dispositivo.</string>
     <string name="transfer_nothing_to_add">Nada novo para adicionar.</string>
     <string name="transfer_too_many_sets">Isso passaria de 10 conjuntos de pausa. Junte conjuntos com o mesmo nome ou substitua seus conjuntos.</string>
@@ -846,9 +846,9 @@ Só para você.</string>
         <item quantity="other">%1$d sites adicionados.</item>
     </plurals>
     <plurals name="count_schedules_arrive">
-        <item quantity="one">%1$d agendamento chega</item>
-        <item quantity="many">%1$d de agendamentos chegam</item>
-        <item quantity="other">%1$d agendamentos chegam</item>
+        <item quantity="one">%1$d agendamento chega desativado</item>
+        <item quantity="many">%1$d de agendamentos chegam desativados</item>
+        <item quantity="other">%1$d agendamentos chegam desativados</item>
     </plurals>
     <plurals name="count_sets">
         <item quantity="one">%1$d conjunto</item>

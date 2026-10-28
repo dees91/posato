@@ -202,7 +202,7 @@ le service :
   votre compte utilisateur, en vérifiant de quel programme il s’agit pour
   chaque processus en cours, sans lire ni conserver ce que vous y faites.
 
-Le service conserve votre nom et votre numéro d’utilisateur dans un fichier de
+Le service conserve votre nom d’utilisateur et votre numéro d’utilisateur dans un fichier de
 configuration système, et la pause qu’il applique, avec ses sites et les
 emplacements des programmes, dans un fichier système que seul le système peut
 lire, afin qu’un redémarrage conserve la pause. Après la fin de la pause, ce
@@ -260,7 +260,7 @@ l’enregistrez ou le partagez, et n’envoie rien nulle part lui-même.
   pas. Le code arrête un lecteur occasionnel d’un fichier arrivé entre de
   mauvaises mains, mais une personne qui dispose du fichier et consacre une
   grande puissance de calcul à deviner le code pourrait l’ouvrir : n’envoyez
-  donc le fichier et le code que là où vous leur faites confiance.
+  donc le fichier et le code qu’à des personnes et par des moyens de confiance.
 - Sur iPhone, un fichier partagé est une copie temporaire que Posato supprime
   à la fermeture de la feuille de partage, et un fichier importé est lu à
   partir d’une copie temporaire que Posato supprime après l’avoir lue.

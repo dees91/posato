@@ -9,7 +9,7 @@ import Base from "../../layouts/Base.astro";
     <ul>
       <li>No resiste a un administrador del dispositivo y siempre se puede eliminar. Siempre es posible terminar una sesión antes de tiempo.</li>
       <li>
-        En macOS, el bloqueo solo funciona mientras Posato está en marcha. Al cerrar su ventana, sigue en marcha en la barra de menús, y tras la configuración única Posato se abre en silencio al iniciar sesión. Si sales de Posato, o tras el reposo, la reactivación o un cambio de red, una pausa que iniciaste tú deja de bloquear hasta que la reanudes en Posato. Sin la configuración, empezar o reanudar requiere la aprobación de un administrador cada vez. Una sesión recibida desde tu iPhone solo bloquea en el Mac después de que la reanudes allí; sin la configuración, eso también requiere la aprobación de un administrador.
+        En macOS, el bloqueo solo funciona mientras Posato está en marcha. Al cerrar su ventana, sigue en marcha en la barra de menús, y tras la configuración única Posato se abre en silencio al iniciar sesión. Si Posato se cierra, o tras el reposo, la reactivación o un cambio de red, una pausa que iniciaste tú deja de bloquear hasta que la reanudes en Posato. Sin la configuración, empezar o reanudar requiere la aprobación de un administrador cada vez. Una sesión recibida desde tu iPhone solo bloquea en el Mac después de que la reanudes allí; sin la configuración, eso también requiere la aprobación de un administrador.
       </li>
       <li>
         En macOS, los horarios solo empiezan en un Mac que haya completado la configuración y solo mientras Posato está en marcha. Si Posato se abre, también al iniciar sesión, o el Mac se reactiva durante una pausa programada, la pausa vuelve a empezar sola, normalmente en menos de un minuto, y sigue terminando a la hora prevista; no se pide ninguna contraseña. Salir de Posato impide que empiecen nuevos horarios hasta que vuelva a abrirse; cerrar la ventana no.
@@ -42,7 +42,7 @@ import Base from "../../layouts/Base.astro";
         En Android, el bloqueo de sitios web funciona como una VPN local que solo responde a consultas de nombres. No puede funcionar otra VPN a la vez, el DNS privado estricto y un navegador con su propio DNS sobre HTTPS se lo saltan, y las consultas por TCP no se filtran. No hay página de pausa.
       </li>
       <li>
-        En Android, una pantalla de bloqueo cubre la app en pausa; la app puede verse durante aproximadamente un segundo antes de que aparezca la pantalla. No se pueden pausar el launcher, Ajustes, la app Teléfono ni Posato. Posato necesita acceso a datos de uso, mostrar sobre otras aplicaciones, notificaciones, alarmas exactas y quedar excluido de la optimización de batería; sin ellos, puede que el bloqueo o los horarios no funcionen.
+        En Android, una pantalla de Posato cubre la app en pausa; la app puede verse durante hasta un segundo, aproximadamente, antes de que aparezca esa pantalla. No se pueden pausar el launcher, Ajustes, la app Teléfono ni Posato. Posato necesita acceso a datos de uso, mostrar sobre otras aplicaciones, notificaciones, alarmas exactas y quedar excluido de la optimización de batería; sin ellos, puede que el bloqueo o los horarios no funcionen.
       </li>
       <li>Las horas de los horarios siguen el reloj de cada dispositivo. Un horario dura al menos 15 minutos y, en el iPhone, necesita acceso a Tiempo de uso.</li>
       <li>
@@ -67,7 +67,7 @@ import Base from "../../layouts/Base.astro";
         En Android, la carpeta debe ser una carpeta local que otra app mantenga sincronizada, como Syncthing; la mayoría de las apps de almacenamiento en la nube para Android no mantienen sincronizada una carpeta local. En el iPhone, Posato sincroniza la carpeta cuando lo abres.
       </li>
       <li>
-        Un archivo <code>.posato</code> exportado contiene los nombres de los conjuntos de pausa, los sitios web, el conjunto predeterminado y los horarios, nunca las apps elegidas. Sin código, cualquiera que consiga el archivo puede leerlo. El código de nueve caracteres frena a un lector casual, no a alguien que dedique mucha potencia de cálculo a adivinarlo. Una importación es una copia puntual, no una sincronización, y los horarios importados llegan desactivados.
+        Un archivo <code>.posato</code> exportado contiene los nombres de los conjuntos de pausa, los sitios web, el conjunto predeterminado y los horarios, nunca las apps elegidas. Sin código, cualquiera que consiga el archivo puede leerlo. El código de nueve caracteres frena a un curioso, no a alguien que dedique mucha potencia de cálculo a adivinarlo. Una importación es una copia puntual, no una sincronización, y los horarios importados llegan desactivados.
       </li>
       <li>
         Un espacio de trabajo se sincroniza a través de iCloud o de una sola carpeta, nunca de ambos, y no se puede pasar de uno a otro: elimina el espacio de trabajo de iCloud antes de elegir una carpeta.

@@ -209,9 +209,9 @@ próprias configurações do Android:
   guarda as consultas.
 - **Acesso ao uso.** Durante uma pausa com apps, o Posato verifica cerca de
   duas vezes por segundo qual app está em primeiro plano, para poder cobrir um
-  app pausado com a tela de bloqueio. Ele guarda apenas o app em primeiro plano
+  app pausado com a tela de pausa. Ele guarda apenas o app em primeiro plano
   naquele momento, na memória, e não registra o uso de apps.
-- **Sobreposição a outros apps**, para mostrar a tela de bloqueio.
+- **Sobreposição a outros apps**, para mostrar a tela de pausa.
 - **Notificações, alarmes exatos e execução sem limites de bateria**, para que
   as pausas e os agendamentos comecem e terminem na hora com o Posato fechado.
   Uma notificação silenciosa aparece enquanto o Posato os mantém em execução.
@@ -240,7 +240,7 @@ nada a lugar nenhum por conta própria.
   não guarda. O código impede a leitura casual de um arquivo que chegue à
   pessoa errada, mas alguém que tenha o arquivo e gaste muito poder
   computacional tentando adivinhar poderia abri-lo, então envie o arquivo e o
-  código apenas para onde você confia.
+  código apenas por canais e para pessoas em que você confia.
 - No iPhone, um arquivo compartilhado é uma cópia temporária que o Posato apaga
   quando a planilha de compartilhamento fecha, e um arquivo importado é lido de
   uma cópia temporária que o Posato apaga depois de lê-la.
