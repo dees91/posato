@@ -27,12 +27,16 @@ enum PauseCopy {
     return resolved == key ? fallback : resolved
   }
 
+  /// The language part of the locale, such as `pl` for `pl_PL`; `language` keeps it only when
+  /// the helper bundle has that language's strings.
   private static func code(_ locale: Locale) -> String {
     let identifier = locale.identifier.lowercased()
-    if identifier == "pl" || identifier.hasPrefix("pl-") || identifier.hasPrefix("pl_") {
-      return "pl"
+    guard let language = identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first,
+      (2...3).contains(language.count), language.allSatisfy({ ("a"..."z").contains($0) })
+    else {
+      return "en"
     }
-    return "en"
+    return String(language)
   }
 
   private static func localizationBundle(locale: Locale) -> Bundle? {

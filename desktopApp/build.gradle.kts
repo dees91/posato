@@ -1,4 +1,5 @@
 import app.posato.buildlogic.AppcastExpectation
+import app.posato.buildlogic.PosatoLocales
 import app.posato.buildlogic.PosatoMacOsArchitecture
 import app.posato.buildlogic.PosatoPaths
 import app.posato.buildlogic.PosatoPublishedFeed
@@ -1836,7 +1837,7 @@ compose.desktop {
                     extraKeysRawXml = updaterInfoPlistKeys +
                         """
                         <key>CFBundleLocalizations</key>
-                        <array><string>en</string><string>pl</string></array>
+                        <array>${PosatoLocales.DECLARED_CODES.joinToString("") { "<string>$it</string>" }}</array>
                         <key>NSAppleEventsUsageDescription</key>
                         <string>Posato replaces a blocked Safari or Chrome tab with a paused-site page.</string>
                         <key>CFBundleURLTypes</key>
@@ -1873,14 +1874,16 @@ val embedMacOsHelper by tasks.registering(Sync::class) {
     )
 }
 
-// The app shares the helper's Polish usage description, so the Language & Region list can offer Polish for Posato.
+// The app shares the helper's translated usage descriptions, so the Language & Region list can offer each language for Posato.
 val embedMacOsLocalizations by tasks.registering(Copy::class) {
     group = "build"
-    description = "Copies the Polish Info.plist strings into the distributable."
+    description = "Copies the translated Info.plist strings into the distributable."
     dependsOn("createDistributable")
 
-    from(rootProject.layout.projectDirectory.dir("macosHelper/Resources/pl.lproj"))
-    into(macOsDistributable.map { app -> app.dir("Contents/Resources/pl.lproj") })
+    from(rootProject.layout.projectDirectory.dir("macosHelper/Resources")) {
+        include(PosatoLocales.SHIPPED.map { "${it.code}.lproj/**" })
+    }
+    into(macOsDistributable.map { app -> app.dir("Contents/Resources") })
 }
 
 val embedMacOsSyncCompanion by tasks.registering(Sync::class) {

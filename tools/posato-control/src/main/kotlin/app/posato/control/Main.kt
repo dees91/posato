@@ -38,6 +38,8 @@ import app.posato.control.cli.RunCommand
 import app.posato.control.cli.ScreenshotCommand
 import app.posato.control.cli.SnapshotCommand
 import app.posato.control.cli.StatusCommand
+import app.posato.control.cli.StoreCaptureCommand
+import app.posato.control.cli.StoreCommand
 import app.posato.control.cli.SwipeBackCommand
 import app.posato.control.cli.TapCommand
 import app.posato.control.cli.TerminateCommand
@@ -186,6 +188,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     windowsCommand(),
     androidCommand(),
     flowCommand(),
+    StoreCommand().subcommands(StoreCaptureCommand()),
     vmCommand(),
 )
 

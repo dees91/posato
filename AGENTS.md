@@ -13,12 +13,14 @@ messages. Preserve another language only in a user-supplied immutable artifact
 when its inclusion has been explicitly approved, or in the localized product
 resources named below.
 
-`I18N-001` (`user-confirmed`, 2026-10-28) allows agent-authored Polish only in
-`values-pl` resource directories, `pl.lproj` resource directories,
-`website/src/pages/pl`, and `docs/store/pl-PL`. The maintainer reviews that
-copy. A change to an English catalog string updates the Polish string with
-the same key in the same commit. Everything else in the repository stays
-English. Do not quote Polish in plans, records, or comments; a Polish letter
+Translations (`user-confirmed`, 2026-10-28): an agent may author product
+copy in another language only in the translation directories of the shipped
+languages (`PosatoLocales.SHIPPED`), or of the language a started row adds.
+[`docs/development/localization.md`](docs/development/localization.md) says
+how a new language is added and how its copy is reviewed. A
+change to an English catalog string updates every translation of that key in
+the same commit. Everything else in the repository stays English. Do not
+quote another language in plans, records, or comments; an accented letter
 outside those directories fails `verifyEnglishText`.
 
 ## Mandatory wiki routing

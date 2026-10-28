@@ -222,6 +222,10 @@ driver README):
 - `flow set`, `flow session`, `flow schedule`, and `flow icloud link|remove`
   each create a pause set, start a session, add a schedule, or link or remove
   iCloud in one command.
+- `store capture -t sim --locale <dir> --out <dir> [--prepare]` captures a
+  store locale's App Store screenshots on a Simulator by control ids, in any
+  language; on a small Simulator it is also the narrow pass for truncated
+  translations.
 - After every host `build -t desktop` or `installDist` of the driver, run
   `vm sync --line <line>` before the next `--vm` command; a clone keeps the
   package (`PACKAGE_OUTDATED`) and the driver (`TOOL_OUTDATED`) it was given.

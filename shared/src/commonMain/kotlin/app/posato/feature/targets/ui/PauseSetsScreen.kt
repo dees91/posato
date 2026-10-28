@@ -278,7 +278,9 @@ private fun PauseSetListRow(
                 )
             }
         }
-        PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, onOpen, rowActions) }
+        // Only the iOS row carries an id: it has no menu button to find it by, and a desktop verification host would
+        // announce the id instead of the row's name, which the desktop flows read.
+        PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, onOpen, rowActions, controlId = "pause_set_row") }
     } else {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PauseSetRowContent(row, onOpen, emptyList(), Modifier.weight(1f))
@@ -293,12 +295,14 @@ private fun PauseSetRowContent(
     onOpen: () -> Unit,
     rowActions: List<CustomAccessibilityAction>,
     modifier: Modifier = Modifier,
+    controlId: String? = null,
 ) {
     PosatoDisclosureRow(
         onClick = onOpen,
         onClickLabel = stringResource(Res.string.action_open),
         modifier = modifier,
         customActions = rowActions,
+        controlId = controlId,
         headlineContent = {
             val defaultLabel = stringResource(Res.string.pause_sets_default)
             val defaultSet = stringResource(Res.string.pause_sets_default_set)

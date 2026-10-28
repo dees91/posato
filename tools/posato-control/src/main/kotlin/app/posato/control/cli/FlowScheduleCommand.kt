@@ -36,35 +36,14 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     ).default("every")
 
     override fun execute(session: Session): JsonElement {
-        val backend = session.backend()
         val target = session.target()
-        val startTime = WheelTime.parse(start)
-        val endTime = WheelTime.parse(end)
-        val chosenDays = ScheduleDays.parse(days)
-        FlowSteps.run(backend, openEditor(target))
-        set?.let { chosen -> chooseSet(backend, target, chosen) }
-        FlowSteps.run(backend, chooseDays(chosenDays))
-        if (!target.isApple) {
-            // The Mac presses through accessibility, which needs no scrolling; Android taps the element's centre on screen.
-            val pressInPlace = target == Target.DESKTOP
-            setTime(backend, WheelKind.START, startTime, pressInPlace)
-            setTime(backend, WheelKind.END, endTime, pressInPlace)
-        } else {
-            setSystemTime(backend, WheelKind.START, startTime)
-            setSystemTime(backend, WheelKind.END, endTime)
-        }
-        // The list reloads after the editor closes, so the row is waited for rather than read from one snapshot. The list
-        // is not lazy: a row below the fold is still in the tree.
-        // iOS reports the tappable row as a button and the Mac as text, so the row's own words identify it.
-        val row = Query(textContains = "$name, ${ScheduleDays.summary(chosenDays)} ")
-        FlowSteps.run(backend, beforeSave())
-        save(backend)
-        FlowSteps.run(backend, listOf(FlowSteps.screenshot("schedule-saved"), FlowSteps.waitFor(row)))
+        val request = ScheduleRequest(name, WheelTime.parse(start), WheelTime.parse(end), ScheduleDays.parse(days), set, off)
+        ScheduleEditor(session.backend(), target).add(request)
         return buildJsonObject {
             put("name", name)
-            put("days", ScheduleDays.summary(chosenDays))
-            put("start", startTime.text)
-            put("end", endTime.text)
+            put("days", ScheduleDays.summary(request.days))
+            put("start", request.start.text)
+            put("end", request.end.text)
             set?.let { put("set", it) }
             put("enabled", !off)
             if (target == Target.DESKTOP && runsInVirtualMachine()) {
@@ -77,8 +56,46 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             }
         }
     }
+}
 
-    private fun openEditor(target: Target): List<Step> {
+/** A schedule to add through the editor: its name, times, days, optional set, and whether it is saved turned off. */
+internal data class ScheduleRequest(
+    val name: String,
+    val start: WheelTime,
+    val end: WheelTime,
+    val days: List<String>,
+    val set: String? = null,
+    val off: Boolean = false,
+)
+
+/** The editor path behind `flow schedule`, also used by `store capture` to prepare its schedule. */
+internal class ScheduleEditor(
+    private val backend: Backend,
+    private val target: Target,
+) {
+    fun add(request: ScheduleRequest) {
+        FlowSteps.run(backend, openEditor(request.name))
+        request.set?.let { chosen -> chooseSet(backend, target, chosen) }
+        FlowSteps.run(backend, chooseDays(request.days))
+        if (!target.isApple) {
+            // The Mac presses through accessibility, which needs no scrolling; Android taps the element's centre on screen.
+            val pressInPlace = target == Target.DESKTOP
+            setTime(WheelKind.START, request.start, pressInPlace)
+            setTime(WheelKind.END, request.end, pressInPlace)
+        } else {
+            setSystemTime(WheelKind.START, request.start)
+            setSystemTime(WheelKind.END, request.end)
+        }
+        // The list reloads after the editor closes, so the row is waited for rather than read from one snapshot. The list
+        // is not lazy: a row below the fold is still in the tree.
+        // iOS reports the tappable row as a button and the Mac as text, so the row's own words identify it.
+        val row = Query(textContains = "${request.name}, ${ScheduleDays.summary(request.days)} ")
+        FlowSteps.run(backend, beforeSave(request.off))
+        save()
+        FlowSteps.run(backend, listOf(FlowSteps.screenshot("schedule-saved"), FlowSteps.waitFor(row)))
+    }
+
+    private fun openEditor(name: String): List<Step> {
         // A leftover open editor is left the way each host offers: the Mac's in-page link or the iOS bar's back.
         val back = FlowControls.schedulesBack(target.isApple)
         return listOf(
@@ -96,7 +113,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         listOf(FlowSteps.reveal(button), FlowSteps.tap(button))
     }
 
-    private fun beforeSave(): List<Step> {
+    private fun beforeSave(off: Boolean): List<Step> {
         val steps = mutableListOf<Step>()
         if (off) {
             // The Mac reads the row as a button and iOS as a switch, so the query names no role.
@@ -112,7 +129,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
      * open with its reason below the fields, often below the fold, so the reason is read back as the labels that
      * appeared since the press.
      */
-    private fun save(backend: Backend) {
+    private fun save() {
         val shownBeforeSave = FlowSteps.labels(backend).toSet()
         try {
             FlowSteps.run(backend, listOf(FlowSteps.tap(SAVE), FlowSteps.waitFor(SAVE, States.ABSENT)))
@@ -127,11 +144,10 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         }
     }
 
-    /** Steps one wheel toward [target] in rounds; each round opens the wheel, steps the read difference, and closes it. */
+    /** Steps one wheel toward [goal] in rounds; each round opens the wheel, steps the read difference, and closes it. */
     private fun setTime(
-        backend: Backend,
         kind: WheelKind,
-        target: WheelTime,
+        goal: WheelTime,
         pressInPlace: Boolean,
     ) {
         repeat(MAX_ROUNDS) {
@@ -139,24 +155,23 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             FlowSteps.run(backend, listOf(kind.reveal()))
             val current = kind.read(FlowSteps.labels(backend))
                 ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The editor shows no ${kind.label} time.")
-            if (current == target) return
-            FlowSteps.run(backend, kind.round(current, target, pressInPlace))
+            if (current == goal) return
+            FlowSteps.run(backend, kind.round(current, goal, pressInPlace))
         }
         FlowSteps.run(backend, listOf(kind.reveal()))
         val reached = kind.read(FlowSteps.labels(backend))
-        if (reached != target) {
-            throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} stayed at ${reached?.text} instead of ${target.text}.")
+        if (reached != goal) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} stayed at ${reached?.text} instead of ${goal.text}.")
         }
     }
 
     /**
-     * Opens the iOS compact time picker for [kind], turns its hour and minute wheels to [target], closes it, and reads
+     * Opens the iOS compact time picker for [kind], turns its hour and minute wheels to [goal], closes it, and reads
      * the picker back. The first picker is Starts and the second Ends; the wheels follow a 24-hour clock.
      */
     private fun setSystemTime(
-        backend: Backend,
         kind: WheelKind,
-        target: WheelTime,
+        goal: WheelTime,
     ) {
         val picker = Query(text = SYSTEM_PICKER, index = kind.ordinal)
         FlowSteps.run(
@@ -164,14 +179,14 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
             listOf(
                 FlowSteps.reveal(picker),
                 FlowSteps.tap(picker),
-                FlowSteps.adjustWheels(listOf("%02d".format(target.hour), "%02d".format(target.minute))),
+                FlowSteps.adjustWheels(listOf("%02d".format(goal.hour), "%02d".format(goal.minute))),
                 FlowSteps.tap(Query(id = POPOVER_DISMISS)),
                 FlowSteps.sleep(PICKER_SETTLE_SECONDS),
             ),
         )
         val shown = FlowSteps.nodes(backend).filter { node -> node.label == SYSTEM_PICKER }.getOrNull(kind.ordinal)?.value
-        if (shown != target.text) {
-            throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} shows $shown instead of ${target.text}.")
+        if (shown != goal.text) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} shows $shown instead of ${goal.text}.")
         }
     }
 

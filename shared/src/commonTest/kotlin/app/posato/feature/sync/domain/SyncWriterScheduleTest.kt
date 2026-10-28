@@ -61,7 +61,7 @@ class SyncWriterScheduleTest {
         )
 
         val authored = store.current.acceptedBundles.values.map { it.operation.payload }.filterIsInstance<SyncOperationPayload.SchedulePut>()
-        assertEquals(listOf("Café"), authored.map { it.name })
+        assertEquals(listOf("Caf\u00e9"), authored.map { it.name })
     }
 
     @Test
