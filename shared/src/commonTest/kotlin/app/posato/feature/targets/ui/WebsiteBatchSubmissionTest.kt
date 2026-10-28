@@ -7,7 +7,7 @@ import kotlin.test.assertIs
 class WebsiteBatchSubmissionTest {
     @Test
     fun `given domains and URLs when submitted then only canonical exact hosts survive`() {
-        val result = ready("EXAMPLE.COM, https://www.example.com/private?q=secret#fragment\nbücher.example")
+        val result = ready("EXAMPLE.COM, https://www.example.com/private?q=secret#fragment\nb\u00fccher.example")
 
         assertEquals(listOf("example.com", "xn--bcher-kva.example"), result.canonicalDomains)
         assertEquals(2, result.addedCount)

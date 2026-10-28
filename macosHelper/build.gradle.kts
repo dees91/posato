@@ -1,3 +1,4 @@
+import app.posato.buildlogic.PosatoLocales
 import app.posato.buildlogic.PosatoMacOsArchitecture
 import app.posato.buildlogic.PosatoVersion
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -61,11 +62,9 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
     from("Resources/app.posato.macos.proxy-settings.plist") {
         into("Contents/Library/LaunchDaemons")
     }
-    from("Resources/en.lproj") {
-        into("Contents/Resources/en.lproj")
-    }
-    from("Resources/pl.lproj") {
-        into("Contents/Resources/pl.lproj")
+    from("Resources") {
+        include(PosatoLocales.DECLARED_CODES.map { "$it.lproj/**" })
+        into("Contents/Resources")
     }
     from(swiftScratchDirectory.map { it.file("release/PosatoMacOSHelper") }) {
         into("Contents/MacOS")

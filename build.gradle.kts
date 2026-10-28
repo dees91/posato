@@ -1,7 +1,9 @@
 import app.posato.buildlogic.IosSwiftTestTrigger
 import app.posato.buildlogic.VerifyApprovedQualityExceptions
+import app.posato.buildlogic.PosatoLocales
+import app.posato.buildlogic.VerifyCatalogs
 import app.posato.buildlogic.VerifyEnglishText
-import app.posato.buildlogic.VerifyPolishCatalog
+import app.posato.buildlogic.VerifyLocaleLists
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import dev.detekt.gradle.extensions.FailOnSeverity
@@ -101,7 +103,7 @@ subprojects {
 
 val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
     group = "verification"
-    description = "Rejects Polish letters in the repository's documentation, skills, site, and sources."
+    description = "Rejects accented letters outside translations in the repository's documentation, skills, site, and sources."
     textFiles.from(
         fileTree(rootDir) {
             // Named, not *.md: THIRD_PARTY_NOTICES.md reproduces copyright notices as their holders wrote them.
@@ -128,24 +130,44 @@ val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
             exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
         },
     )
-    // I18N-001: Polish product copy lives only in these directories. AGENTS.md names the same set.
+    // Translations live only in each shipped language's directories; AGENTS.md points to the same list.
     excludedDirectories.set(
-        listOf(
-            "values-pl",
-            "pl.lproj",
-            "website/src/pages/pl",
-            "docs/store/pl-PL",
-        ),
+        PosatoLocales.SHIPPED.flatMap { locale ->
+            listOf("values-${locale.code}", "${locale.code}.lproj", "website/src/pages/${locale.code}", "docs/store/${locale.storeDirectory}")
+        },
     )
     exceptions.set(emptyMap<String, String>())
     repositoryDirectory.set(layout.projectDirectory)
 }
 
-val verifyPolishCatalog by tasks.registering(VerifyPolishCatalog::class) {
+// Translated path template to its English catalog; an empty English path marks Info.plist strings.
+val translatedCatalogs = mapOf(
+    "shared/src/commonMain/composeResources/values-{code}/strings.xml" to "shared/src/commonMain/composeResources/values/strings.xml",
+    "androidApp/src/main/res/values-{code}/strings.xml" to "androidApp/src/main/res/values/strings.xml",
+    "macosHelper/Resources/{code}.lproj/Localizable.strings" to "macosHelper/Resources/en.lproj/Localizable.strings",
+    "macosHelper/Resources/{code}.lproj/InfoPlist.strings" to "",
+    "iosApp/iosApp/{code}.lproj/InfoPlist.strings" to "",
+    "windowsHelper/src/main/resources/values-{code}/service.properties" to "windowsHelper/src/main/resources/values/service.properties",
+)
+
+val verifyCatalogs by tasks.registering(VerifyCatalogs::class) {
     group = "verification"
-    description = "Requires the Polish catalog to name every English string and plural, with compatible placeholders."
-    englishCatalog.set(layout.projectDirectory.file("shared/src/commonMain/composeResources/values/strings.xml"))
-    polishCatalog.set(layout.projectDirectory.file("shared/src/commonMain/composeResources/values-pl/strings.xml"))
+    description = "Requires each shipped language's catalogs to name every English string and plural, with compatible placeholders and numbers."
+    families.set(translatedCatalogs)
+    catalogFiles.from(
+        translatedCatalogs.flatMap { (template, english) ->
+            PosatoLocales.SHIPPED.map { template.replace("{code}", it.code) } + listOfNotNull(english.ifEmpty { null })
+        }.map(layout.projectDirectory::file).filter { it.asFile.isFile },
+    )
+    repositoryDirectory.set(layout.projectDirectory)
+}
+
+val verifyLocaleLists by tasks.registering(VerifyLocaleLists::class) {
+    group = "verification"
+    description = "Requires every app language list, site, and store directory to name exactly the shipped languages."
+    listFiles.from(VerifyLocaleLists.LIST_FILES.map(layout.projectDirectory::file))
+    listFiles.from(fileTree("website/src/pages") { include("**/*.astro", "*/chrome.json") }, fileTree("docs/store") { include("*/listing.md") })
+    repositoryDirectory.set(layout.projectDirectory)
 }
 
 val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityExceptions::class) {
@@ -264,7 +286,8 @@ tasks.register("qualityLint") {
         ":posato-control:swiftFormatCheck",
         verifyApprovedQualityExceptions,
         verifyEnglishText,
-        verifyPolishCatalog,
+        verifyCatalogs,
+        verifyLocaleLists,
     )
 }
 
@@ -329,6 +352,7 @@ tasks.register("quality") {
         ":roadmap-mirror:test",
         verifyApprovedQualityExceptions,
         verifyEnglishText,
-        verifyPolishCatalog,
+        verifyCatalogs,
+        verifyLocaleLists,
     )
 }

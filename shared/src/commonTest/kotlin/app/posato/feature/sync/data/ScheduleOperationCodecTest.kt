@@ -67,9 +67,9 @@ class ScheduleOperationCodecTest {
     @Test
     fun `given names at and past the byte limit when decoded then eighty bytes are accepted and eighty-one are not`() {
         assertNotNull(SyncOperationCodec.decode(put(name = "a".repeat(80).encodeToByteArray())))
-        assertNotNull(SyncOperationCodec.decode(put(name = ("a".repeat(78) + "é").encodeToByteArray())))
+        assertNotNull(SyncOperationCodec.decode(put(name = ("a".repeat(78) + "\u00e9").encodeToByteArray())))
         assertNull(SyncOperationCodec.decode(put(name = "a".repeat(81).encodeToByteArray())))
-        assertNull(SyncOperationCodec.decode(put(name = ("a".repeat(79) + "é").encodeToByteArray())))
+        assertNull(SyncOperationCodec.decode(put(name = ("a".repeat(79) + "\u00e9").encodeToByteArray())))
         assertNull(SyncOperationCodec.decode(put(name = ByteArray(0))))
     }
 

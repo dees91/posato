@@ -95,11 +95,11 @@ class PauseSetOperationCodecTest {
     @Test
     fun `given set names at and past the rules when decoded then only one to eighty bytes without controls are accepted`() {
         assertNotNull(SyncOperationCodec.decode(setPut("a".repeat(80).encodeToByteArray())))
-        assertNotNull(SyncOperationCodec.decode(setPut("été".encodeToByteArray())))
+        assertNotNull(SyncOperationCodec.decode(setPut("\u00e9t\u00e9".encodeToByteArray())))
         listOf(
             ByteArray(0),
             "a".repeat(81).encodeToByteArray(),
-            ("a".repeat(79) + "é").encodeToByteArray(),
+            ("a".repeat(79) + "\u00e9").encodeToByteArray(),
             "Work\u0009".encodeToByteArray(),
             "Work\u0085".encodeToByteArray(),
             byteArrayOf(0x41, 0xC0.toByte(), 0x80.toByte()),

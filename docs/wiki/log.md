@@ -3254,3 +3254,16 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: on iOS a control's identifier stays in the accessibility tree
   while the tab bar hides it, so the driver now scrolls until the control is
   hittable.
+
+## [2026-10-28] process | A new language is one list entry plus its translations
+
+- The `I18N-001` retro makes `PosatoLocales` in `buildSrc` the single list of
+  shipped languages, with CLDR plurals and digit grouping for Polish,
+  German, French, Spanish, and Portuguese. `verifyCatalogs` checks every
+  translated catalog, including its plurals and large numbers, and
+  `verifyLocaleLists` checks the language lists of the apps, site, and store.
+  `verifyEnglishText` now rejects any accented letter outside a translation.
+  [Localization](../development/localization.md) lists the steps.
+- `user-confirmed`: Spanish ships as `es-ES` and Portuguese as `pt-BR`.
+  Copy in a language the maintainer does not review directly is accepted
+  from an independent review with a back-translation.

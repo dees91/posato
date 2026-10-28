@@ -19,13 +19,13 @@ class SchedulePlanTest {
         assertNull(plan().problem())
         assertNull(plan(start = 22 * 60, end = 6 * 60).problem())
         assertNull(plan(start = 23 * 60 + 50, end = 5).problem())
-        assertNull(plan(name = "é".repeat(40)).problem())
+        assertNull(plan(name = "\u00e9".repeat(40)).problem())
     }
 
     @Test
     fun `given invalid plans then each names its problem`() {
         assertEquals(SchedulePlanProblem.NAME_LENGTH, plan(name = "").problem())
-        assertEquals(SchedulePlanProblem.NAME_LENGTH, plan(name = "é".repeat(41)).problem())
+        assertEquals(SchedulePlanProblem.NAME_LENGTH, plan(name = "\u00e9".repeat(41)).problem())
         assertEquals(SchedulePlanProblem.NO_WEEKDAY, plan(weekdays = 0).problem())
         assertEquals(SchedulePlanProblem.NO_WEEKDAY, plan(weekdays = 0b10000000).problem())
         assertEquals(SchedulePlanProblem.MINUTE_RANGE, plan(start = 1440).problem())

@@ -16,7 +16,7 @@ class ApplicationPolicyNameTest {
     @Test
     fun `given valid UTF-8 boundaries when parsed then one and eighty bytes are accepted`() {
         assertEquals("a", assertSuccess(ApplicationPolicyName.parse("a")).canonicalValue)
-        assertEquals("é".repeat(40), assertSuccess(ApplicationPolicyName.parse("é".repeat(40))).canonicalValue)
+        assertEquals("\u00e9".repeat(40), assertSuccess(ApplicationPolicyName.parse("\u00e9".repeat(40))).canonicalValue)
     }
 
     @Test

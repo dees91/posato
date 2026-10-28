@@ -36,7 +36,7 @@ class PrototypeItemsTest {
         val cases = mapOf(
             " HTTPS://NEWS.Example./article?q=private#anchor " to "news.example",
             "reading.example/path" to "reading.example",
-            "https://bücher.example" to "xn--bcher-kva.example",
+            "https://b\u00fccher.example" to "xn--bcher-kva.example",
         )
         for ((input, domain) in cases) {
             assertEquals(PrototypeDomainResult.Valid(domain), parsePrototypeDomain(input))

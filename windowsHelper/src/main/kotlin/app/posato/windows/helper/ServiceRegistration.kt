@@ -116,12 +116,11 @@ internal object ServiceRegistration {
     private const val DESCRIPTION = "Pauses the websites and apps you choose in Posato."
 
     private fun serviceDescription(): String {
-        val resource = if (java.util.Locale.getDefault().language == "pl") {
-            "values-pl/service.properties"
-        } else {
-            "values/service.properties"
-        }
-        val stream = ServiceRegistration::class.java.classLoader?.getResourceAsStream(resource) ?: return DESCRIPTION
+        val loader = ServiceRegistration::class.java.classLoader ?: return DESCRIPTION
+        val language = java.util.Locale.getDefault().language
+        val stream = loader.getResourceAsStream("values-$language/service.properties")
+            ?: loader.getResourceAsStream("values/service.properties")
+            ?: return DESCRIPTION
         return stream.reader(Charsets.UTF_8).use { reader ->
             java.util.Properties().apply { load(reader) }.getProperty("description") ?: DESCRIPTION
         }

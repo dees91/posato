@@ -1,6 +1,5 @@
 ---
 import iconUrl from "../../../docs/design/app-icon/forest.svg?url";
-import labels from "../pages/pl/chrome.json";
 import "../styles/site.css";
 
 interface Props {
@@ -9,9 +8,44 @@ interface Props {
   indexable?: boolean;
 }
 
+type Chrome = {
+  languageName: string;
+  homeTitle: string;
+  privacy: string;
+  support: string;
+  limits: string;
+  privacyPolicy: string;
+  navigation: string;
+  footer: string;
+  github: string;
+  copyright: string;
+};
+
+const english: Chrome = {
+  languageName: "English",
+  homeTitle: "Posato - A little space. For what matters.",
+  privacy: "Privacy",
+  support: "Support",
+  limits: "Limits",
+  privacyPolicy: "Privacy policy",
+  navigation: "Site",
+  footer: "Footer",
+  github: "Posato on GitHub",
+  copyright: "Copyright 2026 Piotr Krawczyk and Posato contributors. Open source under the Apache License 2.0.",
+};
+
+// Each translation keeps its labels in pages/<code>/chrome.json. /<code>/ is its home, and every
+// other translated URL keeps the English path after that prefix.
+const chromes = import.meta.glob<Chrome>("../pages/*/chrome.json", { eager: true, import: "default" });
+const languages = [
+  { code: "en", labels: english },
+  ...Object.entries(chromes)
+    .map(([file, labels]) => ({ code: file.split("/").at(-2) ?? "", labels }))
+    .sort((a, b) => a.code.localeCompare(b.code)),
+];
+
 const { title, description, indexable = true } = Astro.props;
 
-// /pl/ is the Polish home. Every other Polish URL keeps the English path after that prefix.
 function withTrailingSlash(pathname: string): string {
   let path = pathname || "/";
   if (path.endsWith(".html")) {
@@ -26,21 +60,24 @@ function withTrailingSlash(pathname: string): string {
   return path;
 }
 
+const prefix = (code: string) => (code === "en" ? "" : `/${code}`);
 const path = withTrailingSlash(Astro.url.pathname);
-const polish = path.startsWith("/pl/");
-const englishPath = polish ? path.slice(3) : path;
-const polishPath = polish ? path : `/pl${path}`;
-const root = polish ? "/pl" : "";
+const current = languages.find(({ code }) => code !== "en" && path.startsWith(`/${code}/`)) ?? languages[0];
+const englishPath = path.slice(prefix(current.code).length);
+const labels = current.labels;
+const root = prefix(current.code);
 const home = `${root}/`;
-const pageTitle = title ? `${title} - Posato` : polish ? labels.homeTitle : "Posato - A little space. For what matters.";
+const pageTitle = title ? `${title} - Posato` : labels.homeTitle;
 const canonical = new URL(path, Astro.site);
-const englishHref = new URL(englishPath, Astro.site);
-const polishHref = new URL(polishPath, Astro.site);
-const otherHref = polish ? englishPath : polishPath;
+const alternates = languages.map(({ code, labels }) => ({
+  code,
+  name: labels.languageName,
+  path: `${prefix(code)}${englishPath}`,
+}));
 ---
 
 <!doctype html>
-<html lang={polish ? "pl" : "en"}>
+<html lang={current.code}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -48,19 +85,22 @@ const otherHref = polish ? englishPath : polishPath;
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {indexable ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
-    <link rel="alternate" hreflang="en" href={englishHref} />
-    <link rel="alternate" hreflang="pl" href={polishHref} />
-    <link rel="alternate" hreflang="x-default" href={englishHref} />
+    {alternates.map(({ code, path }) => <link rel="alternate" hreflang={code} href={new URL(path, Astro.site)} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(englishPath, Astro.site)} />
     <link rel="icon" href={iconUrl} type="image/svg+xml" />
   </head>
   <body>
     <header class="site-header">
       <a class="identity" href={home}><span class="mark" aria-hidden="true"></span>posato</a>
-      <nav aria-label={polish ? labels.navigation : "Site"}>
-        <a href={`${root}/privacy/`}>{polish ? labels.privacy : "Privacy"}</a>
-        <a href={`${root}/support/`}>{polish ? labels.support : "Support"}</a>
-        <a href={otherHref} lang={polish ? "en" : "pl"}>{polish ? "English" : "Polski"}</a>
-        <a class="repository" href="https://github.com/dees91/posato" aria-label={polish ? labels.github : "Posato on GitHub"}>
+      <nav aria-label={labels.navigation}>
+        <a href={`${root}/privacy/`}>{labels.privacy}</a>
+        <a href={`${root}/support/`}>{labels.support}</a>
+        {
+          alternates
+            .filter(({ code }) => code !== current.code)
+            .map(({ code, name, path }) => <a href={path} lang={code}>{name}</a>)
+        }
+        <a class="repository" href="https://github.com/dees91/posato" aria-label={labels.github}>
           <svg class="github-mark" viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
           </svg>
@@ -71,18 +111,14 @@ const otherHref = polish ? englishPath : polishPath;
       <slot />
     </main>
     <footer class="site-footer">
-      <nav aria-label={polish ? labels.footer : "Footer"}>
+      <nav aria-label={labels.footer}>
         <a href={home}>Posato</a>
-        <a href={`${root}/limits/`}>{polish ? labels.limits : "Limits"}</a>
-        <a href={`${root}/privacy/`}>{polish ? labels.privacyPolicy : "Privacy policy"}</a>
-        <a href={`${root}/support/`}>{polish ? labels.support : "Support"}</a>
+        <a href={`${root}/limits/`}>{labels.limits}</a>
+        <a href={`${root}/privacy/`}>{labels.privacyPolicy}</a>
+        <a href={`${root}/support/`}>{labels.support}</a>
       </nav>
       <p>
-        {
-          polish
-            ? labels.copyright
-            : "Copyright 2026 Piotr Krawczyk and Posato contributors. Open source under the Apache License 2.0."
-        }
+        {labels.copyright}
       </p>
     </footer>
   </body>

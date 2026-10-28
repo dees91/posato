@@ -86,8 +86,8 @@ class SqlScheduleStoreTest {
         withStore("schedules-nfc.db") { store ->
             val saved = assertIs<ScheduleResult.Success<SchedulePlan>>(store.save(plan(1, "  Café "), null)).value
 
-            assertEquals("Café", saved.name)
-            assertEquals("Café", store.snapshot().schedules.single().plan.name)
+            assertEquals("Caf\u00e9", saved.name)
+            assertEquals("Caf\u00e9", store.snapshot().schedules.single().plan.name)
         }
     }
 
