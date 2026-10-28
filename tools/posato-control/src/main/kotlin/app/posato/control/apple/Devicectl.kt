@@ -62,6 +62,19 @@ internal fun parseDevices(result: JsonObject): List<PhysicalDevice> {
  */
 internal fun idleWiredDevices(devices: List<PhysicalDevice>): List<PhysicalDevice> = devices.filter { it.paired && it.wired && !it.connected }
 
+/**
+ * The `devicectl` arguments for [options], writing its result to [jsonOutput], then [positional] arguments after
+ * `--`, so an application argument such as `-AppleLanguages` is not read as one of devicectl's options.
+ */
+internal fun devicectlCommand(
+    options: List<String>,
+    jsonOutput: String,
+    positional: List<String>
+): List<String> {
+    val command = listOf("devicectl") + options + listOf("--json-output", jsonOutput)
+    return if (positional.isEmpty()) command else command + "--" + positional
+}
+
 class Devicectl(
     private val context: RunContext
 ) {
@@ -118,10 +131,14 @@ class Devicectl(
                 add("--environment-variables")
                 add(ControlJson.compact.encodeToString(MapSerializer(String.serializer(), String.serializer()), environment))
             }
-            add(bundleId)
-            addAll(arguments)
         }
-        val result = json(command, ErrorCode.COMMAND_FAILED, "Launching on the device", hint = "Unlock the iPhone and keep it connected.")
+        val result = json(
+            command,
+            ErrorCode.COMMAND_FAILED,
+            "Launching on the device",
+            hint = "Unlock the iPhone and keep it connected.",
+            positional = listOf(bundleId) + arguments,
+        )
         return result["process"]?.jsonObject?.get("processIdentifier")?.jsonPrimitive?.content?.toLongOrNull()
     }
 
@@ -201,11 +218,12 @@ class Devicectl(
         code: ErrorCode,
         what: String,
         timeout: Duration = DEFAULT_TIMEOUT,
-        hint: String? = null
+        hint: String? = null,
+        positional: List<String> = emptyList()
     ): JsonObject {
         val outputFile = Files.createTempFile("posato-control-devicectl", ".json")
         try {
-            val command = listOf(Simctl.XCRUN, "devicectl") + arguments + listOf("--json-output", outputFile.toString())
+            val command = listOf(Simctl.XCRUN) + devicectlCommand(arguments, outputFile.toString(), positional)
             context.subprocess.run(command, timeout = timeout).requireSuccess(code, what, hint)
             val root = parse(Files.readString(outputFile))
             return root["result"]?.jsonObject ?: JsonObject(emptyMap())

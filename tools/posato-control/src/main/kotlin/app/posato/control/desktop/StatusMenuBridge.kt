@@ -16,3 +16,10 @@ internal fun AxBridge.swipeBack(
 ) {
     invoke("swipe-back", pid.toString(), if (complete) "1" else "0")
 }
+
+/** Sets the main window's size and returns the size it took, as JSON with `width` and `height`. */
+internal fun AxBridge.resizeWindow(
+    pid: Long,
+    width: Int,
+    height: Int
+): String = invoke("resize-window", pid.toString(), width.toString(), height.toString())

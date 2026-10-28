@@ -33,6 +33,7 @@ import app.posato.control.cli.PrEvidenceCommand
 import app.posato.control.cli.PressCommand
 import app.posato.control.cli.RelayCommand
 import app.posato.control.cli.ResetCommand
+import app.posato.control.cli.ResizeWindowCommand
 import app.posato.control.cli.ResourcesCommand
 import app.posato.control.cli.RunCommand
 import app.posato.control.cli.ScreenshotCommand
@@ -180,6 +181,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ObserveCommand(),
     MenuCommand(),
     CloseWindowCommand(),
+    ResizeWindowCommand(),
     SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),

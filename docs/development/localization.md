@@ -87,8 +87,13 @@ complete, the checks name each missing file and list entry.
    run longer than English:
    - run `store capture` on a small iPhone Simulator, such as iPhone 16e,
      with `--out build/verification/...`;
-   - show the main screens of the Mac app at its minimum window width;
-   - look for clipped or wrapped labels in both.
+   - show the main screens of the Mac app at its minimum window width,
+     after `posato-control resize-window -t desktop --vm primary --width 400
+     --height 780`;
+   - look for clipped or wrapped labels in both, and on the test iPhone,
+     which is narrower than iPhone 16e. A tab label must fit its tab on one
+     line: `I18N-002` shortened the French, Spanish, and Portuguese pause-set
+     and schedule tabs after they broke mid-word on an iPhone 13 mini.
 
 ## What the checks enforce
 

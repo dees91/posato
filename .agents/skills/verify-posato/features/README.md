@@ -71,8 +71,13 @@ hand with the same controls before rerunning.
   English. `<code>` is the language code, such as `pl`:
   - on the Mac,
     `$PC vm exec --line primary --script "defaults write app.posato.macos AppleLanguages -array <code>"`
-    and `launch` again (the pause-page helper reads it at once);
-  - on iOS, `launch --arg -AppleLanguages --arg "(<code>)" --arg -AppleLocale --arg <code>_<REGION>`;
+    and `launch` again (the pause-page helper reads it at once; run
+    `close-window` first, and `vm press return` for the first-close notice,
+    so Safari's pause page is in front for `vm wait-text`);
+  - on iOS, `launch --arg -AppleLanguages --arg "(<code>)" --arg -AppleLocale --arg <code>_<REGION>` (also on the
+    test iPhone with `-t device`);
+  - on the Mac, `resize-window -t desktop --vm primary --width 400 --height
+    780` shows the window at its minimum width for the long-text check;
   - on Android, `adb shell cmd locale set-app-locales app.posato.android --locales <code>`,
     and `--locales ""` afterwards.
 

@@ -686,6 +686,29 @@ enum StatusMenu {
     }
     AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
   }
+
+  /// Sets the main window's size and returns the size the window took, which the application may constrain.
+  static func resizeWindow(pid: pid_t, width: Double, height: Double) throws -> [String: Double] {
+    let app = AXUIElementCreateApplication(pid)
+    let windows = children(app).filter {
+      attribute($0, kAXRoleAttribute) as? String == kAXWindowRole
+    }
+    guard
+      let window = windows.first(where: { attribute($0, kAXTitleAttribute) as? String == "Posato" })
+        ?? windows.first
+    else {
+      throw BridgeError(
+        code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to resize.")
+    }
+    var size = CGSize(width: width, height: height)
+    guard let value = AXValueCreate(.cgSize, &size),
+      AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, value) == .success
+    else {
+      throw BridgeError(code: "AX_ERROR", message: "The window refused the new size.")
+    }
+    let frame = Bridge.frame(window)
+    return ["width": frame.w, "height": frame.h]
+  }
 }
 
 do {
@@ -783,6 +806,14 @@ do {
     try requireAccessibilityTrust()
     try StatusMenu.closeWindow(pid: try pidArgument(2))
     emit(["ok": true])
+  case "resize-window":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    guard let width = Double(try argument(3, "width")), let height = Double(try argument(4, "height"))
+    else {
+      throw BridgeError(code: "USAGE", message: "The width and height must be numbers.")
+    }
+    emit(try StatusMenu.resizeWindow(pid: pid, width: width, height: height))
   case "swipe-back":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
