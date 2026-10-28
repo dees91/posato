@@ -3254,3 +3254,10 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: on iOS a control's identifier stays in the accessibility tree
   while the tab bar hides it, so the driver now scrolls until the control is
   hittable.
+
+## [2026-10-28] idea | Redirect rules beside blocking
+
+- `user-confirmed` (2026-10-28): idea 59 records redirecting a chosen host to
+  an address the person enters, beside unchanged blocking; whether a rule is
+  always on or bound to a session or pause set stays `open`. Owner: backlog
+  row `REDIRECT-001`.
