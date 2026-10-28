@@ -18,8 +18,18 @@ class DevicectlCommandTest {
 
         assertEquals(
             listOf(
-                "devicectl", "device", "process", "launch", "--device", "PHONE", "--json-output", "/tmp/result.json",
-                "--", "app.posato.ios", "-AppleLanguages", "(de)",
+                "devicectl",
+                "device",
+                "process",
+                "launch",
+                "--device",
+                "PHONE",
+                "--json-output",
+                "/tmp/result.json",
+                "--",
+                "app.posato.ios",
+                "-AppleLanguages",
+                "(de)",
             ),
             command,
         )
