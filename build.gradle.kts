@@ -1,6 +1,6 @@
 import app.posato.buildlogic.IosSwiftTestTrigger
-import app.posato.buildlogic.VerifyApprovedQualityExceptions
 import app.posato.buildlogic.PosatoLocales
+import app.posato.buildlogic.VerifyApprovedQualityExceptions
 import app.posato.buildlogic.VerifyCatalogs
 import app.posato.buildlogic.VerifyEnglishText
 import app.posato.buildlogic.VerifyLocaleLists

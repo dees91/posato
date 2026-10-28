@@ -29,6 +29,7 @@ abstract class VerifyLocaleLists : DefaultTask() {
         val root = repositoryDirectory.get().asFile
         val declared = PosatoLocales.DECLARED_CODES.toSet()
         val findings = mutableListOf<String>()
+
         fun expect(
             path: String,
             found: Set<String>,

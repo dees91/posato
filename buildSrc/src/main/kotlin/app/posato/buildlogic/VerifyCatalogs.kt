@@ -138,9 +138,14 @@ abstract class VerifyCatalogs : DefaultTask() {
                 return when (file.extension) {
                     "xml" -> readXml(text)
                     "strings" -> Catalog(unique(APPLE_STRING.findAll(text).map { it.groupValues[1] to it.groupValues[2] }), emptyMap())
-                    "properties" -> Catalog(Properties().apply { load(text.reader()) }.let { p -> p.stringPropertyNames().associateWith(p::getProperty) }, emptyMap())
+                    "properties" -> Catalog(readProperties(text), emptyMap())
                     else -> throw GradleException("Unknown catalog format ${file.name}")
                 }
+            }
+
+            private fun readProperties(text: String): Map<String, String> {
+                val properties = Properties().apply { load(text.reader()) }
+                return properties.stringPropertyNames().associateWith(properties::getProperty)
             }
 
             private fun readXml(text: String): Catalog {
