@@ -1,0 +1,10 @@
+- Synchronisation par dossier : placez votre espace de travail dans un dossier qu’iCloud Drive, Dropbox, OneDrive ou un autre service garde synchronisé, à la place d’iCloud. Posato n’y écrit que des fichiers chiffrés et synchronise le dossier quand vous l’ouvrez. Elle relie aussi Posato sur Linux, nouveauté de la 1.5.
+- Rejoignez un espace en deux étapes, dans l’ordre de votre choix : choisissez le même dossier sur l’iPhone, et scannez avec l’appareil photo de l’iPhone le code QR qu’affiche Ajouter un appareil sur votre autre appareil. Posato rejoint l’espace dès qu’il a les deux. Le code est valable 10 minutes.
+- Exportation et importation : enregistrez vos ensembles de pause, leurs sites et vos programmations dans un fichier, éventuellement protégé par un code, puis importez-le sur un autre appareil. Le choix des apps reste sur chaque appareil.
+- Un thème clair plus chaleureux.
+- Un appareil qui rejoint l’espace pendant une pause commence aussitôt à mettre en pause.
+- La section de synchronisation indique la dernière synchronisation de cet appareil.
+- Dupliquez un ensemble de pause depuis son menu.
+- Un ensemble avec des sites mais sans app choisie sur cet appareil n’affiche plus d’avertissement.
+- Le choix des apps met immédiatement à jour le résumé des ensembles de pause.
+- Un premier ensemble de pause que vous avez renommé, et l’ensemble par défaut que vous avez choisi, sont conservés quand vous créez un espace de travail.

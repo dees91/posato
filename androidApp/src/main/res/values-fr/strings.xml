@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="block_title">Mis en pause par Posato</string>
+    <string name="block_body">Cette app fait partie de votre pause. Elle sera de nouveau accessible à la fin de la pause.</string>
+    <string name="block_home">Revenir à l’écran d’accueil</string>
+    <string name="guard_title">Posato est prêt</string>
+    <string name="guard_body">Les pauses et les programmations fonctionnent même quand l’app est fermée.</string>
+    <string name="catalog_title">Choisir des apps</string>
+    <string name="catalog_choose">Choisir</string>
+    <string name="catalog_cancel">Annuler</string>
+</resources>
