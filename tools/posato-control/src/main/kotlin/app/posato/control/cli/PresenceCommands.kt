@@ -12,6 +12,7 @@ import app.posato.control.desktop.StatusMenuResult
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.serialization.json.JsonElement
 
@@ -39,6 +40,20 @@ class CloseWindowCommand :
         requireDesktopInVirtualMachine(session)
         DesktopPresenceDriver(session.context).closeWindow()
         return null
+    }
+}
+
+class ResizeWindowCommand :
+    ControlCommand(
+        "resize-window",
+        "Desktop in a VM: set the main window's size, for checks at the minimum width; reports the size the window took.",
+    ) {
+    private val width by option("--width", help = "Width in points; the application keeps it at or above its minimum.").int().required()
+    private val height by option("--height", help = "Height in points.").int().required()
+
+    override fun execute(session: Session): JsonElement {
+        requireDesktopInVirtualMachine(session)
+        return ControlJson.pretty.parseToJsonElement(DesktopPresenceDriver(session.context).resizeWindow(width, height))
     }
 }
 

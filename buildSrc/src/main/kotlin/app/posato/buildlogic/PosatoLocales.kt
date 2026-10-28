@@ -41,13 +41,12 @@ data class PosatoLocale(
 object PosatoLocales {
     val POLISH: PosatoLocale = PosatoLocale("pl", "pl-PL", setOf("one", "few", "many", "other"), NO_BREAK_SPACE, 2)
 
-    // Planned languages, with their CLDR data ready. Move one into SHIPPED when its row starts.
     val GERMAN: PosatoLocale = PosatoLocale("de", "de-DE", setOf("one", "other"), '.', 1)
     val FRENCH: PosatoLocale = PosatoLocale("fr", "fr-FR", setOf("one", "many", "other"), NARROW_NO_BREAK_SPACE, 1)
     val SPANISH: PosatoLocale = PosatoLocale("es", "es-ES", setOf("one", "many", "other"), '.', 2)
     val PORTUGUESE: PosatoLocale = PosatoLocale("pt", "pt-BR", setOf("one", "many", "other"), '.', 1)
 
-    val SHIPPED: List<PosatoLocale> = listOf(POLISH)
+    val SHIPPED: List<PosatoLocale> = listOf(POLISH, GERMAN, FRENCH, SPANISH, PORTUGUESE)
 
     /** Every language code the apps declare, English first, as Info.plist and the Android locale config list them. */
     val DECLARED_CODES: List<String> = listOf(PosatoLocale.ENGLISH.code) + SHIPPED.map { it.code }

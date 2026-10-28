@@ -37,6 +37,11 @@ class DesktopPresenceDriver(
         bridge.closeWindow(applicationPid())
     }
 
+    fun resizeWindow(
+        width: Int,
+        height: Int
+    ): String = bridge.resizeWindow(applicationPid(), width, height)
+
     fun swipeBack(complete: Boolean) {
         bridge.swipeBack(applicationPid(), complete)
     }

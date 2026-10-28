@@ -1,0 +1,35 @@
+Wähle die Websites und Apps, von denen du Abstand nehmen möchtest, fasse sie in Pausensets zusammen und starte dann eine Pause auf deinem iPhone oder plane Pausen mit einem Zeitplan voraus. Nimm dir Zeit zum Lesen, zum Arbeiten oder um einfach woanders zu sein.
+
+PAUSE NACH DEINEN REGELN
+
+Wähle ein Pausenset und eine Dauer: eine schnelle Auswahl von 25 Minuten bis 8 Stunden, Bis Tagesende oder deine eigene Länge mit dem Timer. Posato nutzt die Bildschirmzeit-Steuerung von Apple, um dieses Set für die Dauer der Sitzung zu pausieren. Du kannst sie jederzeit bewusst vorzeitig beenden oder Posato entfernen. Die Pause gibt dir einen Moment zum Nachdenken, bevor du etwas aus Gewohnheit öffnest.
+
+PAUSENSETS
+
+Lege für jede Art von Pause ein eigenes Set an, etwa eines für die Arbeit und eines für den Abend. Jedes Set hat eigene Websites und Apps, und eines ist der Standard. Überschneiden sich Pausen, pausiert Posato alles aus ihren Sets, innerhalb der Grenzen jedes Geräts, bis die letzte Pause endet, die ein Element enthält.
+
+ZEITPLÄNE
+
+Plane wiederkehrende Pausen nach Wochentag und Uhrzeit, jede mit eigenem Pausenset, etwa werktags morgens oder jeden Abend. Ein Zeitplan beginnt und endet von selbst, auch wenn Posato geschlossen ist. Überspringe die nächste Pause oder beende eine vorzeitig, wenn sich deine Pläne ändern. Posato kann dir mitteilen, wenn eine Pause endet oder auf einem anderen Gerät beginnt.
+
+OPTIONALE SYNCHRONISIERUNG MIT ICLOUD
+
+Verbinde dein iPhone und deinen Mac über deinen Apple Account, um Pausensets mit ihren Websites, Sitzungen und Zeitplänen zu synchronisieren. Die App-Auswahl bleibt auf jedem Gerät. Änderungen werden auf deinem Gerät verschlüsselt, bevor sie deine private iCloud-Datenbank erreichen.
+
+ORDNER-SYNCHRONISIERUNG UND ANDERE GERÄTE
+
+Statt iCloud kannst du deinen Arbeitsbereich in einem Ordner ablegen, den iCloud Drive, Dropbox, OneDrive oder ein anderer Dienst synchron hält. Posato legt dort nur verschlüsselte Dateien ab und synchronisiert den Ordner, wenn du die App öffnest. Die Ordner-Synchronisierung verbindet auch Posato auf Linux-Computern; die Downloads gibt es auf posato.app. Füge ein Gerät hinzu, indem du denselben Ordner wählst und einen QR-Code scannst.
+
+Die Synchronisierung kann sich verzögern oder ausbleiben, und Posato kann kein Gerät im Ruhezustand aufwecken. Die Mac-App ist ein separater Download für Mac-Computer mit Apple Silicon und Intel. Nach einer einmaligen Einrichtung dort starten Pausen und Zeitpläne, ohne jedes Mal nach deinem Passwort zu fragen.
+
+EXPORT UND IMPORT
+
+Sichere deine Pausensets, ihre Websites und deine Zeitpläne in einer Datei, auf Wunsch mit einem Code geschützt, und importiere sie auf einem anderen Gerät, etwa einem Mac mit einem anderen Apple Account. Die App-Auswahl bleibt auf jedem Gerät.
+
+KEIN POSATO-ACCOUNT
+
+Keine Analyse, keine Nutzungswerte, keine Serien und kein Server, der von Posato betrieben wird. Deine Auswahl bleibt auf deinen Geräten, solange du die Synchronisierung nicht einschaltest. Posato ist Open Source unter der Apache License 2.0.
+
+BEVOR DU BEGINNST
+
+Auf dem iPhone ist die Berechtigung für Bildschirmzeit erforderlich. Das System kann Einschränkungen nach dem Ende einer Pause noch eine Weile beibehalten. Bei Sitzungen unter 15 Minuten lass Posato am Ende geöffnet oder öffne es erneut, um sie aufzuheben. Wenn du Posato auf mehreren Geräten verwendest, aktualisiere alle: Geräte mit einer älteren Version synchronisieren nicht mehr, bis sie aktualisiert sind.

@@ -1388,6 +1388,12 @@ below. This queue retains idea provenance without expanding the original MVP.
     redirected, and the target must never be redirected itself. `open`:
     feasibility on Linux, Windows, Android, and iOS, and the technical
     approach on each. Owner: backlog row `REDIRECT-001`.
+60. **German, French, Spanish, and Portuguese.** `user-confirmed`
+    (2026-10-28): the four languages that the `I18N-001` retro prepared ship
+    together in release 1.6, Spanish as `es-ES` and Portuguese as `pt-BR`.
+    The agent drafts the copy; an independent review translates it back into
+    English, and the maintainer accepts it from that report. Owner: row
+    `I18N-002`.
 
 ## Later platform questions
 

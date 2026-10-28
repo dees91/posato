@@ -1,0 +1,10 @@
+- Synchronisierung über einen Ordner: Lege deinen Arbeitsbereich statt in iCloud in einem Ordner ab, den iCloud Drive, Dropbox, OneDrive oder ein anderer Dienst synchron hält. Posato legt dort nur verschlüsselte Dateien ab und synchronisiert den Ordner, wenn du die App öffnest. So verbindet es auch Posato unter Linux, neu in 1.5.
+- Beitreten in zwei Schritten, in beliebiger Reihenfolge: Wähle denselben Ordner auf dem iPhone und scanne mit der Kamera des iPhone den QR-Code, den „Gerät hinzufügen“ auf deinem anderen Gerät anzeigt. Posato tritt bei, sobald beides vorliegt. Der Code gilt 10 Minuten.
+- Export und Import: Sichere deine Pausensets, ihre Websites und deine Zeitpläne in einer Datei, auf Wunsch mit einem Code geschützt, und importiere sie auf einem anderen Gerät. Die App-Auswahl bleibt auf jedem Gerät.
+- Ein wärmeres helles Erscheinungsbild.
+- Ein Gerät, das während einer Pause beitritt, beginnt sofort mit dem Pausieren.
+- Der Bereich für die Synchronisierung zeigt, wann dieses Gerät zuletzt synchronisiert hat.
+- Dupliziere ein Pausenset über sein Menü.
+- Ein Set mit Websites, aber ohne ausgewählte Apps auf diesem Gerät zeigt keine Warnung mehr.
+- Die App-Auswahl aktualisiert die Übersicht der Pausensets sofort.
+- Ein umbenanntes erstes Pausenset und der gewählte Standard bleiben erhalten, wenn du einen Arbeitsbereich erstellst.

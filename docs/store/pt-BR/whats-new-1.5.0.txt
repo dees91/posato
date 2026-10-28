@@ -1,0 +1,10 @@
+- Sincronização por pasta: mantenha seu espaço de trabalho em uma pasta que o iCloud Drive, o Dropbox, o OneDrive ou outro serviço mantém sincronizada, em vez do iCloud. O Posato grava ali apenas arquivos criptografados e sincroniza a pasta quando você o abre. Ela também conecta o Posato no Linux, novidade da versão 1.5.
+- Entre em dois passos, em qualquer ordem: escolha a mesma pasta no iPhone e, com a câmera do iPhone, leia o código QR que Adicionar um dispositivo mostra no seu outro dispositivo. O Posato entra assim que tiver os dois. O código vale por 10 minutos.
+- Exportação e importação: salve seus conjuntos de pausa, os sites deles e seus agendamentos em um arquivo, opcionalmente protegido por um código, e importe-o em outro dispositivo. A escolha de apps fica em cada dispositivo.
+- Um visual claro mais acolhedor.
+- Um dispositivo que entra durante uma pausa começa a pausar na hora.
+- A seção de sincronização mostra quando este dispositivo sincronizou pela última vez.
+- Duplique um conjunto de pausa pelo menu dele.
+- Um conjunto com sites e sem apps escolhidos neste dispositivo não mostra mais um aviso.
+- A escolha de apps atualiza na hora os resumos dos conjuntos de pausa.
+- O primeiro conjunto de pausa que você renomeou e o padrão que você escolheu são mantidos quando você cria um espaço de trabalho.

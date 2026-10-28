@@ -2,8 +2,9 @@
 
 Posato follows the system language, or the per-app language where the
 platform has one, and has no in-app language switch. English is the source.
-Polish shipped first, in `I18N-001`; this page is how the next language is
-added.
+Polish shipped first, in `I18N-001`, and German, French, Spanish, and
+Portuguese followed together in `I18N-002`; this page is how the next
+language is added.
 
 ## Shipped and planned languages
 
@@ -15,8 +16,7 @@ in `buildSrc` is the list of shipped languages. Each entry holds:
 - its CLDR plural categories;
 - its digit grouping.
 
-German, French, Spanish, and Portuguese are already defined there, ready to
-move into `SHIPPED`.
+All five languages below are in `SHIPPED`.
 
 | Language | Code | Store directory | App Store Connect `--locale` | Plural categories | 65536 written as |
 | --- | --- | --- | --- | --- | --- |
@@ -56,13 +56,14 @@ complete, the checks name each missing file and list entry.
        `macosHelper/Resources/HelperInfo.plist`;
      - `knownRegions` in `iosApp/iosApp.xcodeproj/project.pbxproj`, together
        with a file reference for `<code>.lproj/InfoPlist.strings` in the
-       `InfoPlist.strings` variant group (copy the `pl` entries);
+       `InfoPlist.strings` variant group (copy the `pl` entries, changing only
+       the id, `name`, and `path`; the file type stays `text.plist.strings`);
      - `androidApp/src/main/res/xml/locales_config.xml`.
 3. **Website.** Under `website/src/pages/<code>/`, add one page for each
    English `.astro` page. Add `_PRIVACY.md` for the privacy page. Add
    `chrome.json` with the layout's labels; its `languageName` is the
-   language's own name. The language switcher, `hreflang` links, and prefixed
-   URLs come from the directory.
+   language's own name and `languages` names the footer's language list. That
+   list, `hreflang` links, and prefixed URLs come from the directory.
 4. **Store listing.** In `docs/store/<store directory>/`, add:
    - `listing.md`, `description.txt`, and the current What's New text;
    - `capture.json`, with the launch language, locale, and synthetic schedule
@@ -87,8 +88,13 @@ complete, the checks name each missing file and list entry.
    run longer than English:
    - run `store capture` on a small iPhone Simulator, such as iPhone 16e,
      with `--out build/verification/...`;
-   - show the main screens of the Mac app at its minimum window width;
-   - look for clipped or wrapped labels in both.
+   - show the main screens of the Mac app at its minimum window width,
+     after `posato-control resize-window -t desktop --vm primary --width 400
+     --height 780`;
+   - look for clipped or wrapped labels in both, and on the test iPhone,
+     which is narrower than iPhone 16e. A tab label must fit its tab on one
+     line: `I18N-002` shortened the French, Spanish, and Portuguese pause-set
+     and schedule tabs after they broke mid-word on an iPhone 13 mini.
 
 ## What the checks enforce
 
@@ -129,3 +135,16 @@ complete, the checks name each missing file and list entry.
 - A translated catalog keeps the English numbers. Write limits such as
   `1,024` with the language's grouping; `verifyCatalogs` names the expected
   form.
+
+## Lessons from `I18N-002`
+
+- A tab label is also the screen's title. Keep it to about ten characters,
+  so three tabs fit on the narrowest supported iPhone; a sentence that
+  sends the person to a tab names it exactly as the tab does.
+- Use the platform's own term for a system feature, and check that a term
+  for Posato's own screens does not name a system one: Android's lock-screen
+  word for Posato's block screen read as Posato locking the phone.
+- An end value can be a date and time, so a label form ("Ends: %1$s")
+  works where "at %1$s" does not.
+- Copying the `pl` entries of `project.pbxproj` with a text replacement also
+  rewrites `plist`; check the file type afterwards.

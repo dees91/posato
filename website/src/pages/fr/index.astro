@@ -1,0 +1,383 @@
+---
+import { Image } from "astro:assets";
+import Base from "../../layouts/Base.astro";
+import androidJoin from "../../../../video/public/android-join.png";
+import androidWebsites from "../../../../video/public/android-websites.png";
+import iphoneIcloud from "../../../../video/public/iphone-icloud.png";
+import iphoneImport from "../../../../video/public/iphone-import.png";
+import iphoneDuration from "../../../../video/public/iphone-duration-45.png";
+import iphoneSchedules from "../../../../video/public/iphone-schedules.png";
+import macAddDevice from "../../../../video/public/mac-add-device.png";
+import macExport from "../../../../video/public/mac-export.png";
+import macIcloud from "../../../../video/public/mac-icloud.png";
+import macDuration from "../../../../video/public/mac-duration-45.png";
+import macSchedules from "../../../../video/public/mac-schedules.png";
+import macWebsites from "../../../../video/public/mac-websites.png";
+
+const releases = "https://github.com/dees91/posato/releases/latest";
+const appStore = "https://apps.apple.com/app/posato/id6812237585";
+---
+
+<Base description="Posato bloque les sites et les apps de votre choix le temps d’une pause sur votre Mac, votre iPhone, votre ordinateur Linux ou votre téléphone Android, tout de suite ou selon une programmation. Pas de compte Posato, pas d’outil d’analyse et pas de serveur exploité par Posato.">
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>Un peu d’espace.<br /><span>Pour l’essentiel.</span></h1>
+      <div class="hero-details">
+      <p class="lead">
+        Posato bloque les sites et les apps de votre choix le temps d’une pause sur votre Mac, votre iPhone, votre ordinateur
+        Linux ou votre téléphone Android, tout de suite ou selon une programmation, dans les <a href="#limits">limites</a> décrites plus bas.
+      </p>
+      <p class="muted">Pas de compte Posato, pas d’outil d’analyse et pas de serveur exploité par Posato.</p>
+      <p class="muted">Si Posato vous aide, <a href="https://github.com/dees91/posato">ajoutez-lui une étoile sur GitHub</a> pour que d’autres puissent le trouver.</p>
+      <p class="download">
+        <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Télécharger Posato pour Mac" /></a>
+        <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Télécharger Posato dans l’App Store" /></a>
+        <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Télécharger Posato pour Linux" /></a>
+        <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Télécharger Posato pour Android" /></a>
+      </p>
+      <p class="platforms">macOS 13 ou version ultérieure sur puce Apple ou Intel, iOS 18 ou version ultérieure, Ubuntu 24.04 ou version ultérieure et Android 13 ou version ultérieure. <a href="#install">Comment l’installer</a></p>
+      </div>
+    </div>
+    <div class="hero-demo">
+      <video
+        class="hero-video"
+        autoplay
+        controls
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        width="1600"
+        height="1000"
+        poster="/media/hero-poster.jpg"
+        aria-label="Démo de Posato : choisir des sites, sélectionner 45 minutes et lancer une pause sur un Mac ; une modification d’ensemble de pause qui parvient à un Mac, un iPhone, un ordinateur Linux et un téléphone Android ; synchronisation facultative par iCloud ou par un dossier de votre choix, chiffrée sur votre appareil"
+      >
+        <source src="/media/hero.mp4" type="video/mp4" media="(min-width: 701px)" />
+      </video>
+      <img
+        class="hero-poster"
+        src="/media/hero-poster.jpg"
+        width="1600"
+        height="1000"
+        alt="Posato sur un Mac indiquant que les restrictions sont actives, avec l’heure de fin de la session et une option pour l’arrêter plus tôt"
+        fetchpriority="high"
+      />
+    </div>
+</section>
+
+  <section class="step" aria-labelledby="choose">
+    <div class="step-copy">
+    <h2 id="choose">Choisissez quoi mettre en pause</h2>
+    <p class="prose">
+      Regroupez ce que vous voulez mettre en pause dans des ensembles de pause, par exemple un pour le travail et un pour
+      la soirée. Un ensemble contient des domaines de sites exacts et, sur chaque appareil, les apps que vous y choisissez.
+      Un ensemble est défini par défaut ; choisissez-en un autre au lancement d’une pause ou en créant une programmation.
+      Le choix des apps reste sur l’appareil où vous l’avez fait.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macWebsites}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Mac affichant l’ensemble de pause Focus avec les domaines d’exemple example.com et example.net"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={androidWebsites}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Téléphone Android affichant l’ensemble de pause Focus avec les domaines d’exemple example.com et example.net"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="start">
+    <div class="step-copy">
+    <h2 id="start">Lancez une pause minutée</h2>
+    <p class="prose">
+      Choisissez un ensemble de pause et une durée : un choix rapide de 25 minutes à 8 heures,
+      <strong>Jusqu’à la fin de la journée</strong>, ou n’importe quelle durée <strong>de 5 minutes à 24 heures</strong>
+      (jusqu’à 23 heures 59 minutes sur iPhone). Vérifiez vos
+      choix et lancez la session. Posato bloque les sites et les apps choisis sur cet appareil, dans les <a href="#limits">limites</a> décrites plus bas. La session se termine à l’heure choisie ou quand vous décidez de l’arrêter
+      plus tôt. Sur iPhone, des restrictions peuvent persister après la fin de la session. Sur un Mac, une configuration unique
+      permet aux pauses et aux programmations de démarrer sans vous demander votre mot de passe à chaque fois.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macDuration}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Préparation d’une session sur un Mac avec l’ensemble de pause Focus et une pause de 45 minutes sélectionnée"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneDuration}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Préparation d’une session sur un iPhone avec une pause de 45 minutes sélectionnée"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="schedules">
+    <div class="step-copy">
+    <h2 id="schedules">Planifiez vos pauses à l’avance</h2>
+    <p class="prose">
+      Ajoutez une programmation avec un nom, un ensemble de pause, des jours de la semaine et des heures, par exemple les matins
+      de semaine de 9 h à 11 h. Elle commence et se termine d’elle-même sur chaque appareil configuré, même quand la fenêtre de
+      Posato est fermée sur un ordinateur ou que l’app est fermée sur un téléphone. Ignorez la prochaine ou arrêtez-en une plus tôt quand vos plans changent. Quand des pauses se chevauchent,
+      Posato met en pause tout ce que contiennent leurs ensembles, dans les limites de chaque appareil, et chaque élément reste en pause
+      jusqu’à la fin de la dernière pause qui l’inclut. Sur Mac et iPhone, Posato peut vous prévenir quand une pause se termine ou quand une pause commence sur un autre appareil.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macSchedules}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Écran Planning sur un Mac avec une programmation en semaine nommée Deep work et une programmation quotidienne nommée Evening reading"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneSchedules}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Écran Planning sur un iPhone avec une programmation en semaine nommée Deep work"
+          />
+        </div>
+      </div>
+    </div>
+    <p class="muted">Les captures d’écran proviennent des vraies apps et montrent des choix d’exemple.</p>
+  </section>
+
+  <section class="step" aria-labelledby="sync">
+    <div class="step-copy">
+    <h2 id="sync">Partagez la session avec iCloud</h2>
+    <p class="prose">
+      Choisissez <strong>Synchroniser avec iCloud</strong> sur un Mac et un iPhone connectés au même compte
+      Apple pour partager vos ensembles de pause avec leurs sites, vos sessions et vos programmations. Aucun code QR ni
+      aucune invitation n’est nécessaire. La synchronisation fonctionne dans la mesure du possible : une modification peut arriver en retard, ou pas du tout. Une session
+      lancée sur votre iPhone ne bloque sur le Mac qu’une fois rétablie sur celui-ci. Mettez à jour Posato sur chaque
+      appareil : dès qu’un appareil utilise Posato 1.3, les appareils dotés d’une version antérieure cessent de se synchroniser jusqu’à leur
+      mise à jour.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macIcloud}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="La ligne iCloud sur un Mac relié : dernière synchronisation terminée, heure de la dernière synchronisation, Synchroniser maintenant et Supprimer l’espace de travail"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneIcloud}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Le même espace de travail iCloud sur un iPhone, avec l’heure de la dernière synchronisation, Synchroniser maintenant et Supprimer l’espace de travail"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="folder">
+    <div class="step-copy">
+    <h2 id="folder">Synchronisez par un dossier</h2>
+    <p class="prose">
+      Pour relier n’importe quelle combinaison de Mac, d’iPhone, de Linux et d’Android, placez l’espace de travail dans un dossier que Dropbox,
+      OneDrive, Syncthing, iCloud Drive ou un autre service garde synchronisé. Posato n’y écrit que des fichiers
+      chiffrés. Un espace de travail utilise iCloud ou un seul dossier, jamais les deux. Créez l’espace de travail sur un
+      appareil, puis choisissez-y <strong>Ajouter un appareil</strong>. Sur l’autre appareil, suivez deux étapes dans
+      l’ordre de votre choix : choisissez sa copie du même dossier, et scannez le code QR avec l’appareil photo du téléphone,
+      ouvrez le lien partagé ou saisissez le code d’association. L’appareil rejoint l’espace dès qu’il a les deux. Le code est valable
+      10 minutes. Un appareil qui rejoint l’espace pendant une pause commence aussitôt à mettre en pause.
+      Il n’est pas possible de retirer un seul appareil ; pour cesser de partager avec l’un d’eux, supprimez l’espace de travail et créez-en
+      un nouveau dans un autre dossier.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macAddDevice}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Ajouter un appareil sur un Mac, avec un code QR et un code d’association à usage unique"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={androidJoin}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Un téléphone Android qui rejoint l’espace de travail du dossier : le dossier est choisi et l’étape du code d’association est ouverte"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="export">
+    <div class="step-copy">
+    <h2 id="export">Copiez vos ensembles avec un fichier</h2>
+    <p class="prose">
+      Pour configurer un appareil en dehors de votre espace de travail, comme un Mac associé à un autre compte Apple, choisissez
+      <strong>Exporter les ensembles…</strong> dans le menu <strong>…</strong> d’<strong>Ensembles</strong>.
+      Le fichier <code>.posato</code> contient vos ensembles de pause avec leurs sites, l’ensemble par défaut et vos
+      programmations, jamais le choix des apps. <strong>Protéger par un code</strong> le chiffre avec un
+      code à neuf caractères que Posato affiche une seule fois. Sur l’autre appareil, choisissez <strong>Importer…</strong>
+      pour ajouter les ensembles aux vôtres ou les remplacer ; les programmations importées arrivent désactivées. C’est une copie
+      ponctuelle, pas une synchronisation.
+    </p>
+    </div>
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macExport}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Exporter les ensembles de pause sur un Mac avec Protéger par un code activé et un exemple de code à neuf caractères affiché"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={iphoneImport}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Importation sur un iPhone : Ajouter à mes ensembles est sélectionné plutôt que Remplacer mes ensembles, et la programmation arrive désactivée"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="limits">
+    <h2 id="limits">Limites</h2>
+    <p class="prose">Posato ajoute une friction volontaire ; ce n’est pas un verrou impossible à ouvrir.</p>
+    <ul class="prose">
+      <li>
+        <strong>Mac :</strong> le blocage fonctionne tant que Posato est ouvert, y compris dans la barre des menus, fenêtre
+        fermée. Quitter Posato l’arrête, ainsi que les nouveaux démarrages programmés. Le blocage nécessite l’autorisation d’un
+        administrateur ; après la configuration unique, les démarrages ne la demandent plus. Les apps en pause sont quittées : enregistrez donc
+        votre travail avant le début d’une session. Le blocage des sites
+        couvre Safari et Google Chrome Stable tant qu’ils utilisent les réglages de proxy du système.
+      </li>
+      <li>
+        <strong>iPhone :</strong> des restrictions peuvent persister après la fin d’une session. Pour les sessions de moins de 15
+        minutes, elles ne sont levées que si Posato est ouvert à la fin ou à sa prochaine ouverture.
+      </li>
+      <li>
+        <strong>Linux :</strong> les sites sont bloqués par leur nom via <code>/etc/hosts</code>, sans
+        page de pause ; un navigateur qui utilise son propre DNS over HTTPS contourne ce blocage. Les apps en pause sont fermées : enregistrez donc
+        votre travail avant le début d’une session. Un service système, installé une seule fois avec votre mot de passe, arrête
+        la pause à l’heure même quand Posato est fermé. Fermer la fenêtre laisse Posato actif avec une
+        icône dans la zone d’état. Sur un bureau dont la zone d’état n’affiche pas les icônes d’apps, comme GNOME
+        sans l’extension AppIndicator, il n’y a pas d’icône, et Posato reste en arrière-plan uniquement
+        pendant une pause ou quand une programmation est activée. Quitter Posato empêche les nouveaux démarrages programmés.
+      </li>
+      <li>
+        <strong>Android :</strong> les sites sont bloqués par leur nom via un VPN local, sans page de pause ;
+        un autre VPN ne peut pas fonctionner pendant une pause, et le DNS privé strict ou un navigateur avec son propre DNS over
+        HTTPS le contourne. Une app en pause est masquée par un écran de blocage.
+      </li>
+      <li>
+        <strong>Synchronisation :</strong> elle fonctionne dans la mesure du possible ; une modification peut arriver en retard, ou pas du tout. Si toutes les copies de la clé de votre espace de travail sont perdues,
+        les données synchronisées ne peuvent pas être récupérées.
+      </li>
+    </ul>
+    <p class="prose">
+      Consultez l’ensemble des <a href="/fr/limits/">limites du blocage et de la synchronisation</a> : navigateurs couverts, comportement avec un VPN et avec Relais privé iCloud, reprise après la mise en veille, synchronisation par dossier et codes d’association, et récupération des données.
+    </p>
+  </section>
+
+  <section class="privacy-section" aria-labelledby="privacy">
+    <h2 id="privacy">Confidentialité</h2>
+    <p class="prose">
+      Le développeur de Posato ne reçoit pas vos données. Vos ensembles de pause, vos sites, vos choix d’apps, vos sessions
+      et vos programmations restent sur vos appareils. Si vous activez la synchronisation iCloud, les modifications sont chiffrées sur votre appareil avant d’être
+      enregistrées dans votre base de données iCloud privée. Avec la synchronisation par dossier, Posato n’écrit que des fichiers chiffrés dans le dossier que vous choisissez. Sur Mac, les recherches de mises à jour ne sont envoyées à GitHub Releases qu’avec votre accord.
+      Consultez la <a href="/fr/privacy/">politique de confidentialité</a>.
+    </p>
+  </section>
+
+  <section class="note" aria-labelledby="install">
+    <h2 id="install">Installer Posato</h2>
+    <p class="download download-row">
+      <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Télécharger Posato pour Mac" /></a>
+      <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Télécharger Posato dans l’App Store" /></a>
+      <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Télécharger Posato pour Linux" /></a>
+      <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Télécharger Posato pour Android" /></a>
+    </p>
+    <ul class="install">
+      <li>
+        <h3>Mac</h3>
+        <p>
+          macOS 13 ou version ultérieure. Téléchargez <code>Posato-1.5.2.dmg</code> pour les Mac avec puce Apple ou
+          <code>Posato-1.5.2-intel.dmg</code> pour un Mac Intel depuis <a href={releases}>GitHub Releases</a>,
+          signé et notarisé, puis placez Posato dans le dossier Applications. Il peut rechercher les nouvelles versions avec votre
+          accord, et l’installation d’une mise à jour attend la fin de votre session. Pour passer de Posato 1.0,
+          quittez Posato et remplacez l’application.
+        </p>
+      </li>
+      <li>
+        <h3>iPhone</h3>
+        <p>iOS 18 ou version ultérieure. Installez Posato depuis l’<a href={appStore}>App Store</a> ; il s’y met à jour.</p>
+      </li>
+      <li>
+        <h3>Linux</h3>
+        <p>
+          Ubuntu 24.04 ou version ultérieure. Téléchargez <code>posato_1.5.0_arm64.deb</code> pour arm64 ou
+          <code>posato_1.5.0_amd64.deb</code> pour x86-64 depuis <a href={releases}>GitHub Releases</a> et
+          installez-le avec <code>sudo apt install ./posato_1.5.0_&lt;arch&gt;.deb</code>. Ouvrez ensuite Posato
+          et suivez le premier lancement ; il vous demande une seule fois votre mot de passe pour installer le service de pause.
+        </p>
+      </li>
+      <li>
+        <h3>Android</h3>
+        <p>
+          Android 13 ou version ultérieure. Sur le téléphone, téléchargez <code>Posato-1.5.0.apk</code> depuis
+          <a href={releases}>GitHub Releases</a> et ouvrez-le. Quand Android le demande, autorisez l’installation d’apps depuis
+          cette source, puis installez et ouvrez Posato, et suivez le premier lancement, qui demande les autorisations dont
+          Posato a besoin pour mettre en pause.
+        </p>
+      </li>
+    </ul>
+    <p class="muted">
+      Pour mettre à jour sur Linux ou Android, installez le paquet plus récent de la même façon. La
+      <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matrice des plateformes</a>
+      indique ce qui a été vérifié sur chaque plateforme, notamment que la version Intel a été vérifiée sous Rosetta, et non sur un Mac Intel.
+    </p>
+  </section>
+</Base>
