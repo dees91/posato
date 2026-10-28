@@ -39,8 +39,8 @@ concentración,pausa,distracciones,sitios web,apps,tiempo de uso,enfoque,descans
 
 The set repeats the English screens from the Spanish interface on the same
 Simulators, in Dark Mode, with the synthetic websites `news.example`,
-`social.example`, and `video.example` in the unnamed first set, which the
-Spanish app names "Mi conjunto", and one weekday schedule "Trabajo profundo":
+`social.example`, and `video.example` in the first set, renamed
+"Concentración", and one weekday schedule "Trabajo profundo":
 
 - [Paused websites](screenshots/iphone-6.9/01-paused-websites.png)
 - [Session duration](screenshots/iphone-6.9/02-session-duration.png)
@@ -57,9 +57,7 @@ The iPad set shows the same screens in portrait:
 Capture them with the [capture command](../en-US/listing.md#capture-recipe),
 which reads [capture.json](capture.json):
 `posato-control store capture -t sim --udid <udid> --locale es-ES --out docs/store/es-ES/screenshots/iphone-6.9 --prepare`,
-and `ipad-13` on the iPad. `capture.json` sets no `setName`: renaming the set
-presses the native iOS alert's Save button by its English title, so the
-first set keeps the name the Spanish app gives it. The iPhone is the iPhone
+and `ipad-13` on the iPad. The iPhone is the iPhone
 17 Pro Max Simulator with iOS 26.5 (1320 × 2868), the iPad the iPad Pro
 13-inch (M5) Simulator with iOS 27.0 (2064 × 2752); both are RGB PNGs
 without an alpha channel. Nothing is uploaded.
