@@ -92,14 +92,17 @@ class StoreClient(
         AppStoreVersionResource.serializer(),
     )
 
-    /** The newest builds first. A second page is reported rather than followed; the newest page is what a release reads. */
-    fun builds(appId: String): BuildListing = builds(listOf("filter[app]" to appId, "sort" to "-uploadedDate"))
-
-    /** The builds carrying one build number, across every marketing version. */
+    /**
+     * The newest builds first, or with [number] the builds carrying that build number across every marketing version.
+     * A second page is reported rather than followed; the newest page is what a release reads.
+     */
     fun builds(
         appId: String,
-        number: Int,
-    ): BuildListing = builds(listOf("filter[app]" to appId, "filter[version]" to number.toString()))
+        number: Int? = null,
+    ): BuildListing = builds(
+        listOf("filter[app]" to appId) +
+            if (number == null) "sort" to "-uploadedDate" else "filter[version]" to number.toString(),
+    )
 
     fun attachedBuild(versionId: String): BuildResource? = documents.optional("appStoreVersions/$versionId/build", BuildResource.serializer())
 

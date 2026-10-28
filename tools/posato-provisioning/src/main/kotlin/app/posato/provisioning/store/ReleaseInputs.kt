@@ -115,19 +115,14 @@ object ReleaseInputs {
         }
         return files.map { file ->
             val bytes = read { Files.readAllBytes(file) }
-            ensure(isPng(bytes)) { "${slot.directory}/${file.name} is not a PNG image" }
-            ensure(!hasAlpha(bytes)) {
+            ensure(PngImage.isPng(bytes)) { "${slot.directory}/${file.name} is not a PNG image" }
+            ensure(!PngImage.hasAlpha(bytes)) {
                 "${slot.directory}/${file.name} has an alpha channel, which App Store Connect rejects; convert it with " +
                     "`ffmpeg -i <in> -pix_fmt rgb24 <out>`"
             }
             ScreenshotFile(file.name, bytes)
         }
     }
-
-    private fun isPng(bytes: ByteArray): Boolean =
-        bytes.size > COLOR_TYPE_OFFSET && bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
-
-    private fun hasAlpha(bytes: ByteArray): Boolean = (bytes[COLOR_TYPE_OFFSET].toInt() and BYTE_MASK) in ALPHA_COLOR_TYPES
 
     private fun <T> read(block: () -> T): T = try {
         block()
@@ -141,4 +136,10 @@ object ReleaseInputs {
     ) {
         if (!condition) throw ProvisioningException(ErrorCode.RELEASE_INPUT_INVALID, "${message()}.", REMEDY)
     }
+}
+
+private object PngImage {
+    fun isPng(bytes: ByteArray): Boolean = bytes.size > COLOR_TYPE_OFFSET && bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
+
+    fun hasAlpha(bytes: ByteArray): Boolean = (bytes[COLOR_TYPE_OFFSET].toInt() and BYTE_MASK) in ALPHA_COLOR_TYPES
 }
