@@ -55,7 +55,20 @@ import app.posato.core.designsystem.PosatoSidebarNavigationItem
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoWordmark
+import app.posato.core.designsystem.controlId
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.core.designsystem.windowNavigationPlacement
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.about_title
+import app.posato.generated.resources.device_on_this_computer
+import app.posato.generated.resources.device_on_this_ipad
+import app.posato.generated.resources.device_on_this_iphone
+import app.posato.generated.resources.device_on_this_mac
+import app.posato.generated.resources.device_on_this_phone
+import app.posato.generated.resources.nav_pause_sets
+import app.posato.generated.resources.nav_schedules
+import app.posato.generated.resources.session_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun ApplicationNavigationHeader(
@@ -71,7 +84,9 @@ internal fun ApplicationNavigationHeader(
     ) {
         PosatoWordmark(Modifier.heightIn(min = PosatoSize.Control))
         if (onOpenAbout != null) {
-            PosatoButton(onClick = onOpenAbout, style = PosatoButtonStyle.Quiet) { Text("About Posato") }
+            PosatoButton(onClick = onOpenAbout, modifier = Modifier.controlId("about_title"), style = PosatoButtonStyle.Quiet) {
+                Text(stringResource(Res.string.about_title))
+            }
         }
     }
 }
@@ -79,7 +94,6 @@ internal fun ApplicationNavigationHeader(
 @Composable
 internal fun ApplicationNavigation(
     placement: PosatoNavigationPlacement,
-    device: PosatoDevice,
     destination: ApplicationDestination,
     showingInformation: Boolean,
     onSelect: (ApplicationDestination) -> Unit,
@@ -91,20 +105,20 @@ internal fun ApplicationNavigation(
                 selected = destination == ApplicationDestination.SESSION,
                 onClick = { onSelect(ApplicationDestination.SESSION) },
                 iconContent = { PosatoIcon(PosatoIcons.Pause, null, Modifier.size(PosatoSize.LargeIcon)) },
-                modifier = Modifier.weight(1f),
-            ) { Text("Session") }
+                modifier = Modifier.weight(1f).controlId("session_title"),
+            ) { Text(stringResource(Res.string.session_title)) }
             PosatoBottomNavigationItem(
                 selected = destination == ApplicationDestination.TARGETS,
                 onClick = { onSelect(ApplicationDestination.TARGETS) },
                 iconContent = { PosatoIcon(PosatoIcons.Items, null, Modifier.size(PosatoSize.LargeIcon)) },
-                modifier = Modifier.weight(1f),
-            ) { Text("Pause sets") }
+                modifier = Modifier.weight(1f).controlId("nav_pause_sets"),
+            ) { Text(stringResource(Res.string.nav_pause_sets)) }
             PosatoBottomNavigationItem(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).controlId("nav_schedules"),
                 selected = destination == ApplicationDestination.SCHEDULES,
                 onClick = { onSelect(ApplicationDestination.SCHEDULES) },
                 iconContent = { PosatoIcon(PosatoIcons.Clock, null, Modifier.size(PosatoSize.LargeIcon)) },
-            ) { Text("Schedules") }
+            ) { Text(stringResource(Res.string.nav_schedules)) }
         }
 
         PosatoNavigationPlacement.Sidebar -> Column(
@@ -116,29 +130,29 @@ internal fun ApplicationNavigation(
                     selected = destination == ApplicationDestination.SESSION && !showingInformation,
                     onClick = { onSelect(ApplicationDestination.SESSION) },
                     iconContent = { PosatoIcon(PosatoIcons.Pause, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Session") }
+                    modifier = Modifier.fillMaxWidth().controlId("session_title"),
+                ) { Text(stringResource(Res.string.session_title)) }
                 PosatoSidebarNavigationItem(
                     selected = destination == ApplicationDestination.TARGETS && !showingInformation,
                     onClick = { onSelect(ApplicationDestination.TARGETS) },
                     iconContent = { PosatoIcon(PosatoIcons.Items, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Pause sets") }
+                    modifier = Modifier.fillMaxWidth().controlId("nav_pause_sets"),
+                ) { Text(stringResource(Res.string.nav_pause_sets)) }
                 PosatoSidebarNavigationItem(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().controlId("nav_schedules"),
                     selected = destination == ApplicationDestination.SCHEDULES && !showingInformation,
                     onClick = { onSelect(ApplicationDestination.SCHEDULES) },
                     iconContent = { PosatoIcon(PosatoIcons.Clock, null) },
-                ) { Text("Schedules") }
+                ) { Text(stringResource(Res.string.nav_schedules)) }
             }
             val labelInset = PosatoSpace.Medium + PosatoSize.Icon + PosatoSpace.Medium
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                PosatoDeviceLabel("On this ${device.noun}", Modifier.padding(start = labelInset))
+                PosatoDeviceLabel(onThisDevice(), Modifier.padding(start = labelInset))
                 PosatoButton(
                     onClick = onOpenAbout,
-                    modifier = Modifier.padding(start = labelInset),
+                    modifier = Modifier.padding(start = labelInset).controlId("about_title"),
                     style = PosatoButtonStyle.Quiet,
-                ) { Text("About Posato") }
+                ) { Text(stringResource(Res.string.about_title)) }
             }
         }
     }
@@ -170,7 +184,7 @@ internal fun ApplicationNavigationScaffold(
         },
         navigationContent = {
             if (!hideNavigation && (placement == PosatoNavigationPlacement.Sidebar || !showingInformation)) {
-                ApplicationNavigation(placement, device, destination, showingInformation, onSelect, onOpenAbout)
+                ApplicationNavigation(placement, destination, showingInformation, onSelect, onOpenAbout)
             }
         },
         content = content,
@@ -184,7 +198,6 @@ internal fun ApplicationNavigationScaffold(
  */
 @Composable
 internal fun CupertinoTabFrame(
-    device: PosatoDevice,
     destination: ApplicationDestination,
     onSelect: (ApplicationDestination) -> Unit,
     modifier: Modifier = Modifier,
@@ -208,7 +221,6 @@ internal fun CupertinoTabFrame(
             ) {
                 ApplicationNavigation(
                     placement = PosatoNavigationPlacement.Bottom,
-                    device = device,
                     destination = destination,
                     showingInformation = false,
                     onSelect = onSelect,
@@ -225,7 +237,6 @@ internal fun CupertinoTabFrame(
  */
 @Composable
 internal fun CupertinoSidebar(
-    device: PosatoDevice,
     destination: ApplicationDestination,
     showingInformation: Boolean,
     onSelect: (ApplicationDestination) -> Unit,
@@ -248,13 +259,13 @@ internal fun CupertinoSidebar(
             SidebarRow(ApplicationDestination.SCHEDULES, PosatoIcons.Clock, destination, showingInformation, onSelect)
         }
         Spacer(Modifier.weight(1f))
-        PosatoDeviceLabel("On this ${device.noun}", Modifier.padding(start = PosatoSpace.Medium))
+        PosatoDeviceLabel(onThisDevice(), Modifier.padding(start = PosatoSpace.Medium))
         PosatoSidebarNavigationItem(
             selected = showingInformation,
             onClick = onOpenAbout,
             iconContent = { PosatoIcon(PosatoIcons.Info, null, Modifier.size(PosatoSize.LargeIcon)) },
-            modifier = Modifier.fillMaxWidth().padding(bottom = PosatoSpace.Small),
-        ) { Text("About Posato") }
+            modifier = Modifier.fillMaxWidth().padding(bottom = PosatoSpace.Small).controlId("about_title"),
+        ) { Text(stringResource(Res.string.about_title)) }
     }
 }
 
@@ -270,8 +281,28 @@ private fun SidebarRow(
         selected = destination == entry && !showingInformation,
         onClick = { onSelect(entry) },
         iconContent = { PosatoIcon(icon, null, Modifier.size(PosatoSize.LargeIcon)) },
-        modifier = Modifier.fillMaxWidth(),
-    ) { Text(entry.title) }
+        modifier = Modifier.fillMaxWidth().controlId(entry.controlId),
+    ) { Text(entry.localizedTitle()) }
+}
+
+@Composable
+private fun onThisDevice(): String {
+    return stringResourceForDevice(
+        Res.string.device_on_this_mac,
+        Res.string.device_on_this_iphone,
+        Res.string.device_on_this_ipad,
+        Res.string.device_on_this_computer,
+        Res.string.device_on_this_phone,
+    )
+}
+
+@Composable
+internal fun ApplicationDestination.localizedTitle(): String {
+    return when (this) {
+        ApplicationDestination.SESSION -> stringResource(Res.string.session_title)
+        ApplicationDestination.TARGETS -> stringResource(Res.string.nav_pause_sets)
+        ApplicationDestination.SCHEDULES -> stringResource(Res.string.nav_schedules)
+    }
 }
 
 private val SidebarBarHeight = 44.dp

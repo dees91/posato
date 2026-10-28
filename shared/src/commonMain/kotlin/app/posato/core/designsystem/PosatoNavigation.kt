@@ -25,10 +25,12 @@ internal fun PosatoNavigationItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leadingContent: (@Composable () -> Unit)? = null,
+    controlId: String? = null,
     content: @Composable () -> Unit,
 ) {
+    val tagged = controlId?.let { modifier.controlId(it) } ?: modifier
     Surface(
-        modifier = modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Tab },
+        modifier = tagged.heightIn(min = PosatoSize.Control).semantics { role = Role.Tab },
         selected = selected,
         onClick = onClick,
         enabled = enabled,

@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 
 /** How an alert action reads: the default answer, the way out, or the one that destroys something. */
 internal enum class PosatoAlertRole {
@@ -22,6 +23,7 @@ internal class PosatoAlertAction(
     val title: String,
     val onClick: (String) -> Unit,
     val role: PosatoAlertRole = PosatoAlertRole.Default,
+    val controlId: String? = null,
 )
 
 /** The single text field an alert can ask for, such as a name. */
@@ -90,13 +92,20 @@ internal fun DrawnAlert(
                 answers.forEach { action ->
                     PosatoButton(
                         onClick = { action.onClick(text.text.toString()) },
+                        modifier = action.controlId?.let { Modifier.controlId(it) } ?: Modifier,
                         style = if (action.role == PosatoAlertRole.Destructive) PosatoButtonStyle.Destructive else PosatoButtonStyle.Primary,
                     ) { Text(action.title) }
                 }
             }
         },
         dismissButton = cancel?.let { action ->
-            { PosatoButton(onClick = { action.onClick(text.text.toString()) }, style = PosatoButtonStyle.Quiet) { Text(action.title) } }
+            {
+                PosatoButton(
+                    onClick = { action.onClick(text.text.toString()) },
+                    modifier = action.controlId?.let { Modifier.controlId(it) } ?: Modifier,
+                    style = PosatoButtonStyle.Quiet,
+                ) { Text(action.title) }
+            }
         },
     )
 }

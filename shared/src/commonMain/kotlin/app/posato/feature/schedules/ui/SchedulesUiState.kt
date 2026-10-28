@@ -18,16 +18,14 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentSet
 
-internal enum class ScheduleDay(
-    val label: String,
-) {
-    MONDAY("Monday"),
-    TUESDAY("Tuesday"),
-    WEDNESDAY("Wednesday"),
-    THURSDAY("Thursday"),
-    FRIDAY("Friday"),
-    SATURDAY("Saturday"),
-    SUNDAY("Sunday"),
+internal enum class ScheduleDay {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY,
+    SATURDAY,
+    SUNDAY,
     ;
 
     /** Bit 0 is Monday, as on the wire and in the engine. */
@@ -51,10 +49,30 @@ internal data class ScheduleRowModel(
     val canSkip: Boolean,
     val setLabel: String? = null,
     val setProblem: String? = null,
+    val weekdayMask: Int = ABSENT_WEEKDAYS,
+    val startMinuteOfDay: Int? = null,
+    val endMinuteOfDay: Int? = null,
+    val rowEndsNextDay: Boolean = false,
+    val setName: String? = null,
+    val problemKind: ScheduleProblemKind? = null,
+    val nextWeekday: Int? = null,
+    val nextWhen: String? = null,
+    val skippedWeekday: Int? = null,
+    val skippedWhen: String? = null,
 ) {
     override fun toString(): String {
         return "ScheduleRowModel(redacted)"
     }
+}
+
+internal const val ABSENT_WEEKDAYS: Int = -1
+
+/** Why a schedule row cannot use its set. The English [ScheduleRowModel.setProblem] stays for callers outside composition. */
+internal enum class ScheduleProblemKind {
+    WAITING,
+    DELETED,
+    OVER_LIMIT,
+    NOTHING,
 }
 
 internal enum class ScheduleEditorError {

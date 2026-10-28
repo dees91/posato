@@ -2,8 +2,11 @@ package app.posato.provisioning.asc
 
 import app.posato.provisioning.model.AppInfoLocalizationResource
 import app.posato.provisioning.model.AppInfoResource
+import app.posato.provisioning.model.RelationshipRef
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+
+private const val APP_NAME = "Posato"
 
 /**
  * The app information operations a release needs: the app's App Information records and their localizations, which
@@ -26,6 +29,28 @@ class AppInfoClient(
         emptyList(),
         AppInfoLocalizationResource.serializer(),
         STORE_LISTING_HINT,
+    )
+
+    /**
+     * Adds one App Information localization. The name stays Posato in every language; the subtitle is the localized line.
+     */
+    fun createLocalization(
+        appInfoId: String,
+        locale: String,
+        subtitle: String,
+    ): AppInfoLocalizationResource = documents.write(
+        HttpMethod.POST,
+        "appInfoLocalizations",
+        JsonApi.resource(
+            type = "appInfoLocalizations",
+            attributes = buildJsonObject {
+                put("locale", locale)
+                put("name", APP_NAME)
+                put("subtitle", subtitle)
+            },
+            relationships = mapOf("appInfo" to RelationshipRef(appInfoId, "appInfos")),
+        ),
+        AppInfoLocalizationResource.serializer(),
     )
 
     /** Writes only the given localization attributes, such as `subtitle`. */

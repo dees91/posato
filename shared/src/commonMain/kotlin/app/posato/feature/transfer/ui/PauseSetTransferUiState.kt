@@ -14,8 +14,25 @@ import app.posato.feature.transfer.data.TransferImport
 import app.posato.feature.transfer.data.TransferRead
 import app.posato.feature.transfer.domain.ImportMode
 import app.posato.feature.transfer.domain.PauseSetFileLimits
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_import_word
+import app.posato.generated.resources.transfer_changed_since
+import app.posato.generated.resources.transfer_code_mismatch
+import app.posato.generated.resources.transfer_damaged
+import app.posato.generated.resources.transfer_exported
+import app.posato.generated.resources.transfer_file_name
+import app.posato.generated.resources.transfer_import_failed
+import app.posato.generated.resources.transfer_invalid
+import app.posato.generated.resources.transfer_newer
+import app.posato.generated.resources.transfer_not_posato
+import app.posato.generated.resources.transfer_over_limit
+import app.posato.generated.resources.transfer_read_failed
+import app.posato.generated.resources.transfer_send_code
+import app.posato.generated.resources.transfer_too_large
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 
 /** Export and import from the Pause sets menu, one dialog at a time. */
 @Stable
@@ -38,7 +55,7 @@ internal class PauseSetTransferUiState(
     fun startExport() {
         scope.launch {
             val contents = transfer.exportContents()
-            dialog = if (contents == null) failure("Your pause sets could not be read.") else TransferDialog.Export(contentsOf(contents), code = null)
+            dialog = if (contents == null) failure(Res.string.transfer_read_failed) else TransferDialog.Export(contents, code = null)
         }
     }
 
@@ -54,11 +71,12 @@ internal class PauseSetTransferUiState(
         dialog = export.copy(busy = true, failed = false)
         scope.launch {
             val file = transfer.export(export.code)
-            val saved = file != null && files.export(file.bytes, EXPORT_FILE_NAME)
+            val saved = file != null && files.export(file.bytes, getString(Res.string.transfer_file_name))
             dialog = when {
                 saved && export.code != null -> TransferDialog.Message(
-                    "Exported",
-                    "Send the code ${ExportCode.grouped(export.code)} separately from the file. Posato does not keep it.",
+                    Res.string.transfer_exported,
+                    Res.string.transfer_send_code,
+                    ExportCode.grouped(export.code),
                 )
 
                 saved -> null
@@ -74,7 +92,7 @@ internal class PauseSetTransferUiState(
         scope.launch {
             val bytes = files.pick(PauseSetFileLimits.MAX_FILE_BYTES) ?: return@launch
             if (bytes.size > PauseSetFileLimits.MAX_FILE_BYTES) {
-                dialog = failure("This file is too large to be a Posato export.")
+                dialog = failure(Res.string.transfer_too_large)
                 return@launch
             }
             open(bytes, code = null)
@@ -93,7 +111,7 @@ internal class PauseSetTransferUiState(
         if (review.busy || review.preview.mode == mode) return
         scope.launch {
             val preview = transfer.preview(review.preview.file, mode, review.preview.ids)
-            dialog = if (preview == null) failure("Your pause sets could not be read.") else review.copy(preview = preview, notice = null)
+            dialog = if (preview == null) failure(Res.string.transfer_read_failed) else review.copy(preview = preview, notice = null)
         }
     }
 
@@ -108,10 +126,10 @@ internal class PauseSetTransferUiState(
                 is TransferImport.Changed -> review.copy(
                     preview = result.preview,
                     busy = false,
-                    notice = "Your pause sets changed since you opened the file. Check what the import does now.",
+                    notice = Res.string.transfer_changed_since,
                 )
 
-                TransferImport.Failed -> review.copy(busy = false, notice = "The import could not be saved. Nothing was changed.")
+                TransferImport.Failed -> review.copy(busy = false, notice = Res.string.transfer_import_failed)
             }
         }
     }
@@ -133,26 +151,26 @@ internal class PauseSetTransferUiState(
         dialog = when (val read = transfer.read(bytes, code)) {
             is TransferRead.File -> transfer.preview(read.file, ImportMode.COMBINE)
                 ?.let { preview -> TransferDialog.Review(preview, linked()) }
-                ?: failure("Your pause sets could not be read.")
+                ?: failure(Res.string.transfer_read_failed)
 
             TransferRead.CodeNeeded -> TransferDialog.Code(bytes)
 
-            TransferRead.CodeMismatch -> TransferDialog.Code(bytes, failure = "This code doesn't match, or the file was changed.")
+            TransferRead.CodeMismatch -> TransferDialog.Code(bytes, failure = Res.string.transfer_code_mismatch)
 
-            TransferRead.Damaged -> failure("This file is damaged. Export it again on the other device.")
+            TransferRead.Damaged -> failure(Res.string.transfer_damaged)
 
-            TransferRead.NewerVersion -> failure("This file was made by a newer Posato. Update Posato on this device, then try again.")
+            TransferRead.NewerVersion -> failure(Res.string.transfer_newer)
 
-            TransferRead.NotPosatoFile -> failure("This is not a Posato export. Choose a .posato file.")
+            TransferRead.NotPosatoFile -> failure(Res.string.transfer_not_posato)
 
-            TransferRead.InvalidContents -> failure("This file has a set, website, or schedule Posato cannot use.")
+            TransferRead.InvalidContents -> failure(Res.string.transfer_invalid)
 
-            TransferRead.OverLimit -> failure("This file holds more sets, websites, or schedules than Posato keeps.")
+            TransferRead.OverLimit -> failure(Res.string.transfer_over_limit)
         }
     }
 
-    private fun failure(text: String): TransferDialog {
-        return TransferDialog.Message("Import", text)
+    private fun failure(text: StringResource): TransferDialog {
+        return TransferDialog.Message(Res.string.action_import_word, text)
     }
 }
 
@@ -165,5 +183,3 @@ internal fun rememberPauseSetTransferUiState(
     val scope = rememberCoroutineScope()
     return remember(transfer, files) { PauseSetTransferUiState(transfer, files, linked, scope) }
 }
-
-private const val EXPORT_FILE_NAME: String = "Posato pause sets.posato"

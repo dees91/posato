@@ -39,6 +39,7 @@ internal class PosatoMenuItem(
     val destructive: Boolean = false,
     val detail: String? = null,
     val enabled: Boolean = true,
+    val controlId: String? = null,
 )
 
 /** One value a picker offers, with an optional line under its title. */
@@ -54,6 +55,7 @@ internal class PosatoSwipeAction(
     val label: String,
     val onClick: () -> Unit,
     val destructive: Boolean = false,
+    val controlId: String? = null,
 )
 
 /** A menu action's symbol: the app's own icon, and the SF Symbol the iOS menu shows instead. */
@@ -127,7 +129,8 @@ internal fun DrawnItemMenu(
             items.forEach { item ->
                 val color = if (item.destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 DropdownMenuItem(
-                    modifier = Modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Button },
+                    modifier = Modifier.heightIn(min = PosatoSize.Control).semantics { role = Role.Button }
+                        .let { base -> item.controlId?.let { base.controlId(it) } ?: base },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
                             Text(item.title)

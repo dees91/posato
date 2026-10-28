@@ -1,12 +1,9 @@
 package app.posato.desktop
 
+import app.posato.launch.translationGuardCopy
 import java.io.File
 
 internal object TranslationGuard {
-    private const val TITLE = "This version is for Intel Macs"
-    private const val MESSAGE = "This Mac has Apple silicon. Download Posato for Apple silicon."
-    private const val DOWNLOAD = "Download"
-    private const val QUIT = "Quit"
     private const val DOWNLOAD_URL = "https://github.com/dees91/posato/releases/latest"
 
     fun permitsLaunch(): Boolean {
@@ -15,7 +12,8 @@ internal object TranslationGuard {
             System.err.println("Posato runs under Rosetta translation in a verification build.")
             return true
         }
-        MacTranslationNative.refuseTranslation(TITLE, MESSAGE, DOWNLOAD, QUIT, DOWNLOAD_URL)
+        val copy = translationGuardCopy()
+        MacTranslationNative.refuseTranslation(copy.title, copy.message, copy.download, copy.quit, DOWNLOAD_URL)
         return false
     }
 }

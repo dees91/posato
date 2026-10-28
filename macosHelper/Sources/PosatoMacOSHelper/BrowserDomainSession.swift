@@ -167,7 +167,7 @@ final class BrowserDomainSession: @unchecked Sendable {
     guard let text = String(bytes: response, encoding: .utf8),
       text.hasPrefix("HTTP/1.1 200 OK\r\n"),
       text.contains("Cache-Control: no-store"),
-      text.contains("This site is paused")
+      text.contains(PauseCopy.pageMarker)
     else {
       throw BrowserDomainSessionFailure.unavailable
     }

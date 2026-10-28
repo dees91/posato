@@ -15,6 +15,24 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.schedules.host.ScheduledPauseState
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_allow_schedules_mac
+import app.posato.generated.resources.action_end_early
+import app.posato.generated.resources.action_end_pause
+import app.posato.generated.resources.action_finish_setup
+import app.posato.generated.resources.action_keep_pausing
+import app.posato.generated.resources.notification_schedule_setup_title
+import app.posato.generated.resources.session_end_scheduled
+import app.posato.generated.resources.session_end_this_pause
+import app.posato.generated.resources.session_end_timezone
+import app.posato.generated.resources.session_named_couldnt_start
+import app.posato.generated.resources.session_named_running
+import app.posato.generated.resources.session_named_screen_time
+import app.posato.generated.resources.session_named_starting
+import app.posato.generated.resources.session_named_starts_when
+import app.posato.generated.resources.session_ready_return
+import app.posato.generated.resources.session_until
+import org.jetbrains.compose.resources.stringResource
 
 /** The scheduled pause as Session shows it; [until] is the combined pause's latest end, ready to display. */
 internal data class ScheduledPauseView(
@@ -41,9 +59,9 @@ internal fun ScheduledPauseRunning(
     view: ScheduledPauseView,
     onEnd: () -> Unit,
 ) {
-    PosatoEndTime("Until ${view.until}", supportingText = "${view.name} is running on this device.")
+    PosatoEndTime(stringResource(Res.string.session_until, view.until), supportingText = stringResource(Res.string.session_named_running, view.name))
     view.parts.forEach { part -> PosatoCaption(part) }
-    PosatoButton(onEnd, style = PosatoButtonStyle.Quiet) { Text("End early") }
+    PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, controlId = "action_end_early") { Text(stringResource(Res.string.action_end_early)) }
 }
 
 /**
@@ -61,28 +79,29 @@ internal fun ScheduledPauseAttention(
         ScheduledPauseState.SETUP_REQUIRED -> if (macSetup == null) {
             // On iPhone, Screen Time access is the only requirement; Schedules offers it.
             PosatoNotice(tone = PosatoTone.Caution) {
-                Text("Allow Screen Time in Schedules so ${view.name} can start on this device.")
+                Text(stringResource(Res.string.session_named_screen_time, view.name))
             }
         } else {
             PosatoNotice(tone = PosatoTone.Caution) {
                 Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                    Text("Setup required on this Mac")
-                    PosatoCaption(
-                        "${view.name} couldn't start here. Finish setup so schedules start on their own. " +
-                            "No password is asked when a schedule is due.",
-                    )
+                    Text(stringResource(Res.string.notification_schedule_setup_title))
+                    PosatoCaption(stringResource(Res.string.session_named_couldnt_start, view.name))
                     if (macSetup.schedulesNeedConsent) {
-                        PosatoButton(macActions.allowSchedules, style = PosatoButtonStyle.Secondary) { Text("Allow schedules to start on this Mac") }
+                        PosatoButton(macActions.allowSchedules, style = PosatoButtonStyle.Secondary, controlId = "action_allow_schedules_mac") {
+                            Text(stringResource(Res.string.action_allow_schedules_mac))
+                        }
                     } else {
-                        PosatoButton(onSetup, style = PosatoButtonStyle.Secondary) { Text("Finish setup") }
+                        PosatoButton(onSetup, style = PosatoButtonStyle.Secondary, controlId = "action_finish_setup") {
+                            Text(stringResource(Res.string.action_finish_setup))
+                        }
                     }
                 }
             }
         }
 
-        ScheduledPauseState.WAITING -> PosatoCaption("${view.name} starts here when this Mac is available again.")
+        ScheduledPauseState.WAITING -> PosatoCaption(stringResource(Res.string.session_named_starts_when, view.name))
 
-        ScheduledPauseState.RETRYING -> PosatoCaption("Starting ${view.name} on this Mac…")
+        ScheduledPauseState.RETRYING -> PosatoCaption(stringResource(Res.string.session_named_starting, view.name))
 
         ScheduledPauseState.APPLIED -> Unit
     }
@@ -97,14 +116,16 @@ internal fun ScheduledEarlyEndContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
-            "Ready to return?",
-            eyebrow = "END THIS PAUSE",
-            description = "This ends ${view.name} and any session running now, here and on your other devices. The schedule keeps repeating.",
+            stringResource(Res.string.session_ready_return),
+            eyebrow = stringResource(Res.string.session_end_this_pause),
+            description = stringResource(Res.string.session_end_scheduled, view.name),
             layout = layout,
         )
-        PosatoCaption("A device whose date is different, in another time zone around midnight, keeps its own pause until it ends there.")
-        PosatoButton(onConfirm) { Text("End pause") }
-        PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Keep pausing") }
+        PosatoCaption(stringResource(Res.string.session_end_timezone))
+        PosatoButton(onConfirm, controlId = "action_end_pause") { Text(stringResource(Res.string.action_end_pause)) }
+        PosatoButton(onCancel, style = PosatoButtonStyle.Quiet, controlId = "action_keep_pausing") {
+            Text(stringResource(Res.string.action_keep_pausing))
+        }
     }
 }
 

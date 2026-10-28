@@ -3,6 +3,7 @@ package app.posato.provisioning.cli
 import app.posato.provisioning.store.PrepareRequest
 import app.posato.provisioning.store.ReleaseInputs
 import app.posato.provisioning.store.ReleaseType
+import app.posato.provisioning.store.STORE_LOCALE
 import app.posato.provisioning.store.StorePreparation
 import app.posato.provisioning.store.StoreStatus
 import app.posato.provisioning.store.StoreSubmission
@@ -10,6 +11,7 @@ import app.posato.provisioning.store.StoreSubtitle
 import app.posato.provisioning.store.StoreWithdrawal
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
@@ -46,20 +48,24 @@ class StoreStatusCommand :
 class StorePrepareCommand :
     ProvisioningCommand(
         "prepare",
-        "Creates the iOS App Store version when absent, sets its release type and en-US What's New, attaches a VALID " +
-            "build, and optionally sets the en-US description and subtitle and replaces the iPhone 6.9-inch and iPad 13-inch " +
-            "screenshot sets. With --rename-from, renames the app's one unreleased version instead of creating one. " +
-            "Changes only what differs.",
+        "Creates the iOS App Store version when absent, sets its release type and What's New, attaches a VALID " +
+            "build, and optionally sets the description and subtitle and replaces the iPhone 6.9-inch and iPad 13-inch " +
+            "screenshot sets. --locale chooses the localization and defaults to en-US; a missing localization is created. " +
+            "With --rename-from, renames the app's one unreleased version instead of creating one. Changes only what differs.",
     ) {
     private val version by option("--version", help = "The marketing version, such as 1.2.0.").required()
     private val build by option("--build", help = "The build number App Store Connect already processed.").int().restrictTo(min = 1).required()
-    private val whatsNew by option("--whats-new", help = "A UTF-8 text file holding the en-US What's New text.").required()
+    private val whatsNew by option("--whats-new", help = "A UTF-8 text file holding the What's New text for --locale.").required()
+    private val locale by option(
+        "--locale",
+        help = "The App Store localization to write, such as pl-PL. Defaults to en-US.",
+    ).default(STORE_LOCALE)
     private val release by option("--release", help = "Release automatically after approval, or manually.")
         .choice(*ReleaseType.entries.map { it.option }.toTypedArray())
         .required()
     private val description by option(
         "--description",
-        help = "A UTF-8 text file holding the en-US description; without it the version keeps the copied one.",
+        help = "A UTF-8 text file holding the description for --locale; without it the version keeps the copied one.",
     )
     private val screenshots by option(
         "--screenshots",
@@ -67,7 +73,7 @@ class StorePrepareCommand :
     )
     private val subtitle by option(
         "--subtitle",
-        help = "The en-US subtitle, at most 30 characters; it is set in the App Information this version can still change.",
+        help = "The subtitle for --locale, at most 30 characters; it is set in the App Information this version can still change.",
     )
     private val renameFrom by option(
         "--rename-from",
@@ -84,6 +90,7 @@ class StorePrepareCommand :
             description = description?.let { file -> ReleaseInputs.description(Path.of(file)) },
             renameFrom = renameFrom?.let(ReleaseInputs::version),
             subtitle = subtitle?.let(StoreSubtitle::input),
+            locale = ReleaseInputs.locale(locale),
         )
         return StorePreparation(session.storeServices()).prepare(request)
     }

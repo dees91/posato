@@ -35,6 +35,7 @@ class BlockingObservationTest {
     fun `the pause page counts as paused whatever its end time`() {
         assertEquals(PageOutcome.PAUSED, classifyPage(200, "<title>This site is paused until 16:30 — Posato</title>"))
         assertEquals(PageOutcome.PAUSED, classifyPage(200, "<h1>This site is paused</h1>"))
+        assertEquals(PageOutcome.PAUSED, classifyPage(200, "<main data-posato-page=\"paused-site\"></main>"))
     }
 
     @Test

@@ -1,5 +1,8 @@
 package app.posato.desktop.linux
 
+import app.posato.feature.targets.catalogCancelLabel
+import app.posato.feature.targets.catalogChooseAppsLabel
+import app.posato.feature.targets.catalogChooseLabel
 import app.posato.feature.targets.data.ApplicationCatalog
 import app.posato.feature.targets.data.CatalogEntry
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +56,7 @@ internal class DesktopEntryCatalog(
         entries: List<CatalogEntry>,
         chosen: Set<String>,
     ): List<CatalogEntry>? {
-        val dialog = JDialog(null as java.awt.Frame?, "Choose apps", true)
+        val dialog = JDialog(null as java.awt.Frame?, catalogChooseAppsLabel(), true)
         val boxes = entries.map { entry -> JCheckBox(entry.name, entry.key in chosen) }
         val list = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -62,9 +65,9 @@ internal class DesktopEntryCatalog(
         }
         var result: List<CatalogEntry>? = null
         val buttons = JPanel(FlowLayout(FlowLayout.RIGHT)).apply {
-            add(JButton("Cancel").apply { addActionListener { dialog.dispose() } })
+            add(JButton(catalogCancelLabel()).apply { addActionListener { dialog.dispose() } })
             add(
-                JButton("Choose").apply {
+                JButton(catalogChooseLabel()).apply {
                     addActionListener {
                         result = entries.filterIndexed { index, _ -> boxes[index].isSelected }
                         dialog.dispose()

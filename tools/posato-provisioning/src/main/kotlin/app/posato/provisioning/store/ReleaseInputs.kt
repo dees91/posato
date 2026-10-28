@@ -17,6 +17,7 @@ const val IOS_BUNDLE_ID = "app.posato.ios"
 const val STORE_LOCALE = "en-US"
 
 private val VERSION_PATTERN = Regex("[0-9]+\\.[0-9]+\\.[0-9]+")
+private val LOCALE_PATTERN = Regex("[a-z]{2}(-[A-Z][A-Za-z0-9]{1,7})?")
 private const val MAX_WHATS_NEW = 4000
 private const val MAX_DESCRIPTION = 4000
 private const val MAX_SCREENSHOTS_PER_SET = 10
@@ -68,6 +69,12 @@ class ScreenshotFile(
 object ReleaseInputs {
     fun version(value: String): String {
         ensure(value.matches(VERSION_PATTERN)) { "--version must be a marketing version such as 1.2.0" }
+        return value
+    }
+
+    /** An App Store Connect localization such as `en-US` or `pl-PL`. */
+    fun locale(value: String): String {
+        ensure(value.matches(LOCALE_PATTERN)) { "--locale must be a language tag such as en-US or pl-PL" }
         return value
     }
 

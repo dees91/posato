@@ -1,0 +1,35 @@
+Wybierz strony i aplikacje, od których chcesz się odsunąć, zbierz je w zestawy pauz, a potem rozpocznij pauzę na iPhonie albo zaplanuj pauzy harmonogramem. Zostaw sobie czas na czytanie, pracę albo bycie gdzie indziej.
+
+PAUZA NA TWOICH WARUNKACH
+
+Wybierz zestaw pauz i czas: szybki wybór od 25 minut do 8 godzin, Do końca dnia albo własną długość na liczniku. Posato korzysta z Czasu przed ekranem Apple, żeby wstrzymać ten zestaw na czas sesji. Możesz świadomie zakończyć ją wcześniej albo usunąć Posato w dowolnej chwili. Pauza daje chwilę do namysłu, zanim otworzysz coś z przyzwyczajenia.
+
+ZESTAWY PAUZ
+
+Zostaw osobny zestaw na każdy rodzaj pauzy, na przykład jeden do pracy i jeden na wieczory. Każdy zestaw ma własne strony i aplikacje, a jeden jest domyślny. Gdy pauzy nachodzą na siebie, Posato wstrzymuje wszystko z ich zestawów, w granicach danego urządzenia, aż skończy się ostatnia pauza, która obejmuje dany element.
+
+HARMONOGRAMY
+
+Planuj powtarzające się pauzy według dnia tygodnia i godziny, każdą z własnym zestawem pauz, na przykład poranki w tygodniu albo każdy wieczór. Harmonogram zaczyna się i kończy sam, także gdy Posato jest zamknięte. Pomiń najbliższy albo zakończ wcześniej, gdy plany się zmienią. Posato może powiedzieć, gdy pauza się kończy albo gdy jedna zaczyna się na innym urządzeniu.
+
+OPCJONALNA SYNCHRONIZACJA Z ICLOUD
+
+Połącz iPhone'a i Maca przez konto Apple, żeby synchronizować zestawy pauz wraz ze stronami, sesjami i harmonogramami. Wybór aplikacji zostaje na każdym urządzeniu. Zmiany są szyfrowane na urządzeniu, zanim trafią do prywatnej bazy iCloud.
+
+SYNCHRONIZACJA PRZEZ FOLDER I INNE URZĄDZENIA
+
+Zamiast iCloud możesz trzymać obszar roboczy w folderze, który synchronizuje iCloud Drive, Dropbox, OneDrive albo inna usługa. Posato zapisuje tam tylko zaszyfrowane pliki i synchronizuje folder, gdy otwierasz aplikację. Synchronizacja przez folder łączy też Posato na komputerach z Linuxem; posato.app ma pliki do pobrania. Dodajesz urządzenie, wybierając ten sam folder i skanując kod QR.
+
+Synchronizacja może się opóźnić albo nie dotrzeć, a Posato nie budzi uśpionego urządzenia. Aplikacja na Maca to osobne pobranie na Apple silicon i na Maca z procesorem Intel. Po jednorazowej konfiguracji pauzy i harmonogramy zaczynają się bez pytania o hasło za każdym razem.
+
+EKSPORT I IMPORT
+
+Zapisz zestawy pauz, ich strony i harmonogramy do pliku, opcjonalnie chronionego kodem, i zaimportuj go na innym urządzeniu, na przykład na Macu z innym kontem Apple. Wybór aplikacji zostaje na każdym urządzeniu.
+
+BEZ KONTA POSATO
+
+Bez analityki, wyników, serii i serwera prowadzonego przez Posato. Twoje wybory zostają na urządzeniach, dopóki nie włączysz synchronizacji. Posato jest open source na licencji Apache License 2.0.
+
+ZANIM ZACZNIESZ
+
+Na iPhonie potrzebne jest uprawnienie Czas przed ekranem. System może zostawić ograniczenia po zakończeniu pauzy. Przy sesjach krótszych niż 15 minut zostaw Posato otwarte na końcu albo otwórz je ponownie, żeby je zdjąć. Jeśli używasz Posato na więcej niż jednym urządzeniu, zaktualizuj wszystkie: urządzenia ze starszą wersją przestają się synchronizować, aż je zaktualizujesz.

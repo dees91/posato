@@ -1,0 +1,80 @@
+---
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Ograniczenia" description="Czego wstrzymywanie i synchronizacja w Posato mogą, a czego nie mogą, na Macu, iPhonie, Linuxie i Androidzie.">
+  <div class="prose">
+    <h1>Ograniczenia</h1>
+    <p>Posato dokłada świadomego oporu; to nie jest zamek, którego nie da się otworzyć.</p>
+    <ul>
+      <li>Nie opiera się administratorowi urządzenia i zawsze można je usunąć. Wcześniejsze zakończenie sesji jest zawsze możliwe.</li>
+      <li>
+        Na macOS wstrzymywanie działa tylko wtedy, gdy Posato jest uruchomione. Zamknięcie okna zostawia je w pasku menu, a po jednorazowej konfiguracji Posato otwiera się po cichu przy logowaniu. Jeśli Posato zostanie zakończone albo po uśpieniu, wybudzeniu lub zmianie sieci, pauza rozpoczęta samodzielnie przestaje wstrzymywać, dopóki nie wznowisz jej w Posato. Bez tej konfiguracji rozpoczęcie albo wznowienie wymaga zgody administratora za każdym razem. Sesja odebrana z iPhone'a wstrzymuje na Macu dopiero po wznowieniu jej tam; bez konfiguracji to także wymaga zgody administratora.
+      </li>
+      <li>
+        Na macOS harmonogramy startują tylko na Macu, który ukończył konfigurację, i tylko gdy Posato jest uruchomione. Jeśli Posato się otworzy, także przy logowaniu, albo Mac wybudzi się w trakcie zaplanowanej pauzy, pauza uruchamia się ponownie sama, zwykle w ciągu minuty, i nadal kończy się o zaplanowanej godzinie; hasło nie jest pytane. Zakończenie Posato zatrzymuje nowe starty z harmonogramu, dopóki nie otworzy się znowu; zamknięcie okna tego nie robi.
+      </li>
+      <li>
+        Na macOS wstrzymane aplikacje są zamykane, gdy sesja jest aktywna, także te, które były już otwarte w chwili startu, więc niezapisana praca w nich może przepaść.
+      </li>
+      <li>
+        Na macOS wstrzymywanie stron obejmuje <strong>Safari</strong> i <strong>Google Chrome Stable</strong> dla ruchu na portach 80 i 443, gdy korzystają z systemowych ustawień proxy. Firefox, inne przeglądarki, przeglądarki w aplikacjach oraz aplikacje omijające systemowe proxy nie są objęte. Wejście na wstrzymaną stronę po adresie IP nie jest wstrzymywane, a iCloud Private Relay może ominąć wstrzymywanie bez wykrycia. Sesja nie zaczyna wstrzymywać, gdy aktywny jest VPN albo ręcznie skonfigurowane proxy. Połączenia z serwerami na samym Macu (<code>localhost</code>, <code>127.0.0.1</code> i <code>::1</code>) działają w trakcie sesji. Strony już wczytane, zapisane w pamięci podręcznej albo pobrane nie są usuwane, a strona pauzy może czasem się nie pojawić, choć strona pozostaje wstrzymana.
+      </li>
+      <li>
+        Na macOS Posato korzysta z pomocnika w tle, który wymaga zgody administratora i może poprosić o uprawnienie Automatyzacja, aby pokazać stronę pauzy w bieżącej karcie.
+      </li>
+      <li>
+        Na iPhonie system zdejmuje ograniczenia po zakończeniu sesji i może utrzymać je jeszcze przez jakiś czas po godzinie końca. Ograniczenia z sesji krótszych niż 15 minut znikają tylko wtedy, gdy Posato jest otwarte na końcu albo gdy otworzysz je ponownie.
+      </li>
+      <li>
+        Na iPhonie, jeśli Safari było już otwarte, pierwsza strona otwarta po zakończeniu pauzy wstrzymującej strony może pozostać pusta. Wygląda to na zachowanie iOS przy zdejmowaniu ograniczenia i Posato nie może tego uniknąć. Następna otwarta strona wczytuje się.
+      </li>
+      <li>
+        Na Linuxie wstrzymywanie stron przypisuje każdą wstrzymaną stronę i jej nazwę <code>www</code> do <code>0.0.0.0</code> i <code>::</code> w <code>/etc/hosts</code>, więc połączenia z nią kończą się niepowodzeniem. Nie ma strony pauzy. Przeglądarka z własnym DNS przez HTTPS, wejście na stronę po adresie IP albo inna nazwa tej samej strony omija to.
+      </li>
+      <li>
+        Na Linuxie Posato instaluje usługę systemową raz, Twoim hasłem. W trakcie pauzy usługa kończy wybrane wstrzymane aplikacje, więc niezapisana praca w nich może przepaść. Zdejmuje pauzę o godzinie końca nawet przy zamkniętym Posato. Usunięcie pakietu zdejmuje aktywną pauzę. Aplikacji, której wpis pulpitu uruchamia skrypt, interpreter albo Flatpak, nie da się wstrzymać.
+      </li>
+      <li>
+        Na Linuxie harmonogramy startują tylko wtedy, gdy Posato jest uruchomione. Zamknięcie okna zostawia je uruchomione z ikoną w obszarze stanu, a <strong>Otwieraj Posato przy logowaniu</strong> w O Posato uruchamia je w tle przy logowaniu. Na pulpicie, którego obszar stanu nie pokazuje ikon aplikacji, na przykład GNOME bez rozszerzenia AppIndicator, ikony nie ma; Posato zostaje wtedy w tle tylko podczas pauzy albo włączonego harmonogramu, a otwierasz je ponownie z menu aplikacji. Zakończenie Posato zatrzymuje nowe starty z harmonogramu.
+      </li>
+      <li>
+        Na Androidzie wstrzymywanie stron działa jako lokalny VPN, który odpowiada tylko na zapytania o nazwy. Inny VPN nie może działać w tym samym czasie, ścisły Prywatny DNS i przeglądarka z własnym DNS przez HTTPS omijają to, a zapytania przez TCP nie są filtrowane. Nie ma strony pauzy.
+      </li>
+      <li>
+        Na Androidzie wstrzymaną aplikację zasłania ekran pauzy; może być widoczna do około sekundy, zanim ekran się pojawi. Launchera, Ustawień, aplikacji telefonu i Posato nie da się wstrzymać. Posato potrzebuje dostępu do danych o użyciu, wyświetlania nad innymi aplikacjami, powiadomień, dokładnych alarmów i wyłączenia z optymalizacji baterii; bez nich wstrzymywanie albo harmonogramy mogą nie działać.
+      </li>
+      <li>Godziny harmonogramu idą za zegarem danego urządzenia. Harmonogram trwa co najmniej 15 minut, a na iPhonie wymaga dostępu do Czasu przed ekranem.</li>
+      <li>
+        Urządzenie ze starszą wersją Posato przestaje się synchronizować, gdy inne urządzenie działa na Posato 1.3. Aktualizuj Posato na każdym urządzeniu, aby zostały zsynchronizowane.
+      </li>
+      <li>
+        Synchronizacja działa w miarę możliwości. Posato nie może obiecać, kiedy ani czy zmiana dotrze na drugie urządzenie, i nie może wybudzić uśpionego urządzenia.
+      </li>
+      <li>
+        Jeśli zgubisz każdą kopię klucza obszaru roboczego, zsynchronizowanych danych nie da się odzyskać. Danych już skopiowanych na inne urządzenie nie da się zdalnie wymazać.
+      </li>
+      <li>
+        Synchronizacja przez folder działa przez folder, który usługa, z której już korzystasz, utrzymuje w synchronizacji, na przykład Dropbox, OneDrive, iCloud Drive albo Syncthing. Posato zapisuje tam tylko zaszyfrowane pliki, ale nie kontroluje, kiedy ani czy ta usługa je dostarczy, a każdy, kto może usuwać pliki w folderze, może przerwać synchronizację urządzeń.
+      </li>
+      <li>
+        Urządzenie dołącza do obszaru roboczego w folderze jednorazowym kodem parowania ważnym przez 10 minut, skanowanym jako kod QR, otwieranym jako odnośnik albo wpisywanym. Ktoś z kodem albo odnośnikiem i z dostępem do folderu albo do jego historii plików może otworzyć obszar roboczy, więc udostępniaj odnośnik tylko własnym urządzeniom. Nie da się usunąć pojedynczego urządzenia: aby przestać dzielić się z jednym, usuń obszar roboczy i utwórz nowy w innym folderze.
+      </li>
+      <li>
+        W trybie folderu każde urządzenie trzyma klucz obszaru roboczego w pliku, który może czytać tylko Twój użytkownik, nie w Pęku kluczy. Na Androidzie chroni go Android Keystore.
+      </li>
+      <li>
+        Na Androidzie folder musi być lokalnym folderem, który inna aplikacja utrzymuje w synchronizacji, na przykład Syncthing; większość aplikacji chmury na Androida nie utrzymuje lokalnego folderu w synchronizacji. Na iPhonie Posato synchronizuje folder, gdy go otworzysz.
+      </li>
+      <li>
+        Wyeksportowany plik <code>.posato</code> zawiera nazwy zestawów, strony, zestaw domyślny i harmonogramy, nigdy wyboru aplikacji. Bez kodu każdy, kto dostanie plik, może go odczytać. Dziewięcioznakowy kod powstrzymuje przypadkowego czytelnika, nie kogoś, kto poświęci dużo mocy obliczeniowej na zgadywanie. Import to jednorazowa kopia, nie synchronizacja, a zaimportowane harmonogramy przychodzą wyłączone.
+      </li>
+      <li>
+        Obszar roboczy synchronizuje się przez iCloud albo przez jeden folder, nigdy przez oba, i nie ma przeniesienia między nimi: usuń obszar roboczy iCloud, zanim wybierzesz folder.
+      </li>
+    </ul>
+    <p>
+      Posato jest przeznaczone na macOS 13 lub nowszy na Macach z Apple silicon i z procesorem Intel, iOS 18 lub nowszy, Ubuntu 24.04 lub nowszy oraz Android 13 lub nowszy; zobacz <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">macierz platform</a>, co sprawdzono na każdej. Zobacz <a href="/pl/privacy/">politykę prywatności</a>, co Posato przechowuje na urządzeniach, w iCloud i w folderze synchronizacji.
+    </p>
+  </div>
+</Base>

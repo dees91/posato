@@ -3,11 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 34 (2026-10-28: backlog rows `PLATFORM-004` and
-  `SESSION-011` from the `PLATFORM-002` review)
+- **Revision:** 35 (2026-10-28: `I18N-001` moves into release 1.6 and starts)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-27
+- **Last amended:** 2026-10-28
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -267,6 +266,13 @@
   least-privilege rule for the desktop helpers on the Mac, Linux, and
   Windows (idea 57), and `SESSION-011`, one shared fix for the expired
   session a helper keeps reporting (idea 58).
+  Revision 35 moves `I18N-001` from the backlog into release 1.6 and starts
+  it at the maintainer's request (`user-confirmed`, 2026-10-28, translated
+  from Polish: put it in 1.6 right away). Polish follows the system
+  language, with no in-app switch, in wave R1.6/W1 and integration group
+  `PR-I18N-PL`. `DOCS-007` and `RELEASE-010` depend on it so the public
+  packaging and the publication include Polish. The maintainer reviews the
+  Polish copy in that pull request. This amends the composed release 1.6.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -635,7 +641,8 @@ break in a scheduled pause and a website that opens briefly during a pause,
 and a calm history of pauses is decided. The
 [Windows spike](https://github.com/dees91/posato/pull/206)
 showed that every Windows change can be verified in a Tart guest with no
-person present.
+person present. The release also speaks Polish by following the system
+language, with no in-app language switch.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -643,9 +650,10 @@ person present.
 | `SCHEDULE-007` | Take a break in a running scheduled pause: release restrictions for a chosen number of minutes and apply them again automatically until the occurrence's end, on every device of the workspace; decide how many breaks and how long, beside the early-end friction of `SESSION-005` (idea 45). | Schedules | delivery | R1.6/W1 | None | PR-SCHEDULE-BREAK |
 | `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; the decision is accepted before delivery starts (idea 46). | Target management | delivery | R1.6/W1 | None | PR-TIMED-WEBSITE |
 | `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan (idea 47). | Product discovery | discovery | R1.6/W1 | None | PR-HISTORY-DECISION |
+| `I18N-001` | Ship Posato in Polish as the first additional language, following the system language with no in-app switch: the whole UI on Mac, iOS, Linux, Android, and Windows, Polish plural forms, the macOS pause page, iOS permission descriptions, date and time formatting, the App Store listing and screenshots, and a Polish posato.app including the privacy policy. A narrow `AGENTS.md` exception lets an agent author those localized product resources; the maintainer reviews that copy in the pull request. Verification selects Posato controls by identifier, so recipes do not depend on English labels. | Platform coverage | delivery | R1.6/W1 | None | PR-I18N-PL |
 | `PLATFORM-002` | Ship Posato for Windows 11 on arm64 and x64 at parity with Linux: the shared interface and folder synchronization, websites and chosen applications blocked during a pause by a Windows service installed once with administrator approval, applications chosen from the Start menu, the status icon and start at login on a resident-window core extracted from the Mac and Linux code so each platform keeps only its native layer (folded `PLATFORM-003`, idea 53; Mac and Linux behave as before in a Tart clone of each), signed MSI packages, and `posato-control -t windows` driving a Tart Windows guest, ending with a Windows, Linux, and Mac workspace that pauses across all three. Amends ADR 0010 with the Windows row, with the maintainer's acceptance. High-risk plan review (privileged service, signing). | Platform coverage | delivery | R1.6/W2 | `ONBOARDING-005` | PR-WINDOWS |
-| `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002` | PR-RELEASE-1-6-MEDIA |
-| `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). Verifies on iOS, Linux, and Android the shared session changes those builds have not shipped since 1.5.0: `PauseClaims` and `EnforcementPort.replace` (`MACOS-030`) and the `SESSION-009` branch of `clearAfterEnd` (`MACOS-029`). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007` | PR-RELEASE-1-6 |
+| `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. Polish pages and the Polish listing stay with `I18N-001`; this row adds only the 1.6 changes, in both languages. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `I18N-001` | PR-RELEASE-1-6-MEDIA |
+| `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). Verifies on iOS, Linux, and Android the shared session changes those builds have not shipped since 1.5.0: `PauseClaims` and `EnforcementPort.replace` (`MACOS-030`) and the `SESSION-009` branch of `clearAfterEnd` (`MACOS-029`). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007`, `I18N-001` | PR-RELEASE-1-6 |
 
 ## Backlog
 
@@ -674,7 +682,6 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
 | `QUALITY-011` | Decide whether to extract the Tart virtual machine layer and the iOS system-dialog driver of `posato-control` into a standalone, openly licensed tool for macOS and iOS development testing: an application descriptor instead of Posato constants, system-dialog definitions as data per macOS version and language, verification beyond one Mac and one iPhone, dependency licenses, and who maintains it; end with a decision and, if accepted, an extraction plan. Preliminary. | Verification | Idea 16; `QUALITY-010` outcome | `posato-control` stable across one release cycle and a maintainer decision to maintain a public tool |
 | `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. The layers in idea 11 guide it: useful with no setup first, then cards from one open deck format (in-app editor, CSV and Anki import, a chatbot prompt, and a watched folder for learning agents), with spaced review only after the privacy decision. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
-| `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
@@ -713,6 +720,7 @@ The idea numbers refer to the wiki idea queue.
 | Public packaging for 1.5 | `DOCS-006` | Limits page and README updated, site built, Android and Linux screenshots, store text ready for upload, release notes drafted |
 | Posato on Windows | `PLATFORM-002` | Accepted ADR 0010 Windows row; `posato-control` runs in a Tart Windows guest with website and application blocking observed, the status icon and the start at login, and a Windows, Linux, and Mac workspace sharing one folder; Mac and Linux unchanged on the shared resident core; MSI install and removal on arm64 and x64 |
 | Each platform names its own setup and device | `ONBOARDING-005` | Linux, Android, and Windows runs that reproduce the Mac wording before the fix and show each platform's own after it |
+| Posato in Polish | `I18N-001` | The apps, pause page, permissions, and dates follow the system language, including a per-app language; `/pl/` on posato.app and a `pl-PL` store listing are ready without publishing; an English guest still completes a session |
 | More ways to pause | `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001` | A break and a briefly opened website applied and restored on each platform in Tart and on the test iPhone; an accepted history decision with a delivery plan |
 | Public packaging for 1.6 | `DOCS-007` | Limits page and README updated, site built, Windows screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |

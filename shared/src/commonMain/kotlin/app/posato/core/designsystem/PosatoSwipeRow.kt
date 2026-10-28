@@ -107,6 +107,7 @@ private fun SwipeActionButton(
     val palette = MaterialTheme.colorScheme
     Box(
         Modifier.width(SwipeActionWidth).fillMaxHeight()
+            .let { base -> action.controlId?.let { base.controlId(it) } ?: base }
             .background(if (action.destructive) palette.error else palette.primary)
             .focusProperties { canFocus = revealed }
             .clickable(onClick = onClick),

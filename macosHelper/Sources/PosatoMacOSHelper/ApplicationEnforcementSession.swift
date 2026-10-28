@@ -94,7 +94,10 @@ struct UserNotificationPausedNotice: ApplicationNoticePosting, @unchecked Sendab
     let content = UNMutableNotificationContent()
     content.title = PausedAppNotice.headline(
       sessionEndEpochMilliseconds: sessionEndEpochMilliseconds)
-    content.body = "Return to Posato to change this session."
+    content.body = PauseCopy.phrase(
+      "pause.return",
+      locale: PauseCopy.locale(),
+      fallback: "Return to Posato to change this session.")
     let request = UNNotificationRequest(
       identifier: "app.posato.macos.helper.paused",
       content: content,
@@ -105,16 +108,20 @@ struct UserNotificationPausedNotice: ApplicationNoticePosting, @unchecked Sendab
 }
 
 enum PausedAppNotice {
-  static func headline(sessionEndEpochMilliseconds: UInt64?) -> String {
-    guard let sessionEndEpochMilliseconds else {
-      return "This app is paused"
-    }
+  static func headline(
+    sessionEndEpochMilliseconds: UInt64?,
+    locale: Locale = PauseCopy.locale()
+  ) -> String {
+    let base = PauseCopy.phrase("pause.app", locale: locale, fallback: "This app is paused")
+    guard let sessionEndEpochMilliseconds else { return base }
     let date = Date(timeIntervalSince1970: TimeInterval(sessionEndEpochMilliseconds) / 1_000)
     let formatter = DateFormatter()
-    formatter.locale = .current
+    formatter.locale = locale
     formatter.dateStyle = .none
     formatter.timeStyle = .short
-    return "This app is paused until \(formatter.string(from: date))"
+    let template = PauseCopy.phrase(
+      "pause.app.until", locale: locale, fallback: "This app is paused until %@")
+    return String(format: template, locale: locale, formatter.string(from: date))
   }
 }
 

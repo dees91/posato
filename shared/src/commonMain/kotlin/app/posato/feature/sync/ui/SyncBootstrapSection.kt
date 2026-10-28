@@ -194,8 +194,18 @@ private fun RemoveWorkspaceAlert(
         message = stringResource(if (folderMode) Res.string.sync_folder_remove_confirmation else Res.string.sync_remove_confirmation),
         onDismiss = onDismiss,
         actions = listOf(
-            PosatoAlertAction(stringResource(Res.string.sync_cancel_removal), { onDismiss() }, PosatoAlertRole.Cancel),
-            PosatoAlertAction(stringResource(Res.string.sync_remove_workspace), { onRemove() }, PosatoAlertRole.Destructive),
+            PosatoAlertAction(
+                stringResource(Res.string.sync_cancel_removal),
+                { onDismiss() },
+                PosatoAlertRole.Cancel,
+                controlId = "sync_cancel_removal",
+            ),
+            PosatoAlertAction(
+                stringResource(Res.string.sync_remove_workspace),
+                { onRemove() },
+                PosatoAlertRole.Destructive,
+                controlId = "sync_remove_workspace",
+            ),
         ),
     )
 }
@@ -230,19 +240,16 @@ private fun IcloudOptions(
         PosatoCaption(stringResource(Res.string.session_icloud_linking))
     }
     PosatoActionRow {
-        PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
-            Text(
-                stringResource(
-                    when {
-                        snapshot.joinPending -> Res.string.action_check_again
-                        snapshot.linked -> Res.string.action_sync_now
-                        else -> Res.string.action_sync_with_icloud
-                    },
-                ),
-            )
+        val syncAction = when {
+            snapshot.joinPending -> "action_check_again" to Res.string.action_check_again
+            snapshot.linked -> "action_sync_now" to Res.string.action_sync_now
+            else -> "action_sync_with_icloud" to Res.string.action_sync_with_icloud
+        }
+        PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running, controlId = syncAction.first) {
+            Text(stringResource(syncAction.second))
         }
         if (snapshot.linked) {
-            PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "sync_remove_workspace") {
                 Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)
             }
         }

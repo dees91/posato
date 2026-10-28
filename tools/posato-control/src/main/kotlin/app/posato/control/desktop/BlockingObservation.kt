@@ -53,6 +53,9 @@ internal fun parseHttpProxy(output: String): HttpProxy? {
 
 /** The helper's pause page always leads with this headline, with or without the session's end time. */
 private const val PAUSE_HEADLINE = "This site is paused"
+
+/** Present on the pause page in every language, so a translated page still counts as paused. */
+private const val PAUSE_PAGE_MARKER = "data-posato-page=\"paused-site\""
 private const val HTTP_OK_FIRST = 200
 private const val HTTP_OK_LAST = 299
 private const val CURL_SECONDS = 15L
@@ -63,7 +66,7 @@ internal fun classifyPage(
     status: Int,
     body: String
 ): PageOutcome = when {
-    PAUSE_HEADLINE in body -> PageOutcome.PAUSED
+    PAUSE_HEADLINE in body || PAUSE_PAGE_MARKER in body -> PageOutcome.PAUSED
     status in HTTP_OK_FIRST..HTTP_OK_LAST -> PageOutcome.LOADED
     else -> PageOutcome.UNREACHABLE
 }

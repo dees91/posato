@@ -42,12 +42,19 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         validate()
         val backend = session.backend()
         val target = session.target()
-        val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
-        val begin = Query(text = "Start this pause", role = FlowSteps.ROLE_BUTTON)
+        val review = FlowControls.byId("session_setup_continue")
+        val begin = FlowControls.byId("action_start_this_pause")
         val firstChoice = Query(text = choiceLabel(target, DEFAULT_MINUTES), role = FlowSteps.ROLE_BUTTON)
-        FlowSteps.run(backend, listOf(FlowSteps.button("Session"), FlowSteps.button("Start a session"), FlowSteps.waitFor(firstChoice)))
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowControls.buttonId("session_title"),
+                FlowControls.buttonId("action_start_a_session"),
+                FlowSteps.waitFor(firstChoice),
+            ),
+        )
         set?.let { chosen -> chooseSet(backend, target, chosen) }
-        val endOfDay = Query(textContains = END_OF_DAY, role = FlowSteps.ROLE_BUTTON)
+        val endOfDay = FlowControls.byId("session_until_end_of_day")
         val steps = when {
             untilEndOfDay -> listOf(FlowSteps.tap(endOfDay))
             minutes in PRESETS -> listOf(FlowSteps.button(choiceLabel(target, minutes)))
@@ -63,7 +70,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
                 FlowSteps.waitFor(Query(textContains = "$chosen ·")),
                 FlowSteps.reveal(begin),
                 FlowSteps.tap(begin),
-                FlowSteps.waitFor(Query(text = "End session early", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
+                FlowSteps.waitFor(FlowControls.byId("action_end_session_early"), timeoutSeconds = START_SECONDS),
                 FlowSteps.screenshot("session-started"),
             ),
         )
@@ -91,10 +98,10 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
             backend,
             listOf(
                 FlowSteps.sleep(seconds.toDouble()),
-                FlowSteps.button("End session early"),
+                FlowControls.buttonId("action_end_session_early"),
                 FlowSteps.waitFor(Query(text = "Ready to return?")),
-                FlowSteps.button("End session"),
-                FlowSteps.waitFor(Query(text = "Start a session", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
+                FlowControls.buttonId("action_confirm_end_session"),
+                FlowSteps.waitFor(FlowControls.byId("action_start_a_session"), timeoutSeconds = START_SECONDS),
                 FlowSteps.screenshot("session-ended-early"),
             ),
         )

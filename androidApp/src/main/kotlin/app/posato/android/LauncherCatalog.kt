@@ -40,10 +40,12 @@ internal class LauncherCatalog(
             suspendCancellableCoroutine { continuation ->
                 val checked = BooleanArray(entries.size) { entries[it].key in chosen }
                 AlertDialog.Builder(activity)
-                    .setTitle("Choose apps")
+                    .setTitle(activity.getString(R.string.catalog_title))
                     .setMultiChoiceItems(entries.map { it.name }.toTypedArray(), checked) { _, index, isChecked -> checked[index] = isChecked }
-                    .setPositiveButton("Choose") { _, _ -> continuation.resume(entries.filterIndexed { index, _ -> checked[index] }) }
-                    .setNegativeButton("Cancel") { _, _ -> continuation.resume(null) }
+                    .setPositiveButton(activity.getString(R.string.catalog_choose)) { _, _ ->
+                        continuation.resume(entries.filterIndexed { index, _ -> checked[index] })
+                    }
+                    .setNegativeButton(activity.getString(R.string.catalog_cancel)) { _, _ -> continuation.resume(null) }
                     .setOnCancelListener { if (continuation.isActive) continuation.resume(null) }
                     .show()
             }

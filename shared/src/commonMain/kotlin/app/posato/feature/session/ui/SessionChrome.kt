@@ -34,13 +34,28 @@ import app.posato.core.designsystem.PosatoWordmark
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.targets.ui.TargetsCategory
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.about_title
+import app.posato.generated.resources.action_confirm_end_session
+import app.posato.generated.resources.action_end_pause
+import app.posato.generated.resources.action_keep_pausing
+import app.posato.generated.resources.action_keep_this_pause
+import app.posato.generated.resources.action_new_pause
+import app.posato.generated.resources.action_review
+import app.posato.generated.resources.session_end_early_body
+import app.posato.generated.resources.session_end_scheduled_full
+import app.posato.generated.resources.session_nothing_restricted
+import app.posato.generated.resources.session_ready_return
+import app.posato.generated.resources.session_title
+import org.jetbrains.compose.resources.stringResource
 
 /** The name a route's bar shows, which the screen pushed over it offers as the way back. */
+@Composable
 internal fun SessionRoute.barTitle(): String {
     return when (this) {
-        SessionRoute.Duration -> "New pause"
-        SessionRoute.Review -> "Review"
-        else -> "Session"
+        SessionRoute.Duration -> stringResource(Res.string.action_new_pause)
+        SessionRoute.Review -> stringResource(Res.string.action_review)
+        else -> stringResource(Res.string.session_title)
     }
 }
 
@@ -111,8 +126,9 @@ internal fun SessionBarScreen(
                 contentPadding = padding,
                 trailingContent = {
                     // The system's info symbol keeps the bar light, so the title never truncates beside it at large sizes.
+                    val about = stringResource(Res.string.about_title)
                     onOpenAbout?.let { open ->
-                        PosatoBarButton(onClick = open, modifier = Modifier.semantics { contentDescription = "About Posato" }) {
+                        PosatoBarButton(onClick = open, modifier = Modifier.semantics { contentDescription = about }) {
                             PosatoIcon(PosatoIcons.Info, null, Modifier.size(PosatoSize.LargeIcon))
                         }
                     }
@@ -170,27 +186,46 @@ internal fun SessionEarlyEndAlerts(
 ) {
     if (scheduled != null && scheduledEnd.confirming) {
         PosatoAlert(
-            title = "Ready to return?",
-            message = "This ends ${scheduled.name} and any session running now, here and on your other devices. The schedule keeps " +
-                "repeating. A device whose date is different, in another time zone around midnight, keeps its own pause until it ends there.",
+            title = stringResource(Res.string.session_ready_return),
+            message = stringResource(Res.string.session_end_scheduled_full, scheduled.name),
             onDismiss = scheduledEnd.onCancel,
             actions = listOf(
-                PosatoAlertAction("Keep pausing", { scheduledEnd.onCancel() }, PosatoAlertRole.Cancel),
-                PosatoAlertAction("End pause", { scheduledEnd.onConfirm() }, PosatoAlertRole.Destructive),
+                PosatoAlertAction(
+                    stringResource(Res.string.action_keep_pausing),
+                    { scheduledEnd.onCancel() },
+                    PosatoAlertRole.Cancel,
+                    controlId = "action_keep_pausing",
+                ),
+                PosatoAlertAction(
+                    stringResource(Res.string.action_end_pause),
+                    { scheduledEnd.onConfirm() },
+                    PosatoAlertRole.Destructive,
+                    controlId = "action_end_pause",
+                ),
             ),
         )
     } else if (state.confirmingEarlyEnd) {
         PosatoAlert(
-            title = "Ready to return?",
+            title = stringResource(Res.string.session_ready_return),
             message = if (state.nothingIsRestricted()) {
-                "Nothing is restricted in this pause. You can end it now."
+                stringResource(Res.string.session_nothing_restricted)
             } else {
-                "You can end this session early. Your saved choices will stay ready for another time."
+                stringResource(Res.string.session_end_early_body)
             },
             onDismiss = onCancelEarlyEnd,
             actions = listOf(
-                PosatoAlertAction("Keep this pause", { onCancelEarlyEnd() }, PosatoAlertRole.Cancel),
-                PosatoAlertAction("End session", { onConfirmEarlyEnd() }, PosatoAlertRole.Destructive),
+                PosatoAlertAction(
+                    stringResource(Res.string.action_keep_this_pause),
+                    { onCancelEarlyEnd() },
+                    PosatoAlertRole.Cancel,
+                    controlId = "action_keep_this_pause",
+                ),
+                PosatoAlertAction(
+                    stringResource(Res.string.action_confirm_end_session),
+                    { onConfirmEarlyEnd() },
+                    PosatoAlertRole.Destructive,
+                    controlId = "action_confirm_end_session",
+                ),
             ),
         )
     }

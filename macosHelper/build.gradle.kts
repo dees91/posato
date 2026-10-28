@@ -61,6 +61,12 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
     from("Resources/app.posato.macos.proxy-settings.plist") {
         into("Contents/Library/LaunchDaemons")
     }
+    from("Resources/en.lproj") {
+        into("Contents/Resources/en.lproj")
+    }
+    from("Resources/pl.lproj") {
+        into("Contents/Resources/pl.lproj")
+    }
     from(swiftScratchDirectory.map { it.file("release/PosatoMacOSHelper") }) {
         into("Contents/MacOS")
     }

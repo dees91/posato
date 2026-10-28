@@ -30,7 +30,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         val backend = session.backend()
         val deadline = System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND
         if (action == DONE_ACTION) {
-            FlowSteps.run(backend, listOf(FlowSteps.button(DONE, optional = true, timeoutSeconds = 2.0)))
+            FlowSteps.run(backend, listOf(FlowControls.buttonId("sync_folder_code_done", optional = true, timeoutSeconds = 2.0)))
             return buildJsonObject { put("action", action) }
         }
         FolderSection(backend).expand()
@@ -192,7 +192,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         return value ?: throw ControlException(ErrorCode.USAGE, "`flow folder $action` needs $name.")
     }
 
-    private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
+    private fun button(text: String): Query = control(text)
 
     internal companion object {
         const val LINK = "link"
@@ -227,5 +227,24 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val DEFAULT_TIMEOUT_SECONDS = 180L
         val CODE_PATTERN = Regex("(?:[A-Z2-7]{3} ){8}[A-Z2-7]{3}")
         val ACTIONS = setOf(USE_FOLDER, BROWSE, CREATE, CHANGE, ADD_DEVICE, JOIN_LABEL, REMOVE_WORKSPACE, "Sync with iCloud", "Sync now")
+
+        /** Visible English labels the section still reads, and the catalog keys of the buttons behind them. */
+        private val CONTROL_IDS = mapOf(
+            USE_FOLDER to "sync_folder_use",
+            CREATE to "sync_folder_create",
+            CHANGE to "sync_folder_change_short",
+            BROWSE to "sync_folder_browse",
+            ADD_DEVICE to "sync_folder_add_device",
+            JOIN_LABEL to "sync_folder_join",
+            DONE to "sync_folder_code_done",
+            REMOVE_WORKSPACE to "sync_remove_workspace",
+            "Sync with iCloud" to "action_sync_with_icloud",
+            "Sync now" to "action_sync_now",
+        )
+
+        internal fun control(text: String): Query {
+            val id = CONTROL_IDS[text]
+            return if (id == null) Query(text = text, role = FlowSteps.ROLE_BUTTON) else FlowControls.byId(id)
+        }
     }
 }

@@ -116,15 +116,15 @@ private fun LinkedFolder(
     folder?.let { FolderChip(it, onChange = null) }
     state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
     if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
-        PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Primary, enabled = !running) {
+        PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Primary, enabled = !running, controlId = "sync_folder_add_device") {
             Text(stringResource(Res.string.sync_folder_add_device))
         }
     }
     PosatoActionRow {
-        PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Quiet, enabled = !running) {
+        PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "action_sync_now") {
             Text(stringResource(Res.string.action_sync_now))
         }
-        PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running) {
+        PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "sync_remove_workspace") {
             Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)
         }
     }
@@ -152,7 +152,7 @@ internal fun FolderChooser(
     }
     PosatoActionRow {
         if (typed) {
-            PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = lead, enabled = !running) {
+            PosatoButton(onClick = { state.chooseFolder(path.text.toString()) }, style = lead, enabled = !running, controlId = "sync_folder_use") {
                 Text(stringResource(Res.string.sync_folder_use))
             }
         }
@@ -161,6 +161,7 @@ internal fun FolderChooser(
                 onClick = state::browseFolder,
                 style = if (typed) PosatoButtonStyle.Quiet else lead,
                 enabled = !running,
+                controlId = "sync_folder_browse",
             ) {
                 Text(stringResource(Res.string.sync_folder_browse))
             }
@@ -212,7 +213,7 @@ internal fun PairingCodeDialog(
                 PosatoButton(onClick = onShare, style = PosatoButtonStyle.Secondary) {
                     Text(stringResource(if (sharing.usesShareSheet) Res.string.sync_folder_share_link else Res.string.sync_folder_copy_link))
                 }
-                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Primary) {
+                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Primary, controlId = "sync_folder_code_done") {
                     Text(stringResource(Res.string.sync_folder_code_done))
                 }
             }

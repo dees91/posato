@@ -18,10 +18,13 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.time_picker_duration
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.useContents
+import org.jetbrains.compose.resources.stringResource
 import platform.Foundation.NSCalendar
 import platform.Foundation.NSCalendarUnitHour
 import platform.Foundation.NSCalendarUnitMinute
@@ -93,6 +96,7 @@ internal actual fun PlatformDurationPicker(
     val latest by rememberUpdatedState(onChange)
     val latestRange by rememberUpdatedState(range)
     val surface = MaterialTheme.colorScheme.surface.toUIColor()
+    val durationLabel = stringResource(Res.string.time_picker_duration)
     val target = remember {
         PickerTarget { picker ->
             val chosen = (picker.countDownDuration / SECONDS_PER_MINUTE).toInt()
@@ -113,7 +117,7 @@ internal actual fun PlatformDurationPicker(
         modifier = modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth().height(WheelPickerHeight),
         update = { picker ->
             picker.backgroundColor = surface
-            picker.accessibilityLabel = "Duration"
+            picker.accessibilityLabel = durationLabel
             if ((picker.countDownDuration / SECONDS_PER_MINUTE).toInt() != minutes) picker.countDownDuration = minutes * SECONDS_PER_MINUTE
         },
         properties = UIKitInteropProperties(isNativeAccessibilityEnabled = true),

@@ -45,14 +45,36 @@ private fun ScheduleRowModel.withSet(
         return this
     }
     val set = sets.rows.firstOrNull { row -> row.id == setId }
-    val problem = when {
-        set == null && sets.linked && setId !in sets.removed -> "Waiting for this set from your other devices."
-        set == null -> "This schedule's set was deleted. Choose a set."
-        set.refused -> "This set is over the limit of 10. Delete a set to use it."
-        set.websiteCount == 0 && (set.applicationCount ?: 0) == 0 -> "Nothing to pause on this ${sets.deviceNoun}"
-        else -> null
-    }
-    return copy(setLabel = set?.let { "Set: ${it.name}" }, setProblem = problem)
+    val kind = scheduleProblemKind(set, setId, sets)
+    return copy(
+        setLabel = set?.let { "Set: ${it.name}" },
+        setProblem = scheduleProblemLabel(kind, sets.deviceNoun),
+        setName = set?.name,
+        problemKind = kind,
+    )
+}
+
+private fun scheduleProblemKind(
+    set: PauseSetRow?,
+    setId: PauseSetId,
+    sets: ScheduleSetContext,
+): ScheduleProblemKind? = when {
+    set == null && sets.linked && setId !in sets.removed -> ScheduleProblemKind.WAITING
+    set == null -> ScheduleProblemKind.DELETED
+    set.refused -> ScheduleProblemKind.OVER_LIMIT
+    set.websiteCount == 0 && (set.applicationCount ?: 0) == 0 -> ScheduleProblemKind.NOTHING
+    else -> null
+}
+
+private fun scheduleProblemLabel(
+    kind: ScheduleProblemKind?,
+    deviceNoun: String,
+): String? = when (kind) {
+    ScheduleProblemKind.WAITING -> "Waiting for this set from your other devices."
+    ScheduleProblemKind.DELETED -> "This schedule's set was deleted. Choose a set."
+    ScheduleProblemKind.OVER_LIMIT -> "This set is over the limit of 10. Delete a set to use it."
+    ScheduleProblemKind.NOTHING -> "Nothing to pause on this $deviceNoun"
+    null -> null
 }
 
 private fun StoredSchedule.toRow(
@@ -75,6 +97,14 @@ private fun StoredSchedule.toRow(
         nextRunLabel = next?.let { occurrence -> "Next: ${occurrence.label(nowEpochMillis, timeFormat)}" },
         skippedLabel = skipped?.let { occurrence -> "Skipped: ${occurrence.label(nowEpochMillis, timeFormat)}" },
         canSkip = next != null,
+        weekdayMask = plan.weekdays,
+        startMinuteOfDay = plan.startMinute,
+        endMinuteOfDay = plan.endMinute,
+        rowEndsNextDay = endsNextDay,
+        nextWeekday = next?.key?.date?.weekday,
+        nextWhen = next?.let { occurrence -> timeFormat.formatTime(occurrence.startEpochMillis, nowEpochMillis) },
+        skippedWeekday = skipped?.key?.date?.weekday,
+        skippedWhen = skipped?.let { occurrence -> timeFormat.formatTime(occurrence.startEpochMillis, nowEpochMillis) },
     )
 }
 

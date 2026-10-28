@@ -33,15 +33,17 @@ func givenFixedPageWhenEncodedThenLengthMatchesAndFitsPageSizeBudget(end: UInt64
 
 @Test func givenSessionEndWhenRenderedThenItUsesTheCurrentLocaleTime() throws {
   let end: UInt64 = 1_800_000_000_000
+  let locale = Locale(identifier: "en_US")
   let formatter = DateFormatter()
-  formatter.locale = .current
+  formatter.locale = locale
   formatter.dateStyle = .none
   formatter.timeStyle = .short
   let expected = formatter.string(from: Date(timeIntervalSince1970: TimeInterval(end) / 1_000))
   #expect(
-    BlockedPage.headline(sessionEndEpochMilliseconds: end)
+    BlockedPage.headline(sessionEndEpochMilliseconds: end, locale: locale)
       == "This site is paused until \(expected)")
   let html = try #require(
-    String(data: BlockedPage.html(sessionEndEpochMilliseconds: end), encoding: .utf8))
+    String(data: BlockedPage.html(sessionEndEpochMilliseconds: end, locale: locale), encoding: .utf8))
   #expect(html.contains(expected))
+  #expect(html.contains(PauseCopy.pageMarker))
 }

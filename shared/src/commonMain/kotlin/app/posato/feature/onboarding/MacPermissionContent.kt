@@ -61,7 +61,7 @@ internal fun MacSetupStepActions(
 ) {
     MacSetupAction(macSetup, onSetUp)
     if (macSetup.setupComplete) {
-        OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
+        OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue, controlId = "onboarding_action_continue")
     } else {
         val continues = state.hasDeviceAccess(OnboardingPermissionPlatform.MAC)
         PosatoButton(onClick = onContinue, style = PosatoButtonStyle.Quiet) {

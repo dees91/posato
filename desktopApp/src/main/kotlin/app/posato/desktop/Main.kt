@@ -35,6 +35,7 @@ import java.nio.file.Path
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    MacAppLanguage.apply()
     if (!TranslationGuard.permitsLaunch()) {
         exitProcess(0)
     }

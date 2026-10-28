@@ -46,16 +46,16 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
         val files = transferFiles(session)
         files.clear()
         TransferScreens.openMenu(backend, session.target(), "Export pause sets…")
-        FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(text = "Export file…", role = FlowSteps.ROLE_BUTTON))))
+        FlowSteps.run(backend, listOf(FlowSteps.waitFor(FlowControls.byId("action_export_file"))))
         val shown = if (code) TransferScreens.protect(backend) else null
-        FlowSteps.run(backend, listOf(FlowSteps.button("Export file…")))
+        FlowSteps.run(backend, listOf(FlowControls.buttonId("action_export_file")))
         files.save(backend)
         // The app confirms a saved coded file with its code and closes the dialog after a saved plain one; a
         // cancelled or failed save leaves the dialog open, so an older file is never fetched as this run's.
         val saved = if (shown != null) {
-            listOf(FlowSteps.waitFor(Query(text = "Exported")), FlowSteps.button("OK"))
+            listOf(FlowSteps.waitFor(Query(text = "Exported")), FlowControls.buttonId("presence_first_close_ok"))
         } else {
-            listOf(FlowSteps.waitFor(Query(text = "Export file…", role = FlowSteps.ROLE_BUTTON), States.ABSENT))
+            listOf(FlowSteps.waitFor(FlowControls.byId("action_export_file"), States.ABSENT))
         }
         FlowSteps.run(backend, saved)
         // A Mac guest's run directory comes back to the host with the run, so the file reaches the host from there.
@@ -84,7 +84,7 @@ class FlowExportCommand : ControlCommand("export", "Export the pause sets to a f
         val before = files.exportDigest()
             ?: throw ControlException(ErrorCode.ASSERTION_FAILED, "No earlier export to save over.", "Run flow export first.")
         TransferScreens.openMenu(backend, session.target(), "Export pause sets…")
-        FlowSteps.run(backend, listOf(FlowSteps.button("Export file…")))
+        FlowSteps.run(backend, listOf(FlowControls.buttonId("action_export_file")))
         files.saveWithoutExtension(backend)
         // A completion list can take the first Return; a second one confirms the chooser or, once Posato asked again,
         // its full name, which brings up the chooser's own replace question.
@@ -143,7 +143,7 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
         files.choose(backend, placed)
         code?.let { typed ->
             TransferScreens.awaitOpened(backend, TransferScreens.CODE_TITLE)
-            FlowSteps.run(backend, listOf(FlowSteps.typeInto(typed, submit = false), FlowSteps.button("Open")))
+            FlowSteps.run(backend, listOf(FlowSteps.typeInto(typed, submit = false), FlowControls.buttonId("action_open")))
         }
         TransferScreens.awaitOpened(backend, TransferScreens.REVIEW_TITLE)
         val choice = when (mode) {
@@ -151,12 +151,11 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
             "separate" -> FlowSteps.tap(Query(textContains = "Keep them separate"))
             else -> null
         }
-        val confirm = if (mode == "replace") "Replace" else "Import"
         choice?.let { step -> FlowSteps.run(backend, listOf(step)) }
         val preview = FlowSteps.labels(backend).firstOrNull { label -> PREVIEW_PHRASES.any(label::contains) }
         // A refused import explains why and offers no button but Cancel.
         if (preview != null && REFUSALS.any(preview::startsWith)) {
-            FlowSteps.run(backend, listOf(FlowSteps.button("Cancel")))
+            FlowSteps.run(backend, listOf(FlowControls.buttonId("action_cancel")))
             files.cleanUp(placed)
             return buildJsonObject {
                 put("mode", mode)
@@ -164,15 +163,15 @@ class FlowImportCommand : ControlCommand("import", "Import a pause set file from
                 put("preview", preview)
             }
         }
-        FlowSteps.run(backend, listOf(FlowSteps.button(confirm), FlowSteps.waitFor(Query(text = "Imported"))))
+        FlowSteps.run(backend, listOf(FlowControls.buttonId("action_import_word"), FlowSteps.waitFor(Query(text = "Imported"))))
         val result = FlowSteps.labels(backend)
         if (turnOn) {
             FlowSteps.run(
                 backend,
-                listOf(FlowSteps.button("Turn on imported schedules"), FlowSteps.waitFor(Query(text = "Imported schedules are on."))),
+                listOf(FlowControls.buttonId("action_turn_on_imported_schedules"), FlowSteps.waitFor(Query(text = "Imported schedules are on."))),
             )
         }
-        FlowSteps.run(backend, listOf(FlowSteps.button("Done")))
+        FlowSteps.run(backend, listOf(FlowControls.buttonId("sync_folder_code_done")))
         files.cleanUp(placed)
         return buildJsonObject {
             put("mode", mode)
@@ -196,12 +195,12 @@ internal object TransferScreens {
         target: Target,
         item: String,
     ) {
-        val back = if (target.isApple) "Back to Pause sets" else "Back to pause sets"
+        val back = FlowControls.pauseSetsBack(target.isApple)
         FlowSteps.run(
             backend,
             listOf(
-                FlowSteps.button("Pause sets"),
-                FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
+                FlowControls.buttonId("nav_pause_sets"),
+                FlowSteps.tap(back, optional = true, timeoutSeconds = SHORT_SECONDS),
                 FlowSteps.tap(Query(text = "More actions for pause sets")),
                 FlowSteps.tap(Query(text = item)),
             ),
@@ -230,7 +229,7 @@ internal object TransferScreens {
             // The review's own Import button reads like the message's title, so only a message with OK counts.
             if (FAILURE_TITLE in labels && "OK" in labels && REVIEW_TITLE !in labels) {
                 val reason = labels.getOrNull(labels.indexOf(FAILURE_TITLE) + 1) ?: FAILURE_TITLE
-                FlowSteps.run(backend, listOf(FlowSteps.button("OK")))
+                FlowSteps.run(backend, listOf(FlowControls.buttonId("presence_first_close_ok")))
                 throw ControlException(ErrorCode.ASSERTION_FAILED, "Posato did not open the file: $reason")
             }
             Thread.sleep(POLL_MILLIS)

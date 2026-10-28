@@ -1,0 +1,10 @@
+- Synchronizacja przez folder: trzymaj obszar roboczy w folderze, który synchronizuje iCloud Drive, Dropbox, OneDrive albo inna usługa, zamiast iCloud. Posato zapisuje tam tylko zaszyfrowane pliki i synchronizuje folder, gdy go otwierasz. Łączy też Posato na Linuxie, nowość w 1.5.
+- Dołączenie w dwóch krokach, w dowolnej kolejności: wybierz ten sam folder na iPhonie i zeskanuj aparatem iPhone'a kod QR, który Dodaj urządzenie pokazuje na drugim urządzeniu. Posato dołącza, gdy ma jedno i drugie. Kod działa przez 10 minut.
+- Eksport i import: zapisz zestawy pauz, ich strony i harmonogramy do pliku, opcjonalnie chronionego kodem, i zaimportuj go na innym urządzeniu. Wybór aplikacji zostaje na każdym urządzeniu.
+- Cieplejszy jasny wygląd.
+- Urządzenie, które dołącza w trakcie pauzy, zaczyna wstrzymywać od razu.
+- Sekcja synchronizacji pokazuje, kiedy to urządzenie synchronizowało się ostatnio.
+- Zestaw pauz można powielić z jego menu.
+- Zestaw ze stronami i bez aplikacji wybranych na tym urządzeniu nie pokazuje już ostrzeżenia.
+- Wybór aplikacji od razu aktualizuje podsumowania zestawów pauz.
+- Pierwszy zestaw pauz, któremu zmienisz nazwę, i wybrany zestaw domyślny zostają, gdy tworzysz obszar roboczy.

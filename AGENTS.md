@@ -10,7 +10,16 @@ work lives in a separate reference repository and is not production code.
 Write all agent-authored repository content in English, including source,
 tests, plans, documentation, wiki pages, identifiers, comments, and commit
 messages. Preserve another language only in a user-supplied immutable artifact
-when its inclusion has been explicitly approved.
+when its inclusion has been explicitly approved, or in the localized product
+resources named below.
+
+`I18N-001` (`user-confirmed`, 2026-10-28) allows agent-authored Polish only in
+`values-pl` resource directories, `pl.lproj` resource directories,
+`website/src/pages/pl`, and `docs/store/pl-PL`. The maintainer reviews that
+copy. A change to an English catalog string updates the Polish string with
+the same key in the same commit. Everything else in the repository stays
+English. Do not quote Polish in plans, records, or comments; a Polish letter
+outside those directories fails `verifyEnglishText`.
 
 ## Mandatory wiki routing
 

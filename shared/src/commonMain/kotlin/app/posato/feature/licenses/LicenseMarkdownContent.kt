@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -19,6 +20,9 @@ import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoDivider
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.license_read_link
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun LicenseMarkdownContent(
@@ -95,8 +99,10 @@ private fun DocumentLinkActions(
         text.getStringAnnotations("document-link", 0, text.length).forEach { link ->
             val document = LicenseDocument.entries.firstOrNull { it.resourcePath.substringAfterLast('/') == link.item }
             if (document != null) {
-                PosatoButton(onClick = { onSelect(document) }, style = PosatoButtonStyle.Quiet) {
-                    Text("Read ${text.subSequence(link.start, link.end)}")
+                key(link.item) {
+                    PosatoButton(onClick = { onSelect(document) }, style = PosatoButtonStyle.Quiet, controlId = "license_read_link") {
+                        Text(stringResource(Res.string.license_read_link, text.subSequence(link.start, link.end).toString()))
+                    }
                 }
             }
         }

@@ -119,6 +119,21 @@ class StoreClient(
         STORE_LISTING_HINT,
     )
 
+    /** Adds one localization, such as `pl-PL`, to a version that does not have it yet. Texts are written afterwards. */
+    fun createLocalization(
+        versionId: String,
+        locale: String,
+    ): LocalizationResource = documents.write(
+        HttpMethod.POST,
+        "appStoreVersionLocalizations",
+        JsonApi.resource(
+            type = "appStoreVersionLocalizations",
+            attributes = buildJsonObject { put("locale", locale) },
+            relationships = mapOf("appStoreVersion" to RelationshipRef(versionId, "appStoreVersions")),
+        ),
+        LocalizationResource.serializer(),
+    )
+
     /** Writes only the given localization attributes, such as `whatsNew` and `description`, in one request. */
     fun updateLocalization(
         localizationId: String,

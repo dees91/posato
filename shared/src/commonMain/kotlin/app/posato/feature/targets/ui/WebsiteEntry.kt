@@ -20,6 +20,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_add_short
+import app.posato.generated.resources.targets_add_hint
+import app.posato.generated.resources.targets_add_websites
+import app.posato.generated.resources.targets_added_check
+import app.posato.generated.resources.targets_added_duplicates
+import app.posato.generated.resources.targets_nothing_added
+import app.posato.generated.resources.targets_paste_limit
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun WebsiteEntry(
@@ -37,14 +46,14 @@ internal fun WebsiteEntry(
     }
     val receipt = browser.lastReceipt
     val error = when {
-        receipt?.tooLong == true -> "Paste up to 65,536 characters at a time."
-        receipt?.saved == false -> "Nothing was added. Your draft is kept so you can retry."
-        receipt != null && receipt.rejectedIndices.isNotEmpty() -> "${receipt.addedCount} added. Check the remaining entries or the list capacity."
+        receipt?.tooLong == true -> stringResource(Res.string.targets_paste_limit)
+        receipt?.saved == false -> stringResource(Res.string.targets_nothing_added)
+        receipt != null && receipt.rejectedIndices.isNotEmpty() -> stringResource(Res.string.targets_added_check, receipt.addedCount)
         else -> null
     }
     PosatoTextField(
         state = browser.websiteDraft,
-        label = "Add websites",
+        label = stringResource(Res.string.targets_add_websites),
         modifier = modifier.onPreviewKeyEvent { event ->
             val enter = event.key == Key.Enter || event.key == Key.NumPadEnter
             if (enter && !event.isShiftPressed) {
@@ -56,9 +65,9 @@ internal fun WebsiteEntry(
         },
         inputModifier = Modifier.focusRequester(focus),
         supportingText = if (receipt != null && receipt.saved) {
-            "${receipt.addedCount} added · ${receipt.duplicateCount} already on your list"
+            stringResource(Res.string.targets_added_duplicates, receipt.addedCount, receipt.duplicateCount)
         } else {
-            "Add one, or paste several. The www variant is included; other subdomains are not."
+            stringResource(Res.string.targets_add_hint)
         },
         errorMessage = error,
         lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 2),
@@ -69,8 +78,9 @@ internal fun WebsiteEntry(
                 onClick = submit,
                 enabled = enabled && browser.websiteDraft.text.isNotBlank(),
                 modifier = Modifier.padding(PosatoSpace.Small),
+                controlId = "action_add_short",
             ) {
-                Text("Add")
+                Text(stringResource(Res.string.action_add_short))
             }
         },
     )

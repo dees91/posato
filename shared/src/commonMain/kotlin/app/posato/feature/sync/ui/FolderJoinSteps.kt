@@ -155,7 +155,7 @@ private fun CodeStepView(
             StepTitle(stringResource(Res.string.sync_folder_step_create))
             PosatoCaption(stringResource(Res.string.sync_folder_create_hint))
             PosatoCaption(stringResource(Res.string.sync_folder_linking))
-            PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Primary, enabled = !running) {
+            PosatoButton(onClick = state::sync, style = PosatoButtonStyle.Primary, enabled = !running, controlId = "sync_folder_create") {
                 Text(stringResource(Res.string.sync_folder_create))
             }
         }
@@ -207,7 +207,12 @@ private fun ColumnScope.CodeEntry(
             onSubmit = { state.joining.enterCode(field.text.toString()) },
         )
     }
-    PosatoButton(onClick = { state.joining.enterCode(field.text.toString()) }, style = PosatoButtonStyle.Primary, enabled = !running) {
+    PosatoButton(
+        onClick = { state.joining.enterCode(field.text.toString()) },
+        style = PosatoButtonStyle.Primary,
+        enabled = !running,
+        controlId = "sync_folder_join",
+    ) {
         Text(stringResource(Res.string.sync_folder_join))
     }
     PosatoCaption(stringResource(Res.string.sync_folder_code_where))
@@ -240,7 +245,7 @@ private fun ColumnScope.ReadyCode(
         }
     }
     if (!state.checking) {
-        PosatoButton(onClick = state.joining::clearCode, style = PosatoButtonStyle.Quiet) {
+        PosatoButton(onClick = state.joining::clearCode, style = PosatoButtonStyle.Quiet, controlId = "sync_folder_use_another_code") {
             Text(stringResource(Res.string.sync_folder_use_another_code))
         }
     }
@@ -314,7 +319,11 @@ internal fun FolderChip(
             PosatoCaption(folder)
         }
         onChange?.let {
-            PosatoButton(onClick = it, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.sync_folder_change_short)) }
+            PosatoButton(
+                onClick = it,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "sync_folder_change_short",
+            ) { Text(stringResource(Res.string.sync_folder_change_short)) }
         }
     }
 }
