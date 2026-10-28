@@ -809,7 +809,8 @@ do {
   case "resize-window":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
-    guard let width = Double(try argument(3, "width")), let height = Double(try argument(4, "height"))
+    guard let width = Double(try argument(3, "width")),
+      let height = Double(try argument(4, "height"))
     else {
       throw BridgeError(code: "USAGE", message: "The width and height must be numbers.")
     }
