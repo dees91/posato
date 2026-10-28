@@ -1,0 +1,80 @@
+---
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Grenzen" description="Was das Blockieren und die Synchronisierung von Posato auf Mac, iPhone, Linux und Android können und was nicht.">
+  <div class="prose">
+    <h1>Grenzen</h1>
+    <p>Posato baut bewusst eine kleine Hürde auf; es ist kein Schloss, das sich nicht öffnen lässt.</p>
+    <ul>
+      <li>Es setzt sich nicht gegen einen Administrator des Geräts durch und lässt sich jederzeit entfernen. Eine Sitzung vorzeitig zu beenden ist immer möglich.</li>
+      <li>
+        Unter macOS funktioniert das Blockieren nur, solange Posato läuft. Wenn du das Fenster schließt, läuft es in der Menüleiste weiter, und nach der einmaligen Einrichtung öffnet sich Posato unauffällig bei der Anmeldung. Wird Posato beendet, oder nach Ruhezustand, Aufwachen oder einem Netzwerkwechsel, blockiert eine Pause, die du selbst gestartet hast, nicht mehr, bis du sie in Posato fortsetzt. Ohne die Einrichtung braucht jedes Starten oder Fortsetzen die Erlaubnis eines Administrators. Eine Sitzung, die von deinem iPhone kommt, blockiert auf dem Mac erst, wenn du sie dort fortsetzt; ohne die Einrichtung braucht auch das die Erlaubnis eines Administrators.
+      </li>
+      <li>
+        Unter macOS starten Zeitpläne nur auf einem Mac, der die Einrichtung abgeschlossen hat, und nur, solange Posato läuft. Öffnet sich Posato, auch bei der Anmeldung, oder wacht der Mac während einer geplanten Pause auf, startet die Pause von selbst erneut, meist innerhalb einer Minute, und endet trotzdem zur geplanten Zeit; ein Passwort wird nicht abgefragt. Wenn du Posato beendest, starten keine geplanten Pausen mehr, bis es wieder geöffnet wird; das Schließen des Fensters ändert daran nichts.
+      </li>
+      <li>
+        Unter macOS werden pausierte Apps beendet, solange eine Sitzung aktiv ist, auch Apps, die beim Start schon geöffnet waren, daher kann nicht gesicherte Arbeit in ihnen verloren gehen.
+      </li>
+      <li>
+        Unter macOS deckt das Blockieren von Websites <strong>Safari</strong> und <strong>Google Chrome Stable</strong> für Webverkehr auf den Ports 80 und 443 ab, solange sie die Proxyeinstellungen des Systems verwenden. Firefox, andere Browser, Browser innerhalb von Apps und Apps, die den System-Proxy umgehen, sind nicht abgedeckt. Der Aufruf einer pausierten Website über ihre IP-Adresse wird nicht blockiert, und iCloud Privat-Relay kann das Blockieren unbemerkt umgehen. Eine Sitzung beginnt nicht mit dem Blockieren, solange ein VPN oder ein manuell konfigurierter Proxy aktiv ist. Verbindungen zu Servern auf dem Mac selbst (<code>localhost</code>, <code>127.0.0.1</code> und <code>::1</code>) funktionieren während einer Sitzung weiter. Bereits geladene, zwischengespeicherte oder heruntergeladene Seiten werden nicht gelöscht, und die Pausenseite erscheint gelegentlich nicht, obwohl die Website blockiert bleibt.
+      </li>
+      <li>
+        Unter macOS verwendet Posato ein Hilfsprogramm im Hintergrund, das die Erlaubnis eines Administrators braucht und eventuell um die Berechtigung „Automation“ bittet, um seine Pausenseite im aktuellen Tab anzuzeigen.
+      </li>
+      <li>
+        Auf dem iPhone hebt das System die Einschränkungen nach dem Ende einer Sitzung auf und kann sie noch eine Weile über die Endzeit hinaus beibehalten. Einschränkungen aus Sitzungen, die kürzer als 15 Minuten sind, werden nur aufgehoben, wenn Posato am Ende geöffnet ist oder wenn du es erneut öffnest.
+      </li>
+      <li>
+        Wenn Safari auf dem iPhone bereits geöffnet war, kann die erste Seite, die es nach dem Ende einer Pause mit blockierten Websites öffnet, leer bleiben. So verhält sich iOS offenbar beim Aufheben der Einschränkung, und Posato kann das nicht verhindern. Die nächste Seite, die du öffnest, wird geladen.
+      </li>
+      <li>
+        Unter Linux ordnet das Blockieren von Websites jede pausierte Website und ihren <code>www</code>-Namen in <code>/etc/hosts</code> den Adressen <code>0.0.0.0</code> und <code>::</code> zu, sodass Verbindungen zu ihr fehlschlagen. Es gibt keine Pausenseite. Ein Browser mit eigenem DNS über HTTPS, der Aufruf einer Website über ihre IP-Adresse oder ein anderer Name derselben Website umgeht das.
+      </li>
+      <li>
+        Unter Linux installiert Posato einmalig einen Systemdienst, mit deinem Passwort. Während eine Pause läuft, beendet der Dienst die pausierten Apps, die du ausgewählt hast, daher kann nicht gesicherte Arbeit in ihnen verloren gehen. Er hebt die Pause zur Endzeit auf, auch wenn Posato geschlossen ist. Das Entfernen des Pakets hebt eine aktive Pause auf. Eine App, deren Desktop-Eintrag ein Skript, einen Interpreter oder Flatpak startet, lässt sich nicht pausieren.
+      </li>
+      <li>
+        Unter Linux starten Zeitpläne nur, solange Posato läuft. Wenn du das Fenster schließt, läuft es mit einem Symbol im Statusbereich weiter, und <strong>Posato bei der Anmeldung öffnen</strong> unter „Über Posato“ startet es bei deiner Anmeldung im Hintergrund. Auf einem Desktop, dessen Statusbereich keine App-Symbole anzeigt, etwa GNOME ohne die Erweiterung AppIndicator, gibt es kein Symbol; Posato bleibt dann nur im Hintergrund, solange eine Pause läuft oder ein Zeitplan eingeschaltet ist, und du öffnest es wieder über das Anwendungsmenü. Wenn du Posato beendest, starten keine geplanten Pausen mehr.
+      </li>
+      <li>
+        Unter Android läuft das Blockieren von Websites als lokales VPN, das nur Namensabfragen beantwortet. Ein anderes VPN kann nicht gleichzeitig laufen, ein strikt eingestelltes privates DNS und ein Browser mit eigenem DNS über HTTPS umgehen es, und Abfragen über TCP werden nicht gefiltert. Es gibt keine Pausenseite.
+      </li>
+      <li>
+        Unter Android wird eine pausierte App von einem Sperrbildschirm verdeckt; sie kann bis zu etwa einer Sekunde sichtbar sein, bevor der Bildschirm erscheint. Der Launcher, die Einstellungen, die Telefon-App und Posato lassen sich nicht pausieren. Posato braucht Zugriff auf Nutzungsdaten, die Berechtigung „Über anderen Apps einblenden“, Benachrichtigungen, genaue Wecker und eine Ausnahme von der Akkuoptimierung; ohne sie laufen Blockieren oder Zeitpläne eventuell nicht.
+      </li>
+      <li>Die Uhrzeiten von Zeitplänen richten sich nach der Uhr des jeweiligen Geräts. Ein Zeitplan dauert mindestens 15 Minuten und braucht auf dem iPhone Zugriff auf Bildschirmzeit.</li>
+      <li>
+        Ein Gerät mit einer älteren Version von Posato synchronisiert nicht mehr, sobald ein anderes Gerät Posato 1.3 verwendet. Aktualisiere Posato auf jedem Gerät, damit sie synchron bleiben.
+      </li>
+      <li>
+        Die Synchronisierung erfolgt nach bestem Bemühen. Posato kann nicht versprechen, wann oder ob eine Änderung dein anderes Gerät erreicht, und kann kein Gerät im Ruhezustand aufwecken.
+      </li>
+      <li>
+        Gehen alle Kopien des Schlüssels für den Arbeitsbereich verloren, lassen sich synchronisierte Daten nicht wiederherstellen. Daten, die bereits auf ein anderes Gerät kopiert wurden, lassen sich nicht aus der Ferne löschen.
+      </li>
+      <li>
+        Die Ordner-Synchronisierung funktioniert über einen Ordner, den ein Dienst, den du bereits nutzt, synchron hält, etwa Dropbox, OneDrive, iCloud Drive oder Syncthing. Posato legt dort nur verschlüsselte Dateien ab, kann aber nicht steuern, wann oder ob dieser Dienst sie überträgt, und jeder, der Dateien im Ordner löschen kann, kann die Synchronisierung deiner Geräte unterbrechen.
+      </li>
+      <li>
+        Ein Gerät tritt einem Arbeitsbereich in einem Ordner mit einem einmaligen Kopplungscode bei, der 10 Minuten gilt und als QR-Code gescannt, als Link geöffnet oder eingetippt wird. Wer den Code oder den Link hat und Zugriff auf den Ordner oder seinen Dateiverlauf, kann den Arbeitsbereich öffnen, teile den Link also nur mit deinen eigenen Geräten. Ein einzelnes Gerät lässt sich nicht entfernen: Um nicht mehr mit einem Gerät zu teilen, entferne den Arbeitsbereich und erstelle einen neuen in einem anderen Ordner.
+      </li>
+      <li>
+        Im Ordnermodus bewahrt jedes Gerät den Schlüssel des Arbeitsbereichs in einer Datei auf, die nur dein Benutzer lesen kann, nicht im Schlüsselbund. Unter Android schützt ihn der Android Keystore.
+      </li>
+      <li>
+        Unter Android muss der Ordner ein lokaler Ordner sein, den eine andere App synchron hält, etwa Syncthing; die meisten Cloud-Speicher-Apps für Android halten keinen lokalen Ordner synchron. Auf dem iPhone synchronisiert Posato den Ordner, wenn du die App öffnest.
+      </li>
+      <li>
+        Eine exportierte <code>.posato</code>-Datei enthält die Namen der Pausensets, Websites, das Standardset und Zeitpläne, aber nie die App-Auswahl. Ohne Code kann jeder, der die Datei bekommt, sie lesen. Der neunstellige Code hält zufällige Leser ab, aber niemanden, der viel Rechenleistung zum Erraten einsetzt. Ein Import ist eine einmalige Kopie, keine Synchronisierung, und importierte Zeitpläne kommen ausgeschaltet an.
+      </li>
+      <li>
+        Ein Arbeitsbereich synchronisiert über iCloud oder über einen Ordner, nie über beides, und es gibt keinen Wechsel zwischen beiden: Entferne den iCloud-Arbeitsbereich, bevor du einen Ordner wählst.
+      </li>
+    </ul>
+    <p>
+      Posato ist für macOS 13 oder neuer auf Mac-Computern mit Apple Silicon und Intel, iOS 18 oder neuer, Ubuntu 24.04 oder neuer und Android 13 oder neuer gedacht; was auf jeder Plattform geprüft wurde, steht in der <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">Plattformmatrix</a>. Was Posato auf deinen Geräten, in iCloud und in einem Synchronisierungsordner speichert, steht in der <a href="/de/privacy/">Datenschutzerklärung</a>.
+    </p>
+  </div>
+</Base>
