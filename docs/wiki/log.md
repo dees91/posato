@@ -3276,3 +3276,9 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: a Simulator launched with `-AppleLocale en_US` shows a 12-hour
   schedule time picker, which `flow schedule`'s 24-hour wheel values cannot
   turn, so preparation runs in `en_GB`.
+## [2026-10-28] idea | Redirect rules beside blocking
+
+- `user-confirmed` (2026-10-28): idea 59 records redirecting a chosen host to
+  an address the person enters, beside unchanged blocking; whether a rule is
+  always on or bound to a session or pause set stays `open`. Owner: backlog
+  row `REDIRECT-001`.

@@ -1375,6 +1375,19 @@ below. This queue retains idea provenance without expanding the original MVP.
     expiry only while its record is still active. Enforcement is
     unaffected. `user-confirmed` (2026-10-28): one shared fix, not in
     `PLATFORM-002`. Owner: backlog row `SESSION-011`.
+59. **Redirect rules beside blocking.** `user-confirmed` (2026-10-28): a
+    person sends a chosen host to any address they enter, such as a local
+    reader on the same machine, instead of blocking it. Existing blocking
+    and pauses keep working as they do. `open`: whether a rule applies at
+    all times as a separate setting or only within a session or pause set,
+    and how either choice fits the current UX without confusing blocking
+    and redirecting. `inferred`: an always-on rule would keep the macOS
+    proxy and browser presentation active outside sessions, which changes
+    ADR 0004 and ADR 0005, while a session-bound rule reuses today's
+    lifecycle. The proxy sees only the host, so every path on it is
+    redirected, and the target must never be redirected itself. `open`:
+    feasibility on Linux, Windows, Android, and iOS, and the technical
+    approach on each. Owner: backlog row `REDIRECT-001`.
 
 ## Later platform questions
 
