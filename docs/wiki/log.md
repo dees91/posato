@@ -3234,3 +3234,10 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: a filtered token cannot open a LocalSystem service's process,
   so the pipe client checks the server through the Service Control Manager;
   runs with UAC off would have hidden it.
+
+## [2026-10-28] process | Releases no longer check macOS 15
+
+- `user-confirmed` (2026-10-28): the `legacy` (macOS 15) golden VM is no
+  longer kept and the release matrix drops its run; `primary` covers current
+  macOS and `ventura` the x86-64 build on the oldest supported macOS. The
+  line stays in `posato-control` for a brief that names a macOS 15 risk.
