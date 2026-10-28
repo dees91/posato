@@ -68,9 +68,10 @@ complete, the checks name each missing file and list entry.
    - `capture.json`, with the launch language, locale, and synthetic schedule
      name.
 
-   Then capture the screenshots with the store capture command in the
-   [`posato-control` README](../../tools/posato-control/README.md). Nothing is
-   uploaded until a release runs `store prepare --locale`.
+   Then capture the screenshots with
+   `posato-control store capture -t sim --udid <udid> --locale <store directory> --out <dir> --prepare`
+   on each Simulator of the [capture recipe](../store/en-US/listing.md#capture-recipe).
+   Nothing is uploaded until a release runs `store prepare --locale`.
 5. **Review the copy.** The maintainer reviews Polish directly. For any other
    language, an independent agent reviews the catalogs, site, and listing.
    It also translates the key screens back into English. The maintainer
@@ -84,8 +85,8 @@ complete, the checks name each missing file and list entry.
    yet; add one to the feature map when a language row first needs it. Also
    do a narrow pass for longer text, since German and French labels often
    run longer than English:
-   - run the store capture command on the smallest supported iPhone
-     Simulator, writing into `build/verification/`;
+   - run `store capture` on a small iPhone Simulator, such as iPhone 16e,
+     with `--out build/verification/...`;
    - show the main screens of the Mac app at its minimum window width;
    - look for clipped or wrapped labels in both.
 

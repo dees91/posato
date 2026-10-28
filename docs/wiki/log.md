@@ -3267,8 +3267,6 @@ first removal attempt that does not finish, not to a paused keychain.
 - `user-confirmed`: Spanish ships as `es-ES` and Portuguese as `pt-BR`.
   Copy in a language the maintainer does not review directly is accepted
   from an independent review with a back-translation.
-## [2026-10-28] tooling | Store screenshots in one command
-
 - `posato-control store capture -t sim --locale <dir> --out <dir> [--prepare]`
   replaces the hand-run capture recipe in `docs/store/en-US/listing.md`; each
   store locale adds a `capture.json` with its launch language, locale, and
