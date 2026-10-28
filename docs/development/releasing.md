@@ -33,8 +33,8 @@ Composition and the release guard come from the
 - **Build variants:** which Gradle tasks build the development, candidate,
   release, and Intel packages, and which checks guard each, are mapped in
   [build variants](build-variants.md).
-- **Verification:** the `primary`, `peer`, `legacy`, and `ventura` golden
-  VMs, the test iPhone, and their `local.properties` keys
+- **Verification:** the `primary`, `peer`, and `ventura` golden VMs, the
+  test iPhone, and their `local.properties` keys
   ([unattended verification](unattended-verification.md)).
 - **Android signing:** the release keystore outside the checkout, its
   password in the login Keychain, and four keys in the ignored
@@ -159,8 +159,10 @@ usual matrix, adjusted by the brief:
 
 - `primary` (macOS 26), fresh arm64 DMG: setup, a manual pause, a schedule
   that starts and ends with the window closed, `observe`.
-- `legacy` (macOS 15), fresh: the core flow and a login launch (`vm shutdown`,
-  `vm boot`) with a scheduled start.
+- No `legacy` (macOS 15) run: the maintainer dropped it on 2026-10-28
+  (`user-confirmed`), since `primary` covers current behavior and `ventura`
+  the oldest supported macOS; its golden VM is no longer kept. Recreate it
+  only when a brief names a macOS 15 risk.
 - Upgrade on `primary`: the previous DMG (`gh release download v<previous>`)
   set up with the helper, websites, an application, and a schedule, then
   `vm install --replace` with the new DMG.

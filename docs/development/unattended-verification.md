@@ -97,7 +97,9 @@ the primary golden VM taken before step 6, and give it its own sign-in and
 privacy approvals.
 
 The `legacy` line holds a golden VM on the previous macOS major version for
-platform checks. Apple publishes no restore image (IPSW) for some point
+platform checks. It is not kept by default and releases skip it
+(`user-confirmed`, 2026-10-28); create it only when a brief asks for a check
+on that version. Apple publishes no restore image (IPSW) for some point
 releases, so use the newest `UniversalMac_<version>_Restore.ipsw` for that
 version from Apple's update server. The driver can prepare it without a person:
 
