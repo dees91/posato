@@ -870,6 +870,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     - The pause page is rendered by the Swift helper.
     - Driver recipes select elements by English labels, which matters for
       `QUALITY-010`.
+
+    `observed` in `I18N-001` (2026-10-28): delivered with the Polish copy
+    still awaiting the maintainer's review. Flows press Posato controls by
+    catalog key, so a Polish app is driven like an English one; native iOS
+    alerts and system dialogs stay on English titles in English guests. The
+    desktop exposes those keys to accessibility only on a verification host,
+    because its only field for them is one a screen reader announces.
 13. **Navigation 3 and system back gestures.** `user-confirmed` (2026-09-22,
     the `IOS-004` decision): adopt Navigation 3 with system back gestures as
     a separate task. `inferred`:

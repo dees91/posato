@@ -3241,3 +3241,16 @@ first removal attempt that does not finish, not to a paused keychain.
   longer kept and the release matrix drops its run; `primary` covers current
   macOS and `ventura` the x86-64 build on the oldest supported macOS. The
   line stays in `posato-control` for a brief that names a macOS 15 risk.
+
+## [2026-10-28] feature | Posato in Polish (`I18N-001`)
+
+- Posato follows the system or per-app language in Polish on every platform,
+  with Polish plurals, the macOS pause page, the Android block screen,
+  `/pl/` on posato.app, and a prepared `pl-PL` listing with screenshots;
+  nothing was uploaded. Idea 12 records what was delivered.
+- `observed`: Compose resources cannot load in a JVM unit test (Skiko's
+  system theme fails to initialize), so view models take localized words
+  from an entry point rather than calling `getString`.
+- `observed`: on iOS a control's identifier stays in the accessibility tree
+  while the tab bar hides it, so the driver now scrolls until the control is
+  hittable.

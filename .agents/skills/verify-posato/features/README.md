@@ -65,6 +65,14 @@ hand with the same controls before rerunning.
 - Use scenario `scrollTo` for offscreen rows on both targets. Do not substitute
   Tab counts or database writes for the real list interaction.
 - Prefer `run --scenario <file>` over many single commands on iOS.
+- Flows run in English. For a Polish proof, set only the app's language
+  after the English steps and keep the guest or phone English: on the Mac
+  `$PC vm exec --line primary --script "defaults write app.posato.macos AppleLanguages -array pl"`
+  and `launch` again (the pause-page helper reads it at once); on iOS
+  `launch --arg -AppleLanguages --arg "(pl)" --arg -AppleLocale --arg pl_PL`;
+  on Android `adb shell cmd locale set-app-locales app.posato.android --locales pl`,
+  and `--locales ""` afterwards. Press Posato controls by `--id`, which no
+  language changes.
 
 ## iOS and the Mac drive differently
 
