@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 35 (2026-10-28: `I18N-001` moves into release 1.6 and starts)
+- **Revision:** 36 (2026-10-28: `REDIRECT-001` joins the backlog)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-28
@@ -273,6 +273,10 @@
   `PR-I18N-PL`. `DOCS-007` and `RELEASE-010` depend on it so the public
   packaging and the publication include Polish. The maintainer reviews the
   Polish copy in that pull request. This amends the composed release 1.6.
+  Revision 36 adds the `REDIRECT-001` backlog row from idea 59 at the
+  maintainer's request (`user-confirmed`, 2026-10-28): decide whether
+  Posato offers host redirect rules beside blocking, including whether a
+  rule is always on or bound to a session or pause set.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -688,6 +692,7 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-013` | Let `posato-control flow onboard -t linux` finish when Posato's pausing service is already installed in the clone: the onboarding page then shows **Continue** instead of **Allow**, and the flow fails waiting for **Allow**. Press whichever of the two is shown, as `flow icloud link` does with its buttons, and cover a rerun on the same clone. | Verification | Idea 52; release 1.5 retrospective | Any planning checkpoint; cheap |
 | `PLATFORM-004` | Give the desktop helpers one least-privilege rule on the Mac, Linux, and Windows: state it in ADR 0010, then narrow each platform's mechanism to it (on Windows, for example, a restricted service SID where Windows Filtering Platform allows it) and verify each in its Tart guest. High-risk. | Platform coverage | Idea 57; `PLATFORM-002` review | A release that changes a desktop helper |
 | `SESSION-011` | Clear the expired session that the Linux and Windows helpers keep reporting after a pause ends while Posato is closed: the shared session code acknowledges an expiry only while its local record is still active, so the next launch never acknowledges it. One shared fix, verified on Linux and Windows. | Sessions and enforcement | Idea 58; `PLATFORM-002` review | Any planning checkpoint; no effect on enforcement |
+| `REDIRECT-001` | Decide whether Posato offers host redirect rules beside blocking. First settle the model: always-on rules in a separate setting, or redirects inside sessions and pause sets, with the UX of each compared so that blocking and redirecting stay clear. Then analyze the technical approach on macOS (proxy and browser presentation; for always-on rules also failure, sleep, VPN and proxy coexistence, and privacy outside sessions) and the feasibility on Linux, Windows, Android, and iOS. Settle host versus path rules, loop protection, and whether rules sync. End with a product decision, the proposed ADR 0004 and ADR 0005 revisions if needed, and a delivery plan. Preliminary. | Product discovery | Idea 59 | A product decision that redirects are in scope |
 
 ## Coverage matrix
 
