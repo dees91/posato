@@ -96,7 +96,8 @@ on one shared core.
   Filtering Platform for websites; the service installed by the MSI; Start
   menu desktop programs only.
 - Verification runs on the maintainer's unactivated Windows 11 ARM64 image
-  (`user-confirmed`, 2026-10-27). The verification guest has UAC off, so the
+  (`user-confirmed`, 2026-10-27). The golden has UAC off; acceptance reruns
+  in clones with UAC on and Posato on a filtered token, but the
   administrator prompt itself is not driven; the MSI's elevation path is
   standard Windows Installer.
 - Manual gate kept for `RELEASE-010`: an Authenticode signing identity, or

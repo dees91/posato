@@ -1,164 +1,96 @@
 # Execution: `PLATFORM-002`
 
 - **Brief:** [Posato for Windows at parity with Linux](../specifications/platform-002-windows.md)
-- **Status:** `active`
+- **Status:** `ready-for-review`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Reviewer:** pending
+- **Reviewer:** independent agent (plan and completed change)
 - **Branch:** `platform-002-windows`
-- **Updated:** 2026-10-27
+- **Updated:** 2026-10-28
 
 ## Plan
 
-1. **Authorities.** ADR 0010 gains the Windows row and its limits
-   (`user-confirmed` 2026-10-27); roadmap revision 33 folds `PLATFORM-003`
-   into `PLATFORM-002` and the Projects mirror follows in the same step.
-2. **Resident core (`PLATFORM-003`).** Move the platform-neutral parts of
-   `LinuxResidentPosato` and `ResidentPosato` into
-   `app.posato.desktop.resident`: the menu action to window request mapping,
-   the close outcome and "keeps running" rules, the quit and first-close
-   notices, the status-menu refresh loop, and one `ResidentPosato`
-   composable for hosts that draw their own window. A host supplies a
-   `StatusSurface` (update, show, action, and menu-open events, presence of
-   a watcher), a `LoginLaunch` (`isEnabled`, `setEnabled`), and a
-   first-close marker. Linux keeps its D-Bus status item, XDG autostart, and
-   instance lock; the Mac keeps `MacPresenceNative`, its window chrome, the
-   quit handler, and the updater, and calls the shared mapping and refresh.
-   No behavior change; the existing Linux and Mac tests keep passing.
-3. **`:windowsHelper` (new module, Kotlin JVM, JNA).** Tests first for
-   `HelperRequest` (the Linux grammar; executables are absolute Windows paths
-   `X:\...\name.exe`, no `..`, no control characters, at most 64),
-   `FilterPlan` (hosts plus `www` names to IPv4 and IPv6 addresses; loopback,
-   unspecified, link-local, multicast, and private ranges never filtered; at
-   most 16,384 addresses), `ProcessMatch` (case-insensitive path equality and
-   owner SID equal to the installing user's; SYSTEM, LOCAL SERVICE, and
-   NETWORK SERVICE never), and `PipeCaller` (only the installing user's SID
-   or SYSTEM). The service:
-   - runs as `LocalSystem` under the SCM (`StartServiceCtrlDispatcherW` from
-     the jpackage launcher `posato-helper.exe`), restarts on failure;
-   - serves one line per connection on `\\.\pipe\app.posato.helper`, created
-     with `FILE_FLAG_FIRST_PIPE_INSTANCE`, `PIPE_REJECT_REMOTE_CLIENTS`, and
-     the DACL `D:P(A;;GA;;;SY)(A;;GRGW;;;<installing user SID>)`; each
-     connection's client process token is checked again, and a client that
-     does not send within five seconds is cut off;
-   - opens one WFP dynamic session with its own sublayer and adds block
-     filters at `ALE_AUTH_CONNECT_V4/V6` for the plan's addresses; it
-     re-resolves the names every minute during a pause and only adds
-     addresses until the pause ends; a crash or stop removes every filter
-     with the session, and a restart re-applies from the state file;
-   - keeps its state in `%ProgramData%\Posato\helper\state` (SYSTEM and
-     Administrators only), clears at the session end, and ends the chosen
-     processes every second during a pause;
-   - `install --user <account>` (MSI deferred action) resolves the account
-     to a SID, writes the configuration, creates and starts the service;
-     `uninstall` stops and deletes it and removes the state.
-   It never reads traffic and never logs hosts.
-4. **Windows host (`app.posato.desktop.windows`).** `WindowsMain` with the
-   resident core: Compose `Tray` as the `StatusSurface`, the
-   `HKCU\...\CurrentVersion\Run` value `Posato` with `--background` as the
-   `LoginLaunch`, a per-user instance lock plus an AF_UNIX socket in
-   `%LOCALAPPDATA%\Posato` to forward a second launch's show request,
-   `StartMenuCatalog` (`.lnk` files in both Start menu folders parsed for
-   their local `.exe` target; launchers and interpreters such as `cmd`,
-   `powershell`, `wscript`, `rundll32`, `explorer`, `msiexec`, and `java`
-   are not offered), and `WindowsSessionEnforcement` over a pipe client on
-   the Linux request lines. `OnboardingPermissionPlatform` gains `WINDOWS`;
-   the folder key file uses an owner-only ACL where POSIX modes are absent.
-5. **Packaging.** `windowsAppJar` with both Windows Compose runtimes, JNA,
-   and the helper; `desktopApp/windows/package-msi.ps1` runs jpackage (WiX 3)
-   with an `overrides.wxi` that runs `posato-helper.exe install --user
-   [LogonUser]` after `InstallFiles` and `uninstall` before `RemoveFiles`,
-   both deferred and not impersonated, and `signtool` when
-   `POSATO_WINDOWS_SIGNING` names an identity. A GitHub Actions workflow
-   builds and smoke-tests x64 (quiet install, service running, uninstall
-   leaves no service, pipe, or filter). Notices list JNA.
-6. **Tool first.** `posato-control -t windows`: `vm` clone and run of the
-   Windows golden through the Tart fork, `build` and `install` of the MSI,
-   `launch`, `snapshot` and `press` and `type` through the Java Access
-   Bridge probe, `screenshot`, `flow onboard`, `flow session`, and guest
-   checks (`Test-NetConnection`, process list, service and filter state);
-   the skill and its feature map gain Windows; `tools/windows-spike` goes.
-7. **Verification** in order: `AC-06` on the Mac VM and Linux clone, then
-   `AC-02`, `AC-03`, `AC-05` in a Windows clone and on CI, then `AC-04`
-   across the three guests sharing one host folder.
-8. Independent completed-change review, `./gradlew quality`, wiki and log,
-   `pr-evidence`, ready, `babysit-pr adopt`.
-
-9. **Plan-review corrections (all Required, chosen Recommended).**
-   - Client: opens the pipe through JNA with `SECURITY_SQOS_PRESENT |
-     SECURITY_IDENTIFICATION`, waits on `ERROR_PIPE_BUSY`, and sends nothing
-     unless `GetNamedPipeServerProcessId` names a process whose token is
-     SYSTEM and whose image is the installed `posato-helper.exe`.
-   - Server: DACL grants the user `0x0012018B` (no `FILE_CREATE_PIPE_INSTANCE`);
-     the caller SID comes from `ImpersonateNamedPipeClient` and
-     `OpenThreadToken`.
-   - `install` creates or takes over `%ProgramData%\Posato` with owner
-     SYSTEM and a protected DACL (SYSTEM, Administrators); the service checks
-     owner and no reparse point before each write and writes through an
-     NTFS-specific atomic write, not the Linux `writeAtomically`.
-   - JNA: `jnidispatch.dll` ships in the install folder; the helper's
-     launcher configuration sets `jna.nounpack=true` and
-     `jna.boot.library.path`; the service binary path is quoted.
-   - MSI: `install` on `NOT Installed AND NOT REMOVE`, accepting an existing
-     state file after its owner and access checks; a rollback action that
-     deletes the service; `uninstall` (stop and delete the service) on
-     `REMOVE="ALL"`, and `purge` (state, `%ProgramData%\Posato`, `Run` value)
-     only on `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`; binaries referenced
-     as `"[INSTALLDIR]..."`; a repair keeps the recorded user. A major upgrade
-     therefore keeps the state, and the new service re-applies an active
-     pause; one guest run proves it (old MSI, pause, new MSI, pause holds). `[LogonUser]` is resolved qualified with the computer name;
-     SYSTEM and service accounts are refused, and the limits say only the
-     installing account is served.
-   - Filters carry an `FWPM_CONDITION_ALE_USER_ID` condition for the
-     installing user, so system services are never blocked; IPv4-mapped
-     connects are tested once in the guest.
-   - Service: `SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO` with the minimum
-     privileges, a restricted service SID where WFP allows it, automatic
-     start; process ending checks the image and terminates through one
-     handle.
-   - Start menu: shortcuts with launch arguments (Squirrel `Update.exe`,
-     browser `--app-id` and `chrome_proxy.exe`) are not offered; targets are
-     sent as long canonical paths.
-   - Resident core: menu-open is optional in `StatusSurface`; Windows
-     refreshes the tray menu on state changes; `FirstCloseChoice`'s
-     `Library/...` path moves into the host's first-close marker.
-   - Shared: `NioFolderFileSystem` restricts to owner through
-     `AclFileAttributeView` where POSIX modes are absent; `WindowsMain`
-     passes `%LOCALAPPDATA%\Posato` for the database and key.
-   - Uninstall deletes the installing user's `Run` value when that hive is
-     loaded, otherwise the value stays and is inert (the launcher is gone);
-     the record names it.
-   - Verification: a second standard user in the clone tries the pipe from a
-     scheduled task and is refused; a malformed line answers
-     `error\trequest`; AC-02 uses a fresh browser profile and a host with
-     stable addresses, and the limits name DNS over HTTPS in browsers and
-     connections already open; a three-guest smoke (Windows, Ubuntu, Mac
-     running at once) runs before the service work.
-   - The resident-core extraction lands as its own commit with the `AC-06`
-     evidence before Windows code.
+1. ADR 0010 Windows row and limits (`user-confirmed` 2026-10-27); roadmap
+   revision 33 folds `PLATFORM-003` in; the Projects mirror follows.
+2. Resident core (`PLATFORM-003`) in `app.posato.desktop.resident`: menu
+   actions, close and keep-running rules, quit and first-close notices, the
+   status-menu refresh, one `ResidentPosato`; hosts supply a `StatusSurface`,
+   a `LoginLaunch`, and a first-close marker. No behavior change.
+3. `:windowsHelper` (Kotlin, JNA), contract tests first: a LocalSystem
+   service with one line per connection on `\\.\pipe\app.posato.helper`
+   (first instance, remote clients refused, DACL for SYSTEM and the
+   installing user, caller from impersonation, 5 s deadline); WFP block
+   filters in a dynamic session, limited to the installing user, never
+   loopback or private ranges, at most 16,384 addresses, names re-resolved
+   every minute; chosen processes of that user ended every second; state in
+   a SYSTEM-owned `%ProgramData%\Posato`.
+4. Windows host: notification-area icon, `Run` value with `--background`,
+   instance lock and show socket in `%LOCALAPPDATA%\Posato`, Start menu
+   catalog without launchers, interpreters, or packaged apps, a pipe client
+   that checks the server before sending.
+5. MSI (jpackage, WiX 3) with deferred `install`, rollback, `uninstall`, and
+   `purge` (not on a major upgrade); signing only with
+   `POSATO_WINDOWS_SIGNING`; an x64 CI build and smoke test; notices list
+   JNA.
+6. Tool first: `posato-control -t windows`, the skill and feature map;
+   `tools/windows-spike` removed.
+7. Verification `AC-02` to `AC-06`, then review, quality, closeout.
 
 ## High-risk plan review
 
-- **Verdict:** changes-required (first pass, independent agent)
-- **Critical or Required findings:** client trusts a squatted pipe while
-  the service is down; `%ProgramData%\Posato` can be pre-created by a user;
-  JNA unpacks native code to a temp folder for a LocalSystem service; MSI
-  custom actions without conditions, rollback, or upgrade behavior; no
-  unattended proof of a refused foreign caller.
-- **Resolution:** step 9. Second pass: changes-required for the major
-  upgrade (old package's uninstall would delete the state); fixed by
-  splitting `uninstall` and `purge`; approved after that correction.
+- **Verdict:** approved after two changes-required passes.
+- **Findings resolved before implementation:** a squatted pipe trusted
+  while the service is down; a user-created `%ProgramData%\Posato`; JNA
+  unpacking to a temp folder; MSI actions without conditions, rollback, or
+  upgrade behavior; no proof of a refused foreign caller; a major upgrade
+  deleting the state (split into `uninstall` and `purge`).
 
 ## Result
 
-- Pending.
+- Windows 11 arm64 and x64 run Posato with the shared interface, pauses,
+  schedules with the window closed, start at login, and the folder
+  workspace; the Mac and Linux run on the shared resident core.
+- Found and fixed during verification: a newer MSI installed beside the
+  older one (jpackage's `FindRelatedProductsEx` fails in the arm64 guest;
+  now `FindRelatedProducts`); the folder workspace refused Windows paths;
+  Chrome and Edge shortcuts were not offered; Posato's icon was missing on
+  Windows windows; first-close wording now names the notification area.
+- Found by review and fixed: the client now checks the server through the
+  Service Control Manager (process ID, LocalSystem, installed image), since a
+  filtered token cannot open the service's process; the folder setup never
+  follows a link and secures an existing folder through one handle; the MSI
+  records the installing user by `[UserSID]`, so domain and Microsoft Entra
+  accounts work.
+- Deviations, `agent-delegated`:
+  - Windows onboarding copy is agent-written and awaits maintainer approval.
+  - No restricted service SID: the service needs its LocalSystem rights for
+    WFP and for ending the user's processes; minimal privileges are set.
+  - The UAC prompt and the notification-area menu are not driven.
+  - Uninstall removes the `Run` value only when the user's hive is loaded;
+    otherwise it stays and is inert.
+  - The key file's ACL is owner-only but not protected (Java cannot set it).
+- Follow-up: when a pause ends while Posato is closed, the helper keeps
+  reporting the expired session until the next pause; shared behavior on
+  Linux too, no effect on enforcement.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved on the second pass; the first was changes-required.
+- **Required, fixed:** server check failing with UAC on (`R1`); a junction
+  planted during the folder setup (`R2`).
+- **Recommended:** domain and Entra accounts (fixed); restricted service
+  SID (recorded above). **Optional:** CI path filter (fixed).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | | |
+| `AC-02` MSI install, onboarding, Edge and Chrome blocked, app ended, early end, end while closed, malformed and foreign requests | Pass | `runs/ac02-20261027` |
+| `AC-02` again with UAC on, Posato on a filtered token | Pass | `runs/ac02-uac-696d8ec6`, `runs/smoke-uac-724fa6d2` |
+| `AC-03` schedule with the window closed; start at login after a restart | Pass | `runs/ac03-20261027` |
+| `AC-04` Windows, Ubuntu, and Mac guests in one folder workspace | Pass | `runs/ac04-750c964d` |
+| `AC-05` arm64 upgrade during a pause and clean uninstall | Pass | `runs/ac05-750c964d`, `runs/ac05-uac-696d8ec6` |
+| `AC-05` x64 build, install, pause, uninstall on CI | Pass | "Windows package" workflow |
+| `AC-06` Mac VM and Linux clone on the shared core | Pass | `runs/ac06-mac-750c964d`, `runs/ac06-linux-750c964d` |
+| `R1` and `R2` shown failing before the fix | Reproduced | `runs/r1-before-a97154be`, `runs/r2-before-a97154be`, `runs/r2-after-696d8ec6` |
+| `./gradlew quality` at `724fa6d2` plus the closeout | Pass | local |

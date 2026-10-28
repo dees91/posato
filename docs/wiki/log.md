@@ -3219,3 +3219,18 @@ first removal attempt that does not finish, not to a paused keychain.
   now show their access text; a desktop is a Mac only when `os.name` says
   so, otherwise a computer. Mac and iOS wording is unchanged (Tart macOS
   VM, test iPhone). Idea 56 is resolved.
+
+## [2026-10-28] feature | Posato for Windows with one resident core (`PLATFORM-002`)
+
+- `observed` in Tart Windows 11 arm64 clones, with UAC off and on, and on a
+  GitHub Actions x64 runner: the MSI installs a LocalSystem service that
+  blocks the chosen websites with Windows Filtering Platform filters for the
+  installing user and ends the chosen Start menu programs; schedules run
+  with the window closed, Posato starts at login, a major upgrade keeps a
+  running pause, and uninstall leaves nothing behind.
+- `observed`: a Windows, an Ubuntu, and a Mac guest shared one folder
+  workspace; the Mac and Linux behave as before on the shared resident core
+  (idea 53, `PLATFORM-003` folded in).
+- `observed`: a filtered token cannot open a LocalSystem service's process,
+  so the pipe client checks the server through the Service Control Manager;
+  runs with UAC off would have hidden it.

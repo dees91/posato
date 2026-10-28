@@ -1319,7 +1319,11 @@ below. This queue retains idea provenance without expanding the original MVP.
     `user-confirmed` (2026-10-22): `LINUX-003` built the Linux status icon,
     window close, and start at login beside the Mac's code and kept the Mac
     untouched; when Windows arrives, extract a shared core instead of a third
-    copy. Owner: `PLATFORM-003`, release 1.6.
+    copy. Owner: `PLATFORM-003`, release 1.6. `user-confirmed`
+    (2026-10-27): folded into `PLATFORM-002`. `observed` (2026-10-27):
+    resolved; the Mac, Linux, and Windows hosts share
+    `app.posato.desktop.resident`, and the Mac and Linux behave as before in
+    Tart.
 54. **The Mac stops talking to its helper after a few days.** `observed`
     (2026-10-23) in Tart on 1.5.0 and reported on three Macs: one helper
     process accepts 256 operations, Posato never starts a new connection, so
