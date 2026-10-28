@@ -22,7 +22,7 @@ move into `SHIPPED`.
 | --- | --- | --- | --- | --- | --- |
 | Polish | `pl` | `pl-PL` | `pl` | one, few, many, other | `65 536` (no-break space), `1024` |
 | German | `de` | `de-DE` | `de-DE` | one, other | `65.536`, `1.024` |
-| French | `fr` | `fr-FR` | `fr-FR` | one, many, other | `65 536` (narrow no-break space) |
+| French | `fr` | `fr-FR` | `fr-FR` | one, many, other | `65 536`, `1 024` (narrow no-break space) |
 | Spanish | `es` | `es-ES` | `es-ES` | one, many, other | `65.536`, `1024` |
 | Portuguese | `pt` | `pt-BR` | `pt-BR` | one, many, other | `65.536`, `1.024` |
 
@@ -82,8 +82,8 @@ complete, the checks name each missing file and list entry.
    the language from the session locale. `I18N-001` proved them through the
    shared catalog only, and `posato-control` has no language recipe for them
    yet; add one to the feature map when a language row first needs it. Also
-   do a narrow pass for longer text, since German runs about a third longer
-   than English:
+   do a narrow pass for longer text, since German and French labels often
+   run longer than English:
    - run the store capture command on the smallest supported iPhone
      Simulator, writing into `build/verification/`;
    - show the main screens of the Mac app at its minimum window width;
@@ -102,7 +102,10 @@ complete, the checks name each missing file and list entry.
   - every number of 1000 or more from the English text, grouped as that
     language writes it.
 
-  Info.plist strings have no English file, so only blanks are checked there.
+  Info.plist strings have no English file, so each language needs the keys
+  of the first shipped language's file. Write separators as the characters
+  themselves, not as `\u00A0` or `&#160;` escapes, which the check does not
+  read.
 - **`verifyLocaleLists`** requires these to name exactly the shipped
   languages:
   - the iOS and helper `CFBundleLocalizations`;

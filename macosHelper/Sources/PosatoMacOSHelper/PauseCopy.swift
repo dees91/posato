@@ -31,8 +31,12 @@ enum PauseCopy {
   /// the helper bundle has that language's strings.
   private static func code(_ locale: Locale) -> String {
     let identifier = locale.identifier.lowercased()
-    let language = identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first
-    return language.map(String.init) ?? "en"
+    guard let language = identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first,
+      (2...3).contains(language.count), language.allSatisfy({ ("a"..."z").contains($0) })
+    else {
+      return "en"
+    }
+    return String(language)
   }
 
   private static func localizationBundle(locale: Locale) -> Bundle? {

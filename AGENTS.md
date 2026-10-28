@@ -14,9 +14,10 @@ when its inclusion has been explicitly approved, or in the localized product
 resources named below.
 
 Translations (`user-confirmed`, 2026-10-28): an agent may author product
-copy in another language only in the translation directories of the languages
-listed in [`docs/development/localization.md`](docs/development/localization.md),
-which also says how a new language is added and how its copy is reviewed. A
+copy in another language only in the translation directories of the shipped
+languages (`PosatoLocales.SHIPPED`), or of the language a started row adds.
+[`docs/development/localization.md`](docs/development/localization.md) says
+how a new language is added and how its copy is reviewed. A
 change to an English catalog string updates every translation of that key in
 the same commit. Everything else in the repository stays English. Do not
 quote another language in plans, records, or comments; an accented letter

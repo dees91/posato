@@ -24,7 +24,8 @@ import java.util.Properties
 abstract class VerifyCatalogs : DefaultTask() {
     /**
      * Translated path template, with `{code}` for the language code, to the English catalog's path. An empty English
-     * path marks Info.plist strings, which have no English file: each language only needs the file, without blanks.
+     * path marks Info.plist strings, which have no English file: each language needs the keys of the first shipped
+     * language's file, without blanks.
      */
     @get:Input
     abstract val families: MapProperty<String, String>
@@ -48,7 +49,7 @@ abstract class VerifyCatalogs : DefaultTask() {
                 val translated = File(root, path)
                 when {
                     !translated.isFile -> listOf("Missing ${locale.code} catalog $path")
-                    englishPath.isEmpty() -> Catalog.read(translated).blanks().map { "$path: $it is blank" }
+                    englishPath.isEmpty() -> infoPlistStrings(root, template, Catalog.read(translated)).map { "$path: $it" }
                     else -> compare(Catalog.read(File(root, englishPath)), Catalog.read(translated), locale).map { "$path: $it" }
                 }
             }
@@ -59,6 +60,17 @@ abstract class VerifyCatalogs : DefaultTask() {
                     "\nSee docs/development/localization.md.",
             )
         }
+    }
+
+    private fun infoPlistStrings(
+        root: File,
+        template: String,
+        translated: Catalog,
+    ): List<String> {
+        val reference = File(root, template.replace("{code}", PosatoLocales.SHIPPED.first().code))
+        val keys = if (reference.isFile) Catalog.read(reference).strings.keys else translated.strings.keys
+        return (keys - translated.strings.keys).sorted().map { "missing string $it" } +
+            translated.blanks().map { "$it is blank" }
     }
 
     private fun compare(
