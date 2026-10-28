@@ -271,13 +271,13 @@ private fun ScheduleRowModel.problem(): String? {
 }
 
 @Composable
-private fun ScheduleRowModel.nextLabel(): String? {
+internal fun ScheduleRowModel.nextLabel(): String? {
     val formatted = stringResource(Res.string.schedule_next, shortWeekday(nextWeekday ?: 0), nextWhen.orEmpty())
     return if (nextWeekday == null || nextWhen == null) nextRunLabel else formatted
 }
 
 @Composable
-private fun ScheduleRowModel.skippedText(): String? {
+internal fun ScheduleRowModel.skippedText(): String? {
     val formatted = stringResource(Res.string.schedule_skipped, shortWeekday(skippedWeekday ?: 0), skippedWhen.orEmpty())
     return if (skippedWeekday == null || skippedWhen == null) skippedLabel else formatted
 }

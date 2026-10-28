@@ -1,7 +1,8 @@
 # App Store listing — Polish (Poland)
 
 Status: draft for I18N-001. Nothing in this directory has been uploaded.
-`store prepare` can write it later with `--locale pl-PL`. The default remains
+`store prepare` can write it later with `--locale pl`, App Store Connect's
+shortcode for Polish. The default remains
 `en-US`, and this task does not call App Store Connect.
 
 The maintainer reviews the Polish wording in the pull request. `DOCS-007`
@@ -23,7 +24,7 @@ decision to use "Space for what matters."
 ## Description
 
 [description.txt](description.txt) is the text for
-`store prepare --locale pl-PL --description`. It follows the English
+`store prepare --locale pl --description`. It follows the English
 description and does not name Android, because App Review guideline 2.3.10
 does not allow other mobile platforms in the metadata.
 

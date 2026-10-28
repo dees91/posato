@@ -153,9 +153,9 @@ private fun ScheduleEditorRowActions(
                 onClick = { actions.onSkipNext(row) },
                 controlId = "action_skip_next",
             ) { Text(stringResource(Res.string.action_skip_next)) }
-            row.nextRunLabel?.let { PosatoCaption(it) }
+            row.nextLabel()?.let { PosatoCaption(it) }
         }
-        row.skippedLabel?.let { PosatoCaption(it) }
+        row.skippedText()?.let { PosatoCaption(it) }
         PosatoTextButton(
             onClick = { actions.onConfirmDelete(row.id) },
             destructive = true,

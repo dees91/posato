@@ -58,7 +58,7 @@ class StorePrepareCommand :
     private val whatsNew by option("--whats-new", help = "A UTF-8 text file holding the What's New text for --locale.").required()
     private val locale by option(
         "--locale",
-        help = "The App Store localization to write, such as pl-PL. Defaults to en-US.",
+        help = "The App Store localization to write, as App Store Connect names it, such as pl. Defaults to en-US.",
     ).default(STORE_LOCALE)
     private val release by option("--release", help = "Release automatically after approval, or manually.")
         .choice(*ReleaseType.entries.map { it.option }.toTypedArray())

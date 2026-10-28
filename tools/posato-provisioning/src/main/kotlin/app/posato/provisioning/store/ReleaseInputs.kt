@@ -72,9 +72,9 @@ object ReleaseInputs {
         return value
     }
 
-    /** An App Store Connect localization such as `en-US` or `pl-PL`. */
+    /** An App Store Connect locale shortcode such as `en-US` or `pl`; Apple lists Polish as `pl`, not `pl-PL`. */
     fun locale(value: String): String {
-        ensure(value.matches(LOCALE_PATTERN)) { "--locale must be a language tag such as en-US or pl-PL" }
+        ensure(value.matches(LOCALE_PATTERN)) { "--locale must be an App Store Connect locale such as en-US or pl" }
         return value
     }
 
