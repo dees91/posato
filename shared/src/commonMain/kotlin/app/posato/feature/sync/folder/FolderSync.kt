@@ -107,11 +107,16 @@ internal interface FolderAccess {
 
         override fun accept(choice: String): String? {
             val path = choice.trim()
-            if (!path.startsWith("/") || !files.isWritableDirectory(path)) return null
+            if (!path.isAbsoluteFolderPath() || !files.isWritableDirectory(path)) return null
             return files.canonical(path)
         }
     }
 }
+
+/** A POSIX path from the root, or a Windows path from a drive (`C:\`) or a share (`\\server\share`). */
+private fun String.isAbsoluteFolderPath(): Boolean = startsWith("/") || matches(windowsAbsolutePath)
+
+private val windowsAbsolutePath = Regex("""[A-Za-z]:[\\/].*|\\\\[^\\/]+[\\/][^\\/]+.*""")
 
 /**
  * The ports the coordinator and the exchange use: the folder's while a folder

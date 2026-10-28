@@ -163,6 +163,10 @@ handles, required state, commands, and observable proof.
 - [Linux and Android](./linux-and-android.md) covers installation and first
   run, website and application blocking, the Linux service's self-clear and
   refusal, and Android's background enforcement.
+- [Windows](./windows.md) covers the Tart Windows clone, building and
+  installing the MSI, onboarding, closing to the tray, and sessions, and the guest checks for
+  connections, processes, the service, filters, the Run value, and a foreign
+  pipe caller.
 - [First install](./onboarding.md) covers the six-step first-run flow, the
   skip prelude every fresh launch needs, the upgrade row, and the degraded
   iCloud outcome.

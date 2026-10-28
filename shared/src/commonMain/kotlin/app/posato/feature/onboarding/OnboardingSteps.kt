@@ -308,8 +308,12 @@ internal fun SummaryStep(
                     stringResource(
                         when (permissionPlatform) {
                             OnboardingPermissionPlatform.IOS -> Res.string.onboarding_summary_access_note
+
                             OnboardingPermissionPlatform.MAC -> Res.string.onboarding_summary_helper_note
-                            OnboardingPermissionPlatform.LINUX, OnboardingPermissionPlatform.ANDROID -> permissionPlatform.accessCopy().required
+
+                            OnboardingPermissionPlatform.LINUX,
+                            OnboardingPermissionPlatform.ANDROID,
+                            OnboardingPermissionPlatform.WINDOWS -> permissionPlatform.accessCopy().required
                         },
                     ),
                 )

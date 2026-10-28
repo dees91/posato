@@ -9,6 +9,12 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.AclEntry
+import java.nio.file.attribute.AclEntryFlag
+import java.nio.file.attribute.AclEntryPermission
+import java.nio.file.attribute.AclEntryType
+import java.nio.file.attribute.AclFileAttributeView
+import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
 
 internal object NioFolderFileSystem : FolderFileSystem, FolderReads by NioFolderReads, FolderWrites by NioFolderWrites
@@ -61,9 +67,25 @@ private object NioFolderReads : FolderReads {
         }
     }
 
+    /**
+     * A directory Posato can create files in. Some Windows file systems, such as virtual drives and virtio-fs shares,
+     * answer no access list, so Java reads them as not writable; a file created and deleted there settles it.
+     */
     override fun isWritableDirectory(path: String): Boolean {
         val directory = path.toPathOrNull() ?: return false
-        return Files.isDirectory(directory) && Files.isWritable(directory)
+        if (!Files.isDirectory(directory)) return false
+        return Files.isWritable(directory) || canCreateFileIn(directory)
+    }
+
+    private fun canCreateFileIn(directory: Path): Boolean {
+        return try {
+            Files.delete(Files.createTempFile(directory, ".posato-", ".probe"))
+            true
+        } catch (_: IOException) {
+            false
+        } catch (_: UnsupportedOperationException) {
+            false
+        }
     }
 }
 
@@ -177,17 +199,38 @@ private fun linkOrMoveIntoPlace(
     return ExclusiveWrite.CREATED
 }
 
+/**
+ * Leaves [path] to its owner: POSIX modes where the file system has them, otherwise, as on Windows, an access list
+ * with one entry for the owner, which a directory passes on to what is created in it.
+ */
 private fun setPermissions(
     path: Path,
     permissions: String,
 ) {
     try {
-        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(permissions))
+        val posix = Files.getFileAttributeView(path, PosixFileAttributeView::class.java)
+        val acl = Files.getFileAttributeView(path, AclFileAttributeView::class.java)
+        when {
+            posix != null -> posix.setPermissions(PosixFilePermissions.fromString(permissions))
+            acl != null -> acl.acl = listOf(ownerOnly(acl, Files.isDirectory(path)))
+        }
     } catch (_: UnsupportedOperationException) {
         return
     } catch (_: IOException) {
         return
     }
+}
+
+private fun ownerOnly(
+    acl: AclFileAttributeView,
+    directory: Boolean,
+): AclEntry {
+    val entry = AclEntry.newBuilder()
+        .setType(AclEntryType.ALLOW)
+        .setPrincipal(acl.owner)
+        .setPermissions(AclEntryPermission.entries.toSet())
+    if (directory) entry.setFlags(AclEntryFlag.FILE_INHERIT, AclEntryFlag.DIRECTORY_INHERIT)
+    return entry.build()
 }
 
 private fun deleteQuietly(file: Path): Boolean {

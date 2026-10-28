@@ -14,12 +14,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Walks first-run onboarding on Android or Linux the way a person does: past the welcome and privacy steps, through
+ * Walks first-run onboarding on Android, Linux, or Windows the way a person does: past the welcome and privacy steps, through
  * device access, an optional first website, and the summary to Session. On Android every system request that access
  * raises (the VPN, notifications, the battery exemption) is answered with its allow button, so the grants `install
- * --grants settings` leaves out are given as a person gives them. The Mac uses `vm onboard`, iOS its scenario.
+ * --grants settings` leaves out are given as a person gives them. On Windows the MSI has already installed the pausing
+ * service, so the access step only checks it.
+ * The Mac uses `vm onboard`, iOS its scenario.
  */
-class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk first-run onboarding to Session, allowing every request.") {
+class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows: walk first-run onboarding to Session, allowing every request.") {
     private val website by option("--website", help = "A first website to add on the website step.")
     private val skipAccess by option("--skip-access", help = "Press Not now on the access step instead of allowing access.").flag()
 
@@ -56,10 +58,10 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
 
     private fun requireTarget(session: Session): Target {
         val target = session.target()
-        if (target != Target.ANDROID && target != Target.LINUX) {
+        if (target != Target.ANDROID && target != Target.LINUX && target != Target.WINDOWS) {
             throw ControlException(
                 ErrorCode.UNSUPPORTED_ON_TARGET,
-                "flow onboard walks the android and linux targets.",
+                "flow onboard walks the android, linux, and windows targets.",
                 "On the Mac run `vm onboard`; on iOS run the onboarding scenario.",
             )
         }
@@ -78,7 +80,8 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
         val outcome = when {
             skipAccess -> NOT_NOW.also { FlowSteps.run(backend, listOf(FlowSteps.reveal(button(NOT_NOW)), FlowSteps.tap(button(NOT_NOW)))) }
             target == Target.ANDROID -> allowAndroid(backend)
-            else -> allowLinux(backend)
+            target == Target.WINDOWS -> allowService(backend, WINDOWS_ACTION)
+            else -> allowService(backend, LINUX_ACTION)
         }
         if (!skipAccess) FlowSteps.run(backend, listOf(FlowSteps.reveal(button(CONTINUE)), FlowSteps.tap(button(CONTINUE))))
         FlowSteps.run(backend, listOf(FlowSteps.waitFor(Query(text = WEBSITE_TITLE))))
@@ -142,20 +145,24 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
     }
 
     /**
-     * The service installs through `pkexec`; the clone's polkit rule lets the test user approve without a password.
-     * A clone that already has the service, such as after `launch --fresh`, shows it installed with only Continue.
+     * On Linux the service installs through `pkexec`; the clone's polkit rule lets the test user approve without a
+     * password. On Windows the MSI installed it and the action only checks it. A service that already answers, such
+     * as after `launch --fresh`, shows installed with only Continue.
      */
-    private fun allowLinux(backend: Backend): String {
-        if (LINUX_INSTALLED in FlowSteps.labels(backend)) return LINUX_INSTALLED
+    private fun allowService(
+        backend: Backend,
+        action: String,
+    ): String {
+        if (SERVICE_INSTALLED in FlowSteps.labels(backend)) return SERVICE_INSTALLED
         FlowSteps.run(
             backend,
             listOf(
-                FlowSteps.reveal(button(LINUX_ACTION)),
-                FlowSteps.tap(button(LINUX_ACTION)),
-                FlowSteps.waitFor(Query(text = LINUX_INSTALLED), timeoutSeconds = SERVICE_SECONDS),
+                FlowSteps.reveal(button(action)),
+                FlowSteps.tap(button(action)),
+                FlowSteps.waitFor(Query(text = SERVICE_INSTALLED), timeoutSeconds = SERVICE_SECONDS),
             ),
         )
-        return LINUX_INSTALLED
+        return SERVICE_INSTALLED
     }
 
     private fun button(text: String): Query = Query(text = text, role = FlowSteps.ROLE_BUTTON)
@@ -179,7 +186,8 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android or Linux: walk fir
         const val ANDROID_ACTION = "Allow access"
         const val ANDROID_ALLOWED = "Access allowed"
         const val LINUX_ACTION = "Allow pausing on this computer"
-        const val LINUX_INSTALLED = "Pausing service installed"
+        const val WINDOWS_ACTION = "Check the pausing service"
+        const val SERVICE_INSTALLED = "Pausing service installed"
 
         /** The allow buttons of Android's VPN, notification, and battery requests, on stock Android and One UI. */
         val SYSTEM_ANSWERS = listOf("Allow", "OK")

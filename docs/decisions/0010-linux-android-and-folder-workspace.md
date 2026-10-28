@@ -3,7 +3,7 @@
 ## Status
 
 - **Status:** Accepted (2026-10-20); delivered by `SYNC-018`, `LINUX-001`, and `ANDROID-001` and verified on Tart Macs, a Tart Ubuntu guest, an Android emulator and phone, and the test iPhone
-- **Date:** 2026-10-10
+- **Date:** 2026-10-10; amended 2026-10-27 with the Windows row (`PLATFORM-002`)
 - **Decision owner:** Project maintainer
 - **Provenance:** the direction is `user-confirmed` (2026-10-10, release 1.5
   composition): Linux and Android, synchronization through a user-selected
@@ -11,7 +11,17 @@
   pairing code without device revocation, Android application blocking
   without an accessibility service, and (later the same day) iOS in folder
   mode as well. The mechanisms below were `agent-delegated` and are
-  `user-confirmed` with the acceptance on 2026-10-20.
+  `user-confirmed` with the acceptance on 2026-10-20. The Windows row's
+  choices are `user-confirmed` on 2026-10-27: the Windows Filtering Platform
+  for websites, the service installed by the per-machine MSI that records
+  the installing user, a named pipe open only to that user and the system,
+  and Start menu desktop programs only, without Store applications. On
+  2026-10-28 the maintainer also accepted, for `PLATFORM-002`, a service
+  without a restricted service SID, with least privilege to become one rule
+  for every desktop helper (`PLATFORM-004`). The remaining Windows mechanism
+  details and limits are `agent-delegated` and wait in the
+  [`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
+  until the maintainer confirms them.
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
 
@@ -33,13 +43,14 @@ in sync by a service the person already uses, and Posato does not care which.
 
 ### Platforms and order
 
-Linux and Android join release 1.5. Windows follows later (`PLATFORM-002`).
-All platforms share the Compose interface in `:shared`.
+Linux and Android join release 1.5. Windows joins release 1.6
+(`PLATFORM-002`). All platforms share the Compose interface in `:shared`.
 
 | Platform | Host | Websites | Applications | Privilege |
 | --- | --- | --- | --- | --- |
 | Linux | `:desktopApp` on the JVM, `.deb` for Ubuntu 24.04 or later; arm64 is built and verified here, the x86-64 package needs an x86-64 build machine (`RELEASE-007`) | Root helper writes a marked block in `/etc/hosts` that maps each blocked host and its `www` counterpart to `0.0.0.0` and `::`, so connections fail | Chosen from desktop entries; the helper ends matching processes while a pause runs | A systemd system service, installed once through `pkexec`; the application talks to it over a Unix socket in the root-owned `/run/posato`, which accepts only the installing user and root by their peer credentials |
 | Android | New `:androidApp`, Android 13 (API 33) or later | Local `VpnService` that only carries DNS to one IPv4 address, answers blocked names with `0.0.0.0` and `::`, so connections fail, and forwards the rest over protected sockets to the DNS of the network underneath | Usage access (`UsageStatsManager`) polled by a foreground service, which opens a full-screen block screen over a blocked application, also one already in front when the pause starts; the launcher, Settings, the phone, and Posato are never offered for blocking | Runtime grants: VPN consent, usage access, display over other apps, notifications, exact alarms, and the battery-optimization exemption; a `specialUse` foreground service runs while a pause or an enabled schedule exists |
+| Windows | `:desktopApp` on the JVM, MSI packages for Windows 11 on arm64 and x64 | A system service adds Windows Filtering Platform block filters for the addresses that each blocked host and its `www` counterpart resolve to, so connections to them fail | Chosen from the Start menu's shortcuts to installed desktop programs; the service ends matching processes of the installing user while a pause runs | A service running as `LocalSystem`, installed by the per-machine MSI with its one administrator approval; the application talks to it over a local named pipe that only the installing user and the system can open |
 | macOS | Unchanged | Unchanged | Unchanged | Unchanged |
 
 The Linux helper is a small Kotlin JVM program shipped in the package at a
@@ -74,6 +85,18 @@ starts an interpreter, a launcher such as `flatpak`, or a script is not
 offered, because ending it would end every program it runs. The package's pre-removal script
 clears the block and stops the service. The helper never reads browsing and
 never logs hosts.
+
+### Windows
+
+The Windows service is the Linux helper's contract on Windows: a small
+Kotlin JVM program, `posato-helper.exe`, shipped in the MSI and run by the
+Service Control Manager as `LocalSystem`. It accepts the same **apply**,
+**clear**, **status**, and acknowledge requests with the same validation,
+except that an executable is an absolute Windows path to an `.exe`. The
+service ends only processes of the installing user, never a process of the
+system or of another user, and clears by itself at the session end. Windows
+uses the folder workspace and the resident core shared with the Mac and
+Linux. The service never reads traffic and never logs hosts.
 
 Android has no root and no accessibility service. A blocked application can
 be visible for up to one polling interval before the block screen covers it.
@@ -217,6 +240,11 @@ limits read on their own; the limits are unchanged.
 - A workspace syncs through iCloud or through one folder, never both, and
   there is no move between them: remove the iCloud workspace before choosing
   a folder.
+
+The Windows limits are drafted in the
+[`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
+and enter this list once the maintainer confirms them; `DOCS-007` then moves
+them to the limits page and `RELEASE-010` publishes them with release 1.6.
 
 ## Consequences
 

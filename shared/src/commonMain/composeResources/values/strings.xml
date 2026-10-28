@@ -258,6 +258,8 @@ For what matters.</string>
     <string name="presence_linux_not_enforcing">Restrictions not active on this computer</string>
     <string name="presence_linux_first_close">Posato is still running, so your pause and schedules keep working. Open it again from its icon or the applications menu.</string>
     <string name="presence_linux_first_close_no_icon">Posato is still running, so your pause and schedules keep working. Open it again from the applications menu.</string>
+    <string name="presence_windows_first_close">Posato is still running, so your pause and schedules keep working. Open it again from its icon in the notification area or the Start menu.</string>
+    <string name="presence_windows_first_close_no_icon">Posato is still running, so your pause and schedules keep working. Open it again from the Start menu.</string>
     <string name="presence_linux_quit_schedules">Scheduled pauses won't start until you open Posato again. A running pause still ends on time.</string>
     <string name="mac_standing_grant">Start sessions without the password</string>
     <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions apply only during a pause you start or a schedule you set.</string>
@@ -388,5 +390,10 @@ For what matters.</string>
     <string name="onboarding_permission_linux_denied">The pausing service was not installed. Try again and enter your administrator password.</string>
     <string name="onboarding_permission_android_denied">Some permissions are still off. Allow them to pause websites and apps on this phone.</string>
     <string name="onboarding_permission_linux_required">Allow pausing on this computer before pausing websites or apps.</string>
+    <string name="onboarding_permission_windows_body">The Posato installer set up the small service that pauses the websites and apps you choose on this %1$s.</string>
+    <string name="onboarding_permission_windows_action">Check the pausing service</string>
+    <string name="onboarding_summary_windows_off">Pausing service not running</string>
+    <string name="onboarding_permission_windows_denied">The pausing service is not running. Restart the computer, or install Posato again to set it up.</string>
+    <string name="onboarding_permission_windows_required">Posato needs its pausing service before pausing websites or apps. Install Posato again to set it up.</string>
     <string name="onboarding_permission_android_required">Allow access before pausing websites or apps.</string>
 </resources>

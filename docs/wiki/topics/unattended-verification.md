@@ -336,7 +336,9 @@ again; a copy that overlaps a build is untested (`open`). The
 The spike asked whether an agent can verify Posato on Windows with no person
 present, as it does on Linux. The answer for the verification loop is yes;
 enforcement, the privilege model, and distribution are untouched.
-[`tools/windows-spike`](../../../tools/windows-spike/README.md) reproduces it.
+`posato-control -t windows` replaced the spike's scripts
+(`PLATFORM-002`, see the driver README, "Windows"); the golden VM setup lives
+in `tools/posato-control/windows`.
 
 - `observed` (2026-10-25): an unofficial Tart fork with Windows guests,
   reviewed and built from source, installed Windows 11 ARM64 (build 26300)
@@ -386,10 +388,36 @@ enforcement, the privilege model, and distribution are untouched.
   `superseded` (2026-10-27) by `ONBOARDING-005`: Windows now reads "On this
   computer" and Linux, Android, and Windows show their own access text
   (idea 56 in `mvp-open-questions.md`).
-- `open`: an x64 Windows target (this Mac runs ARM64 guests only),
-  Authenticode signing and SmartScreen, the pausing mechanism and its
-  elevation prompt, running next to the macOS or Linux guests, and whether the
-  fork keeps working after a macOS update.
+- `observed` (2026-10-27, `PLATFORM-002`): the arm64 MSI installs in a
+  clone with `msiexec /quiet`; onboarding, pauses, schedules, start at login
+  after a reboot, a major upgrade during a pause, and a clean uninstall run
+  unattended. The golden has UAC off; a clone turns it on with `EnableLUA=1`
+  and a restart from inside the guest (`windows stop` and `boot` left the
+  guest agent silent), and `launch` then runs Posato and the probe with the
+  signed-in user's filtered token. The UAC prompt itself is not driven. The
+  Java Access Bridge reads Compose and Posato's modal Swing dialog, but not
+  the notification-area menu, so tray actions are not driven.
+- `observed`: with UAC on, a filtered token cannot open a LocalSystem
+  service's process, so a pipe client that checks the server through its
+  process token never trusts it; asking the Service Control Manager for the
+  service's process ID and account works. Runs with UAC off would have hidden
+  this.
+- `observed`: AC-02 needs a host whose addresses stay fixed; `example.org`
+  resolved to the same two IPv4 and two IPv6 addresses across repeated
+  lookups, and fresh Edge and Chrome profiles then failed with
+  `ERR_NETWORK_ACCESS_DENIED` (`ERR_QUIC_PROTOCOL_ERROR` with QUIC on).
+- `observed`: a Mac (8 GiB), an Ubuntu (4 GiB), and a Windows (4 GiB) guest
+  ran at once within the memory budget and shared one folder workspace; a
+  pause started on Windows applied on Linux in about 40 s and on the Mac in
+  about 66 s.
+- `observed`: jpackage's generated `FindRelatedProductsEx` failed in the
+  arm64 guest (`MsiEnumRelatedProducts` error 87), so a newer MSI installed
+  beside the older one; the standard `FindRelatedProducts` replaces it.
+- `observed`: the x64 MSI is built and smoke-tested (install, service, pipe,
+  pause, uninstall) on a GitHub Actions Windows runner; the runner's Git
+  checks files out with CRLF unless `core.autocrlf` is off.
+- `open`: Authenticode signing and SmartScreen (`RELEASE-010`), the UAC
+  prompt itself, and whether the fork keeps working after a macOS update.
 
 ## Observed blocking on macOS
 

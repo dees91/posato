@@ -287,6 +287,12 @@ private fun transferFiles(session: Session): TransferFiles {
             "Export and import are driven on the test iPhone, not the Simulator.",
             "Use -t device.",
         )
+
+        Target.WINDOWS -> throw ControlException(
+            ErrorCode.UNSUPPORTED_ON_TARGET,
+            "Export and import do not drive the Windows file dialog yet.",
+            "Use another target, or extend posato-control for the Windows dialog first.",
+        )
     }
 }
 

@@ -4,6 +4,13 @@ import androidx.compose.ui.window.application
 import app.posato.desktop.linux.status.LINUX_ICON_THEME_PATH
 import app.posato.desktop.linux.status.LinuxStatusArea
 import app.posato.desktop.linux.status.StatusIcons
+import app.posato.desktop.resident.DesktopResidence
+import app.posato.desktop.resident.FirstCloseMarker
+import app.posato.desktop.resident.InstanceLock
+import app.posato.desktop.resident.ResidentHost
+import app.posato.desktop.resident.ResidentPosato
+import app.posato.desktop.resident.ResidentStartup
+import app.posato.desktop.resident.residentStartup
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.unavailableMacHelper
@@ -11,6 +18,7 @@ import app.posato.feature.presence.loadLinuxPresenceCopy
 import app.posato.feature.targets.data.CatalogApplicationMappings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.lang.ref.Reference
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
@@ -25,10 +33,10 @@ fun main(args: Array<String>) {
     val data = dataDirectory()
     val background = BACKGROUND_ARGUMENT in args
     val token = System.getenv("XDG_ACTIVATION_TOKEN") ?: System.getenv("DESKTOP_STARTUP_ID").orEmpty()
-    val lock = LinuxInstanceLock(data.resolve("instance.lock"))
-    when (linuxStartup(lock) { if (background) true else forwardShowWithRetry(token) }) {
-        LinuxStartup.RUN -> Unit
-        LinuxStartup.FORWARDED, LinuxStartup.EXIT -> exitProcess(0)
+    val lock = InstanceLock(data.resolve("instance.lock"))
+    when (residentStartup(lock) { if (background) true else forwardShowWithRetry(token) }) {
+        ResidentStartup.RUN -> Unit
+        ResidentStartup.FORWARDED, ResidentStartup.EXIT -> exitProcess(0)
     }
     val client = LinuxHelperClient()
     val installer = LinuxHelperInstaller(client)
@@ -43,7 +51,7 @@ fun main(args: Array<String>) {
     )
     mappings.keptTargets = graph.keptApplicationRequirements::of
     val copy = runBlocking { loadLinuxPresenceCopy() }
-    val residence = LinuxResidence(LinuxAutostart(linuxAutostartDirectory(System.getenv(), System.getProperty("user.home"))))
+    val residence = DesktopResidence(LinuxAutostart(linuxAutostartDirectory(System.getenv(), System.getProperty("user.home"))))
     val events = LinuxHostEvents()
     val statusArea = LinuxStatusArea(
         icons = StatusIcons(LINUX_ICON_THEME_PATH),
@@ -53,11 +61,14 @@ fun main(args: Array<String>) {
         // The session ended under Posato: the desktop is logging out.
         onBusLost = { exitProcess(0) },
     ).takeIf { it.start() }
-    val host = LinuxResidentHost(graph, copy, events, statusArea, residence, LinuxFirstCloseMarker(data.resolve("first-close")), background)
+    val status = statusArea?.let { LinuxStatusSurface(it, events) }
+    val host = ResidentHost(graph, copy, status, residence, FirstCloseMarker(data.resolve("first-close")), background)
     // The lock and the bus connection end with the process, which application {} exits.
     application {
-        LinuxResidentPosato(host)
+        ResidentPosato(host)
     }
+    // A collected lock's channel is closed by its cleaner, which would let a second Posato start.
+    Reference.reachabilityFence(lock)
 }
 
 /** A second launch asks the running Posato to show its window, retrying while that Posato is still starting. */
