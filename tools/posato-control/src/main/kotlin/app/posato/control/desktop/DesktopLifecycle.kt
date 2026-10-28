@@ -6,6 +6,7 @@ import app.posato.control.backend.LaunchOptions
 import app.posato.control.backend.LaunchResult
 import app.posato.control.backend.Lifecycle
 import app.posato.control.backend.StatusResult
+import app.posato.control.core.CONTROL_IDS_MARKER
 import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
@@ -60,6 +61,7 @@ class DesktopLifecycle(
             )
         }
         if (options.fresh) evidence.reset(dryRun = false, keepInstall = true)
+        markVerificationHost()
         val logPath = context.artifactPath("desktop-app.log")
         val pid = launchThroughLaunchServices(options, logPath)
         val windowId = awaitWindow(pid)
@@ -75,6 +77,12 @@ class DesktopLifecycle(
         )
         context.recordArtifact(logPath)
         return LaunchResult(pid = pid, logPath = context.layout.relativize(logPath), windowId = windowId)
+    }
+
+    /** Posato exposes its control ids to accessibility only where this marker exists; see `ControlId.jvm.kt`. */
+    private fun markVerificationHost() {
+        val marker = Path.of(System.getProperty("user.home"), CONTROL_IDS_MARKER)
+        if (!marker.exists()) java.nio.file.Files.createFile(marker)
     }
 
     /**

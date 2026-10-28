@@ -1,24 +1,6 @@
 // @ts-check
-import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
-
-// Astro turns every Markdown file under src/pages into a route. pl/PRIVACY.md is
-// the source imported by pl/privacy.astro. Publishing it too would add /pl/PRIVACY/
-// and, on a case-insensitive disk, overwrite /pl/privacy/.
-const readDirectory = fs.readdirSync;
-fs.readdirSync = function (directory, options) {
-  const entries = readDirectory.call(this, directory, options);
-  const directoryPath =
-    typeof directory === "string" ? directory : directory instanceof URL ? fileURLToPath(directory) : "";
-  if (!directoryPath.replaceAll("\\", "/").endsWith("/src/pages/pl")) {
-    return entries;
-  }
-  return entries.filter((entry) => {
-    const name = typeof entry === "string" ? entry : entry.name;
-    return name !== "PRIVACY.md";
-  });
-};
 
 // PRIVACY.md, the screenshots, and the icon are read from the repository
 // root, never copied into this directory.

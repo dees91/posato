@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.lifecycleScope
+import app.posato.feature.targets.ui.loadSetNameText
 import app.posato.openPosatoLink
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -52,6 +53,8 @@ class MainActivity : ComponentActivity() {
         // shared screens keep their content inside the safe drawing area.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Before the screens build names, and again after a per-app language change recreates the activity.
+        loadSetNameText()
         val app = application as PosatoAndroidApp
         GuardService.start(this)
         lifecycleScope.launch { runCatching { app.runtime.preparePauseSets() } }

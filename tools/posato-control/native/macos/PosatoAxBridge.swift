@@ -140,8 +140,8 @@ enum Bridge {
     } else {
       childNodes = []
     }
-    // Compose desktop exposes no accessibility identifier. A button's help is the stable id;
-    // VoiceOver does not speak help unless asked. Text keeps its visible value as the label.
+    // Compose desktop exposes no accessibility identifier. On a verification host a button's help is
+    // its stable id (see ControlId.jvm.kt); text keeps its visible value as the label.
     let help = unified == "text" ? nil : string(element, kAXHelpAttribute)
     return Node(
       role: unified,

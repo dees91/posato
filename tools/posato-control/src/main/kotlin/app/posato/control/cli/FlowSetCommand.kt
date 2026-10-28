@@ -31,14 +31,15 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         }
         val backend = session.backend()
         // The iOS bar keeps the spoken "Back to Pause sets". Other hosts press the in-page Back by its catalog key.
-        val back = FlowControls.pauseSetsBack(session.target().isApple)
+        val apple = session.target().isApple
+        val back = FlowControls.pauseSetsBack(apple)
         openList(backend, back)
         val labels = FlowSteps.labels(backend)
         val from = renameFrom
         when {
-            from != null -> rename(backend, from, labels)
+            from != null -> rename(backend, from, labels, apple)
             hasSetNamed(labels, name) && makeDefault && websites.isEmpty() -> Unit
-            else -> create(backend, back, labels)
+            else -> create(backend, back, labels, apple)
         }
         if (makeDefault && !isDefault(FlowSteps.labels(backend), name)) {
             FlowSteps.run(backend, listOf(FlowSteps.button(menuFor(name)), FlowSteps.button("Make default")))
@@ -70,6 +71,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         backend: Backend,
         from: String,
         labels: List<String>,
+        apple: Boolean,
     ) {
         // A rerun after a rename that went through finds the new name and has nothing left to do.
         if (!hasSetNamed(labels, from) && hasSetNamed(labels, name)) return
@@ -85,7 +87,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
                 FlowSteps.button(menuFor(from)),
                 FlowSteps.button("Rename"),
                 FlowSteps.typeInto(name, submit = false),
-                FlowControls.buttonId("action_save_short"),
+                FlowControls.alertButton("action_save_short", "Save", apple),
             ),
         )
         awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name after the rename.")
@@ -95,6 +97,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         backend: Backend,
         back: Query,
         labels: List<String>,
+        apple: Boolean,
     ) {
         // Posato accepts a second set with the same name, so a rerun would leave two rows the later steps cannot tell apart.
         if (hasSetNamed(labels, name)) {
@@ -107,7 +110,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         val steps = mutableListOf<Step>(
             FlowControls.buttonId("action_new_set"),
             FlowSteps.typeInto(name, submit = false),
-            FlowControls.buttonId("action_save_short"),
+            FlowControls.alertButton("action_save_short", "Save", apple),
             FlowSteps.waitFor(back),
         )
         if (websites.isNotEmpty()) {

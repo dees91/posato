@@ -69,7 +69,8 @@ abstract class VerifyPolishCatalog : DefaultTask() {
         polish: Map<String, String>,
     ): List<String> {
         val findings = mutableListOf<String>()
-        (english.keys - polish.keys).sorted().forEach { findings += "Plural $name is missing Polish quantity $it" }
+        // Polish counts need one, few, and many whatever English has, and other for fractions.
+        (english.keys + POLISH_QUANTITIES - polish.keys).sorted().forEach { findings += "Plural $name is missing Polish quantity $it" }
         val allowed = english.values.flatMap(::placeholders).toSet()
         polish.forEach { (quantity, value) ->
             if (value.isBlank()) findings += "Plural $name quantity $quantity is blank"
@@ -117,5 +118,6 @@ abstract class VerifyPolishCatalog : DefaultTask() {
         val PLURAL: Regex = Regex("""<plurals name="([^"]+)">([\s\S]*?)</plurals>""")
         val ITEM: Regex = Regex("""<item quantity="([^"]+)">([\s\S]*?)</item>""")
         val PLACEHOLDER: Regex = Regex("""%(?:\d+\$)?[A-Za-z]""")
+        val POLISH_QUANTITIES: Set<String> = setOf("one", "few", "many", "other")
     }
 }

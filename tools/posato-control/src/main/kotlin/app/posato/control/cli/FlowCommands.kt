@@ -74,7 +74,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
                 FlowSteps.screenshot("session-started"),
             ),
         )
-        endEarlyAfter?.let { seconds -> endEarly(backend, seconds) }
+        endEarlyAfter?.let { seconds -> endEarly(backend, seconds, target.isApple) }
         return buildJsonObject {
             set?.let { put("set", it) }
             if (untilEndOfDay) put("untilEndOfDay", true) else put("minutes", minutes)
@@ -93,6 +93,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
     private fun endEarly(
         backend: Backend,
         seconds: Int,
+        apple: Boolean,
     ) {
         FlowSteps.run(
             backend,
@@ -100,7 +101,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
                 FlowSteps.sleep(seconds.toDouble()),
                 FlowControls.buttonId("action_end_session_early"),
                 FlowSteps.waitFor(Query(text = "Ready to return?")),
-                FlowControls.buttonId("action_confirm_end_session"),
+                FlowControls.alertButton("action_confirm_end_session", "End session", apple),
                 FlowSteps.waitFor(FlowControls.byId("action_start_a_session"), timeoutSeconds = START_SECONDS),
                 FlowSteps.screenshot("session-ended-early"),
             ),

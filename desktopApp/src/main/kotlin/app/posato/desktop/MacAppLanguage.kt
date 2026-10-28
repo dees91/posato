@@ -21,8 +21,16 @@ internal object MacAppLanguage {
             .start()
         val text = process.inputStream.bufferedReader().use { it.readText() }
         if (process.waitFor() != 0) return null
-        return LANGUAGE.find(text)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+        return firstEntry(text)
     }
 
-    private val LANGUAGE = Regex("\"([^\"]+)\"")
+    /** The first entry of the array `defaults` prints, such as `(pl, "en-US")`, which quotes only some entries. */
+    private fun firstEntry(text: String): String? = text.trim()
+        .removePrefix("(")
+        .removeSuffix(")")
+        .split(',')
+        .firstOrNull()
+        ?.trim()
+        ?.trim('"')
+        ?.takeIf { it.isNotBlank() }
 }

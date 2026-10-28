@@ -6,6 +6,7 @@ import app.posato.control.backend.LaunchOptions
 import app.posato.control.backend.LaunchResult
 import app.posato.control.backend.Lifecycle
 import app.posato.control.backend.StatusResult
+import app.posato.control.core.CONTROL_IDS_MARKER
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.LaunchedProcess
@@ -90,6 +91,8 @@ class LinuxLifecycle(
         if (!installed()) throw ControlException(ErrorCode.APP_NOT_INSTALLED, "Posato is not installed in the clone.", "Run `install -t linux`.")
         guest.terminate()
         if (options.fresh) guest.exec("rm -rf ${LinuxGuest.DATA_DIRECTORY}")
+        // Posato exposes its control ids to accessibility only where this marker exists.
+        guest.exec("touch \$HOME/$CONTROL_IDS_MARKER").requireSuccess(ErrorCode.COMMAND_FAILED, "Marking the clone as a verification host")
         guest.accessibility.launch()
         val pid = pid()
         stateStore.update(Target.LINUX, LaunchedProcess(pid = pid, startedAt = System.currentTimeMillis(), runId = context.runId))

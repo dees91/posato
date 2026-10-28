@@ -679,6 +679,7 @@ Just for you.</string>
     <string name="pause_sets_label">Pause set</string>
     <string name="pause_sets_default_count">Default · %1$s</string>
     <string name="pause_sets_copy_suffix"> (copy)</string>
+    <string name="pause_sets_unnamed">My set</string>
     <string name="pause_sets_make_default_to_delete">Make another set the default to delete this one.</string>
     <string name="pause_sets_more_named">More actions for %1$s</string>
     <string name="targets_deleted_elsewhere">This set was deleted on another device.</string>

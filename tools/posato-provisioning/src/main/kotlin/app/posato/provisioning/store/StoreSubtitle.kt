@@ -39,6 +39,13 @@ object StoreSubtitle {
                     "that is still being prepared; `store status` shows the versions.",
             )
         val localization = appInfo.localizations(info.id).firstOrNull { resource -> resource.attributes.locale == locale }
+        if (localization == null && locale == STORE_LOCALE) {
+            throw ProvisioningException(
+                ErrorCode.LOCALIZATION_MISSING,
+                "The App Information has no $STORE_LOCALE localization.",
+                "Add the $STORE_LOCALE localization in App Store Connect.",
+            )
+        }
         if (localization == null) {
             appInfo.createLocalization(info.id, locale, subtitle)
             return "updated"

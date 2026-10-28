@@ -113,7 +113,7 @@
     <string name="sync_completed">To urządzenie dokończyło ostatnią próbę synchronizacji. Inne urządzenia mogą jeszcze potrzebować synchronizacji.</string>
     <string name="sync_retryable">Synchronizacja się nie dokończyła. Wybierz Synchronizuj teraz, aby spróbować ponownie.</string>
     <string name="sync_action_required">Synchronizacja wymaga uwagi. Sprawdź konto iCloud i przestrzeń, zanim spróbujesz ponownie.</string>
-    <string name="sync_action_required_local_capacity">Synchronizacja wymaga uwagi. Twoje urządzenia mają razem więcej niż 1,024 stron. Usuń strony na dowolnym urządzeniu, a potem wybierz Synchronizuj teraz.</string>
+    <string name="sync_action_required_local_capacity">Synchronizacja wymaga uwagi. Twoje urządzenia mają razem więcej niż 1024 stron. Usuń strony na dowolnym urządzeniu, a potem wybierz Synchronizuj teraz.</string>
     <string name="sync_action_required_set_capacity">Synchronizacja wymaga uwagi. Twoje urządzenia mają razem więcej niż 10 zestawów, więc jednego nie dało się udostępnić. Usuń zestaw na dowolnym urządzeniu; czekający zsynchronizuje się sam.</string>
     <string name="sync_action_required_schedule_capacity">Synchronizacja wymaga uwagi. Twoje urządzenia mają razem więcej niż 10 harmonogramów, więc jednego nie dało się udostępnić. Usuń harmonogram na dowolnym urządzeniu; czekający zsynchronizuje się sam.</string>
     <string name="sync_action_required_shared_capacity">Synchronizacja wymaga uwagi. Wspólna przestrzeń ma więcej stron, niż może zatrzymać. Usuń strony na dowolnym urządzeniu, a potem wybierz Synchronizuj teraz. Porównaj zestawy na obu urządzeniach i dodaj ponownie to, czego brakuje.</string>
@@ -678,6 +678,7 @@ Tylko dla ciebie.</string>
     <string name="pause_sets_label">Zestaw</string>
     <string name="pause_sets_default_count">Domyślny · %1$s</string>
     <string name="pause_sets_copy_suffix"> (kopia)</string>
+    <string name="pause_sets_unnamed">Mój zestaw</string>
     <string name="pause_sets_make_default_to_delete">Ustaw inny zestaw jako domyślny, aby usunąć ten.</string>
     <string name="pause_sets_more_named">Więcej czynności dla %1$s</string>
     <string name="targets_deleted_elsewhere">Ten zestaw został usunięty na innym urządzeniu.</string>
@@ -697,7 +698,7 @@ Tylko dla ciebie.</string>
     <string name="targets_host_www">Ten host i jego wariant www. Inne subdomeny to osobne wpisy.</string>
     <string name="targets_save_changes">Zapisz zmiany</string>
     <string name="targets_also_pauses">Wstrzymuje też %1$s</string>
-    <string name="targets_paste_limit">Wklej naraz do 65,536 znaków.</string>
+    <string name="targets_paste_limit">Wklej naraz do 65 536 znaków.</string>
     <string name="targets_nothing_added">Nic nie dodano. Szkic zostaje, aby spróbować ponownie.</string>
     <string name="targets_added_check">Dodano %1$d. Sprawdź pozostałe wpisy albo pojemność listy.</string>
     <string name="targets_add_websites">Dodaj strony</string>
@@ -782,17 +783,17 @@ Tylko dla ciebie.</string>
     <string name="transfer_stays_first">%1$s zostaje pierwsze i zachowuje aplikacje tego urządzenia.</string>
     <string name="transfer_nothing_to_add">Nie ma nic nowego do dodania.</string>
     <string name="transfer_too_many_sets">To dałoby więcej niż 10 zestawów. Połącz zestawy o tej samej nazwie albo zastąp swoje zestawy.</string>
-    <string name="transfer_too_many_websites">To dałoby więcej niż 1,024 stron. Zastąp zestawy albo najpierw usuń część stron.</string>
+    <string name="transfer_too_many_websites">To dałoby więcej niż 1024 stron. Zastąp zestawy albo najpierw usuń część stron.</string>
     <string name="transfer_too_many_schedules">To dałoby więcej niż 10 harmonogramów. Zastąp harmonogramy albo najpierw usuń część.</string>
     <string name="transfer_in_use">Trwająca pauza używa zestawu albo harmonogramu, który to by usunęło. Możesz zastąpić po zakończeniu pauzy.</string>
     <string name="transfer_contents_join">%1$s · %2$s · %3$s</string>
     <string name="catalog_choose_apps">Wybierz aplikacje</string>
     <string name="catalog_choose">Wybierz</string>
     <plurals name="session_not_paused_yet_mac">
-        <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="few">%1$d dodane elementy nie są jeszcze w pauzie: ten Mac wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="many">%1$d dodanych elementów nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="other">%1$d dodanych elementów nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="few">%1$d dodane elementy nie są jeszcze w pauzie: ten Mac wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="many">%1$d dodanych elementów nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="other">%1$d dodanych elementów nie jest jeszcze w pauzie: ten Mac wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
     </plurals>
     <plurals name="session_not_paused_yet_iphone">
         <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten iPhone wstrzymuje naraz do 25 stron i 50 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
@@ -807,10 +808,10 @@ Tylko dla ciebie.</string>
         <item quantity="other">%1$d dodanych elementów nie jest jeszcze w pauzie: ten iPad wstrzymuje naraz do 25 stron i 50 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
     </plurals>
     <plurals name="session_not_paused_yet_computer">
-        <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="few">%1$d dodane elementy nie są jeszcze w pauzie: ten komputer wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="many">%1$d dodanych elementów nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
-        <item quantity="other">%1$d dodanych elementów nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1,024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="few">%1$d dodane elementy nie są jeszcze w pauzie: ten komputer wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="many">%1$d dodanych elementów nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
+        <item quantity="other">%1$d dodanych elementów nie jest jeszcze w pauzie: ten komputer wstrzymuje naraz do 1024 stron i 64 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>
     </plurals>
     <plurals name="session_not_paused_yet_phone">
         <item quantity="one">%1$d dodany element nie jest jeszcze w pauzie: ten telefon wstrzymuje naraz do 25 stron i 50 aplikacji. Zostaną wstrzymane, gdy będzie miejsce.</item>

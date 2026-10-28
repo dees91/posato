@@ -1835,6 +1835,8 @@ compose.desktop {
                 infoPlist {
                     extraKeysRawXml = updaterInfoPlistKeys +
                         """
+                        <key>CFBundleLocalizations</key>
+                        <array><string>en</string><string>pl</string></array>
                         <key>NSAppleEventsUsageDescription</key>
                         <string>Posato replaces a blocked Safari or Chrome tab with a paused-site page.</string>
                         <key>CFBundleURLTypes</key>
@@ -1869,6 +1871,16 @@ val embedMacOsHelper by tasks.registering(Sync::class) {
             app.dir("Contents/Helpers/PosatoMacOSHelper.app")
         },
     )
+}
+
+// The app shares the helper's Polish usage description, so the Language & Region list can offer Polish for Posato.
+val embedMacOsLocalizations by tasks.registering(Copy::class) {
+    group = "build"
+    description = "Copies the Polish Info.plist strings into the distributable."
+    dependsOn("createDistributable")
+
+    from(rootProject.layout.projectDirectory.dir("macosHelper/Resources/pl.lproj"))
+    into(macOsDistributable.map { app -> app.dir("Contents/Resources/pl.lproj") })
 }
 
 val embedMacOsSyncCompanion by tasks.registering(Sync::class) {
@@ -1906,7 +1918,7 @@ val embedSparkleFramework by tasks.registering(Exec::class) {
 val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage::class) {
     group = "build"
     description = "Signs the generated macOS application and its nested code inside-out."
-    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
+    dependsOn(embedMacOsHelper, embedMacOsLocalizations, embedMacOsSyncCompanion, embedSparkleFramework)
     applicationBundle.set(macOsDistributable)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
     adHocEntitlements.set(layout.projectDirectory.file("Config/PosatoAdHoc.entitlements"))
@@ -2012,7 +2024,7 @@ val checkMacOsUpdateChannel by tasks.registering {
 val stageMacOsReleasePackage by tasks.registering(StageMacOsApplication::class) {
     group = "distribution"
     description = "Stages the embedded macOS application for Developer ID signing."
-    dependsOn(checkMacOsUpdateChannel, embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
+    dependsOn(checkMacOsUpdateChannel, embedMacOsHelper, embedMacOsLocalizations, embedMacOsSyncCompanion, embedSparkleFramework)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
     val releaseBuildNumber = requestedReleaseBuildNumber
     inputs.property("posatoReleaseBuildNumber", providers.provider { PosatoVersion.releaseBuildNumber(releaseBuildNumber) })

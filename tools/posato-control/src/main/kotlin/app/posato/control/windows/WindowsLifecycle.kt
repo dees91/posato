@@ -6,6 +6,7 @@ import app.posato.control.backend.LaunchOptions
 import app.posato.control.backend.LaunchResult
 import app.posato.control.backend.Lifecycle
 import app.posato.control.backend.StatusResult
+import app.posato.control.core.CONTROL_IDS_MARKER
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.LaunchedProcess
@@ -130,6 +131,9 @@ class WindowsLifecycle(
                 },
             )
         }
+        // Posato exposes its control ids to accessibility only where this marker exists.
+        guest.powershell("New-Item -ItemType File -Force -Path \"\$env:USERPROFILE\\$CONTROL_IDS_MARKER\" | Out-Null")
+            .requireSuccess(ErrorCode.COMMAND_FAILED, "Marking ${WindowsGuest.CLONE} as a verification host")
         val arguments = options.arguments.joinToString(" ")
         // Start-Process goes through the shell, so the new process inherits no handle of the agent's command and the
         // command returns (its own redirection would inherit them, and the command would wait for Posato). A hidden cmd

@@ -15,6 +15,7 @@ import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.unavailableMacHelper
 import app.posato.feature.presence.loadWindowsPresenceCopy
 import app.posato.feature.targets.data.CatalogApplicationMappings
+import app.posato.feature.targets.ui.loadSetNameText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.lang.ref.Reference
@@ -38,6 +39,7 @@ fun main(args: Array<String>) {
         ResidentStartup.RUN -> Unit
         ResidentStartup.FORWARDED, ResidentStartup.EXIT -> exitProcess(0)
     }
+    loadSetNameText()
     val launcher = System.getProperty(LAUNCHER_PROPERTY)?.let(Paths::get)
     // The service runs posato-helper.exe beside the installed Posato.exe; outside the package there is none to name.
     val client = WindowsHelperClient(launcher?.resolveSibling(HELPER_EXECUTABLE)?.toString())

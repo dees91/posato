@@ -224,6 +224,27 @@ class StorePreparationTest {
     }
 
     @Test
+    fun `refuses a version without the default localization instead of creating it`() {
+        val harness = StoreHarness(
+            mapOf(
+                "GET apps" to listOf(APPS),
+                "GET builds" to listOf(StoreFixtures.builds()),
+                "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+                "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+                "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(
+                    list("""{"id":"PL","attributes":{"locale":"pl-PL","whatsNew":"Translated notes."}}"""),
+                ),
+                "POST appStoreVersionLocalizations" to listOf("""{"data":{"id":"EN","attributes":{"locale":"en-US"}}}"""),
+            ),
+        )
+
+        val failure = assertFailsWith<ProvisioningException> { StorePreparation(harness.services).prepare(request) }
+
+        assertEquals(ErrorCode.LOCALIZATION_MISSING, failure.code)
+        assertTrue(harness.executor.writes.isEmpty())
+    }
+
+    @Test
     fun `changes only the release type of an existing version`() {
         val harness = StoreHarness(
             mapOf(

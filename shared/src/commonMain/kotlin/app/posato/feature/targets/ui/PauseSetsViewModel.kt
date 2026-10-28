@@ -20,8 +20,6 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
-import app.posato.generated.resources.Res
-import app.posato.generated.resources.pause_sets_copy_suffix
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
@@ -35,7 +33,6 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 
 /** What the Pause sets list reads and changes; the running parts say which sets a pause uses now. */
 internal class PauseSetsInputs(
@@ -273,9 +270,8 @@ private suspend fun PauseSetsInputs.duplicateSet(
     }
     // The apps come first, so the list's reload after the new set already counts them.
     applicationMappings.copyChoices(id.choiceSet(), copyId.choiceSet())
-    val suffix = getString(Res.string.pause_sets_copy_suffix)
     val added = editSets { current ->
-        PauseSets.of(current.sets + LocalPauseSet(copyId, copyNameOf(source.name, suffix), source.domains), current.defaultSetId)
+        PauseSets.of(current.sets + LocalPauseSet(copyId, copyNameOf(source.name), source.domains), current.defaultSetId)
     }
     if (!added) {
         applicationMappings.clear(copyId.choiceSet())
@@ -288,10 +284,8 @@ private suspend fun PauseSetsInputs.duplicateSet(
 }
 
 /** "<name> (copy)", shortened so the whole name stays within a set name's 80 bytes. */
-internal fun copyNameOf(
-    name: String?,
-    suffix: String = COPY_SUFFIX
-): String {
+internal fun copyNameOf(name: String?): String {
+    val suffix = SetNameText.copySuffix
     var base = displayNameOf(name)
     while ((base + suffix).encodeToByteArray().size > ScheduleLimits.MAX_NAME_BYTES) {
         // A whole character at a time, so an emoji is never cut in half.
@@ -299,8 +293,6 @@ internal fun copyNameOf(
     }
     return base.trimEnd() + suffix
 }
-
-private const val COPY_SUFFIX: String = " (copy)"
 
 /** How many apps [id] has chosen on this device, or null when its choices cannot be read. */
 internal suspend fun LocalApplicationMappings.applicationCountOf(id: PauseSetId): Int? {
