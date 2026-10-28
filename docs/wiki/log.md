@@ -3282,3 +3282,19 @@ first removal attempt that does not finish, not to a paused keychain.
   an address the person enters, beside unchanged blocking; whether a rule is
   always on or bound to a session or pause set stays `open`. Owner: backlog
   row `REDIRECT-001`.
+
+## [2026-10-28] feature | German, French, Spanish, and Portuguese
+
+- `I18N-002` (roadmap revision 37, idea 60) ships the four languages that
+  the `I18N-001` retro prepared: the apps on every platform, the pause page,
+  `/de/`, `/fr/`, `/es/`, and `/pt/` on posato.app, and four prepared store
+  listings with screenshots. One agent per language drafted the copy and an
+  independent review translated it back into English; the maintainer
+  accepts it from that report.
+- The site's language list moved to the footer, since six names no longer
+  fit the header on a phone.
+- `posato-control resize-window` shows the Mac window at its minimum width,
+  and `launch -t device --arg ...` now reaches the app, so a language proof
+  runs on the test iPhone. The narrow pass there shortened three languages'
+  tab labels; the [localization guide](../development/localization.md)
+  keeps the lessons.

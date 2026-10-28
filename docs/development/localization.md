@@ -135,3 +135,16 @@ complete, the checks name each missing file and list entry.
 - A translated catalog keeps the English numbers. Write limits such as
   `1,024` with the language's grouping; `verifyCatalogs` names the expected
   form.
+
+## Lessons from `I18N-002`
+
+- A tab label is also the screen's title. Keep it to about ten characters,
+  so three tabs fit on the narrowest supported iPhone; a sentence that
+  sends the person to a tab names it exactly as the tab does.
+- Use the platform's own term for a system feature, and check that a term
+  for Posato's own screens does not name a system one: Android's lock-screen
+  word for Posato's block screen read as Posato locking the phone.
+- An end value can be a date and time, so a label form ("Ends: %1$s")
+  works where "at %1$s" does not.
+- Copying the `pl` entries of `project.pbxproj` with a text replacement also
+  rewrites `plist`; check the file type afterwards.
