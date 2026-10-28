@@ -145,7 +145,7 @@ Para o que importa.</string>
     <string name="onboarding_permission_title">Abra espaço neste dispositivo.</string>
     <string name="onboarding_permission_ios_body">O acesso ao Tempo de Uso permite que o Posato pause os sites e apps que você escolher neste %1$s.</string>
     <string name="onboarding_permission_ios_action">Permitir acesso ao Tempo de Uso</string>
-    <string name="onboarding_permission_check_failed">Não foi possível verificar o acesso. Você pode permiti-lo depois em Conjuntos de pausa.</string>
+    <string name="onboarding_permission_check_failed">Não foi possível verificar o acesso. Você pode permiti-lo depois em Conjuntos.</string>
     <string name="onboarding_permission_mac_action">Ativar neste Mac</string>
     <string name="onboarding_permission_mac_unavailable">Não foi possível verificar nem ativar o auxiliar. Verifique de novo.</string>
     <string name="onboarding_permission_mac_approval">O auxiliar precisa de aprovação para rodar em segundo plano. Abra os Ajustes do Sistema, permita o Posato e verifique de novo.</string>
@@ -177,9 +177,9 @@ Para o que importa.</string>
     <string name="onboarding_permission_required">Permita o acesso ao Tempo de Uso antes de pausar sites ou apps.</string>
     <string name="onboarding_permission_denied">O acesso ao Tempo de Uso está desativado para o Posato. Você pode mudar isso em Ajustes.</string>
     <string name="onboarding_summary_body">Suas escolhas estão salvas. Escolha uma duração na tela Sessão quando quiser começar.</string>
-    <string name="onboarding_summary_empty_body">Comece adicionando um site ou escolhendo apps em Conjuntos de pausa.</string>
+    <string name="onboarding_summary_empty_body">Comece adicionando um site ou escolhendo apps em Conjuntos.</string>
     <string name="onboarding_summary_scope">Você pode mudar suas escolhas quando quiser.</string>
-    <string name="onboarding_summary_access_note">Permita o acesso ao Tempo de Uso em Conjuntos de pausa antes de pausar sites ou apps.</string>
+    <string name="onboarding_summary_access_note">Permita o acesso ao Tempo de Uso em Conjuntos antes de pausar sites ou apps.</string>
     <string name="onboarding_summary_helper_note">A pausa de sites fica indisponível até a configuração do Mac terminar.</string>
     <string name="mac_setup_title">Este Mac</string>
     <string name="mac_setup_unchecked">Configuração da pausa de sites não verificada</string>
@@ -405,8 +405,8 @@ Para o que importa.</string>
     <string name="about_body">O Posato ajuda você a se afastar por um tempo de sites e apps escolhidos. Uma pausa tranquila entre o impulso e a ação.</string>
     <string name="about_open_source">Código aberto. Sem conta Posato, sem análises e sem servidor operado pelo Posato.</string>
     <string name="about_licenses_detail">Licença e avisos de terceiros</string>
-    <string name="nav_pause_sets">Conjuntos de pausa</string>
-    <string name="nav_schedules">Agendamentos</string>
+    <string name="nav_pause_sets">Conjuntos</string>
+    <string name="nav_schedules">Agenda</string>
     <string name="nav_back">Voltar</string>
     <string name="nav_back_to">Voltar para %1$s</string>
     <string name="licenses_title">Licenças</string>
@@ -607,7 +607,7 @@ Só para você.</string>
     <string name="session_nothing_restricted">Nada está restrito nesta pausa. Você pode encerrá-la agora.</string>
     <string name="session_end_early_body">Você pode encerrar esta sessão antes da hora. Suas escolhas salvas continuam prontas para outra vez.</string>
     <string name="session_named_running">%1$s está em andamento neste dispositivo.</string>
-    <string name="session_named_screen_time">Permita o Tempo de Uso em Agendamentos para que %1$s possa começar neste dispositivo.</string>
+    <string name="session_named_screen_time">Permita o Tempo de Uso na Agenda para que %1$s possa começar neste dispositivo.</string>
     <string name="session_named_couldnt_start">%1$s não pôde começar aqui. Conclua a configuração para que os agendamentos comecem sozinhos. Nenhuma senha é pedida quando chega a hora de um agendamento.</string>
     <string name="session_named_starts_when">%1$s começa aqui quando este Mac estiver disponível de novo.</string>
     <string name="session_named_starting">Iniciando %1$s neste Mac…</string>
@@ -724,7 +724,7 @@ Só para você.</string>
     <string name="session_apps_in_set">Estes apps estão agora no conjunto desta pausa. O resumo da Sessão mantém a contagem do início da sessão.</string>
     <string name="session_filter_websites">Filtrar sites selecionados</string>
     <string name="session_filter_only">Filtra só esta lista.</string>
-    <string name="session_private_apps">%1$d apps selecionados de forma privada. Revise-os no seletor do sistema em Conjuntos de pausa.</string>
+    <string name="session_private_apps">%1$d apps selecionados de forma privada. Revise-os no seletor do sistema em Conjuntos.</string>
     <string name="session_items_at_start">Itens no início da sessão</string>
     <string name="session_selected_items">Itens selecionados</string>
     <string name="session_websites_at_start_title">Sites no início da sessão</string>
@@ -756,9 +756,9 @@ Só para você.</string>
     <string name="transfer_imported">Importado</string>
     <string name="transfer_nothing_new">Nada novo foi adicionado.</string>
     <string name="transfer_schedules_on">Os agendamentos importados estão ativados.</string>
-    <string name="transfer_schedules_off">Os agendamentos importados estão desativados: %1$s. Ative-os aqui ou depois em Agendamentos</string>
+    <string name="transfer_schedules_off">Os agendamentos importados estão desativados: %1$s. Ative-os aqui ou depois na Agenda</string>
     <string name="transfer_would_start">Isto iniciaria uma pausa imediatamente: %1$s.</string>
-    <string name="transfer_schedules_failed">Não foi possível ativar os agendamentos. Tente de novo em Agendamentos.</string>
+    <string name="transfer_schedules_failed">Não foi possível ativar os agendamentos. Tente de novo na Agenda.</string>
     <string name="transfer_sets_changed">Conjuntos de pausa alterados: %1$s.</string>
     <string name="transfer_removed">Removidos: %1$s.</string>
     <string name="transfer_schedules_removed">Agendamentos removidos: %1$s.</string>

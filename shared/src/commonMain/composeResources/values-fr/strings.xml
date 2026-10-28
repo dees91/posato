@@ -145,7 +145,7 @@ Pour l’essentiel.</string>
     <string name="onboarding_permission_title">Faites de la place sur cet appareil.</string>
     <string name="onboarding_permission_ios_body">L’accès à Temps d’écran permet à Posato de mettre en pause les sites et les apps que vous choisissez sur votre %1$s.</string>
     <string name="onboarding_permission_ios_action">Autoriser l’accès à Temps d’écran</string>
-    <string name="onboarding_permission_check_failed">L’accès n’a pas pu être vérifié. Vous pourrez l’autoriser plus tard depuis Ensembles de pause.</string>
+    <string name="onboarding_permission_check_failed">L’accès n’a pas pu être vérifié. Vous pourrez l’autoriser plus tard depuis Ensembles.</string>
     <string name="onboarding_permission_mac_action">Activer sur ce Mac</string>
     <string name="onboarding_permission_mac_unavailable">L’assistant n’a pas pu être vérifié ni activé. Vérifiez de nouveau.</string>
     <string name="onboarding_permission_mac_approval">L’assistant doit être autorisé en arrière-plan. Ouvrez Réglages Système, autorisez Posato, puis vérifiez de nouveau.</string>
@@ -177,9 +177,9 @@ Pour l’essentiel.</string>
     <string name="onboarding_permission_required">Autorisez l’accès à Temps d’écran avant de mettre en pause des sites ou des apps.</string>
     <string name="onboarding_permission_denied">L’accès à Temps d’écran est désactivé pour Posato. Vous pouvez le modifier dans Réglages.</string>
     <string name="onboarding_summary_body">Vos choix sont enregistrés. Choisissez une durée sur l’écran Session quand vous voulez commencer.</string>
-    <string name="onboarding_summary_empty_body">Commencez par ajouter un site ou choisir des apps dans Ensembles de pause.</string>
+    <string name="onboarding_summary_empty_body">Commencez par ajouter un site ou choisir des apps dans Ensembles.</string>
     <string name="onboarding_summary_scope">Vous pouvez modifier vos choix à tout moment.</string>
-    <string name="onboarding_summary_access_note">Autorisez l’accès à Temps d’écran dans Ensembles de pause avant de mettre en pause des sites ou des apps.</string>
+    <string name="onboarding_summary_access_note">Autorisez l’accès à Temps d’écran dans Ensembles avant de mettre en pause des sites ou des apps.</string>
     <string name="onboarding_summary_helper_note">Les pauses de sites restent indisponibles tant que la configuration du Mac n’est pas terminée.</string>
     <string name="mac_setup_title">Ce Mac</string>
     <string name="mac_setup_unchecked">Configuration des pauses de sites non vérifiée</string>
@@ -405,8 +405,8 @@ Pour l’essentiel.</string>
     <string name="about_body">Posato vous aide à prendre un peu de distance avec certains sites et apps, le temps d’une pause. Un moment de calme entre l’impulsion et l’action.</string>
     <string name="about_open_source">Open source. Pas de compte Posato, pas d’analyse d’usage, pas de serveur exploité par Posato.</string>
     <string name="about_licenses_detail">Licence et mentions tierces</string>
-    <string name="nav_pause_sets">Ensembles de pause</string>
-    <string name="nav_schedules">Programmations</string>
+    <string name="nav_pause_sets">Ensembles</string>
+    <string name="nav_schedules">Planning</string>
     <string name="nav_back">Retour</string>
     <string name="nav_back_to">Retour à %1$s</string>
     <string name="licenses_title">Licences</string>
@@ -607,7 +607,7 @@ Rien que pour vous.</string>
     <string name="session_nothing_restricted">Rien n’est limité dans cette pause. Vous pouvez l’arrêter maintenant.</string>
     <string name="session_end_early_body">Vous pouvez arrêter cette session plus tôt. Vos choix enregistrés resteront prêts pour une prochaine fois.</string>
     <string name="session_named_running">%1$s est en cours sur cet appareil.</string>
-    <string name="session_named_screen_time">Autorisez Temps d’écran dans Programmations pour que %1$s puisse démarrer sur cet appareil.</string>
+    <string name="session_named_screen_time">Autorisez Temps d’écran dans Planning pour que %1$s puisse démarrer sur cet appareil.</string>
     <string name="session_named_couldnt_start">%1$s n’a pas pu démarrer ici. Terminez la configuration pour que les programmations démarrent d’elles-mêmes. Aucun mot de passe n’est demandé à l’heure prévue.</string>
     <string name="session_named_starts_when">%1$s démarrera ici quand ce Mac sera de nouveau disponible.</string>
     <string name="session_named_starting">Démarrage de %1$s sur ce Mac…</string>
@@ -724,7 +724,7 @@ Rien que pour vous.</string>
     <string name="session_apps_in_set">Ces apps font actuellement partie de l’ensemble de cette pause. Le résumé de la session garde le nombre du début de la session.</string>
     <string name="session_filter_websites">Filtrer les sites sélectionnés</string>
     <string name="session_filter_only">Filtre uniquement cette liste.</string>
-    <string name="session_private_apps">%1$d apps sélectionnées en privé. Vérifiez-les dans le sélecteur du système depuis Ensembles de pause.</string>
+    <string name="session_private_apps">%1$d apps sélectionnées en privé. Vérifiez-les dans le sélecteur du système depuis Ensembles.</string>
     <string name="session_items_at_start">Éléments au début de la session</string>
     <string name="session_selected_items">Éléments sélectionnés</string>
     <string name="session_websites_at_start_title">Sites au début de la session</string>
@@ -756,9 +756,9 @@ Rien que pour vous.</string>
     <string name="transfer_imported">Importé</string>
     <string name="transfer_nothing_new">Rien de nouveau n’a été ajouté.</string>
     <string name="transfer_schedules_on">Les programmations importées sont activées.</string>
-    <string name="transfer_schedules_off">Programmations importées désactivées : %1$s. Activez-les ici ou plus tard dans Programmations</string>
+    <string name="transfer_schedules_off">Programmations importées désactivées : %1$s. Activez-les ici ou plus tard dans Planning</string>
     <string name="transfer_would_start">%1$s lancerait une pause immédiatement.</string>
-    <string name="transfer_schedules_failed">Les programmations n’ont pas pu être activées. Réessayez dans Programmations.</string>
+    <string name="transfer_schedules_failed">Les programmations n’ont pas pu être activées. Réessayez dans Planning.</string>
     <string name="transfer_sets_changed">Ensembles de pause modifiés : %1$s.</string>
     <string name="transfer_removed">Supprimés : %1$s.</string>
     <string name="transfer_schedules_removed">Programmations supprimées : %1$s.</string>
