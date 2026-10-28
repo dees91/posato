@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 36 (2026-10-28: `REDIRECT-001` joins the backlog)
+- **Revision:** 37 (2026-10-28: `I18N-002` adds German, French, Spanish, and Portuguese to 1.6)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-28
@@ -277,6 +277,13 @@
   maintainer's request (`user-confirmed`, 2026-10-28): decide whether
   Posato offers host redirect rules beside blocking, including whether a
   rule is always on or bound to a session or pause set.
+  Revision 37 adds `I18N-002` to release 1.6 and starts it at the
+  maintainer's request (`user-confirmed`, 2026-10-28, idea 60): German,
+  French, Spanish (`es-ES`), and Portuguese (`pt-BR`) ship together in one
+  pull request, following the localization guide, in wave R1.6/W1 and
+  integration group `PR-I18N-DE-FR-ES-PT`. The copy is accepted from an
+  independent review with a back-translation into English. `DOCS-007` and
+  `RELEASE-010` also depend on it. This amends the composed release 1.6.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -645,8 +652,8 @@ break in a scheduled pause and a website that opens briefly during a pause,
 and a calm history of pauses is decided. The
 [Windows spike](https://github.com/dees91/posato/pull/206)
 showed that every Windows change can be verified in a Tart guest with no
-person present. The release also speaks Polish by following the system
-language, with no in-app language switch.
+person present. The release also speaks Polish, German, French, Spanish, and Portuguese by
+following the system language, with no in-app language switch.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -655,9 +662,10 @@ language, with no in-app language switch.
 | `TARGETS-013` | Decide and deliver a website that opens briefly every N minutes during a pause (for example once an hour for 5 minutes, configurable): the rule in the synchronized model, enforcement timers on each platform, and the pause page's way to open it; the decision is accepted before delivery starts (idea 46). | Target management | delivery | R1.6/W1 | None | PR-TIMED-WEBSITE |
 | `HISTORY-001` | Decide a calm history of pauses kept as planned, such as a quiet calendar of days, without streaks, scores, or shame: what is recorded, whether it stays on the device or synchronizes, and the `DESIGN.md` brand rule; end with a product and privacy decision and a delivery plan (idea 47). | Product discovery | discovery | R1.6/W1 | None | PR-HISTORY-DECISION |
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language with no in-app switch: the whole UI on Mac, iOS, Linux, Android, and Windows, Polish plural forms, the macOS pause page, iOS permission descriptions, date and time formatting, the App Store listing and screenshots, and a Polish posato.app including the privacy policy. A narrow `AGENTS.md` exception lets an agent author those localized product resources; the maintainer reviews that copy in the pull request. Verification selects Posato controls by identifier, so recipes do not depend on English labels. | Platform coverage | delivery | R1.6/W1 | None | PR-I18N-PL |
+| `I18N-002` | Ship Posato in German, French, Spanish (`es-ES`), and Portuguese (`pt-BR`) together, following the [localization guide](../development/localization.md): all four languages in `PosatoLocales.SHIPPED`, the app catalogs on every platform, the pause page and permission descriptions, `posato.app` under `/de/`, `/fr/`, `/es/`, and `/pt/`, and a prepared App Store listing with screenshots for each. An independent review translates the key screens back into English, and the maintainer accepts the copy from that report (idea 60). | Platform coverage | delivery | R1.6/W1 | `I18N-001` | PR-I18N-DE-FR-ES-PT |
 | `PLATFORM-002` | Ship Posato for Windows 11 on arm64 and x64 at parity with Linux: the shared interface and folder synchronization, websites and chosen applications blocked during a pause by a Windows service installed once with administrator approval, applications chosen from the Start menu, the status icon and start at login on a resident-window core extracted from the Mac and Linux code so each platform keeps only its native layer (folded `PLATFORM-003`, idea 53; Mac and Linux behave as before in a Tart clone of each), signed MSI packages, and `posato-control -t windows` driving a Tart Windows guest, ending with a Windows, Linux, and Mac workspace that pauses across all three. Amends ADR 0010 with the Windows row, with the maintainer's acceptance. High-risk plan review (privileged service, signing). | Platform coverage | delivery | R1.6/W2 | `ONBOARDING-005` | PR-WINDOWS |
-| `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. Polish pages and the Polish listing stay with `I18N-001`; this row adds only the 1.6 changes, in both languages. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `I18N-001` | PR-RELEASE-1-6-MEDIA |
-| `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). Verifies on iOS, Linux, and Android the shared session changes those builds have not shipped since 1.5.0: `PauseClaims` and `EnforcementPort.replace` (`MACOS-030`) and the `SESSION-009` branch of `clearAfterEnd` (`MACOS-029`). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007`, `I18N-001` | PR-RELEASE-1-6 |
+| `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. Polish pages and the Polish listing stay with `I18N-001`, and the German, French, Spanish, and Portuguese ones with `I18N-002`; this row adds only the 1.6 changes, in every shipped language. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `I18N-001`, `I18N-002` | PR-RELEASE-1-6-MEDIA |
+| `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). Verifies on iOS, Linux, and Android the shared session changes those builds have not shipped since 1.5.0: `PauseClaims` and `EnforcementPort.replace` (`MACOS-030`) and the `SESSION-009` branch of `clearAfterEnd` (`MACOS-029`). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007`, `I18N-001`, `I18N-002` | PR-RELEASE-1-6 |
 
 ## Backlog
 
@@ -726,6 +734,7 @@ The idea numbers refer to the wiki idea queue.
 | Posato on Windows | `PLATFORM-002` | Accepted ADR 0010 Windows row; `posato-control` runs in a Tart Windows guest with website and application blocking observed, the status icon and the start at login, and a Windows, Linux, and Mac workspace sharing one folder; Mac and Linux unchanged on the shared resident core; MSI install and removal on arm64 and x64 |
 | Each platform names its own setup and device | `ONBOARDING-005` | Linux, Android, and Windows runs that reproduce the Mac wording before the fix and show each platform's own after it |
 | Posato in Polish | `I18N-001` | The apps, pause page, permissions, and dates follow the system language, including a per-app language; `/pl/` on posato.app and a `pl-PL` store listing are ready without publishing; an English guest still completes a session |
+| Posato in German, French, Spanish, and Portuguese | `I18N-002` | The apps, pause page, and permissions follow each language as the system or per-app language on the Mac in Tart, the test iPhone, and Android; `/de/`, `/fr/`, `/es/`, and `/pt/` on posato.app and four store listings with screenshots are ready without publishing; a back-translation report accepted by the maintainer |
 | More ways to pause | `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001` | A break and a briefly opened website applied and restored on each platform in Tart and on the test iPhone; an accepted history decision with a delivery plan |
 | Public packaging for 1.6 | `DOCS-007` | Limits page and README updated, site built, Windows screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
