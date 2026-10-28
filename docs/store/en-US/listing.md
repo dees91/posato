@@ -113,8 +113,9 @@ one, and adds the schedule for 09:00-12:00 on weekdays with the default set.
 It does this in English with a 24-hour clock (`en_GB`), because the
 onboarding scenario and the schedule editor flow read English labels and turn
 24-hour wheels; the names come from `capture.json`. Leave
-`--prepare` out to capture a Simulator that is already prepared, such as for
-a second language on the same data. A set without a `setName` keeps the
+`--prepare` out only to capture the same locale again on a Simulator it
+already prepared; another locale needs its own `--prepare`, or its
+screenshots show the previous locale's set and schedule names. A set without a `setName` keeps the
 name the app gives the first set in each language.
 
 For a narrow pass, run the same command on a small Simulator, such as iPhone

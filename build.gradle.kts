@@ -166,7 +166,7 @@ val verifyLocaleLists by tasks.registering(VerifyLocaleLists::class) {
     group = "verification"
     description = "Requires every app language list, site, and store directory to name exactly the shipped languages."
     listFiles.from(VerifyLocaleLists.LIST_FILES.map(layout.projectDirectory::file))
-    listFiles.from(fileTree("website/src/pages") { include("**/*.astro", "*/chrome.json") }, fileTree("docs/store") { include("*/listing.md") })
+    listFiles.from(fileTree("website/src/pages") { include("**/*.astro", "*/chrome.json") }, fileTree("docs/store") { include("*/listing.md", "*/capture.json") })
     repositoryDirectory.set(layout.projectDirectory)
 }
 

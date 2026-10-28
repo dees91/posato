@@ -50,8 +50,8 @@ abstract class VerifyLocaleLists : DefaultTask() {
             val localized = File(root, "$WEBSITE_PAGES/$code")
             (englishPages - pages(localized)).sorted().forEach { findings += "$WEBSITE_PAGES/$code has no $it" }
             if (!File(localized, "chrome.json").isFile) findings += "$WEBSITE_PAGES/$code has no chrome.json"
-            if (!File(root, "docs/store/${locale.storeDirectory}/listing.md").isFile) {
-                findings += "docs/store/${locale.storeDirectory} has no listing.md"
+            STORE_FILES.filterNot { File(root, "docs/store/${locale.storeDirectory}/$it").isFile }.forEach {
+                findings += "docs/store/${locale.storeDirectory} has no $it"
             }
         }
         if (findings.isNotEmpty()) {
@@ -83,6 +83,7 @@ abstract class VerifyLocaleLists : DefaultTask() {
         private const val XCODE_PROJECT = "iosApp/iosApp.xcodeproj/project.pbxproj"
         private const val ANDROID_LOCALES = "androidApp/src/main/res/xml/locales_config.xml"
         private const val WEBSITE_PAGES = "website/src/pages"
+        private val STORE_FILES = listOf("listing.md", "capture.json")
         private val BUNDLE_LOCALIZATIONS = Regex("""<key>CFBundleLocalizations</key>\s*<array>([\s\S]*?)</array>""")
         private val PLIST_STRING = Regex("""<string>([^<]+)</string>""")
         private val KNOWN_REGIONS = Regex("""knownRegions = \(([^)]*)\);""")
