@@ -1,0 +1,5 @@
+"pause.site" = "Este sitio web está en pausa";
+"pause.site.until" = "Este sitio web está en pausa hasta %@";
+"pause.return" = "Vuelve a Posato para cambiar esta sesión.";
+"pause.app" = "Esta app está en pausa";
+"pause.app.until" = "Esta app está en pausa hasta %@";
