@@ -40,7 +40,7 @@
 | `verifyEnglishText`, `verifyCatalogs`, `verifyLocaleLists` with five shipped languages | pass | Part of `quality`; also after each translation merge. |
 | Site build and `/`, `/de/`, `/fr/`, `/es/`, `/pt/` with their privacy pages at 390 and 1280 px | pass | 30 pages; no horizontal scroll; `lang`, self canonical, `hreflang` for six languages and x-default; the footer list marks the current language. Run `site-20261028-171514`. |
 | Mac `primary` guest at `62baa6cf`, English: `vm onboard`, `flow session --set Work`, `observe --expect blocked` | pass | `outcome: paused`. Runs `20261028-190349-ffdb`, `20261028-190540-a449`, `20261028-190554-01da`. |
-| Mac, app only in each language: Safari pause page, then Session, Pause sets, Schedules after `resize-window` | pass | Pause page "bis 21:05 pausiert", "jusqu'à", "pausa hasta 21:05", "pausado até 21:05"; window 614 × 780 for each language with no clipped label; End early by id, then `observe --expect allowed` on `example.org`. Runs `20261028-190620-41b3`, `20261028-190705-ba6e`, `20261028-190749-abe6`, `20261028-190831-a5ea`, `20261028-190919-82bd`. |
+| Mac, app only in each language: Safari pause page, then Session, Pause sets, Schedules after `resize-window` | pass | Pause page headline in German, French, Spanish, and Portuguese, each naming the pause end time 21:05; window 614 × 780 for each language with no clipped label; End early by id, then `observe --expect allowed` on `example.org`. Runs `20261028-190620-41b3`, `20261028-190705-ba6e`, `20261028-190749-abe6`, `20261028-190831-a5ea`, `20261028-190919-82bd`. |
 | Test iPhone 13 mini at `62baa6cf`: `flow set`, `flow schedule --off`, `flow session --set Work`, then each language through `launch --arg -AppleLanguages` | pass | Session, Pause sets with one and other counts, and Schedules in each language, tabs on one line; then End early, and the set and schedule removed. Runs `20261028-190339-1bf0`, `20261028-190611-7be8`. |
 | Android phone at `62baa6cf`: `flow session`, Clock blocked, app locale per language, End early | pass | The block screen, Session, Pause sets, and Schedules in each language; `observe` blocked, then allowed. Runs `20261028-190720-428d`, `20261028-190754-e7d8`, `20261028-190953-a140`. |
 | `store capture --prepare` on iPhone 17 Pro Max and iPad Pro 13-inch (M5) for each locale | pass | 1320 × 2868 and 2064 × 2752 PNGs in `docs/store/<locale>/screenshots`. The German iPad set was recaptured after a run beside `quality` timed out. Runs `20261028-181826-c13f`, `20261028-185224-911a`, `20261028-183503-34da`, `20261028-183646-5f4b`, `20261028-184054-9f9b`, `20261028-184234-d080`, `20261028-184636-ee64`, `20261028-184817-f2c1`. |
@@ -51,7 +51,7 @@ Linux and Windows take the language from the session locale and share the catalo
 
 ## Blockers and accepted risks
 
-- The maintainer accepts the copy of all four languages from the review report in the pull request.
+- The maintainer accepted the German, French, Spanish (`es-ES`), and Portuguese (`pt-BR`) copy as it stands, on the basis of the independent review and its back-translations in the pull request (`user-confirmed`, 2026-10-28).
 - Android dialog buttons such as Save in "New set" and Delete in the delete-set question carry no resource id, because `testTagsAsResourceId` covers only the main window, so `flow set` cannot save a new set on Android. This predates the task; the runs pressed those buttons by their English text. Follow-up candidate.
 - The test iPhone's Screen Time access needs renewing: sessions start, but Posato shows "Restrictions need attention". The language proof does not depend on it.
 - Wide labels in the iOS navigation bar, such as "Ajouter une programmation", wrap to two lines without clipping.
@@ -59,4 +59,4 @@ Linux and Windows take the language from the session locale and share the catalo
 ## Final
 
 - **Status:** closed
-- **Outcome:** met; `AC-01` to `AC-05` are proven above. Shipping waits on the maintainer's acceptance of the copy from the review report.
+- **Outcome:** met; `AC-01` to `AC-05` are proven above. The maintainer accepted the copy of all four languages on 2026-10-28.
