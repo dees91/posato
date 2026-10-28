@@ -113,6 +113,10 @@
 		CA00000929CC810C00F8E227 /* ScheduleMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleMonitorTests.swift; sourceTree = "<group>"; };
 		PL0A000229CC810C00F8E227 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		PL0A000429CC810C00F8E227 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		DE0A000429CC810C00F8E227 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.deist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		ES0A000429CC810C00F8E227 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.esist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		FR0A000429CC810C00F8E227 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.frist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		PT0A000429CC810C00F8E227 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.ptist.strings; name = pt; path = pt.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -317,6 +321,10 @@
 				en,
 				Base,
 				pl,
+				de,
+				es,
+				fr,
+				pt,
 			);
 			mainGroup = A93A952E29CC810C00F8E227;
 			productRefGroup = A93A953829CC810C00F8E227 /* Products */;
@@ -357,6 +365,10 @@
 			children = (
 				PL0A000229CC810C00F8E227 /* en */,
 				PL0A000429CC810C00F8E227 /* pl */,
+				DE0A000429CC810C00F8E227 /* de */,
+				ES0A000429CC810C00F8E227 /* es */,
+				FR0A000429CC810C00F8E227 /* fr */,
+				PT0A000429CC810C00F8E227 /* pt */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";

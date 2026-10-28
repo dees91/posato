@@ -2,8 +2,9 @@
 
 Posato follows the system language, or the per-app language where the
 platform has one, and has no in-app language switch. English is the source.
-Polish shipped first, in `I18N-001`; this page is how the next language is
-added.
+Polish shipped first, in `I18N-001`, and German, French, Spanish, and
+Portuguese followed together in `I18N-002`; this page is how the next
+language is added.
 
 ## Shipped and planned languages
 
@@ -15,8 +16,7 @@ in `buildSrc` is the list of shipped languages. Each entry holds:
 - its CLDR plural categories;
 - its digit grouping.
 
-German, French, Spanish, and Portuguese are already defined there, ready to
-move into `SHIPPED`.
+All five languages below are in `SHIPPED`.
 
 | Language | Code | Store directory | App Store Connect `--locale` | Plural categories | 65536 written as |
 | --- | --- | --- | --- | --- | --- |
@@ -61,8 +61,8 @@ complete, the checks name each missing file and list entry.
 3. **Website.** Under `website/src/pages/<code>/`, add one page for each
    English `.astro` page. Add `_PRIVACY.md` for the privacy page. Add
    `chrome.json` with the layout's labels; its `languageName` is the
-   language's own name. The language switcher, `hreflang` links, and prefixed
-   URLs come from the directory.
+   language's own name and `languages` names the footer's language list. That
+   list, `hreflang` links, and prefixed URLs come from the directory.
 4. **Store listing.** In `docs/store/<store directory>/`, add:
    - `listing.md`, `description.txt`, and the current What's New text;
    - `capture.json`, with the launch language, locale, and synthetic schedule
