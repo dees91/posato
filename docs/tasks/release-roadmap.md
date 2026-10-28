@@ -3,7 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 33 (2026-10-27: `PLATFORM-003` folds into `PLATFORM-002`)
+- **Revision:** 34 (2026-10-28: backlog rows `PLATFORM-004` and
+  `SESSION-011` from the `PLATFORM-002` review)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-27
@@ -261,6 +262,11 @@
   request (`user-confirmed`, 2026-10-27), when `PLATFORM-002` started
   before the resident core existed: one pull request extracts the core and
   builds Windows on it, and `PLATFORM-003` leaves the release.
+  Revision 34 adds two backlog rows from the `PLATFORM-002` review at the
+  maintainer's request (`user-confirmed`, 2026-10-28): `PLATFORM-004`, one
+  least-privilege rule for the desktop helpers on the Mac, Linux, and
+  Windows (idea 57), and `SESSION-011`, one shared fix for the expired
+  session a helper keeps reporting (idea 58).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -673,6 +679,8 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
 | `QUALITY-013` | Let `posato-control flow onboard -t linux` finish when Posato's pausing service is already installed in the clone: the onboarding page then shows **Continue** instead of **Allow**, and the flow fails waiting for **Allow**. Press whichever of the two is shown, as `flow icloud link` does with its buttons, and cover a rerun on the same clone. | Verification | Idea 52; release 1.5 retrospective | Any planning checkpoint; cheap |
+| `PLATFORM-004` | Give the desktop helpers one least-privilege rule on the Mac, Linux, and Windows: state it in ADR 0010, then narrow each platform's mechanism to it (on Windows, for example, a restricted service SID where Windows Filtering Platform allows it) and verify each in its Tart guest. High-risk. | Platform coverage | Idea 57; `PLATFORM-002` review | A release that changes a desktop helper |
+| `SESSION-011` | Clear the expired session that the Linux and Windows helpers keep reporting after a pause ends while Posato is closed: the shared session code acknowledges an expiry only while its local record is still active, so the next launch never acknowledges it. One shared fix, verified on Linux and Windows. | Sessions and enforcement | Idea 58; `PLATFORM-002` review | Any planning checkpoint; no effect on enforcement |
 
 ## Coverage matrix
 

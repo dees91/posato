@@ -13,9 +13,15 @@
   mode as well. The mechanisms below were `agent-delegated` and are
   `user-confirmed` with the acceptance on 2026-10-20. The Windows row's
   choices are `user-confirmed` on 2026-10-27: the Windows Filtering Platform
-  for websites, the service installed by the MSI, and Start menu desktop
-  programs only. Its mechanism details and limits are `agent-delegated`
-  within that acceptance and are reviewed with `PLATFORM-002`.
+  for websites, the service installed by the per-machine MSI that records
+  the installing user, a named pipe open only to that user and the system,
+  and Start menu desktop programs only, without Store applications. On
+  2026-10-28 the maintainer also accepted, for `PLATFORM-002`, a service
+  without a restricted service SID, with least privilege to become one rule
+  for every desktop helper (`PLATFORM-004`). The remaining Windows mechanism
+  details and limits are `agent-delegated` and wait in the
+  [`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
+  until the maintainer confirms them.
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
 
@@ -86,42 +92,11 @@ The Windows service is the Linux helper's contract on Windows: a small
 Kotlin JVM program, `posato-helper.exe`, shipped in the MSI and run by the
 Service Control Manager as `LocalSystem`. It accepts the same **apply**,
 **clear**, **status**, and acknowledge requests with the same validation,
-except that an executable is an absolute Windows path to an `.exe`.
-
-- **Channel.** The named pipe `\\.\pipe\app.posato.helper` is created as
-  the first instance, rejects remote clients, and carries a DACL that grants
-  only the system and the installing user; every connection's client
-  process is checked again against those two, and a connection that does not
-  send its request within five seconds is closed. The MSI records the
-  installing user, whom the service resolves to a security identifier.
-- **Websites.** The service resolves each blocked host and its `www`
-  counterpart through the system resolver and adds block filters for the
-  resulting addresses at the outbound connect layers, limited to the
-  installing user's connections so system services are never blocked, in
-  one dynamic
-  Windows Filtering Platform session with its own sublayer. It resolves
-  again every minute while the pause runs and only adds addresses until the
-  pause ends. Loopback, unspecified, link-local, multicast, and private
-  addresses are never filtered. Filters vanish with the session, so a
-  stopped or crashed service leaves none behind; on restart it applies the
-  saved pause again.
-- **Applications.** Only a Start menu shortcut to a local `.exe` can be
-  chosen; Store (packaged) applications and shortcuts to an interpreter, a
-  script host, or a launcher such as `cmd`, `powershell`, `wscript`,
-  `rundll32`, `explorer`, or `msiexec` are not offered. While a pause runs,
-  the service ends processes whose executable is a chosen path and whose
-  owner is the installing user, never a process of the system or of another
-  user.
-- **State and removal.** The service keeps its state in a file under
-  `%ProgramData%\Posato` readable only by the system and administrators and
-  clears by itself at the session end. Uninstalling the MSI stops and
-  deletes the service, which removes every filter, and deletes the state.
-  The service never reads traffic and never logs hosts.
-- **Resident and synchronization.** The status-area icon, its menu, and the
-  start at login (a per-user `Run` entry that starts Posato in the
-  background) come from the resident core shared with the Mac and Linux.
-  Windows uses the folder workspace; the workspace key file is readable only
-  by the user through its access control list.
+except that an executable is an absolute Windows path to an `.exe`. The
+service ends only processes of the installing user, never a process of the
+system or of another user, and clears by itself at the session end. Windows
+uses the folder workspace and the resident core shared with the Mac and
+Linux. The service never reads traffic and never logs hosts.
 
 Android has no root and no accessibility service. A blocked application can
 be visible for up to one polling interval before the block screen covers it.
@@ -266,24 +241,10 @@ limits read on their own; the limits are unchanged.
   there is no move between them: remove the iCloud workspace before choosing
   a folder.
 
-The Windows amendment adds these limits; `DOCS-007` moves them to the limits
-page and `RELEASE-010` publishes them with release 1.6:
-
-- On Windows, website blocking stops connections to the addresses that a
-  paused website's name resolves to. A site that shares addresses with
-  other sites, such as one behind a large content network, can block those
-  sites too while the pause runs, and a site that moves to new addresses
-  can open until Posato sees them, within about a minute. A browser that
-  uses its own DNS over HTTPS can reach addresses Posato has not seen, and a
-  connection already open when the pause starts stays open. There is no
-  pause page, and visiting a site through a VPN or a proxy bypasses it.
-- On Windows, the Posato installer sets up a system service with
-  administrator approval. While a pause runs, the service ends the paused
-  apps you chose, so unsaved work in them can be lost. It clears the pause
-  at its end time even when Posato is closed, and uninstalling Posato clears
-  an active pause. Apps from the Microsoft Store and shortcuts that start a
-  script or a command line cannot be paused. Posato pauses only the
-  Windows account that installed it.
+The Windows limits are drafted in the
+[`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
+and enter this list once the maintainer confirms them; `DOCS-007` then moves
+them to the limits page and `RELEASE-010` publishes them with release 1.6.
 
 ## Consequences
 

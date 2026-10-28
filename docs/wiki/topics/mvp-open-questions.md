@@ -1355,6 +1355,19 @@ below. This queue retains idea provenance without expanding the original MVP.
     show their own access text on the last step; only "Mac" makes a desktop
     a Mac, so Windows reads "computer" and uses the Linux access text until
     `PLATFORM-002` gives it its own. Mac and iOS wording is unchanged.
+57. **One least-privilege rule for the desktop helpers.** `observed`
+    (2026-10-27, `PLATFORM-002` review): the Windows service runs as
+    `LocalSystem` with minimal privileges but without a restricted service
+    SID. `user-confirmed` (2026-10-28): accepted for `PLATFORM-002`; least
+    privilege stays one shared rule for the Mac, Linux, and Windows, not a
+    Windows-only difference. Owner: backlog row `PLATFORM-004`.
+58. **A helper keeps an expired session after Posato was closed.**
+    `observed` (2026-10-27, `PLATFORM-002`): when a pause ends while Posato
+    is closed, the Linux and Windows helpers keep reporting that session
+    until the next pause, because the shared session code acknowledges an
+    expiry only while its record is still active. Enforcement is
+    unaffected. `user-confirmed` (2026-10-28): one shared fix, not in
+    `PLATFORM-002`. Owner: backlog row `SESSION-011`.
 
 ## Later platform questions
 
