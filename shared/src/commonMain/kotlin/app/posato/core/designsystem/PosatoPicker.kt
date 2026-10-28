@@ -29,6 +29,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.picker_selected
+import app.posato.generated.resources.picker_value
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * A setting that takes one of a few named values: its label, and the current value as a button that opens the
@@ -79,12 +83,13 @@ internal fun DrawnPicker(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val openMenu = rememberMenuOpening { expanded = true }
+    val description = stringResource(Res.string.picker_value, label, value)
     Box(modifier) {
         // The button reads as the setting and its value, "Pause set, My set", rather than the value alone.
         PosatoTextButton(
             onClick = openMenu,
             modifier = Modifier.clearAndSetSemantics {
-                contentDescription = "$label, $value"
+                contentDescription = description
                 role = Role.Button
                 onClick {
                     openMenu()
@@ -121,7 +126,7 @@ internal fun DrawnPicker(
                         onSelect(index)
                     },
                     trailingIcon = if (index == selected) {
-                        { PosatoIcon(PosatoIcons.Check, "Selected", tint = MaterialTheme.colorScheme.primary) }
+                        { PosatoIcon(PosatoIcons.Check, stringResource(Res.string.picker_selected), tint = MaterialTheme.colorScheme.primary) }
                     } else {
                         null
                     },

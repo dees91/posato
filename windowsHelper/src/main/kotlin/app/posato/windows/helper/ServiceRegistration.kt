@@ -73,7 +73,7 @@ internal object ServiceRegistration {
 
     /** Restarts after a failure, runs with only the privileges it needs, and says what it is. */
     private fun configure(service: Winsvc.SC_HANDLE): Boolean {
-        val description = Winsvc.SERVICE_DESCRIPTION().apply { lpDescription = DESCRIPTION }
+        val description = Winsvc.SERVICE_DESCRIPTION().apply { lpDescription = serviceDescription() }
         val actions = Winsvc.SC_ACTION.ByReference().toArray(RESTART_DELAYS.size).map { it as Winsvc.SC_ACTION }
         actions.forEachIndexed { index, action ->
             action.type = SC_ACTION_RESTART
@@ -114,6 +114,19 @@ internal object ServiceRegistration {
 
     private const val DISPLAY_NAME = "Posato helper"
     private const val DESCRIPTION = "Pauses the websites and apps you choose in Posato."
+
+    private fun serviceDescription(): String {
+        val resource = if (java.util.Locale.getDefault().language == "pl") {
+            "values-pl/service.properties"
+        } else {
+            "values/service.properties"
+        }
+        val stream = ServiceRegistration::class.java.classLoader?.getResourceAsStream(resource) ?: return DESCRIPTION
+        return stream.reader(Charsets.UTF_8).use { reader ->
+            java.util.Properties().apply { load(reader) }.getProperty("description") ?: DESCRIPTION
+        }
+    }
+
     private const val LOCAL_SYSTEM = "LocalSystem"
     private const val SERVICE_WIN32_OWN_PROCESS = 0x10
     private const val SERVICE_AUTO_START = 2

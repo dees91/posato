@@ -37,6 +37,19 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_clear_applications
+import app.posato.generated.resources.action_remove
+import app.posato.generated.resources.action_retry
+import app.posato.generated.resources.count_applications
+import app.posato.generated.resources.schedule_actions_for
+import app.posato.generated.resources.targets_apps_empty_body
+import app.posato.generated.resources.targets_apps_empty_title
+import app.posato.generated.resources.targets_apps_private
+import app.posato.generated.resources.targets_choose_apps
+import app.posato.generated.resources.targets_enable_apps
+import app.posato.generated.resources.targets_selection_saved
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -53,7 +66,11 @@ internal fun ApplicationBrowser(
 ) {
     Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-            PosatoButton(onChoose, enabled = state.canChooseApplications()) { Text("Choose apps") }
+            PosatoButton(
+                onChoose,
+                enabled = state.canChooseApplications(),
+                controlId = "targets_choose_apps",
+            ) { Text(stringResource(Res.string.targets_choose_apps)) }
             PosatoCaption(deviceLabel)
         }
         PosatoDivider()
@@ -68,15 +85,20 @@ internal fun ApplicationBrowser(
                         PosatoItemRow(
                             headlineContent = {
                                 Text(
-                                    if (opaqueCount == 1) "1 application" else "$opaqueCount applications",
+                                    pluralStringResource(Res.plurals.count_applications, opaqueCount, opaqueCount),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             },
-                            supportingContent = { PosatoCaption("Review your private selection in the system picker.") },
+                            supportingContent = { PosatoCaption(stringResource(Res.string.targets_apps_private)) },
                             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
                         )
-                        PosatoButton(onClear, style = PosatoButtonStyle.Quiet, enabled = state.canClearApplicationMappings()) {
-                            Text("Clear selection")
+                        PosatoButton(
+                            onClear,
+                            style = PosatoButtonStyle.Quiet,
+                            enabled = state.canClearApplicationMappings(),
+                            controlId = "action_clear_applications",
+                        ) {
+                            Text(stringResource(Res.string.action_clear_applications))
                         }
                     }
                 }
@@ -111,14 +133,27 @@ private fun ApplicationRow(
             },
             trailingContent = {
                 if (removable && !platformUsesCupertinoChrome) {
-                    PosatoItemMenu("Actions for $name", listOf(PosatoMenuItem("Remove", onRemove, PosatoMenuSymbol.Remove, destructive = true)))
+                    PosatoItemMenu(
+                        stringResource(Res.string.schedule_actions_for, name),
+                        listOf(
+                            PosatoMenuItem(
+                                stringResource(Res.string.action_remove),
+                                onRemove,
+                                PosatoMenuSymbol.Remove,
+                                destructive = true,
+                                controlId = "action_remove",
+                            ),
+                        ),
+                    )
                 }
             },
         )
     }
     // On iOS a removable app slides out Remove under a left swipe instead of carrying a menu button.
     if (platformUsesCupertinoChrome && removable) {
-        PosatoSwipeRow(listOf(PosatoSwipeAction("Remove", onRemove, destructive = true))) { rowActions -> row(rowActions) }
+        PosatoSwipeRow(
+            listOf(PosatoSwipeAction(stringResource(Res.string.action_remove), onRemove, destructive = true, controlId = "action_remove")),
+        ) { rowActions -> row(rowActions) }
     } else {
         row(emptyList())
     }
@@ -136,19 +171,32 @@ private fun ApplicationBrowserStatus(
         state.applicationMappingSupportingText()?.let { PosatoCaption(it) }
         state.applicationMappingFailure?.let { failure ->
             PosatoNotice(tone = PosatoTone.Critical, actionContent = {
-                if (state.hasApplicationMappingLoadFailure) PosatoButton(onRetry) { Text("Retry") }
+                if (state.hasApplicationMappingLoadFailure) {
+                    PosatoButton(
+                        onRetry,
+                        controlId = "action_retry",
+                    ) { Text(stringResource(Res.string.action_retry)) }
+                }
                 if (state.canClearApplicationMappings()) {
-                    PosatoButton(onClear, style = PosatoButtonStyle.Quiet) { Text("Clear selection") }
+                    PosatoButton(
+                        onClear,
+                        style = PosatoButtonStyle.Quiet,
+                        controlId = "action_clear_applications",
+                    ) { Text(stringResource(Res.string.action_clear_applications)) }
                 }
             }) { Text(stringResource(failure.applicationMappingMessage())) }
         }
         if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
             PosatoNotice(tone = PosatoTone.Caution, actionContent = {
-                PosatoButton(onActivate, enabled = state.canMutatePolicy()) { Text("Enable selected apps") }
-            }) { Text("Your selection is saved on this device, but is not yet included in the application group.") }
+                PosatoButton(
+                    onActivate,
+                    enabled = state.canMutatePolicy(),
+                    controlId = "targets_enable_apps",
+                ) { Text(stringResource(Res.string.targets_enable_apps)) }
+            }) { Text(stringResource(Res.string.targets_selection_saved)) }
         }
         if (state.applicationMappings.isEmpty() && !state.isApplicationMappingLoading && !state.hasApplicationMappingLoadFailure) {
-            PosatoEmptyState("Make room beyond the browser.", description = "Choose the applications you would like a little space from.")
+            PosatoEmptyState(stringResource(Res.string.targets_apps_empty_title), description = stringResource(Res.string.targets_apps_empty_body))
         }
     }
 }

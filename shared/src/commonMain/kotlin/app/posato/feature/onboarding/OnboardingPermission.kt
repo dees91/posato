@@ -16,7 +16,6 @@ import app.posato.generated.resources.application_mapping_access_restricted
 import app.posato.generated.resources.mac_setup_not_enabled
 import app.posato.generated.resources.mac_setup_recovery
 import app.posato.generated.resources.mac_setup_uncertain
-import app.posato.generated.resources.mac_unified_body
 import app.posato.generated.resources.mac_unified_defer
 import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.onboarding_action_continue
@@ -139,7 +138,6 @@ internal fun OnboardingViewState.permissionSummary(permissionPlatform: Onboardin
 internal fun PermissionStep(
     state: OnboardingViewState,
     platform: OnboardingPermissionPlatform,
-    deviceNoun: String,
     layout: PosatoLayout,
     onRequestAccess: () -> Unit,
     onEnableHelper: () -> Unit,
@@ -156,7 +154,12 @@ internal fun PermissionStep(
             if (platform == OnboardingPermissionPlatform.MAC && macSetup != null) {
                 MacSetupStepActions(state, macSetup, layout, onSetUpMac, onContinue)
             } else if (ready) {
-                OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
+                OnboardingPrimaryAction(
+                    stringResource(Res.string.onboarding_action_continue),
+                    layout,
+                    onContinue,
+                    controlId = "onboarding_action_continue",
+                )
             } else {
                 OnboardingActions(layout) {
                     if (platform == OnboardingPermissionPlatform.MAC) {
@@ -167,12 +170,14 @@ internal fun PermissionStep(
                             layout,
                             onRequestAccess,
                             enabled = !state.permissionRunning,
+                            controlId = platform.accessActionControlId(),
                         )
                     }
                     PosatoButton(
                         onClick = onContinue,
                         style = PosatoButtonStyle.Quiet,
                         enabled = state.canDeferPermission(platform),
+                        controlId = "onboarding_action_not_now",
                     ) {
                         Text(stringResource(Res.string.onboarding_action_not_now))
                     }
@@ -180,7 +185,7 @@ internal fun PermissionStep(
             }
         },
     ) {
-        PermissionHeading(platform, deviceNoun, layout)
+        PermissionHeading(platform, layout)
         PosatoNotice {
             Text(stringResource(Res.string.onboarding_permission_control))
         }
@@ -273,11 +278,13 @@ private fun MacHelperApprovalActions(
         layout,
         onOpenSettings,
         enabled = !running,
+        controlId = "onboarding_permission_mac_open_settings",
     )
     PosatoButton(
         onClick = onRecheck,
         style = PosatoButtonStyle.Secondary,
         enabled = !running,
+        controlId = "onboarding_permission_mac_check_again",
     ) { Text(stringResource(Res.string.onboarding_permission_mac_check_again)) }
 }
 
@@ -328,6 +335,7 @@ internal fun MacPermissionActions(
                 layout,
                 onRecheckHelper,
                 enabled = !state.permissionRunning,
+                controlId = "onboarding_permission_mac_check_again",
             )
         }
 
@@ -337,6 +345,7 @@ internal fun MacPermissionActions(
                 layout,
                 onEnableHelper,
                 enabled = !state.permissionRunning,
+                controlId = "onboarding_permission_mac_action",
             )
         }
     }
@@ -345,20 +354,13 @@ internal fun MacPermissionActions(
 @Composable
 private fun PermissionHeading(
     platform: OnboardingPermissionPlatform,
-    deviceNoun: String,
     layout: PosatoLayout,
 ) {
+    val macTitle = stringResource(Res.string.mac_unified_title)
+    val roomTitle = stringResource(Res.string.onboarding_permission_title)
     PosatoHeading(
-        if (platform == OnboardingPermissionPlatform.MAC) {
-            stringResource(Res.string.mac_unified_title)
-        } else {
-            stringResource(Res.string.onboarding_permission_title)
-        },
-        description = if (platform == OnboardingPermissionPlatform.MAC) {
-            stringResource(Res.string.mac_unified_body)
-        } else {
-            stringResource(platform.accessCopy().body, deviceNoun)
-        },
+        if (platform == OnboardingPermissionPlatform.MAC) macTitle else roomTitle,
+        description = permissionDescription(platform),
         layout = layout,
     )
 }

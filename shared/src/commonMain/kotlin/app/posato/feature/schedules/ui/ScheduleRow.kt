@@ -67,10 +67,38 @@ import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.collectIsKeyboardFocusedAsState
 import app.posato.core.designsystem.keyboardFocusRing
 import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.schedules.domain.ScheduleId
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_delete
+import app.posato.generated.resources.action_edit
+import app.posato.generated.resources.action_keep
+import app.posato.generated.resources.action_skip_next
+import app.posato.generated.resources.pause_sets_delete_named
+import app.posato.generated.resources.schedule_actions_for
+import app.posato.generated.resources.schedule_days_hours
+import app.posato.generated.resources.schedule_delete_named_body
+import app.posato.generated.resources.schedule_delete_other_devices
+import app.posato.generated.resources.schedule_edit_named
+import app.posato.generated.resources.schedule_ends_next_day
+import app.posato.generated.resources.schedule_named
+import app.posato.generated.resources.schedule_next
+import app.posato.generated.resources.schedule_nothing_computer
+import app.posato.generated.resources.schedule_nothing_ipad
+import app.posato.generated.resources.schedule_nothing_iphone
+import app.posato.generated.resources.schedule_nothing_mac
+import app.posato.generated.resources.schedule_nothing_phone
+import app.posato.generated.resources.schedule_set_deleted
+import app.posato.generated.resources.schedule_set_label
+import app.posato.generated.resources.schedule_set_over_limit
+import app.posato.generated.resources.schedule_skipped
+import app.posato.generated.resources.schedule_sync_limit
+import app.posato.generated.resources.schedule_turned_off
+import app.posato.generated.resources.schedule_waiting_set
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * A schedule in the list: tapping the row edits it and the switch turns it on or off. On iOS its other actions
@@ -88,14 +116,22 @@ internal fun ScheduleRow(
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ScheduleRowContent(row, actions, emptyList(), Modifier.weight(1f))
-                PosatoItemMenu("Actions for ${row.name}", scheduleMenu(row, actions))
+                PosatoItemMenu(stringResource(Res.string.schedule_actions_for, row.name), scheduleMenu(row, actions))
             }
             if (confirmingDelete) {
                 Column(Modifier.padding(bottom = PosatoSpace.Medium), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                    PosatoBody("Delete ${row.name}? It is deleted on your other devices too.")
+                    PosatoBody(stringResource(Res.string.schedule_delete_named_body, row.name))
                     PosatoActionRow {
-                        PosatoButton(onClick = actions.onDelete, style = PosatoButtonStyle.Destructive) { Text("Delete") }
-                        PosatoButton(onClick = { actions.onConfirmDelete(null) }, style = PosatoButtonStyle.Quiet) { Text("Keep") }
+                        PosatoButton(
+                            onClick = actions.onDelete,
+                            style = PosatoButtonStyle.Destructive,
+                            controlId = "action_delete",
+                        ) { Text(stringResource(Res.string.action_delete)) }
+                        PosatoButton(
+                            onClick = { actions.onConfirmDelete(null) },
+                            style = PosatoButtonStyle.Quiet,
+                            controlId = "action_keep",
+                        ) { Text(stringResource(Res.string.action_keep)) }
                     }
                 }
             }
@@ -112,12 +148,22 @@ internal fun ScheduleDeleteAlert(
     actions: ScheduleActions,
 ) {
     PosatoAlert(
-        title = "Delete ${row.name}?",
-        message = "It is deleted on your other devices too.",
+        title = stringResource(Res.string.pause_sets_delete_named, row.name),
+        message = stringResource(Res.string.schedule_delete_other_devices),
         onDismiss = { actions.onConfirmDelete(null) },
         actions = listOf(
-            PosatoAlertAction("Keep", { actions.onConfirmDelete(null) }, PosatoAlertRole.Cancel),
-            PosatoAlertAction("Delete", { actions.onDelete() }, PosatoAlertRole.Destructive),
+            PosatoAlertAction(
+                stringResource(Res.string.action_keep),
+                { actions.onConfirmDelete(null) },
+                PosatoAlertRole.Cancel,
+                controlId = "action_keep",
+            ),
+            PosatoAlertAction(
+                stringResource(Res.string.action_delete),
+                { actions.onDelete() },
+                PosatoAlertRole.Destructive,
+                controlId = "action_delete",
+            ),
         ),
     )
 }
@@ -130,7 +176,9 @@ private fun ScheduleRowContent(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier.fillMaxWidth().clickable(enabled = !row.refused, onClickLabel = "Edit ${row.name}") { actions.onEdit(row) }
+        modifier.fillMaxWidth().clickable(enabled = !row.refused, onClickLabel = stringResource(Res.string.schedule_edit_named, row.name)) {
+            actions.onEdit(row)
+        }
             .semantics { if (rowActions.isNotEmpty()) customActions = rowActions }
             .padding(vertical = PosatoSpace.Medium),
         horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
@@ -138,11 +186,12 @@ private fun ScheduleRowContent(
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
             Text(row.name, style = MaterialTheme.typography.bodyLarge)
-            PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel).joinToString(" · "))
+            PosatoCaption(row.caption())
             ScheduleRowStatus(row)
         }
         val switchInteraction = remember { MutableInteractionSource() }
         val switchFocused by switchInteraction.collectIsKeyboardFocusedAsState()
+        val scheduleName = stringResource(Res.string.schedule_named, row.name)
         Box(
             Modifier.sizeIn(minWidth = PosatoSize.Control, minHeight = PosatoSize.Control).toggleable(
                 value = row.enabled,
@@ -151,7 +200,7 @@ private fun ScheduleRowContent(
                 interactionSource = switchInteraction,
                 indication = null,
             ) { actions.onSetEnabled(row, it) }
-                .semantics { contentDescription = "${row.name} schedule" }
+                .semantics { contentDescription = scheduleName }
                 .keyboardFocusRing({ switchFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small),
             contentAlignment = Alignment.Center,
         ) {
@@ -162,36 +211,122 @@ private fun ScheduleRowContent(
 
 @Composable
 private fun ScheduleRowStatus(row: ScheduleRowModel) {
-    row.setProblem?.let { problem -> PosatoNotice(tone = PosatoTone.Caution) { Text(problem) } }
+    row.problem()?.let { problem -> PosatoNotice(tone = PosatoTone.Caution) { Text(problem) } }
     when {
         row.refused -> PosatoNotice(tone = PosatoTone.Caution) {
-            Text("Couldn't sync: 10 schedules is the most. Delete a schedule on any device and this one syncs by itself.")
+            Text(stringResource(Res.string.schedule_sync_limit))
         }
 
-        !row.enabled -> PosatoCaption("Turned off")
+        !row.enabled -> PosatoCaption(stringResource(Res.string.schedule_turned_off))
 
-        else -> row.nextRunLabel?.let { PosatoCaption(it) }
+        else -> row.nextLabel()?.let { PosatoCaption(it) }
     }
-    row.skippedLabel?.let { PosatoCaption(it) }
+    row.skippedText()?.let { PosatoCaption(it) }
 }
 
+@Composable
+private fun ScheduleRowModel.caption(): String {
+    val shortDays = listOf(
+        shortWeekday(0),
+        shortWeekday(1),
+        shortWeekday(2),
+        shortWeekday(3),
+        shortWeekday(4),
+        shortWeekday(5),
+        shortWeekday(6),
+    )
+    val endsNext = stringResource(Res.string.schedule_ends_next_day)
+    val namedSet = stringResource(Res.string.schedule_set_label, setName.orEmpty())
+    val start = startMinuteOfDay
+    val end = endMinuteOfDay
+    val days = ScheduleDay.entries.filter { weekdayMask and it.bit != 0 }.joinToString(", ") { day -> shortDays[day.ordinal] }
+    val hours = if (start == null || end == null) "" else "${minuteLabel(start)} - ${minuteLabel(end)}" + if (rowEndsNextDay) endsNext else ""
+    val daysHours = stringResource(Res.string.schedule_days_hours, days, hours)
+    if (weekdayMask < 0 || start == null || end == null) {
+        return listOfNotNull("$daysLabel · $hoursLabel", setLabel).joinToString(" · ")
+    }
+    val set = if (setName == null) setLabel else namedSet
+    return listOfNotNull(daysHours, set).joinToString(" · ")
+}
+
+@Composable
+private fun ScheduleRowModel.problem(): String? {
+    val waiting = stringResource(Res.string.schedule_waiting_set)
+    val deleted = stringResource(Res.string.schedule_set_deleted)
+    val overLimit = stringResource(Res.string.schedule_set_over_limit)
+    val nothing = stringResourceForDevice(
+        Res.string.schedule_nothing_mac,
+        Res.string.schedule_nothing_iphone,
+        Res.string.schedule_nothing_ipad,
+        Res.string.schedule_nothing_computer,
+        Res.string.schedule_nothing_phone,
+    )
+    return when (problemKind) {
+        null -> setProblem
+        ScheduleProblemKind.WAITING -> waiting
+        ScheduleProblemKind.DELETED -> deleted
+        ScheduleProblemKind.OVER_LIMIT -> overLimit
+        ScheduleProblemKind.NOTHING -> nothing
+    }
+}
+
+@Composable
+internal fun ScheduleRowModel.nextLabel(): String? {
+    val formatted = stringResource(Res.string.schedule_next, shortWeekday(nextWeekday ?: 0), nextWhen.orEmpty())
+    return if (nextWeekday == null || nextWhen == null) nextRunLabel else formatted
+}
+
+@Composable
+internal fun ScheduleRowModel.skippedText(): String? {
+    val formatted = stringResource(Res.string.schedule_skipped, shortWeekday(skippedWeekday ?: 0), skippedWhen.orEmpty())
+    return if (skippedWeekday == null || skippedWhen == null) skippedLabel else formatted
+}
+
+@Composable
 private fun scheduleSwipeActions(
     row: ScheduleRowModel,
     actions: ScheduleActions,
 ): List<PosatoSwipeAction> {
     return buildList {
-        if (row.enabled && row.canSkip) add(PosatoSwipeAction("Skip next", { actions.onSkipNext(row) }))
-        add(PosatoSwipeAction("Delete", { actions.onConfirmDelete(row.id) }, destructive = true))
+        if (row.enabled && row.canSkip) {
+            add(PosatoSwipeAction(stringResource(Res.string.action_skip_next), { actions.onSkipNext(row) }, controlId = "action_skip_next"))
+        }
+        add(
+            PosatoSwipeAction(stringResource(Res.string.action_delete), {
+                actions.onConfirmDelete(row.id)
+            }, destructive = true, controlId = "action_delete"),
+        )
     }
 }
 
+@Composable
 private fun scheduleMenu(
     row: ScheduleRowModel,
     actions: ScheduleActions,
 ): List<PosatoMenuItem> {
     return buildList {
-        if (!row.refused) add(PosatoMenuItem("Edit", { actions.onEdit(row) }, PosatoMenuSymbol.Edit))
-        if (row.enabled && row.canSkip) add(PosatoMenuItem("Skip next", { actions.onSkipNext(row) }, PosatoMenuSymbol.Skip))
-        add(PosatoMenuItem("Delete", { actions.onConfirmDelete(row.id) }, PosatoMenuSymbol.Remove, destructive = true))
+        if (!row.refused) {
+            add(
+                PosatoMenuItem(stringResource(Res.string.action_edit), {
+                    actions.onEdit(row)
+                }, PosatoMenuSymbol.Edit, controlId = "action_edit"),
+            )
+        }
+        if (row.enabled && row.canSkip) {
+            add(
+                PosatoMenuItem(stringResource(Res.string.action_skip_next), {
+                    actions.onSkipNext(row)
+                }, PosatoMenuSymbol.Skip, controlId = "action_skip_next"),
+            )
+        }
+        add(
+            PosatoMenuItem(
+                stringResource(Res.string.action_delete),
+                { actions.onConfirmDelete(row.id) },
+                PosatoMenuSymbol.Remove,
+                destructive = true,
+                controlId = "action_delete",
+            ),
+        )
     }
 }

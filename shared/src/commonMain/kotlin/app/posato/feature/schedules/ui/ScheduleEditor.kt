@@ -41,7 +41,39 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.targets.ui.PauseSetPickerRow
 import app.posato.feature.targets.ui.PauseSetRow
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_back_to_schedules
+import app.posato.generated.resources.action_cancel
+import app.posato.generated.resources.action_delete_schedule
+import app.posato.generated.resources.action_save_schedule
+import app.posato.generated.resources.action_skip_next
+import app.posato.generated.resources.schedule_choose_set
+import app.posato.generated.resources.schedule_editor_eyebrow
+import app.posato.generated.resources.schedule_editor_lead
+import app.posato.generated.resources.schedule_editor_title
+import app.posato.generated.resources.schedule_ends
+import app.posato.generated.resources.schedule_ends_at
+import app.posato.generated.resources.schedule_ends_at_next
+import app.posato.generated.resources.schedule_error_day
+import app.posato.generated.resources.schedule_error_full
+import app.posato.generated.resources.schedule_error_name
+import app.posato.generated.resources.schedule_error_same
+import app.posato.generated.resources.schedule_error_save
+import app.posato.generated.resources.schedule_error_short
+import app.posato.generated.resources.schedule_name_label
+import app.posato.generated.resources.schedule_next_day
+import app.posato.generated.resources.schedule_off_keeps
+import app.posato.generated.resources.schedule_on
+import app.posato.generated.resources.schedule_repeat_on
+import app.posato.generated.resources.schedule_starts
+import app.posato.generated.resources.schedule_starts_at
+import app.posato.generated.resources.schedule_time_end
+import app.posato.generated.resources.schedule_time_start
+import app.posato.generated.resources.sync_folder_code_done
+import app.posato.generated.resources.wheel_hours_of
+import app.posato.generated.resources.wheel_minutes_of
 import kotlinx.collections.immutable.toPersistentSet
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun ScheduleEditor(
@@ -59,15 +91,25 @@ internal fun ScheduleEditor(
     val focus = LocalFocusManager.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         if (platformUsesCupertinoChrome) {
-            if (draft.id == null) PosatoLead("Make room, regularly.")
+            if (draft.id == null) PosatoLead(stringResource(Res.string.schedule_editor_lead))
         } else {
             PosatoButton(onClick = {
                 focus.clearFocus()
                 actions.onCloseEditor()
-            }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-            PosatoHeading(if (draft.id == null) "Make room, regularly." else "Edit schedule", eyebrow = "SCHEDULE", layout = layout)
+            }, style = PosatoButtonStyle.Quiet, controlId = "action_back_to_schedules") { Text(stringResource(Res.string.action_back_to_schedules)) }
+            PosatoHeading(
+                if (draft.id ==
+                    null
+                ) {
+                    stringResource(Res.string.schedule_editor_lead)
+                } else {
+                    stringResource(Res.string.schedule_editor_title)
+                },
+                eyebrow = stringResource(Res.string.schedule_editor_eyebrow),
+                layout = layout,
+            )
         }
-        PosatoTextField(state = name, label = "Schedule name", onSubmit = { focus.clearFocus() })
+        PosatoTextField(state = name, label = stringResource(Res.string.schedule_name_label), onSubmit = { focus.clearFocus() })
         ScheduleSetRow(draft, state.pauseSets, actions.onUpdateDraft)
         ScheduleDays(draft, actions)
         ScheduleTimes(draft, actions)
@@ -75,15 +117,19 @@ internal fun ScheduleEditor(
             modifier = Modifier.fillMaxWidth(),
             checked = draft.enabled,
             onCheckedChange = { actions.onUpdateDraft(draft.copy(enabled = it)) },
-            supportingContent = { PosatoCaption("A schedule that is off keeps its days and hours but never starts.") },
-        ) { Text("Schedule on") }
+            supportingContent = { PosatoCaption(stringResource(Res.string.schedule_off_keeps)) },
+        ) { Text(stringResource(Res.string.schedule_on)) }
         state.editorError?.let { error -> PosatoNotice(tone = PosatoTone.Caution) { Text(error.message()) } }
         PosatoActionRow {
             PosatoButton(onClick = {
                 focus.clearFocus()
                 actions.onSave()
-            }, enabled = !state.saving) { Text("Save schedule") }
-            PosatoButton(onClick = actions.onCloseEditor, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+            }, enabled = !state.saving, controlId = "action_save_schedule") { Text(stringResource(Res.string.action_save_schedule)) }
+            PosatoButton(
+                onClick = actions.onCloseEditor,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "action_cancel",
+            ) { Text(stringResource(Res.string.action_cancel)) }
         }
         if (platformUsesCupertinoChrome) ScheduleEditorRowActions(draft, state, actions)
     }
@@ -103,11 +149,18 @@ private fun ScheduleEditorRowActions(
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoDivider()
         if (row.enabled && row.canSkip) {
-            PosatoTextButton(onClick = { actions.onSkipNext(row) }) { Text("Skip next") }
-            row.nextRunLabel?.let { PosatoCaption(it) }
+            PosatoTextButton(
+                onClick = { actions.onSkipNext(row) },
+                controlId = "action_skip_next",
+            ) { Text(stringResource(Res.string.action_skip_next)) }
+            row.nextLabel()?.let { PosatoCaption(it) }
         }
-        row.skippedLabel?.let { PosatoCaption(it) }
-        PosatoTextButton(onClick = { actions.onConfirmDelete(row.id) }, destructive = true) { Text("Delete schedule") }
+        row.skippedText()?.let { PosatoCaption(it) }
+        PosatoTextButton(
+            onClick = { actions.onConfirmDelete(row.id) },
+            destructive = true,
+            controlId = "action_delete_schedule",
+        ) { Text(stringResource(Res.string.action_delete_schedule)) }
     }
     if (state.confirmingDelete == row.id) ScheduleDeleteAlert(row, actions)
 }
@@ -122,24 +175,32 @@ private fun ScheduleTimes(
     var editingStart by remember { mutableStateOf<Boolean?>(null) }
     if (platformUsesCupertinoChrome) {
         Column {
-            PosatoTimeRow("Starts", draft.startHour, draft.startMinute, { hour, minute ->
+            PosatoTimeRow(stringResource(Res.string.schedule_starts), draft.startHour, draft.startMinute, { hour, minute ->
                 actions.onUpdateDraft(draft.copy(startHour = hour, startMinute = minute))
             })
-            PosatoTimeRow("Ends", draft.endHour, draft.endMinute, { hour, minute ->
+            PosatoTimeRow(stringResource(Res.string.schedule_ends), draft.endHour, draft.endMinute, { hour, minute ->
                 actions.onUpdateDraft(draft.copy(endHour = hour, endMinute = minute))
-            }, supportingText = "Next day".takeIf { draft.endsNextDay })
+            }, supportingText = stringResource(Res.string.schedule_next_day).takeIf { draft.endsNextDay })
         }
     } else {
         PosatoActionRow {
             PosatoButton(onClick = {
                 focus.clearFocus()
                 editingStart = true
-            }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
+            }, style = PosatoButtonStyle.Secondary, controlId = "schedule_starts_at") {
+                Text(stringResource(Res.string.schedule_starts_at, timeLabel(draft.startHour, draft.startMinute)))
+            }
             PosatoButton(onClick = {
                 focus.clearFocus()
                 editingStart = false
-            }, style = PosatoButtonStyle.Secondary) {
-                Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
+            }, style = PosatoButtonStyle.Secondary, controlId = "schedule_ends_at") {
+                Text(
+                    if (draft.endsNextDay) {
+                        stringResource(Res.string.schedule_ends_at_next, timeLabel(draft.endHour, draft.endMinute))
+                    } else {
+                        stringResource(Res.string.schedule_ends_at, timeLabel(draft.endHour, draft.endMinute))
+                    },
+                )
             }
         }
         editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
@@ -156,29 +217,30 @@ private fun ScheduleDays(
         actions.onUpdateDraft(draft.copy(days = days.toPersistentSet()))
     }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-        PosatoCaption("Repeat on")
+        PosatoCaption(stringResource(Res.string.schedule_repeat_on))
         if (platformUsesCupertinoChrome) {
             PosatoDayRow {
-                ScheduleDay.entries.forEach { day -> PosatoDayToggle(day.label, selected = day in draft.days, onClick = { toggle(day) }) }
+                ScheduleDay.entries.forEach { day -> PosatoDayToggle(day.fullLabel(), selected = day in draft.days, onClick = { toggle(day) }) }
             }
         } else {
             PosatoChoiceGroup {
                 ScheduleDay.entries.forEach { day ->
-                    PosatoToggleButton(selected = day in draft.days, onClick = { toggle(day) }) { Text(day.label) }
+                    PosatoToggleButton(selected = day in draft.days, onClick = { toggle(day) }) { Text(day.fullLabel()) }
                 }
             }
         }
     }
 }
 
+@Composable
 private fun ScheduleEditorError.message(): String {
     return when (this) {
-        ScheduleEditorError.NAME -> "Give the schedule a name of up to 80 characters, without line breaks."
-        ScheduleEditorError.NO_DAY -> "Choose at least one day."
-        ScheduleEditorError.TOO_SHORT -> "A schedule lasts at least 15 minutes."
-        ScheduleEditorError.SAME_TIMES -> "Choose an end time different from the start."
-        ScheduleEditorError.FULL -> "You have 10 schedules, the most Posato keeps. Delete one to add another."
-        ScheduleEditorError.NOT_SAVED -> "Couldn't save. Try again."
+        ScheduleEditorError.NAME -> stringResource(Res.string.schedule_error_name)
+        ScheduleEditorError.NO_DAY -> stringResource(Res.string.schedule_error_day)
+        ScheduleEditorError.TOO_SHORT -> stringResource(Res.string.schedule_error_short)
+        ScheduleEditorError.SAME_TIMES -> stringResource(Res.string.schedule_error_same)
+        ScheduleEditorError.FULL -> stringResource(Res.string.schedule_error_full)
+        ScheduleEditorError.NOT_SAVED -> stringResource(Res.string.schedule_error_save)
     }
 }
 
@@ -189,25 +251,29 @@ private fun ScheduleTimeEditor(
     onChange: (ScheduleDraft) -> Unit,
     onDone: () -> Unit,
 ) {
-    val label = if (start) "Start" else "End"
+    val label = if (start) stringResource(Res.string.schedule_time_start) else stringResource(Res.string.schedule_time_end)
     PosatoPanel {
         Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
             PosatoNumberWheel(
                 modifier = Modifier.weight(1f),
                 value = if (start) draft.startHour else draft.endHour,
                 range = 0..23,
-                label = "$label hours",
+                label = stringResource(Res.string.wheel_hours_of, label),
                 onValueChange = { onChange(if (start) draft.copy(startHour = it) else draft.copy(endHour = it)) },
             )
             PosatoNumberWheel(
                 modifier = Modifier.weight(1f),
                 value = if (start) draft.startMinute else draft.endMinute,
                 range = 0..59,
-                label = "$label minutes",
+                label = stringResource(Res.string.wheel_minutes_of, label),
                 onValueChange = { onChange(if (start) draft.copy(startMinute = it) else draft.copy(endMinute = it)) },
             )
         }
-        PosatoButton(onClick = onDone, style = PosatoButtonStyle.Secondary) { Text("Done") }
+        PosatoButton(
+            onClick = onDone,
+            style = PosatoButtonStyle.Secondary,
+            controlId = "sync_folder_code_done",
+        ) { Text(stringResource(Res.string.sync_folder_code_done)) }
     }
 }
 
@@ -218,5 +284,7 @@ private fun ScheduleSetRow(
     sets: List<PauseSetRow>,
     onUpdateDraft: (ScheduleDraft) -> Unit,
 ) {
-    PauseSetPickerRow(sets, draft.setId, onChoose = { id -> onUpdateDraft(draft.copy(setId = id)) }, placeholder = "Choose a set")
+    PauseSetPickerRow(sets, draft.setId, onChoose = { id ->
+        onUpdateDraft(draft.copy(setId = id))
+    }, placeholder = stringResource(Res.string.schedule_choose_set))
 }

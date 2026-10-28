@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="block_title">Wstrzymane przez Posato</string>
+    <string name="block_body">Ta aplikacja jest częścią twojej pauzy. Wróci, gdy pauza się skończy.</string>
+    <string name="block_home">Przejdź do ekranu głównego</string>
+    <string name="guard_title">Posato jest gotowe</string>
+    <string name="guard_body">Pauzy i harmonogramy działają, gdy aplikacja jest zamknięta.</string>
+    <string name="catalog_title">Wybierz aplikacje</string>
+    <string name="catalog_choose">Wybierz</string>
+    <string name="catalog_cancel">Anuluj</string>
+</resources>

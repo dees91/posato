@@ -17,6 +17,7 @@ const val IOS_BUNDLE_ID = "app.posato.ios"
 const val STORE_LOCALE = "en-US"
 
 private val VERSION_PATTERN = Regex("[0-9]+\\.[0-9]+\\.[0-9]+")
+private val LOCALE_PATTERN = Regex("[a-z]{2}(-[A-Z][A-Za-z0-9]{1,7})?")
 private const val MAX_WHATS_NEW = 4000
 private const val MAX_DESCRIPTION = 4000
 private const val MAX_SCREENSHOTS_PER_SET = 10
@@ -71,6 +72,12 @@ object ReleaseInputs {
         return value
     }
 
+    /** An App Store Connect locale shortcode such as `en-US` or `pl`; Apple lists Polish as `pl`, not `pl-PL`. */
+    fun locale(value: String): String {
+        ensure(value.matches(LOCALE_PATTERN)) { "--locale must be an App Store Connect locale such as en-US or pl" }
+        return value
+    }
+
     fun whatsNew(file: Path): String = text(file, "What's New", MAX_WHATS_NEW)
 
     fun description(file: Path): String = text(file, "description", MAX_DESCRIPTION)
@@ -108,19 +115,14 @@ object ReleaseInputs {
         }
         return files.map { file ->
             val bytes = read { Files.readAllBytes(file) }
-            ensure(isPng(bytes)) { "${slot.directory}/${file.name} is not a PNG image" }
-            ensure(!hasAlpha(bytes)) {
+            ensure(PngImage.isPng(bytes)) { "${slot.directory}/${file.name} is not a PNG image" }
+            ensure(!PngImage.hasAlpha(bytes)) {
                 "${slot.directory}/${file.name} has an alpha channel, which App Store Connect rejects; convert it with " +
                     "`ffmpeg -i <in> -pix_fmt rgb24 <out>`"
             }
             ScreenshotFile(file.name, bytes)
         }
     }
-
-    private fun isPng(bytes: ByteArray): Boolean =
-        bytes.size > COLOR_TYPE_OFFSET && bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
-
-    private fun hasAlpha(bytes: ByteArray): Boolean = (bytes[COLOR_TYPE_OFFSET].toInt() and BYTE_MASK) in ALPHA_COLOR_TYPES
 
     private fun <T> read(block: () -> T): T = try {
         block()
@@ -134,4 +136,10 @@ object ReleaseInputs {
     ) {
         if (!condition) throw ProvisioningException(ErrorCode.RELEASE_INPUT_INVALID, "${message()}.", REMEDY)
     }
+}
+
+private object PngImage {
+    fun isPng(bytes: ByteArray): Boolean = bytes.size > COLOR_TYPE_OFFSET && bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)
+
+    fun hasAlpha(bytes: ByteArray): Boolean = (bytes[COLOR_TYPE_OFFSET].toInt() and BYTE_MASK) in ALPHA_COLOR_TYPES
 }

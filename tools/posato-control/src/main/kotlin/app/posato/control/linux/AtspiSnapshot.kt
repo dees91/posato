@@ -56,11 +56,14 @@ private fun convert(
         else -> null
     }
     // Compose publishes a control's content description as its AT-SPI description and a text field's hint likewise.
+    // A named button keeps that description as its stable id, so the visible name stays the label.
     val label = node.name ?: node.description.takeIf { role != Roles.TEXT_FIELD }
+    val identifier = node.description.takeIf { role == Roles.BUTTON && node.name != null }
     if (isWindow || (role == null && label == null)) return children
     return listOf(
         SnapshotNode(
             role = role ?: Roles.GROUP,
+            id = identifier,
             label = label,
             value = if (role == Roles.TEXT_FIELD) node.text?.ifEmpty { null } else null,
             placeholder = if (role == Roles.TEXT_FIELD) node.description else null,

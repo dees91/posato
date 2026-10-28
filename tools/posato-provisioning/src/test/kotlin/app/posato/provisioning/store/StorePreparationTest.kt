@@ -177,6 +177,74 @@ class StorePreparationTest {
     }
 
     @Test
+    fun `writes an explicit locale and leaves the other localization alone`() {
+        val harness = StoreHarness(
+            mapOf(
+                "GET apps" to listOf(APPS),
+                "GET builds" to listOf(StoreFixtures.builds()),
+                "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+                "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+                "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(StoreFixtures.localizations("New things.")),
+                "POST appStoreVersionLocalizations" to listOf("""{"data":{"id":"PL","attributes":{"locale":"pl"}}}"""),
+                "PATCH appStoreVersionLocalizations/PL" to listOf("""{"data":{"id":"PL"}}"""),
+                "GET apps/APP/appInfos" to listOf(liveAndNextInfo),
+                "GET appInfos/NEXT/appInfoLocalizations" to listOf(
+                    list("""{"id":"INFO-LOC","attributes":{"locale":"en-US","subtitle":"Space for what matters."}}"""),
+                ),
+                "POST appInfoLocalizations" to listOf("""{"data":{"id":"INFO-PL","attributes":{"locale":"pl"}}}"""),
+            ),
+        )
+        val polish = PrepareRequest(
+            "1.2.0",
+            5,
+            "New things.",
+            ReleaseType.MANUAL,
+            screenshots = null,
+            subtitle = "Space for what matters.",
+            locale = "pl",
+        )
+
+        val result = StorePreparation(harness.services).prepare(polish)
+
+        assertEquals("pl", result.text("locale"))
+        assertEquals("updated", result.text("whatsNew"))
+        assertEquals("updated", result.text("subtitle"))
+        val created = harness.executor.write("POST appStoreVersionLocalizations").data()
+        assertEquals("pl", created["attributes"]!!.jsonObject.text("locale"))
+        val versionLink = created["relationships"]!!.jsonObject["appStoreVersion"]!!.jsonObject["data"]!!.jsonObject
+        assertEquals("VER", versionLink.text("id"))
+        val whatsNew = harness.executor.write("PATCH appStoreVersionLocalizations/PL").data()["attributes"]!!.jsonObject
+        assertEquals("New things.", whatsNew.text("whatsNew"))
+        val subtitle = harness.executor.write("POST appInfoLocalizations").data()
+        assertEquals("pl", subtitle["attributes"]!!.jsonObject.text("locale"))
+        assertEquals("Space for what matters.", subtitle["attributes"]!!.jsonObject.text("subtitle"))
+        val infoLink = subtitle["relationships"]!!.jsonObject["appInfo"]!!.jsonObject["data"]!!.jsonObject
+        assertEquals("NEXT", infoLink.text("id"))
+        assertTrue(harness.executor.writes.none { request -> request.path.contains("LOC") })
+    }
+
+    @Test
+    fun `refuses a version without the default localization instead of creating it`() {
+        val harness = StoreHarness(
+            mapOf(
+                "GET apps" to listOf(APPS),
+                "GET builds" to listOf(StoreFixtures.builds()),
+                "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+                "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+                "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(
+                    list("""{"id":"PL","attributes":{"locale":"pl","whatsNew":"Translated notes."}}"""),
+                ),
+                "POST appStoreVersionLocalizations" to listOf("""{"data":{"id":"EN","attributes":{"locale":"en-US"}}}"""),
+            ),
+        )
+
+        val failure = assertFailsWith<ProvisioningException> { StorePreparation(harness.services).prepare(request) }
+
+        assertEquals(ErrorCode.LOCALIZATION_MISSING, failure.code)
+        assertTrue(harness.executor.writes.isEmpty())
+    }
+
+    @Test
     fun `changes only the release type of an existing version`() {
         val harness = StoreHarness(
             mapOf(

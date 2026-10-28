@@ -39,12 +39,14 @@ internal fun PosatoButton(
     modifier: Modifier = Modifier,
     style: PosatoButtonStyle = PosatoButtonStyle.Primary,
     enabled: Boolean = true,
+    controlId: String? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val tagged = controlId?.let { modifier.controlId(it) } ?: modifier
     if (style == PosatoButtonStyle.Quiet) {
-        PosatoTextButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
+        PosatoTextButton(onClick = onClick, modifier = tagged, enabled = enabled, content = content)
     } else {
-        PosatoFilledButton(onClick = onClick, style = style, modifier = modifier, enabled = enabled, content = content)
+        PosatoFilledButton(onClick = onClick, style = style, modifier = tagged, enabled = enabled, content = content)
     }
 }
 
@@ -107,14 +109,16 @@ internal fun PosatoTextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     destructive: Boolean = false,
+    controlId: String? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val tagged = controlId?.let { modifier.controlId(it) } ?: modifier
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     val color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     Row(
-        modifier = modifier.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
+        modifier = tagged.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .graphicsLayer {
                 alpha = when {

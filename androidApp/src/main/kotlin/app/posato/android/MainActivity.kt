@@ -9,7 +9,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.lifecycleScope
+import app.posato.feature.targets.ui.loadSetNameText
 import app.posato.openPosatoLink
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -47,11 +53,18 @@ class MainActivity : ComponentActivity() {
         // shared screens keep their content inside the safe drawing area.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Before the screens build names, and again after a per-app language change recreates the activity.
+        loadSetNameText()
         val app = application as PosatoAndroidApp
         GuardService.start(this)
         lifecycleScope.launch { runCatching { app.runtime.preparePauseSets() } }
         if (savedInstanceState == null) intent?.dataString?.let(::openPosatoLink)
-        setContent { app.runtime.application.Content(hostsSession = false) }
+        setContent {
+            // The main window's test tags become resource ids, so a flow can press a control by its catalog key.
+            Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
+                app.runtime.application.Content(hostsSession = false)
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

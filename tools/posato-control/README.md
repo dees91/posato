@@ -270,7 +270,7 @@ scenario steps use the same keys in a `query` object:
 
 | Option | Key | Matches |
 | --- | --- | --- |
-| `--id` | `id` | iOS accessibility identifier (a Compose `testTag`). Not exposed on the desktop. |
+| `--id` | `id` | A Posato control's catalog key, such as `action_new_set`: the accessibility identifier on iOS and the resource id on Android (both a Compose `testTag`), and on the desktop the button's accessibility description, which Posato publishes only where `~/.posato-control-ids` exists. `launch` creates that file in the guest, so a release build never has a screen reader announce the key. Native iOS alerts carry no identifier; flows press their buttons by English title. |
 | `--text` | `text` | Exact label, value, or placeholder. |
 | `--text-contains` | `textContains` | Substring of the label or value. |
 | `--role` | `role` | `button`, `textField`, `text`, `group`, `window`, `progress`, `other`, `any`. |
@@ -287,8 +287,11 @@ one text field, so use `--role textField` after selecting the surface.
 Nested Websites / Apps tabs include counts in their labels; select with
 `--text-contains Websites --role button`, not a hardcoded count.
 
-Desktop buttons expose labels; fields may expose only their value, and
-`testTag` is not exposed. On iOS a focused field may append its value to its
+Desktop buttons expose labels; fields may expose only their value. On iOS
+an identifier stays in the tree while its control is hidden under the bottom
+bar, so `scrollTo` (a flow's reveal) scrolls until the element is hittable,
+and accepts an on-screen element that never reports itself hittable after
+three pans. On iOS a focused field may append its value to its
 label. Avoid selectors tied to the complete dynamic label. Desktop taps use
 accessibility actions without explicit activation. Typing, key presses, and
 `scrollTo` bring the tracked window forward: native verification found that

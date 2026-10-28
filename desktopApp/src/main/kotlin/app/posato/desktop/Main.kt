@@ -27,6 +27,7 @@ import app.posato.feature.onboarding.MacConsole
 import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.presence.loadPresenceCopy
 import app.posato.feature.session.data.KeptApplicationRequirements
+import app.posato.feature.targets.ui.loadSetNameText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +36,8 @@ import java.nio.file.Path
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    MacAppLanguage.apply()
+    loadSetNameText()
     if (!TranslationGuard.permitsLaunch()) {
         exitProcess(0)
     }

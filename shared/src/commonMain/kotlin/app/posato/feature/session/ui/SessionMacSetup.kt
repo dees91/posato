@@ -23,10 +23,12 @@ import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.onboarding.needsSetup
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_back_to_session
 import app.posato.generated.resources.mac_unified_body
 import app.posato.generated.resources.mac_unified_start_without
 import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.onboarding_action_continue
+import app.posato.generated.resources.session_eyebrow_finish_setup
 import org.jetbrains.compose.resources.stringResource
 
 internal fun SessionUiState.showsMacSetup(macSetup: MacSetupPresentation): Boolean {
@@ -92,7 +94,7 @@ internal fun SessionMacSetup(
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
             stringResource(Res.string.mac_unified_title),
-            eyebrow = "FINISH SETUP",
+            eyebrow = stringResource(Res.string.session_eyebrow_finish_setup),
             description = stringResource(Res.string.mac_unified_body),
             layout = layout,
         )
@@ -100,9 +102,16 @@ internal fun SessionMacSetup(
         MacSetupAction(macSetup, actions.setUp, sessionBlocks = state.blocksHelperRemoval())
         val idle = macSetup.setup?.running != true
         if (macSetup.setupComplete) {
-            PosatoButton(onClick = actions.leave) { Text(stringResource(Res.string.onboarding_action_continue)) }
+            PosatoButton(
+                onClick = actions.leave,
+                controlId = "onboarding_action_continue",
+            ) { Text(stringResource(Res.string.onboarding_action_continue)) }
         } else if (idle && macSetup.readiness == MacHelperReadiness.READY) {
-            PosatoButton(onClick = actions.leave, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.mac_unified_start_without)) }
+            PosatoButton(
+                onClick = actions.leave,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "mac_unified_start_without",
+            ) { Text(stringResource(Res.string.mac_unified_start_without)) }
         }
         MacSetupSection(
             presentation = macSetup,
@@ -118,6 +127,6 @@ internal fun SessionMacSetup(
         PosatoButton(onClick = {
             actions.leave()
             onBack()
-        }, style = PosatoButtonStyle.Quiet) { Text("Back to Session") }
+        }, style = PosatoButtonStyle.Quiet, controlId = "action_back_to_session") { Text(stringResource(Res.string.action_back_to_session)) }
     }
 }

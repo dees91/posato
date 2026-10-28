@@ -140,9 +140,12 @@ enum Bridge {
     } else {
       childNodes = []
     }
+    // Compose desktop exposes no accessibility identifier. On a verification host a button's help is
+    // its stable id (see ControlId.jvm.kt); text keeps its visible value as the label.
+    let help = unified == "text" ? nil : string(element, kAXHelpAttribute)
     return Node(
       role: unified,
-      id: string(element, kAXIdentifierAttribute),
+      id: string(element, kAXIdentifierAttribute) ?? help,
       label: label,
       value: value,
       enabled: bool(element, kAXEnabledAttribute) ?? true,

@@ -27,8 +27,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.core.designsystem.PosatoActivityIndicator
 import app.posato.core.designsystem.PosatoButton
-import app.posato.core.designsystem.PosatoButtonStyle
-import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
@@ -52,6 +50,13 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsCategory
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_retry
+import app.posato.generated.resources.session_loading
+import app.posato.generated.resources.session_on_this_device
+import app.posato.generated.resources.session_part_schedule
+import app.posato.generated.resources.session_set_suffix
+import app.posato.generated.resources.session_set_until
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -71,7 +76,7 @@ internal fun SessionScreen(
     onEditPausedItems: (PauseSetId?, TargetsCategory) -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
-    deviceLabel: String = "On this device",
+    deviceLabel: String = stringResource(Res.string.session_on_this_device),
     syncState: SyncBootstrapUiState? = null,
     macSetupState: MacHelperSetupUiState? = null,
     onMacSetupAnnouncement: (String) -> Unit = {},
@@ -79,7 +84,6 @@ internal fun SessionScreen(
     onConsumeWindowRequest: () -> Unit = {},
     scheduledPauses: ScheduledPauses? = null,
     notPausedYet: StateFlow<Int>? = null,
-    deviceNoun: String = "device",
     onOpenAbout: (() -> Unit)? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner, zone)
@@ -121,7 +125,7 @@ internal fun SessionScreen(
         state = state,
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
-        pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count, deviceNoun) },
+        pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count) },
         onOpenAbout = onOpenAbout,
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
@@ -159,12 +163,25 @@ private fun scheduledPauseView(
     val manualEnd = (state.status as? LocalSessionStatus.Active)?.record?.endEpochMillis ?: 0L
     val until = timeFormat.formatTime(maxOf(scheduled.endEpochMillis, manualEnd), now)
     val setName = { setId: PauseSetId? -> state.pauseSets.firstOrNull { row -> row.id == setId }?.name }
-    val manual = state.setName?.takeIf { manualEnd > 0 }?.let { name -> listOf("Set: $name, until ${timeFormat.formatTime(manualEnd, now)}") }
-    val parts = manual.orEmpty() + scheduled.parts.map { part ->
-        val set = setName(part.setId)?.let { name -> ", Set: $name" }.orEmpty()
-        "${part.name} (schedule)$set, until ${timeFormat.formatTime(part.endEpochMillis, now)}"
+    val manualName = state.setName?.takeIf { manualEnd > 0 }
+    val manualLine = stringResource(Res.string.session_set_until, manualName.orEmpty(), timeFormat.formatTime(manualEnd, now))
+    val manual = manualName?.let { listOf(manualLine) }
+    val parts = scheduled.parts.map { part ->
+        key(part.name, part.endEpochMillis, part.setId) {
+            scheduledPartLine(part.name, setName(part.setId), timeFormat.formatTime(part.endEpochMillis, now))
+        }
     }
-    return ScheduledPauseView(scheduled.name, until, scheduled.state, parts, scheduled.notPausedYet)
+    return ScheduledPauseView(scheduled.name, until, scheduled.state, manual.orEmpty() + parts, scheduled.notPausedYet)
+}
+
+@Composable
+private fun scheduledPartLine(
+    name: String,
+    setName: String?,
+    until: String,
+): String {
+    val suffix = stringResource(Res.string.session_set_suffix, setName.orEmpty())
+    return stringResource(Res.string.session_part_schedule, name, if (setName == null) "" else suffix, until)
 }
 
 /** Asks before ending a scheduled pause; the menu's End early opens the same question. */
@@ -216,7 +233,7 @@ internal fun SessionScreen(
     state: SessionUiState,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
-    deviceLabel: String = "On this device",
+    deviceLabel: String = stringResource(Res.string.session_on_this_device),
     onEnterSetup: () -> Unit = {},
     onExitSetup: () -> Unit = {},
     onChooseDuration: (SessionDurationChoice) -> Unit = {},
@@ -453,29 +470,6 @@ private fun sessionStack(
 }
 
 @Composable
-private fun SessionEarlyEndContent(
-    state: SessionUiState,
-    layout: PosatoLayout,
-    onConfirmEarlyEnd: () -> Unit,
-    onCancelEarlyEnd: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoHeading(
-            "Ready to return?",
-            eyebrow = "END THIS PAUSE",
-            description = if (state.nothingIsRestricted()) {
-                "Nothing is restricted in this pause. You can end it now."
-            } else {
-                "You can end this session early. Your saved choices will stay ready for another time."
-            },
-            layout = layout,
-        )
-        PosatoButton(onConfirmEarlyEnd, enabled = !state.isEnding) { Text("End session") }
-        PosatoButton(onCancelEarlyEnd, style = PosatoButtonStyle.Quiet, enabled = !state.isEnding) { Text("Keep this pause") }
-    }
-}
-
-@Composable
 private fun SessionOperationNotice(
     state: SessionUiState,
     onRetry: () -> Unit
@@ -483,11 +477,16 @@ private fun SessionOperationNotice(
     if (state.status == null && state.operationFailure == null) {
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
             PosatoActivityIndicator()
-            Text("Loading session")
+            Text(stringResource(Res.string.session_loading))
         }
     } else {
         state.operationFailure?.let {
-            PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Retry") } }) {
+            PosatoNotice(tone = PosatoTone.Critical, actionContent = {
+                PosatoButton(
+                    onRetry,
+                    controlId = "action_retry",
+                ) { Text(stringResource(Res.string.action_retry)) }
+            }) {
                 Text(stringResource(it.operationMessage()))
             }
         }

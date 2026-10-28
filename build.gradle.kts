@@ -1,6 +1,7 @@
 import app.posato.buildlogic.IosSwiftTestTrigger
 import app.posato.buildlogic.VerifyApprovedQualityExceptions
 import app.posato.buildlogic.VerifyEnglishText
+import app.posato.buildlogic.VerifyPolishCatalog
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import dev.detekt.gradle.extensions.FailOnSeverity
@@ -127,10 +128,24 @@ val verifyEnglishText by tasks.registering(VerifyEnglishText::class) {
             exclude("**/build/**", "**/.gradle/**", "**/node_modules/**", "**/DerivedData*/**", "**/.build/**", "**/out/**")
         },
     )
-    // A future Polish localization lives in its own directories, such as values-pl or pl.lproj; list them here.
-    excludedDirectories.set(emptyList<String>())
+    // I18N-001: Polish product copy lives only in these directories. AGENTS.md names the same set.
+    excludedDirectories.set(
+        listOf(
+            "values-pl",
+            "pl.lproj",
+            "website/src/pages/pl",
+            "docs/store/pl-PL",
+        ),
+    )
     exceptions.set(emptyMap<String, String>())
     repositoryDirectory.set(layout.projectDirectory)
+}
+
+val verifyPolishCatalog by tasks.registering(VerifyPolishCatalog::class) {
+    group = "verification"
+    description = "Requires the Polish catalog to name every English string and plural, with compatible placeholders."
+    englishCatalog.set(layout.projectDirectory.file("shared/src/commonMain/composeResources/values/strings.xml"))
+    polishCatalog.set(layout.projectDirectory.file("shared/src/commonMain/composeResources/values-pl/strings.xml"))
 }
 
 val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityExceptions::class) {
@@ -249,6 +264,7 @@ tasks.register("qualityLint") {
         ":posato-control:swiftFormatCheck",
         verifyApprovedQualityExceptions,
         verifyEnglishText,
+        verifyPolishCatalog,
     )
 }
 
@@ -313,5 +329,6 @@ tasks.register("quality") {
         ":roadmap-mirror:test",
         verifyApprovedQualityExceptions,
         verifyEnglishText,
+        verifyPolishCatalog,
     )
 }

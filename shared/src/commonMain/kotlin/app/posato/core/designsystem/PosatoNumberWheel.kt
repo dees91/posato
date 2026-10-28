@@ -41,6 +41,10 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.wheel_decrease
+import app.posato.generated.resources.wheel_increase
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -69,9 +73,9 @@ internal fun PosatoNumberWheel(
         // An accessibility action can still press a disabled arrow, so each step stays within the range.
         val increase = { if (value < range.last) change(value + 1) }
         val decrease = { if (value > range.first) change(value - 1) }
-        WheelArrow(label = "Increase $label", increasing = true, enabled = value < range.last, onClick = increase)
+        WheelArrow(label = stringResource(Res.string.wheel_increase, label), increasing = true, enabled = value < range.last, onClick = increase)
         NumberWheelValues(value, range, label, wheel.scroll, change)
-        WheelArrow(label = "Decrease $label", increasing = false, enabled = value > range.first, onClick = decrease)
+        WheelArrow(label = stringResource(Res.string.wheel_decrease, label), increasing = false, enabled = value > range.first, onClick = decrease)
     }
 }
 

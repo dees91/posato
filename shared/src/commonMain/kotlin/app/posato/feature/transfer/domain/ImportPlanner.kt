@@ -11,6 +11,7 @@ import app.posato.feature.targets.domain.ExactDomainPolicyLimits
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.ui.PauseSetIdGenerator
+import app.posato.feature.targets.ui.SetNameText
 import app.posato.feature.targets.ui.displayNameOf
 
 /** How a file joins what this device keeps. */
@@ -191,7 +192,7 @@ private fun addSets(
             mapping[fileSet.ref] = match
         } else {
             val id = checkNotNull(ids.sets[fileSet.ref])
-            result += LocalPauseSet(id, uniqueName(fileSet.name ?: UNNAMED_FIRST_SET, taken), fileSet.domains)
+            result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains)
             mapping[fileSet.ref] = id
         }
     }
@@ -214,7 +215,7 @@ private fun replaceSets(
     val taken = result.mapTo(mutableSetOf()) { set -> nameKey(displayNameOf(set.name)) }
     file.sets.filter { set -> set !== fileFirst }.forEach { fileSet ->
         val id = checkNotNull(ids.sets[fileSet.ref])
-        result += LocalPauseSet(id, uniqueName(fileSet.name ?: UNNAMED_FIRST_SET, taken), fileSet.domains)
+        result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains)
         mapping[fileSet.ref] = id
     }
     val removed = current.sets.sets.filter { set -> set.id != PauseSetId.FIRST || localFirst == null }
@@ -309,6 +310,5 @@ private fun nameKey(name: String): String {
 }
 
 /** The stored name an unnamed first set takes when it becomes a separate set. */
-private const val UNNAMED_FIRST_SET: String = "My set"
 private const val IMPORTED_SUFFIX: String = " (imported)"
 private const val IMPORTED_SUFFIX_OPEN: String = " (imported"

@@ -42,6 +42,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformDevice
 import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.core.designsystem.windowNavigationPlacement
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.about.AboutHosting
@@ -88,12 +89,21 @@ import app.posato.feature.transfer.data.PauseSetTransfer
 import app.posato.feature.transfer.data.TransferPlatform
 import app.posato.feature.transfer.data.TransferStorage
 import app.posato.feature.transfer.ui.rememberPauseSetTransferUiState
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.about_short
+import app.posato.generated.resources.device_on_this_only_computer
+import app.posato.generated.resources.device_on_this_only_ipad
+import app.posato.generated.resources.device_on_this_only_iphone
+import app.posato.generated.resources.device_on_this_only_mac
+import app.posato.generated.resources.device_on_this_only_phone
+import app.posato.generated.resources.licenses_title
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.merge
+import org.jetbrains.compose.resources.stringResource
 
 @Inject
 class PosatoApplication internal constructor(
@@ -251,7 +261,7 @@ class PosatoApplication internal constructor(
     ) {
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
         WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
-        val deviceLabel = "On this ${device.noun} only"
+        val deviceLabel = onThisDeviceOnlyLabel()
         if (platformUsesCupertinoChrome) {
             CupertinoDestinationsHost(
                 navigation,
@@ -347,7 +357,6 @@ class PosatoApplication internal constructor(
         Row(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
             if (sidebar) {
                 CupertinoSidebar(
-                    device = device,
                     destination = navigation.destination,
                     showingInformation = navigation.informationPage != null,
                     onSelect = navigation::select,
@@ -402,7 +411,7 @@ class PosatoApplication internal constructor(
             ) { route ->
                 when (route) {
                     ShellRoute.Destinations -> {
-                        CupertinoTabFrame(device, navigation.destination, onSelect = navigation::select, showsTabBar = !sidebar) {
+                        CupertinoTabFrame(navigation.destination, onSelect = navigation::select, showsTabBar = !sidebar) {
                             DestinationContent(
                                 navigation = navigation,
                                 layout = layout,
@@ -421,9 +430,9 @@ class PosatoApplication internal constructor(
 
                     ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
                         val backLabel = when (route) {
-                            ShellRoute.About -> navigation.destination.title.takeUnless { sidebar }
-                            ShellRoute.Licenses -> "About"
-                            else -> "Licenses"
+                            ShellRoute.About -> navigation.destination.localizedTitle().takeUnless { sidebar }
+                            ShellRoute.Licenses -> stringResource(Res.string.about_short)
+                            else -> stringResource(Res.string.licenses_title)
                         }
                         InformationContent(
                             route,
@@ -481,7 +490,6 @@ class PosatoApplication internal constructor(
                 onConsumeWindowRequest = onConsumeWindowRequest,
                 scheduledPauses = scheduledPauses,
                 notPausedYet = sessionComposition.notPausedYet,
-                deviceNoun = device.noun,
                 onOpenAbout = onOpenAbout,
             )
 
@@ -490,7 +498,6 @@ class PosatoApplication internal constructor(
             ApplicationDestination.TARGETS -> PauseSetsDestination(
                 pauseSetsInputs,
                 navigation.pauseSets,
-                device.noun,
                 if (platformUsesCupertinoChrome) {
                     modifier
                 } else {
@@ -579,7 +586,6 @@ class PosatoApplication internal constructor(
                         holder = onboarding,
                         syncState = syncState,
                         permissionPlatform = onboardingDependencies.permissionPlatform,
-                        deviceNoun = device.noun,
                         onComplete = onSetupComplete,
                         modifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth(),
                         layout = layout,
@@ -640,17 +646,26 @@ internal sealed interface ShellRoute {
     ) : ShellRoute
 }
 
+@Composable
+private fun onThisDeviceOnlyLabel(): String = stringResourceForDevice(
+    Res.string.device_on_this_only_mac,
+    Res.string.device_on_this_only_iphone,
+    Res.string.device_on_this_only_ipad,
+    Res.string.device_on_this_only_computer,
+    Res.string.device_on_this_only_phone,
+)
+
 private val PosatoLayout.inset: Dp
     get() {
         return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
     }
 
 internal enum class ApplicationDestination(
-    val title: String,
+    val controlId: String,
 ) {
-    SESSION("Session"),
-    TARGETS("Pause sets"),
-    SCHEDULES("Schedules"),
+    SESSION("session_title"),
+    TARGETS("nav_pause_sets"),
+    SCHEDULES("nav_schedules"),
 }
 
 internal enum class ApplicationInformationPage {

@@ -57,9 +57,9 @@ internal fun parsePauseSetName(input: String): Pair<String?, PauseSetNameFailure
     }
 }
 
-/** The name a set shows: its own, or "My set" for the unnamed first set. */
+/** The name a set shows: its own, or "My set" in the app's language for the unnamed first set. */
 internal fun displayNameOf(name: String?): String {
-    return name ?: "My set"
+    return name ?: SetNameText.unnamed
 }
 
 internal fun interface PauseSetIdGenerator {

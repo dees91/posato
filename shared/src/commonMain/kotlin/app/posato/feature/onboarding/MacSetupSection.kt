@@ -206,7 +206,7 @@ private fun MacSetupActions(
 ) {
     when (readiness) {
         null -> {
-            PosatoButton(onClick = onCheck, style = PosatoButtonStyle.Secondary, enabled = !running) {
+            PosatoButton(onClick = onCheck, style = PosatoButtonStyle.Secondary, enabled = !running, controlId = "mac_setup_check") {
                 Text(stringResource(Res.string.mac_setup_check))
             }
         }
@@ -218,14 +218,24 @@ private fun MacSetupActions(
         }
 
         MacHelperReadiness.NOT_ENABLED -> {
-            PosatoButton(onClick = onEnable, style = PosatoButtonStyle.Secondary, enabled = !running) {
+            PosatoButton(
+                onClick = onEnable,
+                style = PosatoButtonStyle.Secondary,
+                enabled = !running,
+                controlId = "onboarding_permission_mac_action",
+            ) {
                 Text(stringResource(Res.string.onboarding_permission_mac_action))
             }
         }
 
         MacHelperReadiness.APPROVAL_REQUIRED -> {
             PosatoActionRow {
-                PosatoButton(onClick = onOpenSettings, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                PosatoButton(
+                    onClick = onOpenSettings,
+                    style = PosatoButtonStyle.Secondary,
+                    enabled = !running,
+                    controlId = "onboarding_permission_mac_open_settings",
+                ) {
                     Text(stringResource(Res.string.onboarding_permission_mac_open_settings))
                 }
                 CheckAgainButton(running, onCheck)
@@ -258,7 +268,7 @@ private fun RemoveFromMacAction(
     }
     val enabled = !running && !sessionBlocksRemoval
     val error = MaterialTheme.colorScheme.error
-    PosatoButton(onClick = { confirming = true }, style = PosatoButtonStyle.Quiet, enabled = enabled) {
+    PosatoButton(onClick = { confirming = true }, style = PosatoButtonStyle.Quiet, enabled = enabled, controlId = "mac_setup_remove") {
         Text(stringResource(Res.string.mac_setup_remove), color = if (enabled) error else error.copy(alpha = DISABLED_CONTENT_ALPHA))
     }
     if (sessionBlocksRemoval) {
@@ -275,10 +285,10 @@ private fun RemoveFromMacAction(
                     if (!blocked) {
                         remove()
                     }
-                }, style = PosatoButtonStyle.Destructive) { Text(stringResource(Res.string.mac_setup_remove)) }
+                }, style = PosatoButtonStyle.Destructive, controlId = "mac_setup_remove") { Text(stringResource(Res.string.mac_setup_remove)) }
             },
             dismissButton = {
-                PosatoButton(onClick = { confirming = false }, style = PosatoButtonStyle.Quiet) {
+                PosatoButton(onClick = { confirming = false }, style = PosatoButtonStyle.Quiet, controlId = "mac_setup_keep_helper") {
                     Text(stringResource(Res.string.mac_setup_keep_helper))
                 }
             },
@@ -314,7 +324,7 @@ private fun CheckAgainButton(
     running: Boolean,
     onCheck: () -> Unit,
 ) {
-    PosatoButton(onClick = onCheck, style = PosatoButtonStyle.Quiet, enabled = !running) {
+    PosatoButton(onClick = onCheck, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "onboarding_permission_mac_check_again") {
         Text(stringResource(Res.string.onboarding_permission_mac_check_again))
     }
 }

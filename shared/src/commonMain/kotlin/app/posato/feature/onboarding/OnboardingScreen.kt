@@ -59,7 +59,6 @@ internal fun OnboardingScreen(
     holder: OnboardingUiState,
     syncState: SyncBootstrapUiState,
     permissionPlatform: OnboardingPermissionPlatform,
-    deviceNoun: String,
     onComplete: () -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
@@ -78,7 +77,6 @@ internal fun OnboardingScreen(
         syncRunning = syncState.running,
         browser = browser,
         permissionPlatform = permissionPlatform,
-        deviceNoun = deviceNoun,
         onContinue = holder::advance,
         onDefer = holder::advance,
         onSync = syncState::sync,
@@ -103,7 +101,6 @@ internal fun OnboardingScreen(
     syncRunning: Boolean = false,
     browser: TargetsBrowserState = remember { TargetsBrowserState() },
     permissionPlatform: OnboardingPermissionPlatform = OnboardingPermissionPlatform.IOS,
-    deviceNoun: String = "iPhone",
     onContinue: () -> Unit = {},
     onDefer: () -> Unit = {},
     onSync: () -> Unit = {},
@@ -140,7 +137,6 @@ internal fun OnboardingScreen(
                     PermissionStep(
                         state,
                         permissionPlatform,
-                        deviceNoun,
                         layout,
                         onRequestAccess,
                         onEnableHelper,
@@ -156,7 +152,7 @@ internal fun OnboardingScreen(
                 }
 
                 OnboardingStep.SUMMARY -> {
-                    SummaryStep(state, permissionPlatform, deviceNoun, syncSnapshot, onFinish, layout)
+                    SummaryStep(state, permissionPlatform, syncSnapshot, onFinish, layout)
                 }
             }
         }

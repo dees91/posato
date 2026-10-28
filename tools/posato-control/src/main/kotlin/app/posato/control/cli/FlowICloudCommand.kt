@@ -116,7 +116,13 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
 
     /** Session's iCloud row starts collapsed; its actions appear once it is opened. */
     private fun expand(backend: Backend) {
-        FlowSteps.run(backend, listOf(FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = 2.0), FlowSteps.button("Session")))
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowControls.buttonId("action_back_to_pause_sets", optional = true, timeoutSeconds = 2.0),
+                FlowControls.buttonId("session_title"),
+            ),
+        )
         val labels = FlowSteps.labels(backend)
         if (labels.none { label -> label in ACTIONS }) {
             val row = Query(textContains = "iCloud,", role = FlowSteps.ROLE_BUTTON)
@@ -124,7 +130,12 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         }
     }
 
-    private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
+    private fun button(text: String): Query = when (text) {
+        CHECK_AGAIN -> FlowControls.byId("action_check_again")
+        SYNC_WITH_ICLOUD -> FlowControls.byId("action_sync_with_icloud")
+        REMOVE_WORKSPACE -> FlowControls.byId("sync_remove_workspace")
+        else -> Query(text = text, role = FlowSteps.ROLE_BUTTON)
+    }
 
     /**
      * The presses and the row's last state go with the timeout, since the host waits in slices and the next slice may

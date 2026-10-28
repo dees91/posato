@@ -85,13 +85,23 @@ internal object StoreLookups {
         states: Collection<String> = OPEN_SUBMISSION_STATES,
     ): List<OpenSubmission> = review.submissions(appId, states).map { submission -> OpenSubmission(submission, review.items(submission.id)) }
 
+    /**
+     * The version localization for [locale]. A new version copies the previous version's localizations, so an added
+     * language that was never prepared is absent until this call creates it. A missing $STORE_LOCALE is a fault in the
+     * record and is reported instead.
+     */
     fun localization(
         store: StoreClient,
         versionId: String,
-    ): LocalizationResource = store.localizations(versionId).firstOrNull { resource -> resource.attributes.locale == STORE_LOCALE }
-        ?: throw ProvisioningException(
-            ErrorCode.LOCALIZATION_MISSING,
-            "The App Store version has no $STORE_LOCALE localization.",
-            "Add the $STORE_LOCALE localization in App Store Connect; a new version normally copies it from the previous one.",
-        )
+        locale: String,
+    ): LocalizationResource = store.localizations(versionId).firstOrNull { resource -> resource.attributes.locale == locale }
+        ?: if (locale == STORE_LOCALE) {
+            throw ProvisioningException(
+                ErrorCode.LOCALIZATION_MISSING,
+                "The App Store version has no $STORE_LOCALE localization.",
+                "Add the $STORE_LOCALE localization in App Store Connect; a new version normally copies it from the previous one.",
+            )
+        } else {
+            store.createLocalization(versionId, locale)
+        }
 }

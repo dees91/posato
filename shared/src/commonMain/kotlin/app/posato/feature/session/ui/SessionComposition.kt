@@ -1,5 +1,7 @@
 package app.posato.feature.session.ui
 
+import androidx.compose.runtime.Composable
+import app.posato.core.designsystem.pluralStringResourceForDevice
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
@@ -25,6 +27,12 @@ import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.session_not_paused_yet_computer
+import app.posato.generated.resources.session_not_paused_yet_ipad
+import app.posato.generated.resources.session_not_paused_yet_iphone
+import app.posato.generated.resources.session_not_paused_yet_mac
+import app.posato.generated.resources.session_not_paused_yet_phone
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -127,14 +135,17 @@ private const val BYTE_MASK: Int = 0xFF
 private const val HEX_RADIX: Int = 16
 
 /** Says how many added items wait for room under this device's limits, and that they pause once it frees up. */
-internal fun notPausedYetText(
-    count: Int,
-    deviceNoun: String,
-    limits: PauseLimits = devicePauseLimits,
-): String {
-    val capacity = if (limits === PauseLimits.MAC) "1,024 websites and 64 apps" else "25 websites and 50 apps"
-    val subject = if (count == 1) "1 added item isn't" else "$count added items aren't"
-    return "$subject paused yet: this $deviceNoun pauses up to $capacity at once. They pause once there's room."
+@Composable
+internal fun notPausedYetText(count: Int): String {
+    return pluralStringResourceForDevice(
+        count,
+        Res.plurals.session_not_paused_yet_mac,
+        Res.plurals.session_not_paused_yet_iphone,
+        Res.plurals.session_not_paused_yet_ipad,
+        Res.plurals.session_not_paused_yet_computer,
+        Res.plurals.session_not_paused_yet_phone,
+        count,
+    )
 }
 
 /** The session's targets: composed with what it already paused when a composition is set, else its set's. */

@@ -14,6 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalWindowInfo
+import org.jetbrains.compose.resources.PluralStringResource
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Immutable
 internal data class PlatformTheme(
@@ -70,6 +74,47 @@ internal enum class PosatoDevice(
 }
 
 internal expect fun platformDevice(): PosatoDevice
+
+/** A full phrase for this device. Each resource is the sentence that interpolating [PosatoDevice.noun] produces today. */
+@Composable
+internal fun stringResourceForDevice(
+    mac: StringResource,
+    iphone: StringResource,
+    ipad: StringResource,
+    computer: StringResource,
+    phone: StringResource,
+    vararg formatArgs: Any,
+): String {
+    val resource = when (platformDevice()) {
+        PosatoDevice.Mac -> mac
+        PosatoDevice.IPhone -> iphone
+        PosatoDevice.IPad -> ipad
+        PosatoDevice.Linux, PosatoDevice.Windows -> computer
+        PosatoDevice.Android -> phone
+    }
+    return stringResource(resource, *formatArgs)
+}
+
+/** The same device split for a count Polish inflects. [quantity] selects the plural form. */
+@Composable
+internal fun pluralStringResourceForDevice(
+    quantity: Int,
+    mac: PluralStringResource,
+    iphone: PluralStringResource,
+    ipad: PluralStringResource,
+    computer: PluralStringResource,
+    phone: PluralStringResource,
+    vararg formatArgs: Any,
+): String {
+    val resource = when (platformDevice()) {
+        PosatoDevice.Mac -> mac
+        PosatoDevice.IPhone -> iphone
+        PosatoDevice.IPad -> ipad
+        PosatoDevice.Linux, PosatoDevice.Windows -> computer
+        PosatoDevice.Android -> phone
+    }
+    return pluralStringResource(resource, quantity, *formatArgs)
+}
 
 /** Whether taps show Material's ripple; only Android expects it, the Apple hosts dim or highlight instead. */
 internal expect val platformUsesMaterialRipple: Boolean

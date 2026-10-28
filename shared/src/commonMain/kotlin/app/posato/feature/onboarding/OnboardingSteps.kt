@@ -27,6 +27,7 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoPrivacyPoint
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.feature.sync.bootstrap.AppleSyncState
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.ui.message
@@ -37,6 +38,7 @@ import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
 import app.posato.generated.resources.action_sync_with_icloud
+import app.posato.generated.resources.count_websites_saved
 import app.posato.generated.resources.onboarding_action_begin
 import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
@@ -56,6 +58,11 @@ import app.posato.generated.resources.onboarding_privacy_local_apps_detail
 import app.posato.generated.resources.onboarding_privacy_title
 import app.posato.generated.resources.onboarding_purpose_body
 import app.posato.generated.resources.onboarding_purpose_title
+import app.posato.generated.resources.onboarding_saved_on_computer
+import app.posato.generated.resources.onboarding_saved_on_ipad
+import app.posato.generated.resources.onboarding_saved_on_iphone
+import app.posato.generated.resources.onboarding_saved_on_mac
+import app.posato.generated.resources.onboarding_saved_on_phone
 import app.posato.generated.resources.onboarding_summary_access_note
 import app.posato.generated.resources.onboarding_summary_body
 import app.posato.generated.resources.onboarding_summary_empty_body
@@ -72,6 +79,7 @@ import app.posato.generated.resources.onboarding_website_body
 import app.posato.generated.resources.onboarding_website_title
 import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_waiting_explanation
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -82,7 +90,7 @@ internal fun PurposeStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_begin), layout, onContinue)
+            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_begin), layout, onContinue, controlId = "onboarding_action_begin")
         },
     ) {
         PosatoIntervalArtwork()
@@ -103,7 +111,12 @@ internal fun PrivacyStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
+            OnboardingPrimaryAction(
+                stringResource(Res.string.onboarding_action_continue),
+                layout,
+                onContinue,
+                controlId = "onboarding_action_continue",
+            )
         },
     ) {
         PosatoHeading(
@@ -191,18 +204,30 @@ private fun IcloudActions(
 ) {
     OnboardingActions(layout) {
         if (syncSnapshot.joinPending) {
-            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer)
-            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
+            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer, controlId = "onboarding_action_continue")
+            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running, controlId = "action_check_again") {
                 Text(stringResource(Res.string.action_check_again))
             }
         } else if (syncSnapshot.linked) {
-            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer, enabled = !running)
-            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            OnboardingPrimaryAction(
+                stringResource(Res.string.onboarding_action_continue),
+                layout,
+                onDefer,
+                enabled = !running,
+                controlId = "onboarding_action_continue",
+            )
+            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "action_sync_now") {
                 Text(stringResource(Res.string.action_sync_now))
             }
         } else {
-            OnboardingPrimaryAction(stringResource(Res.string.action_sync_with_icloud), layout, onSync, enabled = !running)
-            PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet, enabled = !running) {
+            OnboardingPrimaryAction(
+                stringResource(Res.string.action_sync_with_icloud),
+                layout,
+                onSync,
+                enabled = !running,
+                controlId = "action_sync_with_icloud",
+            )
+            PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "onboarding_action_not_now") {
                 Text(stringResource(Res.string.onboarding_action_not_now))
             }
         }
@@ -229,9 +254,14 @@ internal fun WebsiteStep(
         layout = layout,
         actions = {
             if (state.savedWebsites > 0) {
-                OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
+                OnboardingPrimaryAction(
+                    stringResource(Res.string.onboarding_action_continue),
+                    layout,
+                    onContinue,
+                    controlId = "onboarding_action_continue",
+                )
             } else {
-                PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet) {
+                PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet, controlId = "onboarding_action_not_now") {
                     Text(stringResource(Res.string.onboarding_action_not_now))
                 }
             }
@@ -259,7 +289,6 @@ internal fun WebsiteStep(
 internal fun SummaryStep(
     state: OnboardingViewState,
     permissionPlatform: OnboardingPermissionPlatform,
-    deviceNoun: String,
     syncSnapshot: AppleSyncState,
     onFinish: () -> Unit,
     layout: PosatoLayout,
@@ -267,7 +296,12 @@ internal fun SummaryStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_open_session), layout, onFinish)
+            OnboardingPrimaryAction(
+                stringResource(Res.string.onboarding_action_open_session),
+                layout,
+                onFinish,
+                controlId = "onboarding_action_open_session",
+            )
             PosatoCaption(stringResource(Res.string.onboarding_summary_scope))
         },
     ) {
@@ -288,18 +322,10 @@ internal fun SummaryStep(
                 leadingContent = { PosatoIcon(PosatoIcons.Pause, null) },
             )
             PosatoPrivacyPoint(
-                headlineContent = {
-                    Text(
-                        if (syncSnapshot.joinPending) {
-                            stringResource(syncSnapshot.status.summary(syncSnapshot.linked))
-                        } else if (syncSnapshot.linked) {
-                            stringResource(Res.string.onboarding_summary_sync_on)
-                        } else {
-                            stringResource(Res.string.onboarding_summary_local_only, deviceNoun)
-                        },
-                    )
+                headlineContent = { Text(summarySyncLabel(syncSnapshot)) },
+                leadingContent = {
+                    PosatoIcon(if (syncSnapshot.linked || syncSnapshot.joinPending) PosatoIcons.Cloud else PosatoIcons.Items, null)
                 },
-                leadingContent = { PosatoIcon(if (syncSnapshot.linked || syncSnapshot.joinPending) PosatoIcons.Cloud else PosatoIcons.Items, null) },
             )
         }
         if (!state.hasDeviceAccess(permissionPlatform) && state.accessResult != ApplicationAccessResult.Unavailable) {
@@ -323,10 +349,26 @@ internal fun SummaryStep(
 }
 
 @Composable
-private fun OnboardingViewState.websiteSummary(): String {
+private fun summarySyncLabel(syncSnapshot: AppleSyncState): String {
+    val pending = stringResource(syncSnapshot.status.summary(syncSnapshot.linked))
+    val synced = stringResource(Res.string.onboarding_summary_sync_on)
+    val savedOnDevice = stringResourceForDevice(
+        Res.string.onboarding_saved_on_mac,
+        Res.string.onboarding_saved_on_iphone,
+        Res.string.onboarding_saved_on_ipad,
+        Res.string.onboarding_saved_on_computer,
+        Res.string.onboarding_saved_on_phone,
+    )
     return when {
-        savedWebsites <= 0 -> stringResource(Res.string.onboarding_summary_no_websites)
-        savedWebsites == 1 -> stringResource(Res.string.onboarding_summary_one_website)
-        else -> stringResource(Res.string.onboarding_summary_websites, savedWebsites)
+        syncSnapshot.joinPending -> pending
+        syncSnapshot.linked -> synced
+        else -> savedOnDevice
     }
+}
+
+@Composable
+private fun OnboardingViewState.websiteSummary(): String {
+    val none = stringResource(Res.string.onboarding_summary_no_websites)
+    val saved = pluralStringResource(Res.plurals.count_websites_saved, savedWebsites.coerceAtLeast(0), savedWebsites.coerceAtLeast(0))
+    return if (savedWebsites <= 0) none else saved
 }

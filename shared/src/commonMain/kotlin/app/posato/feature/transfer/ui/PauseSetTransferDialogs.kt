@@ -39,6 +39,43 @@ import app.posato.feature.transfer.data.ExportCode
 import app.posato.feature.transfer.domain.ImportMode
 import app.posato.feature.transfer.domain.ImportPlanResult
 import app.posato.feature.transfer.domain.ImportSummary
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_cancel
+import app.posato.generated.resources.action_export_file
+import app.posato.generated.resources.action_import_word
+import app.posato.generated.resources.action_open
+import app.posato.generated.resources.action_replace
+import app.posato.generated.resources.action_turn_on_imported_schedules
+import app.posato.generated.resources.presence_first_close_ok
+import app.posato.generated.resources.sync_folder_code_done
+import app.posato.generated.resources.transfer_add_to_sets
+import app.posato.generated.resources.transfer_add_to_sets_body
+import app.posato.generated.resources.transfer_choose_how
+import app.posato.generated.resources.transfer_code_body
+import app.posato.generated.resources.transfer_code_label
+import app.posato.generated.resources.transfer_code_limit
+import app.posato.generated.resources.transfer_combine
+import app.posato.generated.resources.transfer_combine_body
+import app.posato.generated.resources.transfer_enter_code
+import app.posato.generated.resources.transfer_export_scope
+import app.posato.generated.resources.transfer_export_title
+import app.posato.generated.resources.transfer_file_failed
+import app.posato.generated.resources.transfer_import_title
+import app.posato.generated.resources.transfer_imported
+import app.posato.generated.resources.transfer_keep_separate
+import app.posato.generated.resources.transfer_keep_separate_body
+import app.posato.generated.resources.transfer_no_code
+import app.posato.generated.resources.transfer_nothing_new
+import app.posato.generated.resources.transfer_protect
+import app.posato.generated.resources.transfer_protect_body
+import app.posato.generated.resources.transfer_reaches_devices
+import app.posato.generated.resources.transfer_replace_sets
+import app.posato.generated.resources.transfer_replace_sets_body
+import app.posato.generated.resources.transfer_schedules_failed
+import app.posato.generated.resources.transfer_schedules_off
+import app.posato.generated.resources.transfer_schedules_on
+import app.posato.generated.resources.transfer_would_start
+import org.jetbrains.compose.resources.stringResource
 
 /** Shows the current export or import step, if any. */
 @Composable
@@ -59,15 +96,23 @@ private fun ExportDialog(
     state: PauseSetTransferUiState,
 ) {
     TransferAlert(
-        title = "Export pause sets",
+        title = stringResource(Res.string.transfer_export_title),
         onDismiss = state::close,
         actions = {
-            PosatoButton(onClick = state::close, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
-            PosatoButton(onClick = state::export, enabled = !dialog.busy) { Text("Export file…") }
+            PosatoButton(
+                onClick = state::close,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "action_cancel",
+            ) { Text(stringResource(Res.string.action_cancel)) }
+            PosatoButton(
+                onClick = state::export,
+                enabled = !dialog.busy,
+                controlId = "action_export_file",
+            ) { Text(stringResource(Res.string.action_export_file)) }
         },
     ) {
-        Text(dialog.contents, style = MaterialTheme.typography.titleSmall)
-        PosatoCaption("Websites, the default set, and schedules. App choices stay on this device.")
+        Text(contentsOf(dialog.file), style = MaterialTheme.typography.titleSmall)
+        PosatoCaption(stringResource(Res.string.transfer_export_scope))
         Row(
             modifier = Modifier.toggleable(value = dialog.code != null, enabled = !dialog.busy, role = Role.Switch, onValueChange = state::protect),
             horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium),
@@ -75,21 +120,18 @@ private fun ExportDialog(
         ) {
             Switch(checked = dialog.code != null, onCheckedChange = null, enabled = !dialog.busy)
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                Text("Protect with a code")
-                PosatoCaption("Only someone with the code can open the file. Send the code separately, for example by message.")
+                Text(stringResource(Res.string.transfer_protect))
+                PosatoCaption(stringResource(Res.string.transfer_protect_body))
             }
         }
         if (dialog.code != null) {
             Text(ExportCode.grouped(dialog.code), style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace))
-            PosatoCaption(
-                "You need this code on the other device, and Posato does not keep it. The code stops a casual reader; " +
-                    "someone with the file and a lot of computing power could still open it.",
-            )
+            PosatoCaption(stringResource(Res.string.transfer_code_limit))
         } else {
-            PosatoCaption("Without a code, anyone who gets the file can read your pause sets and websites.")
+            PosatoCaption(stringResource(Res.string.transfer_no_code))
         }
         if (dialog.busy) PosatoActivityIndicator()
-        if (dialog.failed) PosatoCaption("The file could not be made. Try again.")
+        if (dialog.failed) PosatoCaption(stringResource(Res.string.transfer_file_failed))
     }
 }
 
@@ -101,19 +143,27 @@ private fun CodeDialog(
     // Not saved across process death: the code never goes into saved state.
     val code = remember { TextFieldState() }
     TransferAlert(
-        title = "Enter the code",
+        title = stringResource(Res.string.transfer_enter_code),
         onDismiss = state::close,
         actions = {
-            PosatoButton(onClick = state::close, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
-            PosatoButton(onClick = { state.enterCode(code.text.toString()) }, enabled = !dialog.busy) { Text("Open") }
+            PosatoButton(
+                onClick = state::close,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "action_cancel",
+            ) { Text(stringResource(Res.string.action_cancel)) }
+            PosatoButton(
+                onClick = { state.enterCode(code.text.toString()) },
+                enabled = !dialog.busy,
+                controlId = "action_open",
+            ) { Text(stringResource(Res.string.action_open)) }
         },
     ) {
-        PosatoCaption("This file is protected. Enter the code shown when it was exported.")
+        PosatoCaption(stringResource(Res.string.transfer_code_body))
         PosatoTextField(
             state = code,
-            label = "Code",
+            label = stringResource(Res.string.transfer_code_label),
             enabled = !dialog.busy,
-            errorMessage = dialog.failure,
+            errorMessage = dialog.failure?.let { stringResource(it) },
             onSubmit = { state.enterCode(code.text.toString()) },
         )
         if (dialog.busy) PosatoActivityIndicator()
@@ -129,33 +179,30 @@ private fun ReviewDialog(
     val replace = mode == ImportMode.REPLACE
     val planned = dialog.preview.result is ImportPlanResult.Planned
     TransferAlert(
-        title = "Import pause sets",
+        title = stringResource(Res.string.transfer_import_title),
         onDismiss = state::close,
-        actions = {
-            PosatoButton(onClick = state::close, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
-            PosatoButton(
-                onClick = state::import,
-                style = if (replace) PosatoButtonStyle.Destructive else PosatoButtonStyle.Primary,
-                enabled = planned && !dialog.busy,
-            ) { Text(if (replace) "Replace" else "Import") }
-        },
+        actions = { ReviewActions(state, replace, planned, dialog.busy) },
     ) {
         Text(contentsOf(dialog.preview.file), style = MaterialTheme.typography.titleSmall)
-        Text("Choose how to import", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(Res.string.transfer_choose_how), style = MaterialTheme.typography.titleSmall)
         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
             ModeCard(
-                title = "Add to my pause sets",
-                detail = "Keeps everything on this device and adds what the file has.",
+                title = stringResource(Res.string.transfer_add_to_sets),
+                detail = stringResource(Res.string.transfer_add_to_sets_body),
                 selected = !replace,
                 onSelect = { if (replace) state.choose(ImportMode.COMBINE) },
             ) {
                 if (!replace) {
-                    ModeOption("Combine sets with the same name", "A set here gets the websites it is missing.", mode == ImportMode.COMBINE) {
+                    ModeOption(
+                        stringResource(Res.string.transfer_combine),
+                        stringResource(Res.string.transfer_combine_body),
+                        mode == ImportMode.COMBINE,
+                    ) {
                         state.choose(ImportMode.COMBINE)
                     }
                     ModeOption(
-                        "Keep them separate",
-                        "Each set from the file is added; a name already here gets \"(imported)\".",
+                        stringResource(Res.string.transfer_keep_separate),
+                        stringResource(Res.string.transfer_keep_separate_body),
                         mode == ImportMode.SEPARATE,
                     ) {
                         state.choose(ImportMode.SEPARATE)
@@ -163,17 +210,38 @@ private fun ReviewDialog(
                 }
             }
             ModeCard(
-                title = "Replace my pause sets",
-                detail = "Your sets and schedules on this device are replaced by the file's.",
+                title = stringResource(Res.string.transfer_replace_sets),
+                detail = stringResource(Res.string.transfer_replace_sets_body),
                 selected = replace,
                 onSelect = { state.choose(ImportMode.REPLACE) },
             )
         }
         PosatoCaption(previewText(dialog.preview.result), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-        if (dialog.linked && planned) PosatoCaption("These changes also reach your other devices.")
-        dialog.notice?.let { notice -> PosatoCaption(notice, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+        if (dialog.linked && planned) PosatoCaption(stringResource(Res.string.transfer_reaches_devices))
+        val notice = dialog.notice?.let { stringResource(it) }
+        notice?.let { text -> PosatoCaption(text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
         if (dialog.busy) PosatoActivityIndicator()
     }
+}
+
+@Composable
+private fun ReviewActions(
+    state: PauseSetTransferUiState,
+    replace: Boolean,
+    planned: Boolean,
+    busy: Boolean,
+) {
+    PosatoButton(
+        onClick = state::close,
+        style = PosatoButtonStyle.Quiet,
+        controlId = "action_cancel",
+    ) { Text(stringResource(Res.string.action_cancel)) }
+    PosatoButton(
+        onClick = state::import,
+        style = if (replace) PosatoButtonStyle.Destructive else PosatoButtonStyle.Primary,
+        enabled = planned && !busy,
+        controlId = "action_import_word",
+    ) { Text(if (replace) stringResource(Res.string.action_replace) else stringResource(Res.string.action_import_word)) }
 }
 
 /** A choice that reads as one: a radio, a title, and what it does, with a stronger border when chosen. */
@@ -236,34 +304,41 @@ private fun ResultDialog(
 ) {
     val summary = dialog.summary
     TransferAlert(
-        title = "Imported",
+        title = stringResource(Res.string.transfer_imported),
         onDismiss = state::close,
         actions = {
             if (dialog.schedules.isNotEmpty() && !dialog.turnedOn) {
-                PosatoButton(onClick = state::turnOnSchedules, style = PosatoButtonStyle.Secondary, enabled = !dialog.busy) {
-                    Text("Turn on imported schedules")
+                PosatoButton(
+                    onClick = state::turnOnSchedules,
+                    style = PosatoButtonStyle.Secondary,
+                    enabled = !dialog.busy,
+                    controlId = "action_turn_on_imported_schedules",
+                ) {
+                    Text(stringResource(Res.string.action_turn_on_imported_schedules))
                 }
             }
-            PosatoButton(onClick = state::close) { Text("Done") }
+            PosatoButton(onClick = state::close, controlId = "sync_folder_code_done") { Text(stringResource(Res.string.sync_folder_code_done)) }
         },
     ) {
+        val schedulesOff = stringResource(Res.string.transfer_schedules_off, summary.schedules.joinToString(", "))
+        val wouldStart = stringResource(Res.string.transfer_would_start, dialog.openNow.joinToString(", "))
         val changes = changesOf(summary)
         // Imported schedules have their own line below, so "nothing new" is said only when none came either.
         when {
             changes.isNotEmpty() -> PosatoCaption(changes.joinToString(" "))
-            dialog.schedules.isEmpty() -> PosatoCaption("Nothing new was added.")
+            dialog.schedules.isEmpty() -> PosatoCaption(stringResource(Res.string.transfer_nothing_new))
         }
         if (dialog.schedules.isNotEmpty()) {
             if (dialog.turnedOn) {
-                PosatoCaption("Imported schedules are on.", modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                PosatoCaption(stringResource(Res.string.transfer_schedules_on), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             } else {
-                PosatoCaption("Imported schedules are off: ${summary.schedules.joinToString(", ")}. Turn them on here or later in Schedules.")
+                PosatoCaption(schedulesOff)
                 if (dialog.openNow.isNotEmpty()) {
-                    PosatoCaption("${dialog.openNow.joinToString(", ")} would start a pause right away.")
+                    PosatoCaption(wouldStart)
                 }
             }
         }
-        if (dialog.failed) PosatoCaption("The schedules could not be turned on. Try again in Schedules.")
+        if (dialog.failed) PosatoCaption(stringResource(Res.string.transfer_schedules_failed))
         if (dialog.busy) PosatoActivityIndicator()
     }
 }
@@ -273,8 +348,10 @@ private fun MessageDialog(
     dialog: TransferDialog.Message,
     state: PauseSetTransferUiState,
 ) {
-    TransferAlert(title = dialog.title, onDismiss = state::close, actions = { PosatoButton(onClick = state::close) { Text("OK") } }) {
-        Text(dialog.text)
+    TransferAlert(title = stringResource(dialog.title), onDismiss = state::close, actions = {
+        PosatoButton(onClick = state::close, controlId = "presence_first_close_ok") { Text(stringResource(Res.string.presence_first_close_ok)) }
+    }) {
+        Text(stringResource(dialog.text, dialog.argument.orEmpty()))
     }
 }
 
@@ -295,13 +372,4 @@ private fun TransferAlert(
         },
         confirmButton = { PosatoActionRow { actions() } },
     )
-}
-
-private fun changesOf(summary: ImportSummary): List<String> {
-    return buildList {
-        if (summary.changed.isNotEmpty()) add("Pause sets changed: ${summary.changed.joinToString(", ")}.")
-        if (summary.removed.isNotEmpty()) add("Removed: ${summary.removed.joinToString(", ")}.")
-        if (summary.removedSchedules.isNotEmpty()) add("Schedules removed: ${summary.removedSchedules.joinToString(", ")}.")
-        if (summary.websitesAdded > 0) add(if (summary.websitesAdded == 1) "1 website added." else "${summary.websitesAdded} websites added.")
-    }
 }

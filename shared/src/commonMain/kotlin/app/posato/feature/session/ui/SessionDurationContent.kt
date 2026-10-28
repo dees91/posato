@@ -40,6 +40,30 @@ import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.ui.PauseSetPickerRow
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_cancel
+import app.posato.generated.resources.duration_hours
+import app.posato.generated.resources.duration_minutes
+import app.posato.generated.resources.session_duration_hint
+import app.posato.generated.resources.session_duration_hours
+import app.posato.generated.resources.session_duration_label
+import app.posato.generated.resources.session_duration_range
+import app.posato.generated.resources.session_duration_range_cupertino
+import app.posato.generated.resources.session_ends_count
+import app.posato.generated.resources.session_eyebrow_next_pause
+import app.posato.generated.resources.session_heading_space
+import app.posato.generated.resources.session_no_pause_set
+import app.posato.generated.resources.session_preset_1_h
+import app.posato.generated.resources.session_preset_25_min
+import app.posato.generated.resources.session_preset_2_h
+import app.posato.generated.resources.session_preset_45_min
+import app.posato.generated.resources.session_preset_4_h
+import app.posato.generated.resources.session_preset_8_h
+import app.posato.generated.resources.session_setup_continue
+import app.posato.generated.resources.session_setup_preview
+import app.posato.generated.resources.session_until_end_of_day
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -53,31 +77,42 @@ internal fun SessionDurationContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
-            "How much space\ndo you need?",
-            eyebrow = "YOUR NEXT PAUSE".takeUnless { platformUsesCupertinoChrome },
+            stringResource(Res.string.session_heading_space),
+            eyebrow = stringResource(Res.string.session_eyebrow_next_pause).takeUnless { platformUsesCupertinoChrome },
             layout = layout,
-            description = "Choose a quick pause, or make it your own.",
+            description = stringResource(Res.string.session_duration_hint),
         )
-        PauseSetPickerRow(state.pauseSets, state.setId, onChoose = onChoosePauseSet, placeholder = state.setName ?: "No pause set")
+        PauseSetPickerRow(
+            state.pauseSets,
+            state.setId,
+            onChoose = onChoosePauseSet,
+            placeholder = state.setName ?: stringResource(Res.string.session_no_pause_set),
+        )
         if (platformUsesCupertinoChrome) {
             CupertinoDurationChoices(state, onChooseDuration)
         } else {
             DrawnDurationChoices(state, onChooseDuration)
         }
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-            Text("Ends at ${state.formattedPreviewEnd.orEmpty()}")
+            Text(stringResource(Res.string.session_setup_preview, state.formattedPreviewEnd.orEmpty()))
             PosatoCaption(
                 if (platformUsesCupertinoChrome) {
-                    "5 minutes to 23 hours 59 minutes · you stay in control"
+                    stringResource(Res.string.session_duration_range_cupertino)
                 } else {
-                    "5 minutes to 24 hours · you stay in control"
+                    stringResource(Res.string.session_duration_range)
                 },
             )
             state.setupFailure?.let { Text(stringResource(it.setupMessage())) }
         }
         PosatoActionRow {
-            PosatoButton(onReview) { Text("Review session") }
-            if (!platformUsesCupertinoChrome) PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+            PosatoButton(onReview, controlId = "session_setup_continue") { Text(stringResource(Res.string.session_setup_continue)) }
+            if (!platformUsesCupertinoChrome) {
+                PosatoButton(
+                    onCancel,
+                    style = PosatoButtonStyle.Quiet,
+                    controlId = "action_cancel",
+                ) { Text(stringResource(Res.string.action_cancel)) }
+            }
         }
     }
 }
@@ -117,8 +152,9 @@ private fun CupertinoDurationChoices(
                     onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) },
                     modifier = Modifier.weight(1f),
                     role = Role.RadioButton,
-                    countContent = { Text("ends $end") },
-                ) { Text(END_OF_DAY_LABEL) }
+                    countContent = { Text(stringResource(Res.string.session_ends_count, end)) },
+                    controlId = "session_until_end_of_day",
+                ) { Text(stringResource(Res.string.session_until_end_of_day)) }
             }
         }
         PlatformDurationPicker(
@@ -151,6 +187,7 @@ private fun CompactLengthRows(
                             modifier = Modifier.weight(1f),
                             role = Role.RadioButton,
                             contentPadding = PaddingValues(horizontal = PosatoSpace.Tiny, vertical = PosatoSpace.Medium),
+                            controlId = preset.controlId,
                         ) { PresetLabel(preset.compactLabel, preset.minutes) }
                     }
                 }
@@ -169,20 +206,28 @@ private fun DrawnDurationChoices(
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoChoiceGroup {
             DurationPresets.forEach { preset ->
-                PosatoNavigationItem(selected = preset.isSelected(state), onClick = { onLength(preset.minutes) }) {
-                    PresetLabel(preset.label, preset.minutes)
+                PosatoNavigationItem(selected = preset.isSelected(state), onClick = { onLength(preset.minutes) }, controlId = preset.controlId) {
+                    PresetLabel(stringResource(preset.label), preset.minutes)
                 }
             }
             state.formattedEndOfDay?.let { end ->
-                PosatoNavigationItem(selected = state.untilEndOfDay, onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) }) {
-                    Text(END_OF_DAY_LABEL)
-                    PosatoCaption("ends $end")
+                PosatoNavigationItem(
+                    selected = state.untilEndOfDay,
+                    onClick = { onChooseDuration(SessionDurationChoice.EndOfDay) },
+                    controlId = "session_until_end_of_day",
+                ) {
+                    Text(stringResource(Res.string.session_until_end_of_day))
+                    PosatoCaption(stringResource(Res.string.session_ends_count, end))
                 }
             }
         }
         Row(Modifier.widthIn(max = PosatoSize.Phone).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-            PosatoNumberWheel(duration.hours, duration.hourRange, "Hours", { onLength(duration.withHours(it)) }, Modifier.weight(1f))
-            PosatoNumberWheel(duration.minutes, duration.minuteRange, "Minutes", { onLength(duration.withMinutes(it)) }, Modifier.weight(1f))
+            PosatoNumberWheel(duration.hours, duration.hourRange, stringResource(Res.string.session_duration_hours), {
+                onLength(duration.withHours(it))
+            }, Modifier.weight(1f))
+            PosatoNumberWheel(duration.minutes, duration.minuteRange, stringResource(Res.string.session_duration_label), {
+                onLength(duration.withMinutes(it))
+            }, Modifier.weight(1f))
         }
     }
 }
@@ -196,11 +241,12 @@ private fun PresetLabel(
     Text(text, Modifier.semantics { contentDescription = spoken }, maxLines = 1)
 }
 
+@Composable
 internal fun sessionLengthText(minutes: Int): String {
     val hours = minutes / MINUTES_PER_HOUR
     val rest = minutes % MINUTES_PER_HOUR
-    val hourText = if (hours == 1) "1 hour" else "$hours hours"
-    val minuteText = if (rest == 1) "1 minute" else "$rest minutes"
+    val hourText = pluralStringResource(Res.plurals.duration_hours, hours, hours)
+    val minuteText = pluralStringResource(Res.plurals.duration_minutes, rest, rest)
     return when {
         hours == 0 -> minuteText
         rest == 0 -> hourText
@@ -211,22 +257,22 @@ internal fun sessionLengthText(minutes: Int): String {
 private class DurationPreset(
     val minutes: Int,
     val compactLabel: String,
-    val label: String,
+    val label: StringResource,
+    val controlId: String,
 ) {
     fun isSelected(state: SessionUiState): Boolean {
         return !state.untilEndOfDay && state.durationMinutes == minutes
     }
 }
 
-internal const val END_OF_DAY_LABEL: String = "Until end of day"
 private const val MINUTES_PER_HOUR: Int = 60
 private val DurationPresets = listOf(
-    DurationPreset(25, "25m", "25 min"),
-    DurationPreset(45, "45m", "45 min"),
-    DurationPreset(60, "1h", "1 h"),
-    DurationPreset(120, "2h", "2 h"),
-    DurationPreset(240, "4h", "4 h"),
-    DurationPreset(480, "8h", "8 h"),
+    DurationPreset(25, "25m", Res.string.session_preset_25_min, "session_preset_25_min"),
+    DurationPreset(45, "45m", Res.string.session_preset_45_min, "session_preset_45_min"),
+    DurationPreset(60, "1h", Res.string.session_preset_1_h, "session_preset_1_h"),
+    DurationPreset(120, "2h", Res.string.session_preset_2_h, "session_preset_2_h"),
+    DurationPreset(240, "4h", Res.string.session_preset_4_h, "session_preset_4_h"),
+    DurationPreset(480, "8h", Res.string.session_preset_8_h, "session_preset_8_h"),
 )
 
 /** The longest time the system countdown picker offers on iOS: 23 hours 59 minutes. */

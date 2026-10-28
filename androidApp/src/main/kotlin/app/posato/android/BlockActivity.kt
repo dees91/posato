@@ -20,6 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.posato.core.designsystem.PosatoAndroidTheme
@@ -44,6 +48,7 @@ class BlockActivity : ComponentActivity() {
 private fun BlockScreen(onGoHome: () -> Unit) {
     Column(
         modifier = Modifier
+            .semantics { testTagsAsResourceId = true }
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.safeDrawing)
@@ -51,8 +56,8 @@ private fun BlockScreen(onGoHome: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Paused by Posato", fontSize = 28.sp)
-        Text("This app is part of your pause. It is available again when the pause ends.")
-        Button(onClick = onGoHome) { Text("Go to the home screen") }
+        Text(stringResource(R.string.block_title), modifier = Modifier.testTag("block_title"), fontSize = 28.sp)
+        Text(stringResource(R.string.block_body))
+        Button(onClick = onGoHome, modifier = Modifier.testTag("block_home")) { Text(stringResource(R.string.block_home)) }
     }
 }

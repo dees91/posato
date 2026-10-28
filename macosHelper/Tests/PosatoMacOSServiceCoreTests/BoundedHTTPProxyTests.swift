@@ -19,6 +19,7 @@ import Testing
   #expect(denied.contains("Cache-Control: no-store"))
   #expect(denied.contains("Connection: close"))
   #expect(denied.contains("This site is paused"))
+  #expect(denied.contains(PauseCopy.pageMarker))
   #expect(!denied.contains("example.com"))
   #expect(!denied.contains("private-canary"))
   #expect(!denied.contains("query-canary"))
@@ -60,6 +61,7 @@ import Testing
   #expect(page.contains("Cache-Control: no-store"))
   #expect(page.contains("Connection: close"))
   #expect(page.contains("This site is paused"))
+  #expect(page.contains(PauseCopy.pageMarker))
 }
 
 @Test func givenAllowedHTTPWhenProxiedThenTheControlOriginReceivesOneRequest() async throws {
@@ -129,10 +131,14 @@ import Testing
 }
 
 @Test func givenBlockedPageCopyWhenEndTimeIsAbsentThenHeadlineHasNoUntilClause() throws {
-  #expect(BlockedPage.headline(sessionEndEpochMilliseconds: nil) == "This site is paused")
+  let locale = Locale(identifier: "en_US")
+  #expect(
+    BlockedPage.headline(sessionEndEpochMilliseconds: nil, locale: locale) == "This site is paused")
   let html = try #require(
-    String(bytes: BlockedPage.html(sessionEndEpochMilliseconds: nil), encoding: .utf8)
+    String(
+      bytes: BlockedPage.html(sessionEndEpochMilliseconds: nil, locale: locale), encoding: .utf8)
   )
   #expect(html.contains("This site is paused"))
+  #expect(html.contains(PauseCopy.pageMarker))
   #expect(!html.contains("until"))
 }

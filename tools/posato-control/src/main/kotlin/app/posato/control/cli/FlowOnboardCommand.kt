@@ -33,7 +33,7 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows
         var access: String? = null
         repeat(STEP_SUMMARY + 1) {
             when (currentStep(backend)) {
-                STEP_WELCOME -> FlowSteps.run(backend, listOf(FlowSteps.button(BEGIN), FlowSteps.waitFor(stepLabel(STEP_PRIVACY))))
+                STEP_WELCOME -> FlowSteps.run(backend, listOf(FlowControls.buttonId(BEGIN), FlowSteps.waitFor(stepLabel(STEP_PRIVACY))))
 
                 STEP_PRIVACY -> FlowSteps.run(
                     backend,
@@ -94,7 +94,7 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows
                 backend,
                 listOf(
                     FlowSteps.typeInto(name, submit = false),
-                    FlowSteps.button(ADD),
+                    FlowControls.buttonId(ADD),
                     // The receipt reads "1 added · 0 already on your list" once the website is saved.
                     FlowSteps.waitFor(Query(textContains = ADDED_RECEIPT)),
                 ),
@@ -165,14 +165,14 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows
         return SERVICE_INSTALLED
     }
 
-    private fun button(text: String): Query = Query(text = text, role = FlowSteps.ROLE_BUTTON)
+    private fun button(id: String): Query = FlowControls.byId(id)
 
     private companion object {
-        const val BEGIN = "Make some space"
-        const val CONTINUE = "Continue"
-        const val NOT_NOW = "Not now"
-        const val ADD = "Add"
-        const val GO_TO_SESSION = "Go to Session"
+        const val BEGIN = "onboarding_action_begin"
+        const val CONTINUE = "onboarding_action_continue"
+        const val NOT_NOW = "onboarding_action_not_now"
+        const val ADD = "action_add_short"
+        const val GO_TO_SESSION = "onboarding_action_open_session"
         const val ACCESS_TITLE = "Make room on this device."
         const val WEBSITE_TITLE = "What pulls you away?"
         const val ADDED_RECEIPT = " added · "
@@ -183,10 +183,10 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows
         const val STEP_WEBSITE = 4
         const val STEP_SUMMARY = 5
         val STEP = Regex("""^(\d) of 5$""")
-        const val ANDROID_ACTION = "Allow access"
+        const val ANDROID_ACTION = "onboarding_permission_android_action"
         const val ANDROID_ALLOWED = "Access allowed"
-        const val LINUX_ACTION = "Allow pausing on this computer"
-        const val WINDOWS_ACTION = "Check the pausing service"
+        const val LINUX_ACTION = "onboarding_permission_linux_action"
+        const val WINDOWS_ACTION = "onboarding_permission_windows_action"
         const val SERVICE_INSTALLED = "Pausing service installed"
 
         /** The allow buttons of Android's VPN, notification, and battery requests, on stock Android and One UI. */

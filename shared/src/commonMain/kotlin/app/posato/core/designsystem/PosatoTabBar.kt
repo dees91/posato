@@ -54,6 +54,7 @@ internal fun PosatoTab(
     role: Role = Role.Tab,
     contentPadding: PaddingValues = PaddingValues(PosatoSpace.Medium),
     countContent: (@Composable () -> Unit)? = null,
+    controlId: String? = null,
     content: @Composable () -> Unit,
 ) {
     val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -61,7 +62,7 @@ internal fun PosatoTab(
     val interaction = remember { MutableInteractionSource() }
     val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Surface(
-        modifier = modifier.semantics { this.role = role }
+        modifier = (controlId?.let { modifier.controlId(it) } ?: modifier).semantics { this.role = role }
             .keyboardFocusRing({ keyboardFocused }, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium),
         selected = selected,
         onClick = onClick,

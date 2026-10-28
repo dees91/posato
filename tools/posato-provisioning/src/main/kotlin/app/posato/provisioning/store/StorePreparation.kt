@@ -35,6 +35,7 @@ class PrepareRequest(
     val description: String? = null,
     val renameFrom: String? = null,
     val subtitle: String? = null,
+    val locale: String = STORE_LOCALE,
 )
 
 /** The version a run works on, or `null` when it is to be created, and how the run came to hold it. */
@@ -77,12 +78,13 @@ class StorePreparation(
         } else {
             "attached".also { store.attachBuild(version.id, build.id) }
         }
-        val localization = StoreLookups.localization(store, version.id)
+        val localization = StoreLookups.localization(store, version.id, request.locale)
         val texts = updateTexts(store, localization, request)
-        val subtitle = request.subtitle?.let { text -> StoreSubtitle.update(services.appInfo, app.id, text) }
+        val subtitle = request.subtitle?.let { text -> StoreSubtitle.update(services.appInfo, app.id, text, request.locale) }
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
+            put("locale", request.locale)
             put("appStoreVersion", located.outcome)
             put("releaseType", releaseType)
             put("build", buildOutcome)

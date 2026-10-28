@@ -80,12 +80,12 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
 
     private fun openEditor(target: Target): List<Step> {
         // A leftover open editor is left the way each host offers: the Mac's in-page link or the iOS bar's back.
-        val back = if (target.isApple) "Back to Schedules" else "Back to schedules"
+        val back = FlowControls.schedulesBack(target.isApple)
         return listOf(
-            FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
-            FlowSteps.button("Schedules"),
-            FlowSteps.reveal(Query(text = "Add schedule", role = FlowSteps.ROLE_BUTTON)),
-            FlowSteps.button("Add schedule"),
+            FlowSteps.tap(back, optional = true, timeoutSeconds = SHORT_SECONDS),
+            FlowControls.buttonId("nav_schedules"),
+            FlowSteps.reveal(FlowControls.byId("action_add_schedule")),
+            FlowControls.buttonId("action_add_schedule"),
             FlowSteps.waitFor(Query(role = FlowSteps.ROLE_TEXT_FIELD)),
             FlowSteps.typeInto(name, submit = true),
         )
@@ -176,7 +176,7 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     }
 
     private companion object {
-        val SAVE = Query(text = "Save schedule", role = FlowSteps.ROLE_BUTTON)
+        val SAVE = FlowControls.byId("action_save_schedule")
         const val SYSTEM_PICKER = "Time Picker"
         const val POPOVER_DISMISS = "PopoverDismissRegion"
         const val PICKER_SETTLE_SECONDS = 1.0
@@ -276,7 +276,7 @@ internal enum class WheelKind(
         val steps = mutableListOf(FlowSteps.reveal(button), FlowSteps.tap(button), FlowSteps.sleep(WHEEL_SETTLE_SECONDS))
         steps += arrows("hours", target.hour - current.hour, pressInPlace)
         steps += arrows("minutes", target.minute - current.minute, pressInPlace)
-        steps += press(Query(text = "Done", role = FlowSteps.ROLE_BUTTON), pressInPlace) + FlowSteps.sleep(WHEEL_SETTLE_SECONDS)
+        steps += press(FlowControls.byId("sync_folder_code_done"), pressInPlace) + FlowSteps.sleep(WHEEL_SETTLE_SECONDS)
         return steps
     }
 

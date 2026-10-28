@@ -285,15 +285,14 @@ private suspend fun PauseSetsInputs.duplicateSet(
 
 /** "<name> (copy)", shortened so the whole name stays within a set name's 80 bytes. */
 internal fun copyNameOf(name: String?): String {
+    val suffix = SetNameText.copySuffix
     var base = displayNameOf(name)
-    while ((base + COPY_SUFFIX).encodeToByteArray().size > ScheduleLimits.MAX_NAME_BYTES) {
+    while ((base + suffix).encodeToByteArray().size > ScheduleLimits.MAX_NAME_BYTES) {
         // A whole character at a time, so an emoji is never cut in half.
         base = base.dropLast(if (base.length >= 2 && base.last().isLowSurrogate()) 2 else 1)
     }
-    return base.trimEnd() + COPY_SUFFIX
+    return base.trimEnd() + suffix
 }
-
-private const val COPY_SUFFIX: String = " (copy)"
 
 /** How many apps [id] has chosen on this device, or null when its choices cannot be read. */
 internal suspend fun LocalApplicationMappings.applicationCountOf(id: PauseSetId): Int? {

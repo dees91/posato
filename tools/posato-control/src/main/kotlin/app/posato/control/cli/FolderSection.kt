@@ -36,7 +36,13 @@ internal class FolderSection(
 
     /** Opens the section; a tap that turns out to have closed an open section the screen did not show is undone. */
     fun expand() {
-        FlowSteps.run(backend, listOf(FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = 2.0), FlowSteps.button("Session")))
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowControls.buttonId("action_back_to_pause_sets", optional = true, timeoutSeconds = 2.0),
+                FlowControls.buttonId("session_title"),
+            ),
+        )
         if (open()) return
         val row = Query(textContains = rowTitle(), role = FlowSteps.ROLE_BUTTON)
         FlowSteps.run(backend, listOf(FlowSteps.reveal(row), FlowSteps.tap(row), FlowSteps.sleep(FlowFolderCommand.DIALOG_SECONDS)))
@@ -64,7 +70,7 @@ internal class FolderSection(
         return if (folder) FlowFolderCommand.FOLDER_ROW else FlowFolderCommand.ICLOUD_ROW
     }
 
-    private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
+    private fun button(text: String): Query = FlowFolderCommand.control(text)
 
     private companion object {
         const val REVEAL_SECONDS = 8.0

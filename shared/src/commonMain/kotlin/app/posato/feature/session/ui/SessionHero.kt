@@ -13,6 +13,18 @@ import app.posato.core.designsystem.PosatoStatusLabel
 import app.posato.core.designsystem.PosatoTitle
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.no_session_active
+import app.posato.generated.resources.session_hero_active
+import app.posato.generated.resources.session_hero_finish_setup
+import app.posato.generated.resources.session_hero_quiet
+import app.posato.generated.resources.session_hero_room_matters
+import app.posato.generated.resources.session_hero_room_you
+import app.posato.generated.resources.session_hero_scheduled
+import app.posato.generated.resources.session_hero_scheduled_running
+import app.posato.generated.resources.session_hero_start_website
+import app.posato.generated.resources.session_hero_timer_running
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SessionHero(
@@ -22,11 +34,11 @@ internal fun SessionHero(
     scheduledRestricts: Boolean,
 ) {
     val status = when {
-        scheduledRestricts -> "Scheduled pause"
-        active -> "Session active"
-        else -> "No session active"
+        scheduledRestricts -> stringResource(Res.string.session_hero_scheduled)
+        active -> stringResource(Res.string.session_hero_active)
+        else -> stringResource(Res.string.no_session_active)
     }
-    val title = if (active) "A little room.\nJust for you." else "Room for what matters."
+    val title = if (active) stringResource(Res.string.session_hero_room_you) else stringResource(Res.string.session_hero_room_matters)
     PosatoHero(layout = layout, artworkContent = { PosatoIntervalArtwork() }, headingContent = {
         if (platformUsesCupertinoChrome) {
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
@@ -40,6 +52,7 @@ internal fun SessionHero(
     })
 }
 
+@Composable
 internal fun overviewDescription(
     active: Boolean,
     scheduledRestricts: Boolean,
@@ -47,10 +60,10 @@ internal fun overviewDescription(
     hasItems: Boolean,
 ): String {
     return when {
-        scheduledRestricts -> "A scheduled pause is running on this device."
-        active -> "Your session timer is running on this device."
-        needsMacSetup -> "Finish setting up blocking, then choose when to take a pause."
-        !hasItems -> "Start with a website or app you’d like a little space from."
-        else -> "A quiet pause is ready when you are. Choose a little space from the things that pull you away."
+        scheduledRestricts -> stringResource(Res.string.session_hero_scheduled_running)
+        active -> stringResource(Res.string.session_hero_timer_running)
+        needsMacSetup -> stringResource(Res.string.session_hero_finish_setup)
+        !hasItems -> stringResource(Res.string.session_hero_start_website)
+        else -> stringResource(Res.string.session_hero_quiet)
     }
 }

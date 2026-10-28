@@ -30,16 +30,16 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
             throw ControlException(ErrorCode.USAGE, "--website adds to a new set; it does not combine with --rename-from.")
         }
         val backend = session.backend()
-        // The drawn in-page Back (Mac, Android, Linux) reads the list in lower case; the iOS bar's back button names the
-        // screen by its title.
-        val back = if (session.target().isApple) "Back to Pause sets" else "Back to pause sets"
+        // The iOS bar keeps the spoken "Back to Pause sets". Other hosts press the in-page Back by its catalog key.
+        val apple = session.target().isApple
+        val back = FlowControls.pauseSetsBack(apple)
         openList(backend, back)
         val labels = FlowSteps.labels(backend)
         val from = renameFrom
         when {
-            from != null -> rename(backend, from, labels)
+            from != null -> rename(backend, from, labels, apple)
             hasSetNamed(labels, name) && makeDefault && websites.isEmpty() -> Unit
-            else -> create(backend, back, labels)
+            else -> create(backend, back, labels, apple)
         }
         if (makeDefault && !isDefault(FlowSteps.labels(backend), name)) {
             FlowSteps.run(backend, listOf(FlowSteps.button(menuFor(name)), FlowSteps.button("Make default")))
@@ -55,14 +55,14 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
 
     private fun openList(
         backend: Backend,
-        back: String,
+        back: Query,
     ) {
         FlowSteps.run(
             backend,
             listOf(
-                FlowSteps.button("Pause sets"),
-                FlowSteps.button(back, optional = true, timeoutSeconds = SHORT_SECONDS),
-                FlowSteps.waitFor(Query(text = "New set", role = FlowSteps.ROLE_BUTTON)),
+                FlowControls.buttonId("nav_pause_sets"),
+                FlowSteps.tap(back, optional = true, timeoutSeconds = SHORT_SECONDS),
+                FlowSteps.waitFor(FlowControls.byId("action_new_set")),
             ),
         )
     }
@@ -71,6 +71,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         backend: Backend,
         from: String,
         labels: List<String>,
+        apple: Boolean,
     ) {
         // A rerun after a rename that went through finds the new name and has nothing left to do.
         if (!hasSetNamed(labels, from) && hasSetNamed(labels, name)) return
@@ -86,7 +87,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
                 FlowSteps.button(menuFor(from)),
                 FlowSteps.button("Rename"),
                 FlowSteps.typeInto(name, submit = false),
-                FlowSteps.button("Save"),
+                FlowControls.alertButton("action_save_short", "Save", apple),
             ),
         )
         awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name after the rename.")
@@ -94,8 +95,9 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
 
     private fun create(
         backend: Backend,
-        back: String,
+        back: Query,
         labels: List<String>,
+        apple: Boolean,
     ) {
         // Posato accepts a second set with the same name, so a rerun would leave two rows the later steps cannot tell apart.
         if (hasSetNamed(labels, name)) {
@@ -106,17 +108,17 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
             )
         }
         val steps = mutableListOf<Step>(
-            FlowSteps.button("New set"),
+            FlowControls.buttonId("action_new_set"),
             FlowSteps.typeInto(name, submit = false),
-            FlowSteps.button("Save"),
-            FlowSteps.waitFor(Query(text = back, role = FlowSteps.ROLE_BUTTON)),
+            FlowControls.alertButton("action_save_short", "Save", apple),
+            FlowSteps.waitFor(back),
         )
         if (websites.isNotEmpty()) {
             steps += FlowSteps.waitFor(Query(text = "Search", role = FlowSteps.ROLE_BUTTON))
             steps += FlowSteps.typeInto(websites.joinToString(", "), submit = true)
-            steps += FlowSteps.button("Done", optional = true, timeoutSeconds = SHORT_SECONDS)
+            steps += FlowControls.buttonId("sync_folder_code_done", optional = true, timeoutSeconds = SHORT_SECONDS)
         }
-        steps += listOf(FlowSteps.button(back), FlowSteps.screenshot("set-created"))
+        steps += listOf(FlowSteps.tap(back), FlowSteps.screenshot("set-created"))
         FlowSteps.run(backend, steps)
         // The list redraws after Back; a screen read while it does shows the list before the save.
         awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name.")

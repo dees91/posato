@@ -50,6 +50,11 @@ import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_back_to_pause_sets
+import app.posato.generated.resources.nav_pause_sets
+import app.posato.generated.resources.sync_folder_code_done
+import app.posato.generated.resources.targets_edit_website
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import org.jetbrains.compose.resources.stringResource
@@ -81,11 +86,14 @@ internal fun TargetsBar(
 ) {
     PosatoNavigationBar(
         title = header.title,
-        backLabel = "Pause sets",
+        backLabel = stringResource(Res.string.nav_pause_sets),
         onBack = header.onBack,
         trailingContent = {
             if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
-                PosatoBarButton(onClick = onDone) { Text("Done", style = PosatoTypography.BarAction) }
+                PosatoBarButton(
+                    onClick = onDone,
+                    controlId = "sync_folder_code_done",
+                ) { Text(stringResource(Res.string.sync_folder_code_done), style = PosatoTypography.BarAction) }
             }
             header.menuContent?.invoke()
         },
@@ -98,13 +106,21 @@ internal fun TargetsHeaderContent(
     onDone: () -> Unit,
 ) {
     header.onBack?.let { onBack ->
-        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to pause sets") }
+        PosatoButton(
+            onClick = onBack,
+            style = PosatoButtonStyle.Quiet,
+            controlId = "action_back_to_pause_sets",
+        ) { Text(stringResource(Res.string.action_back_to_pause_sets)) }
     }
     PosatoSectionHeader(
         titleContent = { Text(header.title, style = MaterialTheme.typography.headlineSmall) },
         actionContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Quiet) { Text("Done") }
+                PosatoButton(
+                    onClick = onDone,
+                    style = PosatoButtonStyle.Quiet,
+                    controlId = "sync_folder_code_done",
+                ) { Text(stringResource(Res.string.sync_folder_code_done)) }
                 header.menuContent?.invoke()
             }
         },
@@ -123,13 +139,18 @@ internal fun WebsiteEditorScreen(
     Column(Modifier.fillMaxSize()) {
         // As on the set's screen, Done appears while the keyboard is up, so the tab bar beneath it can come back.
         PosatoNavigationBar(
-            title = "Edit website",
+            title = stringResource(Res.string.targets_edit_website),
             backLabel = setTitle,
             onBack = callbacks.onCancelDomainEdit,
             backEnabled = !state.isSaving,
             trailingContent = {
                 if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
-                    PosatoBarButton(onClick = { focus.clearFocus() }) { Text("Done", style = PosatoTypography.BarAction) }
+                    PosatoBarButton(
+                        onClick = { focus.clearFocus() },
+                        controlId = "sync_folder_code_done",
+                    ) {
+                        Text(stringResource(Res.string.sync_folder_code_done), style = PosatoTypography.BarAction)
+                    }
                 }
             },
         )

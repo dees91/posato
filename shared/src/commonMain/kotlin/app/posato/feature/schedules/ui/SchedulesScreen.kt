@@ -69,6 +69,34 @@ import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.schedules.domain.ScheduleId
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_add_schedule
+import app.posato.generated.resources.action_allow_schedules_mac
+import app.posato.generated.resources.action_allow_screen_time
+import app.posato.generated.resources.action_back_to_schedules
+import app.posato.generated.resources.action_set_up
+import app.posato.generated.resources.action_set_up_this_mac
+import app.posato.generated.resources.mac_unified_body
+import app.posato.generated.resources.mac_unified_title
+import app.posato.generated.resources.nav_schedules
+import app.posato.generated.resources.schedule_editor_new
+import app.posato.generated.resources.schedule_editor_title
+import app.posato.generated.resources.schedule_error_full
+import app.posato.generated.resources.schedules_clocks
+import app.posato.generated.resources.schedules_empty_body
+import app.posato.generated.resources.schedules_empty_title
+import app.posato.generated.resources.schedules_eyebrow
+import app.posato.generated.resources.schedules_mac_consent_body
+import app.posato.generated.resources.schedules_mac_consent_title
+import app.posato.generated.resources.schedules_mac_setup_body
+import app.posato.generated.resources.schedules_mac_setup_title
+import app.posato.generated.resources.schedules_notices_body
+import app.posato.generated.resources.schedules_notices_title
+import app.posato.generated.resources.schedules_rhythm
+import app.posato.generated.resources.schedules_save_failed
+import app.posato.generated.resources.schedules_screen_time_later
+import app.posato.generated.resources.schedules_sync_note
+import org.jetbrains.compose.resources.stringResource
 
 /** What this device still needs before its schedules can run; saving plans never waits for it. */
 internal data class ScheduleDeviceReadiness(
@@ -192,19 +220,23 @@ private fun SchedulesBarScreen(
     val body = remember { movableContentOf { latestContent() } }
     when (route) {
         SchedulesRoute.List -> PosatoBarScreen(
-            title = "Schedules",
+            title = stringResource(Res.string.nav_schedules),
             largeTitle = true,
             contentPadding = padding,
             trailingContent = {
                 if (addsFromBar) {
-                    PosatoBarButton(onClick = actions.onAdd, enabled = addEnabled) { Text("Add schedule", style = PosatoTypography.BarAction) }
+                    PosatoBarButton(
+                        onClick = actions.onAdd,
+                        enabled = addEnabled,
+                        controlId = "action_add_schedule",
+                    ) { Text(stringResource(Res.string.action_add_schedule), style = PosatoTypography.BarAction) }
                 }
             },
         ) { body() }
 
         is SchedulesRoute.Editor -> PosatoBarScreen(
-            title = if (route.id == null) "New schedule" else "Edit schedule",
-            backLabel = "Schedules",
+            title = if (route.id == null) stringResource(Res.string.schedule_editor_new) else stringResource(Res.string.schedule_editor_title),
+            backLabel = stringResource(Res.string.nav_schedules),
             backEnabled = backEnabled,
             onBack = {
                 focus.clearFocus()
@@ -214,8 +246,8 @@ private fun SchedulesBarScreen(
         ) { body() }
 
         SchedulesRoute.Setup -> PosatoBarScreen(
-            title = "Set up",
-            backLabel = "Schedules",
+            title = stringResource(Res.string.action_set_up),
+            backLabel = stringResource(Res.string.nav_schedules),
             backEnabled = backEnabled,
             onBack = { actions.onShowSetup(false) },
             contentPadding = padding,
@@ -246,10 +278,14 @@ private fun ScheduleAddAction(
     if (!readiness.canAddSchedules(device)) return
     // On iOS the bar carries Add schedule; the list keeps the button only as the empty state's first step.
     if (!platformUsesCupertinoChrome || state.schedules.isEmpty()) {
-        PosatoButton(onClick = actions.onAdd, enabled = !state.atCapacity) { Text("Add schedule") }
+        PosatoButton(
+            onClick = actions.onAdd,
+            enabled = !state.atCapacity,
+            controlId = "action_add_schedule",
+        ) { Text(stringResource(Res.string.action_add_schedule)) }
     }
     if (state.atCapacity) {
-        PosatoCaption("You have 10 schedules, the most Posato keeps. Delete one to add another.")
+        PosatoCaption(stringResource(Res.string.schedule_error_full))
     }
 }
 
@@ -273,21 +309,21 @@ private fun ScheduleList(
     actions: ScheduleActions,
 ) {
     if (platformUsesCupertinoChrome) {
-        PosatoLead("A rhythm that gives you room.")
+        PosatoLead(stringResource(Res.string.schedules_rhythm))
     } else {
-        PosatoHeading("A rhythm that gives you room.", eyebrow = "SCHEDULES", layout = layout)
+        PosatoHeading(stringResource(Res.string.schedules_rhythm), eyebrow = stringResource(Res.string.schedules_eyebrow), layout = layout)
     }
     if (state.showUpdateNote) {
-        PosatoNotice { Text("Schedules sync with your other devices. Update Posato on each of them to keep them in sync.") }
+        PosatoNotice { Text(stringResource(Res.string.schedules_sync_note)) }
     }
     ScheduleReadinessCard(device, readiness, actions)
     if (state.changeFailed) {
-        PosatoNotice(tone = PosatoTone.Caution) { Text("Couldn't save that change. Try again.") }
+        PosatoNotice(tone = PosatoTone.Caution) { Text(stringResource(Res.string.schedules_save_failed)) }
     }
     if (state.loaded && state.schedules.isEmpty()) {
         PosatoEmptyState(
-            title = "Make time for a regular pause.",
-            description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
+            title = stringResource(Res.string.schedules_empty_title),
+            description = stringResource(Res.string.schedules_empty_body),
         )
     }
     ScheduleAddAction(state, device, readiness, actions)
@@ -297,11 +333,15 @@ private fun ScheduleList(
         }
     }
     if (readiness.offerNotices && state.schedules.isNotEmpty()) {
-        PosatoButton(onClick = actions.onTurnOnNotices, style = PosatoButtonStyle.Quiet) { Text("Turn on pause notices") }
-        PosatoCaption("Posato can tell you when a scheduled pause starts and ends. Blocking works either way.")
+        PosatoButton(
+            onClick = actions.onTurnOnNotices,
+            style = PosatoButtonStyle.Quiet,
+            controlId = "schedules_notices_title",
+        ) { Text(stringResource(Res.string.schedules_notices_title)) }
+        PosatoCaption(stringResource(Res.string.schedules_notices_body))
     }
     if (state.schedules.isNotEmpty()) {
-        PosatoCaption("Times follow each device's own clock.")
+        PosatoCaption(stringResource(Res.string.schedules_clocks))
     }
 }
 
@@ -313,21 +353,30 @@ private fun ScheduleReadinessCard(
 ) {
     if (device == PosatoDevice.Mac && readiness.mac == MacScheduleReadiness.SETUP) {
         PosatoPanel(modifier = Modifier.fillMaxWidth()) {
-            PosatoBody("One setup for your pauses and schedules.")
-            PosatoCaption("Set up this Mac once, then add schedules here.")
-            PosatoButton(onClick = { actions.onShowSetup(true) }) { Text("Set up this Mac") }
+            PosatoBody(stringResource(Res.string.schedules_mac_setup_title))
+            PosatoCaption(stringResource(Res.string.schedules_mac_setup_body))
+            PosatoButton(
+                onClick = { actions.onShowSetup(true) },
+                controlId = "action_set_up_this_mac",
+            ) { Text(stringResource(Res.string.action_set_up_this_mac)) }
         }
     } else if (device == PosatoDevice.Mac && readiness.mac == MacScheduleReadiness.CONSENT) {
         PosatoPanel(modifier = Modifier.fillMaxWidth()) {
-            PosatoBody("Schedules can't start on this Mac yet.")
-            PosatoCaption("Allow them to start on their own, including schedules added on your other devices. No password is needed.")
-            PosatoButton(onClick = actions.onAllowSchedules) { Text("Allow schedules to start on this Mac") }
+            PosatoBody(stringResource(Res.string.schedules_mac_consent_title))
+            PosatoCaption(stringResource(Res.string.schedules_mac_consent_body))
+            PosatoButton(
+                onClick = actions.onAllowSchedules,
+                controlId = "action_allow_schedules_mac",
+            ) { Text(stringResource(Res.string.action_allow_schedules_mac)) }
         }
     } else if (device != PosatoDevice.Mac && !readiness.screenTimeAllowed) {
         PosatoPanel(modifier = Modifier.fillMaxWidth()) {
-            PosatoBody("Allow Screen Time so schedules can pause apps and websites on this ${device.noun}.")
-            PosatoCaption("You can save schedules now; they run here once access is allowed.")
-            PosatoButton(onClick = actions.onAllowScreenTime) { Text("Allow Screen Time") }
+            PosatoBody(schedulesAllowScreenTime(device))
+            PosatoCaption(stringResource(Res.string.schedules_screen_time_later))
+            PosatoButton(
+                onClick = actions.onAllowScreenTime,
+                controlId = "action_allow_screen_time",
+            ) { Text(stringResource(Res.string.action_allow_screen_time)) }
         }
     }
 }
@@ -340,10 +389,14 @@ private fun ScheduleSetup(
     macSetupContent: (@Composable () -> Unit)?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = { actions.onShowSetup(false) }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
+        PosatoButton(
+            onClick = { actions.onShowSetup(false) },
+            style = PosatoButtonStyle.Quiet,
+            controlId = "action_back_to_schedules",
+        ) { Text(stringResource(Res.string.action_back_to_schedules)) }
         PosatoHeading(
-            if (device == PosatoDevice.Mac) "Set up Posato on this Mac." else "Prepare this ${device.noun} for schedules.",
-            description = "One setup to block distractions and run your schedules.",
+            if (device == PosatoDevice.Mac) stringResource(Res.string.mac_unified_title) else schedulesPrepare(device),
+            description = stringResource(Res.string.mac_unified_body),
             layout = layout,
         )
         macSetupContent?.invoke() ?: MacSetupOverview()

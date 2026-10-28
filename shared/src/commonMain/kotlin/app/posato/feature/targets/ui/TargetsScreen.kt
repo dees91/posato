@@ -48,6 +48,13 @@ import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_reload_short
+import app.posato.generated.resources.targets_added_pause_now
+import app.posato.generated.resources.targets_deleted_elsewhere
+import app.posato.generated.resources.targets_on_device_only
+import app.posato.generated.resources.targets_resume_edit
+import app.posato.generated.resources.targets_unfinished_edit
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import org.jetbrains.compose.resources.stringResource
@@ -58,7 +65,7 @@ internal fun TargetsScreen(
     applicationMappings: LocalApplicationMappings,
     modifier: Modifier = Modifier,
     browser: TargetsBrowserState = remember { TargetsBrowserState() },
-    deviceLabel: String = "On this device only",
+    deviceLabel: String = stringResource(Res.string.targets_on_device_only),
     setId: PauseSetId = PauseSetId.FIRST,
     header: TargetsHeader = TargetsHeader(),
     viewModel: TargetsViewModel = viewModel(key = setId.choiceSet().hex) { TargetsViewModel(store, applicationMappings, setId) },
@@ -92,7 +99,7 @@ internal fun TargetsScreen(
     state: TargetsUiState,
     modifier: Modifier = Modifier,
     browser: TargetsBrowserState = remember { TargetsBrowserState() },
-    deviceLabel: String = "On this device only",
+    deviceLabel: String = stringResource(Res.string.targets_on_device_only),
     header: TargetsHeader = TargetsHeader(),
     onSubmitWebsites: (String, Long) -> Unit = { _, _ -> },
     onSubmitDomain: (String) -> Unit = {},
@@ -175,7 +182,7 @@ private fun ColumnScope.TargetsBody(
     inlineEditor: Boolean,
 ) {
     if (state.setMissing) {
-        PosatoNotice { Text("This set was deleted on another device.") }
+        PosatoNotice { Text(stringResource(Res.string.targets_deleted_elsewhere)) }
         return
     }
     TargetsNotices(state, header, callbacks.onRetry)
@@ -225,14 +232,19 @@ private fun TargetsNotices(
     onRetry: () -> Unit,
 ) {
     if (header.inUse) {
-        PosatoCaption("Added items pause now. Removed items stay paused until the pause using this set ends.")
+        PosatoCaption(stringResource(Res.string.targets_added_pause_now))
     }
     if (state.isLoading && !state.hasLoaded) {
         PosatoActivityIndicator()
         return
     }
     state.operationFailure?.let { failure ->
-        PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Reload") } }) {
+        PosatoNotice(tone = PosatoTone.Critical, actionContent = {
+            PosatoButton(
+                onRetry,
+                controlId = "action_reload_short",
+            ) { Text(stringResource(Res.string.action_reload_short)) }
+        }) {
             Text(stringResource(failure.operationMessage()))
         }
     }
@@ -313,9 +325,13 @@ private fun TargetsBrowser(
 @Composable
 private fun SuspendedWebsiteEditNotice(onResume: () -> Unit) {
     PosatoNotice(actionContent = {
-        PosatoButton(onResume, style = PosatoButtonStyle.Quiet) { Text("Resume website edit") }
+        PosatoButton(
+            onResume,
+            style = PosatoButtonStyle.Quiet,
+            controlId = "targets_resume_edit",
+        ) { Text(stringResource(Res.string.targets_resume_edit)) }
     }) {
-        Text("Your unfinished website edit is still here. Resume it to finish or cancel before changing another saved website.")
+        Text(stringResource(Res.string.targets_unfinished_edit))
     }
 }
 

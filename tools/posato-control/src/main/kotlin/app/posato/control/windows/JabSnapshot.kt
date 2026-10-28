@@ -51,10 +51,12 @@ private fun convert(node: JabNode): List<SnapshotNode> {
         else -> null
     }
     val label = node.name ?: node.description.takeIf { role != Roles.TEXT_FIELD }
+    val identifier = node.description.takeIf { role == Roles.BUTTON && node.name != null }
     if (role == null && label == null) return children
     return listOf(
         SnapshotNode(
             role = role ?: Roles.GROUP,
+            id = identifier,
             label = label,
             value = if (role == Roles.TEXT_FIELD) node.text?.ifEmpty { null } else null,
             placeholder = if (role == Roles.TEXT_FIELD) node.description else null,

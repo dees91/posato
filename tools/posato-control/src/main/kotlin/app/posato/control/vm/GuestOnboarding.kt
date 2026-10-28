@@ -46,14 +46,14 @@ class GuestOnboarding(
         }
         guest(line, listOf("launch", "-t", "desktop"))
         guestScenario(line, recipe.copy(steps = recipe.steps.subList(0, split + 1)))
-        guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
+        guest(line, listOf("tap", "-t", "desktop", "--id", "mac_unified_action", "--role", "button"))
         var accountAlert = answerUntilReady(line, timeoutMs)
         val resumed = recipe.launch.copy(terminateExisting = false)
         guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(done + 2, final)))
         // A Login Items approval can lag the window's "ready": finish it the same way while the overview asks for it.
         if (found(line, BACKGROUND_NEEDED)) {
             guest(line, listOf("tap", "-t", "desktop", "--text", FINISH_SETUP, "--role", "button"))
-            guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
+            guest(line, listOf("tap", "-t", "desktop", "--id", "mac_unified_action", "--role", "button"))
             accountAlert = answerUntilReady(line, timeoutMs) || accountAlert
             guest(line, listOf("tap", "-t", "desktop", "--text", "Back to Session", "--role", "button"))
         }
@@ -66,9 +66,9 @@ class GuestOnboarding(
         // took the alert off the screen, so the marker is what the iCloud commands refuse on until a new clone.
         if (accountAlert) Files.writeString(accountAttentionMarker(line), "connect alert during vm onboard\n")
         if (allowSchedules && !scheduleConsent(line)) {
-            guest(line, listOf("tap", "-t", "desktop", "--text", SCHEDULES, "--role", "button"))
-            guest(line, listOf("tap", "-t", "desktop", "--text", ALLOW_SCHEDULES, "--role", "button"))
-            guest(line, listOf("tap", "-t", "desktop", "--text", SESSION, "--role", "button"), failOnError = false)
+            guest(line, listOf("tap", "-t", "desktop", "--id", "nav_schedules", "--role", "button"))
+            guest(line, listOf("tap", "-t", "desktop", "--id", "action_allow_schedules_mac", "--role", "button"))
+            guest(line, listOf("tap", "-t", "desktop", "--id", "session_title", "--role", "button"), failOnError = false)
         }
         return buildJsonObject {
             put("line", line.id)
@@ -113,7 +113,7 @@ class GuestOnboarding(
             }
             // The window is read through accessibility, so a System Settings window in front of it cannot hide it.
             if (found(line, READY)) return accountAlert
-            if (found(line, TRY_AGAIN)) guest(line, listOf("tap", "-t", "desktop", "--text", TRY_AGAIN, "--role", "button"))
+            if (found(line, TRY_AGAIN)) guest(line, listOf("tap", "-t", "desktop", "--id", "mac_unified_action", "--role", "button"))
             Thread.sleep(POLL_MILLIS)
         }
         throw ControlException(ErrorCode.WAIT_TIMEOUT, "Setup did not report \"$READY\" within ${timeoutMs / MILLIS_PER_SECOND} s.")
@@ -174,10 +174,6 @@ class GuestOnboarding(
         const val SETUP_READY = "setup-ready"
         const val SETUP_DONE = "setup-done"
         const val NO_FINISH_SETUP = "no-finish-setup"
-        const val SET_UP = "Set up Posato"
-        const val SCHEDULES = "Schedules"
-        const val SESSION = "Session"
-        const val ALLOW_SCHEDULES = "Allow schedules to start on this Mac"
         const val READY = "This Mac is ready."
         const val TRY_AGAIN = "Try again"
         const val FINISH_SETUP = "Finish setup"

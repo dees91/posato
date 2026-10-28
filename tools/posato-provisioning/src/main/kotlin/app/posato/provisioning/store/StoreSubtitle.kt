@@ -29,6 +29,7 @@ object StoreSubtitle {
         appInfo: AppInfoClient,
         appId: String,
         subtitle: String,
+        locale: String = STORE_LOCALE,
     ): String {
         val info = appInfo.appInfos(appId).firstOrNull { resource -> resource.currentState in EDITABLE_VERSION_STATES }
             ?: throw ProvisioningException(
@@ -37,12 +38,18 @@ object StoreSubtitle {
                 "Earlier steps of this run may already be written; a rerun is safe. The subtitle changes with an App Store version " +
                     "that is still being prepared; `store status` shows the versions.",
             )
-        val localization = appInfo.localizations(info.id).firstOrNull { resource -> resource.attributes.locale == STORE_LOCALE }
-            ?: throw ProvisioningException(
+        val localization = appInfo.localizations(info.id).firstOrNull { resource -> resource.attributes.locale == locale }
+        if (localization == null && locale == STORE_LOCALE) {
+            throw ProvisioningException(
                 ErrorCode.LOCALIZATION_MISSING,
                 "The App Information has no $STORE_LOCALE localization.",
                 "Add the $STORE_LOCALE localization in App Store Connect.",
             )
+        }
+        if (localization == null) {
+            appInfo.createLocalization(info.id, locale, subtitle)
+            return "updated"
+        }
         if (localization.attributes.subtitle?.trim() == subtitle) return UNCHANGED
         appInfo.updateLocalization(localization.id, mapOf("subtitle" to subtitle))
         return "updated"

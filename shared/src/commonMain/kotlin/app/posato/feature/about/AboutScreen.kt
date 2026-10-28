@@ -32,6 +32,15 @@ import app.posato.core.designsystem.PosatoTheme
 import app.posato.feature.notifications.NotificationPermission
 import app.posato.feature.notifications.SessionNotifier
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.about_body
+import app.posato.generated.resources.about_licenses_detail
+import app.posato.generated.resources.about_open_source
+import app.posato.generated.resources.about_tagline
+import app.posato.generated.resources.about_title
+import app.posato.generated.resources.about_version
+import app.posato.generated.resources.about_version_unavailable
+import app.posato.generated.resources.licenses_title
+import app.posato.generated.resources.nav_back
 import app.posato.generated.resources.notification_section_title
 import app.posato.generated.resources.notification_setting
 import app.posato.generated.resources.notification_setting_denied
@@ -113,7 +122,7 @@ internal fun AboutScreen(
     // a root screen under its own large title.
     if (barBackLabel != null || barRoot) {
         PosatoBarScreen(
-            title = "About Posato",
+            title = stringResource(Res.string.about_title),
             modifier = modifier,
             largeTitle = barRoot,
             backLabel = barBackLabel,
@@ -124,8 +133,8 @@ internal fun AboutScreen(
         return
     }
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back") }
-        Text("About Posato", modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.nav_back)) }
+        Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
@@ -142,16 +151,18 @@ private fun AboutBody(
     updatesContent: (@Composable () -> Unit)?,
     notificationsContent: (@Composable () -> Unit)?,
 ) {
-    PosatoCaption(version?.let { "Version $it" } ?: "Version unavailable")
-    PosatoBody("A little space. For what matters.")
-    PosatoBody("Posato helps you step away from selected websites and apps for a while. A quiet pause between impulse and action.")
-    PosatoBody("Open source. No Posato account, analytics, or Posato-operated server.")
+    val formatted = stringResource(Res.string.about_version, version.orEmpty())
+    val unavailable = stringResource(Res.string.about_version_unavailable)
+    PosatoCaption(if (version == null) unavailable else formatted)
+    PosatoBody(stringResource(Res.string.about_tagline))
+    PosatoBody(stringResource(Res.string.about_body))
+    PosatoBody(stringResource(Res.string.about_open_source))
     notificationsContent?.invoke()
     updatesContent?.invoke()
     PosatoDisclosureRow(
         onClick = onOpenLicenses,
-        headlineContent = { Text("Licenses", style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = { PosatoCaption("License and third-party notices") },
+        headlineContent = { Text(stringResource(Res.string.licenses_title), style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = { PosatoCaption(stringResource(Res.string.about_licenses_detail)) },
     )
 }
 
@@ -170,7 +181,7 @@ private fun ResidenceSection(residence: ApplicationResidence) {
         ) {
             Text(stringResource(Res.string.residence_login), style = MaterialTheme.typography.bodyLarge)
         }
-        PosatoButton(onClick = residence::quit, style = PosatoButtonStyle.Quiet) {
+        PosatoButton(onClick = residence::quit, style = PosatoButtonStyle.Quiet, controlId = "residence_quit") {
             Text(stringResource(Res.string.residence_quit))
         }
     }
@@ -191,7 +202,7 @@ private fun UpdatesSection(
         ) {
             Text(stringResource(Res.string.update_automatic_checks), style = MaterialTheme.typography.bodyLarge)
         }
-        PosatoButton(onClick = onCheckNow, style = PosatoButtonStyle.Quiet, enabled = state.canCheckNow) {
+        PosatoButton(onClick = onCheckNow, style = PosatoButtonStyle.Quiet, enabled = state.canCheckNow, controlId = "update_check_now") {
             Text(stringResource(Res.string.update_check_now))
         }
     }

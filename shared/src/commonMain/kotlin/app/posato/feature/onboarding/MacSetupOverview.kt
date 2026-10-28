@@ -110,7 +110,11 @@ internal fun MacSetupAction(
 
             run?.running == true -> {
                 PosatoCaption(stringResource(run.nextStep()))
-                PosatoButton(onClick = {}, enabled = false) { Text(stringResource(Res.string.mac_unified_running)) }
+                PosatoButton(
+                    onClick = {},
+                    enabled = false,
+                    controlId = "mac_unified_running",
+                ) { Text(stringResource(Res.string.mac_unified_running)) }
             }
 
             else -> {
@@ -121,7 +125,7 @@ internal fun MacSetupAction(
                 if (blocked) {
                     PosatoCaption(stringResource(Res.string.mac_unified_session_blocks))
                 }
-                PosatoButton(onClick = onSetUp, style = style, enabled = !blocked) {
+                PosatoButton(onClick = onSetUp, style = style, enabled = !blocked, controlId = "mac_unified_action") {
                     Text(stringResource(if (interrupted) Res.string.mac_unified_try_again else Res.string.mac_unified_action))
                 }
             }
@@ -164,10 +168,19 @@ internal fun MacSetupOffer(
         Text(stringResource(Res.string.mac_unified_offer_title), style = MaterialTheme.typography.titleMedium)
         PosatoCaption(stringResource(Res.string.mac_unified_offer_body))
         Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-            PosatoButton(onClick = onSetUp, style = PosatoButtonStyle.Secondary, enabled = !presentation.sessionBlocked) {
+            PosatoButton(
+                onClick = onSetUp,
+                style = PosatoButtonStyle.Secondary,
+                enabled = !presentation.sessionBlocked,
+                controlId = "mac_unified_action",
+            ) {
                 Text(stringResource(Res.string.mac_unified_action))
             }
-            PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.onboarding_action_not_now)) }
+            PosatoButton(
+                onClick = onDismiss,
+                style = PosatoButtonStyle.Quiet,
+                controlId = "onboarding_action_not_now",
+            ) { Text(stringResource(Res.string.onboarding_action_not_now)) }
         }
     }
 }

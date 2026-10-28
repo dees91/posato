@@ -6,10 +6,12 @@ import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformDevice
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.application_mapping_access_restricted
@@ -23,8 +25,11 @@ import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_permission_android_action
 import app.posato.generated.resources.onboarding_permission_android_body
+import app.posato.generated.resources.onboarding_permission_android_body_full
 import app.posato.generated.resources.onboarding_permission_android_denied
 import app.posato.generated.resources.onboarding_permission_android_required
+import app.posato.generated.resources.onboarding_permission_body_ipad
+import app.posato.generated.resources.onboarding_permission_body_iphone
 import app.posato.generated.resources.onboarding_permission_check_failed
 import app.posato.generated.resources.onboarding_permission_control
 import app.posato.generated.resources.onboarding_permission_defer
@@ -33,6 +38,7 @@ import app.posato.generated.resources.onboarding_permission_ios_action
 import app.posato.generated.resources.onboarding_permission_ios_body
 import app.posato.generated.resources.onboarding_permission_linux_action
 import app.posato.generated.resources.onboarding_permission_linux_body
+import app.posato.generated.resources.onboarding_permission_linux_body_full
 import app.posato.generated.resources.onboarding_permission_linux_denied
 import app.posato.generated.resources.onboarding_permission_linux_required
 import app.posato.generated.resources.onboarding_permission_mac_action
@@ -45,6 +51,7 @@ import app.posato.generated.resources.onboarding_permission_title
 import app.posato.generated.resources.onboarding_permission_unavailable
 import app.posato.generated.resources.onboarding_permission_windows_action
 import app.posato.generated.resources.onboarding_permission_windows_body
+import app.posato.generated.resources.onboarding_permission_windows_body_full
 import app.posato.generated.resources.onboarding_permission_windows_denied
 import app.posato.generated.resources.onboarding_permission_windows_required
 import app.posato.generated.resources.onboarding_summary_access_off
@@ -114,5 +121,31 @@ internal fun OnboardingPermissionPlatform.accessCopy(): AccessCopy {
             Res.string.onboarding_permission_denied,
             Res.string.onboarding_permission_required,
         )
+    }
+}
+
+@Composable
+internal fun permissionDescription(platform: OnboardingPermissionPlatform): String {
+    val mac = stringResource(Res.string.mac_unified_body)
+    val linux = stringResource(Res.string.onboarding_permission_linux_body_full)
+    val windows = stringResource(Res.string.onboarding_permission_windows_body_full)
+    val android = stringResource(Res.string.onboarding_permission_android_body_full)
+    val iphone = stringResource(Res.string.onboarding_permission_body_iphone)
+    val ipad = stringResource(Res.string.onboarding_permission_body_ipad)
+    return when (platform) {
+        OnboardingPermissionPlatform.MAC -> mac
+        OnboardingPermissionPlatform.LINUX -> linux
+        OnboardingPermissionPlatform.WINDOWS -> windows
+        OnboardingPermissionPlatform.ANDROID -> android
+        OnboardingPermissionPlatform.IOS -> if (platformDevice() == PosatoDevice.IPad) ipad else iphone
+    }
+}
+
+internal fun OnboardingPermissionPlatform.accessActionControlId(): String {
+    return when (this) {
+        OnboardingPermissionPlatform.LINUX -> "onboarding_permission_linux_action"
+        OnboardingPermissionPlatform.WINDOWS -> "onboarding_permission_windows_action"
+        OnboardingPermissionPlatform.ANDROID -> "onboarding_permission_android_action"
+        OnboardingPermissionPlatform.IOS, OnboardingPermissionPlatform.MAC -> "onboarding_permission_ios_action"
     }
 }

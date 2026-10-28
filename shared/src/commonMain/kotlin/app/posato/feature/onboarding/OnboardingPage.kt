@@ -78,11 +78,13 @@ internal fun OnboardingPrimaryAction(
     layout: PosatoLayout,
     onClick: () -> Unit,
     enabled: Boolean = true,
+    controlId: String? = null,
 ) {
     PosatoButton(
         modifier = if (layout == PosatoLayout.Compact) Modifier.fillMaxWidth() else Modifier,
         onClick = onClick,
         enabled = enabled,
+        controlId = controlId,
     ) {
         Text(label)
     }

@@ -1,23 +1,31 @@
 import Foundation
 
 enum BlockedPage {
-  static func headline(sessionEndEpochMilliseconds: UInt64?) -> String {
-    guard let sessionEndEpochMilliseconds else {
-      return "This site is paused"
-    }
-    let date = Date(timeIntervalSince1970: TimeInterval(sessionEndEpochMilliseconds) / 1_000)
-    let formatter = DateFormatter()
-    formatter.locale = .current
-    formatter.dateStyle = .none
-    formatter.timeStyle = .short
-    return "This site is paused until \(formatter.string(from: date))"
+  static func headline(
+    sessionEndEpochMilliseconds: UInt64?,
+    locale: Locale = PauseCopy.locale()
+  ) -> String {
+    let base = PauseCopy.phrase("pause.site", locale: locale, fallback: "This site is paused")
+    guard let sessionEndEpochMilliseconds else { return base }
+    let time = shortTime(sessionEndEpochMilliseconds, locale: locale)
+    let template = PauseCopy.phrase(
+      "pause.site.until", locale: locale, fallback: "This site is paused until %@")
+    return String(format: template, locale: locale, time)
   }
 
-  static func html(sessionEndEpochMilliseconds: UInt64?) -> Data {
-    let title = escapedText(headline(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds))
+  static func html(
+    sessionEndEpochMilliseconds: UInt64?,
+    locale: Locale = PauseCopy.locale()
+  ) -> Data {
+    let title = escapedText(
+      headline(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds, locale: locale))
+    let language = PauseCopy.language(locale: locale)
+    let returnText = escapedText(
+      PauseCopy.phrase(
+        "pause.return", locale: locale, fallback: "Return to Posato to change this session."))
     let body = """
       <!doctype html>
-      <html lang="en">
+      <html lang="\(language)">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,15 +36,24 @@ enum BlockedPage {
         </style>
       </head>
       <body>
-        <main>
+        <main \(PauseCopy.pageMarker)>
           <div class="identity"><span class="mark" aria-hidden="true"></span>posato</div>
           <h1>\(title)</h1>
-          <p>Return to Posato to change this session.</p>
+          <p>\(returnText)</p>
         </main>
       </body>
       </html>
       """
     return Data(body.utf8)
+  }
+
+  private static func shortTime(_ epochMilliseconds: UInt64, locale: Locale) -> String {
+    let date = Date(timeIntervalSince1970: TimeInterval(epochMilliseconds) / 1_000)
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.dateStyle = .none
+    formatter.timeStyle = .short
+    return formatter.string(from: date)
   }
 
   private static let styles = """

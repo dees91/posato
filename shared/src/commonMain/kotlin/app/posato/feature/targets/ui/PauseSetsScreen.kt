@@ -17,6 +17,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,9 +58,55 @@ import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.PosatoTypography
 import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.transfer.ui.PauseSetTransferDialogs
 import app.posato.feature.transfer.ui.PauseSetTransferUiState
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_cancel
+import app.posato.generated.resources.action_delete
+import app.posato.generated.resources.action_duplicate
+import app.posato.generated.resources.action_export_pause_sets
+import app.posato.generated.resources.action_import_ellipsis
+import app.posato.generated.resources.action_more_pause_sets
+import app.posato.generated.resources.action_new_set
+import app.posato.generated.resources.action_open
+import app.posato.generated.resources.action_reload_short
+import app.posato.generated.resources.action_rename
+import app.posato.generated.resources.action_save_short
+import app.posato.generated.resources.count_websites
+import app.posato.generated.resources.nav_pause_sets
+import app.posato.generated.resources.pause_set_apps_count_computer
+import app.posato.generated.resources.pause_set_apps_count_ipad
+import app.posato.generated.resources.pause_set_apps_count_iphone
+import app.posato.generated.resources.pause_set_apps_count_mac
+import app.posato.generated.resources.pause_set_apps_count_phone
+import app.posato.generated.resources.pause_set_apps_none_computer
+import app.posato.generated.resources.pause_set_apps_none_ipad
+import app.posato.generated.resources.pause_set_apps_none_iphone
+import app.posato.generated.resources.pause_set_apps_none_mac
+import app.posato.generated.resources.pause_set_apps_none_phone
+import app.posato.generated.resources.pause_sets_default
+import app.posato.generated.resources.pause_sets_default_count
+import app.posato.generated.resources.pause_sets_default_set
+import app.posato.generated.resources.pause_sets_delete_after
+import app.posato.generated.resources.pause_sets_delete_apps
+import app.posato.generated.resources.pause_sets_delete_named
+import app.posato.generated.resources.pause_sets_delete_schedules
+import app.posato.generated.resources.pause_sets_label
+import app.posato.generated.resources.pause_sets_limit
+import app.posato.generated.resources.pause_sets_load_failed
+import app.posato.generated.resources.pause_sets_move_delete
+import app.posato.generated.resources.pause_sets_name_empty
+import app.posato.generated.resources.pause_sets_name_label
+import app.posato.generated.resources.pause_sets_name_long
+import app.posato.generated.resources.pause_sets_save_failed
+import app.posato.generated.resources.pause_sets_update
+import app.posato.generated.resources.pause_sets_used_by
+import app.posato.generated.resources.presence_first_close_ok
+import app.posato.generated.resources.schedule_set_over_limit
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /** The list's title and New set: a large title with a bar button on iOS, a section header elsewhere. */
 @Composable
@@ -75,15 +122,15 @@ private fun PauseSetsChrome(
     val content = remember { movableContentOf { latestBody() } }
     if (platformUsesCupertinoChrome) {
         PosatoBarScreen(
-            title = "Pause sets",
+            title = stringResource(Res.string.nav_pause_sets),
             modifier = modifier,
             largeTitle = true,
             contentPadding = PaddingValues(horizontal = PosatoBarInset),
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     more()
-                    PosatoBarButton(onClick = onCreate, enabled = canCreate) {
-                        Text("New set", style = PosatoTypography.BarAction)
+                    PosatoBarButton(onClick = onCreate, enabled = canCreate, controlId = "action_new_set") {
+                        Text(stringResource(Res.string.action_new_set), style = PosatoTypography.BarAction)
                     }
                 }
             },
@@ -91,10 +138,12 @@ private fun PauseSetsChrome(
     } else {
         Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
             PosatoSectionHeader(
-                titleContent = { Text("Pause sets", style = MaterialTheme.typography.headlineSmall) },
+                titleContent = { Text(stringResource(Res.string.nav_pause_sets), style = MaterialTheme.typography.headlineSmall) },
                 actionContent = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                        PosatoButton(onClick = onCreate, enabled = canCreate) { Text("New set") }
+                        PosatoButton(onClick = onCreate, enabled = canCreate, controlId = "action_new_set") {
+                            Text(stringResource(Res.string.action_new_set))
+                        }
                         more()
                     }
                 },
@@ -107,7 +156,6 @@ private fun PauseSetsChrome(
 @Composable
 internal fun PauseSetsScreen(
     state: PauseSetsUiState,
-    deviceNoun: String,
     onOpen: (PauseSetId) -> Unit,
     onCreate: (String) -> Unit,
     onRename: (PauseSetId, String) -> Unit,
@@ -121,17 +169,16 @@ internal fun PauseSetsScreen(
     var dialog by remember { mutableStateOf<PauseSetDialog?>(null) }
     val body: @Composable () -> Unit = {
         if (state.hasLoaded && !state.canCreate && !state.isSaving) {
-            PosatoCaption("You can have up to 10 pause sets.")
+            PosatoCaption(stringResource(Res.string.pause_sets_limit))
         }
         if (state.showsUpdateNotice) {
-            PosatoNotice { Text("Update Posato on your other devices to keep them in sync.") }
+            PosatoNotice { Text(stringResource(Res.string.pause_sets_update)) }
         }
         state.failure?.let { failure -> PauseSetsFailureNotice(failure, onRetry) }
         PosatoItemList {
             state.rows.forEach { row ->
                 PauseSetListRow(
                     row = row,
-                    deviceNoun = deviceNoun,
                     onOpen = { onOpen(row.id) },
                     onDialog = { dialog = it },
                     onMakeDefault = onMakeDefault,
@@ -144,14 +191,14 @@ internal fun PauseSetsScreen(
     transfer?.let { PauseSetTransferDialogs(it) }
     when (val current = dialog) {
         PauseSetDialog.Create -> {
-            PauseSetNameDialog("New set", "", onDismiss = { dialog = null }) { name ->
+            PauseSetNameDialog(stringResource(Res.string.action_new_set), "", onDismiss = { dialog = null }) { name ->
                 dialog = null
                 onCreate(name)
             }
         }
 
         is PauseSetDialog.Rename -> {
-            PauseSetNameDialog("Rename", current.row.name, onDismiss = { dialog = null }) { name ->
+            PauseSetNameDialog(stringResource(Res.string.action_rename), current.row.name, onDismiss = { dialog = null }) { name ->
                 dialog = null
                 onRename(current.row.id, name)
             }
@@ -172,10 +219,20 @@ internal fun PauseSetsScreen(
 @Composable
 private fun PauseSetsMoreMenu(transfer: PauseSetTransferUiState) {
     PosatoItemMenu(
-        "More actions for pause sets",
+        stringResource(Res.string.action_more_pause_sets),
         listOf(
-            PosatoMenuItem("Export pause sets…", transfer::startExport, PosatoMenuSymbol.Export),
-            PosatoMenuItem("Import…", transfer::startImport, PosatoMenuSymbol.Import),
+            PosatoMenuItem(
+                stringResource(Res.string.action_export_pause_sets),
+                transfer::startExport,
+                PosatoMenuSymbol.Export,
+                controlId = "action_export_pause_sets",
+            ),
+            PosatoMenuItem(
+                stringResource(Res.string.action_import_ellipsis),
+                transfer::startImport,
+                PosatoMenuSymbol.Import,
+                controlId = "action_import_ellipsis",
+            ),
         ),
     )
 }
@@ -186,11 +243,15 @@ private fun PauseSetsFailureNotice(
     onRetry: () -> Unit,
 ) {
     val message = when (failure) {
-        PauseSetsFailure.LOAD_FAILED -> "Pause sets could not be loaded."
-        PauseSetsFailure.SAVE_FAILED -> "The change could not be saved. Nothing was changed."
-        PauseSetsFailure.IN_USE -> "You can delete this set after the pause ends."
+        PauseSetsFailure.LOAD_FAILED -> stringResource(Res.string.pause_sets_load_failed)
+        PauseSetsFailure.SAVE_FAILED -> stringResource(Res.string.pause_sets_save_failed)
+        PauseSetsFailure.IN_USE -> stringResource(Res.string.pause_sets_delete_after)
     }
-    PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry, style = PosatoButtonStyle.Quiet) { Text("Reload") } }) {
+    PosatoNotice(tone = PosatoTone.Critical, actionContent = {
+        PosatoButton(onRetry, style = PosatoButtonStyle.Quiet, controlId = "action_reload_short") {
+            Text(stringResource(Res.string.action_reload_short))
+        }
+    }) {
         Text(message)
     }
 }
@@ -198,7 +259,6 @@ private fun PauseSetsFailureNotice(
 @Composable
 private fun PauseSetListRow(
     row: PauseSetRow,
-    deviceNoun: String,
     onOpen: () -> Unit,
     onDialog: (PauseSetDialog) -> Unit,
     onMakeDefault: (PauseSetId) -> Unit,
@@ -206,14 +266,22 @@ private fun PauseSetListRow(
 ) {
     if (platformUsesCupertinoChrome) {
         val swipeActions = buildList {
-            add(PosatoSwipeAction("Rename", { onDialog(PauseSetDialog.Rename(row)) }))
-            if (onDuplicate != null && !row.refused) add(PosatoSwipeAction("Duplicate", { onDuplicate(row.id) }))
-            if (!row.isDefault) add(PosatoSwipeAction("Delete", { onDialog(PauseSetDialog.Delete(row)) }, destructive = true))
+            add(PosatoSwipeAction(stringResource(Res.string.action_rename), { onDialog(PauseSetDialog.Rename(row)) }, controlId = "action_rename"))
+            if (onDuplicate != null && !row.refused) {
+                add(PosatoSwipeAction(stringResource(Res.string.action_duplicate), { onDuplicate(row.id) }, controlId = "action_duplicate"))
+            }
+            if (!row.isDefault) {
+                add(
+                    PosatoSwipeAction(stringResource(Res.string.action_delete), {
+                        onDialog(PauseSetDialog.Delete(row))
+                    }, destructive = true, controlId = "action_delete"),
+                )
+            }
         }
-        PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, deviceNoun, onOpen, rowActions) }
+        PosatoSwipeRow(swipeActions) { rowActions -> PauseSetRowContent(row, onOpen, rowActions) }
     } else {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PauseSetRowContent(row, deviceNoun, onOpen, emptyList(), Modifier.weight(1f))
+            PauseSetRowContent(row, onOpen, emptyList(), Modifier.weight(1f))
             PauseSetMenu(row, onDialog, onMakeDefault, onDuplicate)
         }
     }
@@ -222,40 +290,57 @@ private fun PauseSetListRow(
 @Composable
 private fun PauseSetRowContent(
     row: PauseSetRow,
-    deviceNoun: String,
     onOpen: () -> Unit,
     rowActions: List<CustomAccessibilityAction>,
     modifier: Modifier = Modifier,
 ) {
     PosatoDisclosureRow(
         onClick = onOpen,
-        onClickLabel = "Open",
+        onClickLabel = stringResource(Res.string.action_open),
         modifier = modifier,
         customActions = rowActions,
         headlineContent = {
+            val defaultLabel = stringResource(Res.string.pause_sets_default)
+            val defaultSet = stringResource(Res.string.pause_sets_default_set)
             Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
                 Text(row.name, style = MaterialTheme.typography.titleMedium)
                 if (row.isDefault) {
-                    PosatoBadge("Default", Modifier.semantics { contentDescription = "Default set" })
+                    PosatoBadge(defaultLabel, Modifier.semantics { contentDescription = defaultSet })
                 }
             }
         },
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                PosatoCaption(row.summary(deviceNoun))
-                if (row.schedules.isNotEmpty()) PosatoCaption("Used by ${row.schedules.joinToString(", ")}")
-                if (row.refused) PosatoCaption("This set is over the limit of 10. Delete a set to use it.")
+                PosatoCaption(row.summary())
+                if (row.schedules.isNotEmpty()) PosatoCaption(stringResource(Res.string.pause_sets_used_by, row.schedules.joinToString(", ")))
+                if (row.refused) PosatoCaption(stringResource(Res.string.schedule_set_over_limit))
             }
         },
     )
 }
 
-private fun PauseSetRow.summary(deviceNoun: String): String {
-    val websites = if (websiteCount == 1) "1 website" else "$websiteCount websites"
+@Composable
+private fun PauseSetRow.summary(): String {
+    val websites = pluralStringResource(Res.plurals.count_websites, websiteCount, websiteCount)
+    val none = stringResourceForDevice(
+        Res.string.pause_set_apps_none_mac,
+        Res.string.pause_set_apps_none_iphone,
+        Res.string.pause_set_apps_none_ipad,
+        Res.string.pause_set_apps_none_computer,
+        Res.string.pause_set_apps_none_phone,
+    )
+    val counted = stringResourceForDevice(
+        Res.string.pause_set_apps_count_mac,
+        Res.string.pause_set_apps_count_iphone,
+        Res.string.pause_set_apps_count_ipad,
+        Res.string.pause_set_apps_count_computer,
+        Res.string.pause_set_apps_count_phone,
+        applicationCount ?: 0,
+    )
     val apps = when (applicationCount) {
         null -> null
-        0 -> "Apps on this $deviceNoun: none chosen"
-        else -> "Apps on this $deviceNoun: $applicationCount"
+        0 -> none
+        else -> counted
     }
     return listOfNotNull(websites, apps).joinToString(" · ")
 }
@@ -273,22 +358,22 @@ internal fun PauseSetNameDialog(
     PosatoAlert(
         title = title,
         message = when (failure) {
-            PauseSetNameFailure.EMPTY -> "Enter a name."
-            PauseSetNameFailure.TOO_LONG -> "Use a shorter name."
+            PauseSetNameFailure.EMPTY -> stringResource(Res.string.pause_sets_name_empty)
+            PauseSetNameFailure.TOO_LONG -> stringResource(Res.string.pause_sets_name_long)
             null -> null
         },
-        field = PosatoAlertField(draft, "Name"),
+        field = PosatoAlertField(draft, stringResource(Res.string.pause_sets_name_label)),
         attempt = attempt,
         onDismiss = onDismiss,
         actions = listOf(
-            PosatoAlertAction("Cancel", { onDismiss() }, PosatoAlertRole.Cancel),
-            PosatoAlertAction("Save", { text ->
+            PosatoAlertAction(stringResource(Res.string.action_cancel), { onDismiss() }, PosatoAlertRole.Cancel, controlId = "action_cancel"),
+            PosatoAlertAction(stringResource(Res.string.action_save_short), { text ->
                 val (name, problem) = parsePauseSetName(text)
                 draft = text
                 failure = problem
                 attempt++
                 name?.let(onSave)
-            }),
+            }, controlId = "action_save_short"),
         ),
     )
 }
@@ -301,22 +386,32 @@ internal fun PauseSetDeleteDialog(
     onDelete: (PauseSetId?) -> Unit,
 ) {
     val targets = rows.filter { other -> other.id != row.id && !other.refused }
-    val cancel = PosatoAlertAction("Cancel", { onDismiss() }, PosatoAlertRole.Cancel)
+    val cancel = PosatoAlertAction(stringResource(Res.string.action_cancel), { onDismiss() }, PosatoAlertRole.Cancel, controlId = "action_cancel")
+    val ok = stringResource(Res.string.presence_first_close_ok)
+    val delete = stringResource(Res.string.action_delete)
+    val inUse = stringResource(Res.string.pause_sets_delete_after)
+    val appsDeleted = stringResource(Res.string.pause_sets_delete_apps)
+    val schedulesUseIt = stringResource(Res.string.pause_sets_delete_schedules, row.schedules.joinToString(", "), row.name)
+    val title = stringResource(Res.string.pause_sets_delete_named, row.name)
     val message: String
     val actions: List<PosatoAlertAction>
     if (row.inUse) {
-        message = "You can delete this set after the pause ends."
-        actions = listOf(PosatoAlertAction("OK", { onDismiss() }, PosatoAlertRole.Cancel))
+        message = inUse
+        actions = listOf(PosatoAlertAction(ok, { onDismiss() }, PosatoAlertRole.Cancel, controlId = "presence_first_close_ok"))
     } else if (row.schedules.isEmpty()) {
-        message = "Its websites and this device's app choices for it are deleted."
-        actions = listOf(cancel, PosatoAlertAction("Delete", { onDelete(null) }, PosatoAlertRole.Destructive))
+        message = appsDeleted
+        actions = listOf(cancel, PosatoAlertAction(delete, { onDelete(null) }, PosatoAlertRole.Destructive, controlId = "action_delete"))
     } else {
-        message = "These schedules use it: ${row.schedules.joinToString(", ")}. Choose a set for them, and ${row.name} is deleted."
+        message = schedulesUseIt
         actions = targets.map { target ->
-            PosatoAlertAction("Move to ${target.name} and delete", { onDelete(target.id) }, PosatoAlertRole.Destructive)
+            key(target.id) {
+                PosatoAlertAction(stringResource(Res.string.pause_sets_move_delete, target.name), {
+                    onDelete(target.id)
+                }, PosatoAlertRole.Destructive)
+            }
         } + cancel
     }
-    PosatoAlert(title = "Delete ${row.name}?", message = message, actions = actions, onDismiss = onDismiss)
+    PosatoAlert(title = title, message = message, actions = actions, onDismiss = onDismiss)
 }
 
 /** The set choice Session and the schedule editor offer: every live set with its count, the default marked. */
@@ -328,13 +423,19 @@ internal fun PauseSetPickerRow(
     placeholder: String,
 ) {
     PosatoPickerRow(
-        label = "Pause set",
+        label = stringResource(Res.string.pause_sets_label),
         options = rows.map { row ->
-            val count = if (row.websiteCount == 1) "1 website" else "${row.websiteCount} websites"
-            PosatoPickerOption(row.name, if (row.isDefault) "Default · $count" else count)
+            key(row.id) { pauseSetOption(row) }
         },
         selected = rows.indexOfFirst { row -> row.id == selected }.takeIf { it >= 0 },
         onSelect = { index -> onChoose(rows[index].id) },
         placeholder = placeholder,
     )
+}
+
+@Composable
+private fun pauseSetOption(row: PauseSetRow): PosatoPickerOption {
+    val count = pluralStringResource(Res.plurals.count_websites, row.websiteCount, row.websiteCount)
+    val marked = stringResource(Res.string.pause_sets_default_count, count)
+    return PosatoPickerOption(row.name, if (row.isDefault) marked else count)
 }

@@ -56,6 +56,10 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.nav_back
+import app.posato.generated.resources.nav_back_to
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * A screen in the iOS manner: a navigation bar with the back chevron, and, for a top-level screen, a large title
@@ -217,12 +221,15 @@ private fun NavigationBackButton(
     onBack: () -> Unit,
     enabled: Boolean,
 ) {
-    val label = backLabel ?: "Back"
+    val backWord = stringResource(Res.string.nav_back)
+    val backTo = stringResource(Res.string.nav_back_to, backLabel ?: backWord)
+    val label = backLabel ?: backWord
+    val description = if (backLabel == null) label else backTo
     PosatoBarButton(
         onClick = onBack,
         enabled = enabled,
         modifier = Modifier.clearAndSetSemantics {
-            contentDescription = if (backLabel == null) label else "Back to $label"
+            contentDescription = description
             role = Role.Button
             if (enabled) {
                 onClick {
@@ -255,13 +262,15 @@ internal fun PosatoBarButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    controlId: String? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val tagged = controlId?.let { modifier.controlId(it) } ?: modifier
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val keyboardFocused by interaction.collectIsKeyboardFocusedAsState()
     Row(
-        modifier = modifier.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
+        modifier = tagged.heightIn(min = PosatoSize.Control).widthIn(min = PosatoSize.Control)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .alpha(
                 when {

@@ -27,6 +27,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformDevice
 import app.posato.core.designsystem.platformUsesCupertinoChrome
+import app.posato.core.designsystem.stringResourceForDevice
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
@@ -42,9 +43,48 @@ import app.posato.feature.sync.ui.SyncBootstrapSection
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_add_websites_or_apps
+import app.posato.generated.resources.action_change_duration
+import app.posato.generated.resources.action_choose_paused_items
+import app.posato.generated.resources.action_end_session_early
+import app.posato.generated.resources.action_finish_setup
+import app.posato.generated.resources.action_resume_restrictions
+import app.posato.generated.resources.action_retry
+import app.posato.generated.resources.action_start_a_session
+import app.posato.generated.resources.action_start_this_pause
 import app.posato.generated.resources.mac_setup_unavailable
+import app.posato.generated.resources.schedule_set_label
+import app.posato.generated.resources.session_action_no_items_computer
+import app.posato.generated.resources.session_action_no_items_ipad
+import app.posato.generated.resources.session_action_no_items_iphone
+import app.posato.generated.resources.session_action_no_items_mac
+import app.posato.generated.resources.session_action_no_items_phone
+import app.posato.generated.resources.session_applying
 import app.posato.generated.resources.session_ended_early
 import app.posato.generated.resources.session_ended_expired
+import app.posato.generated.resources.session_frozen_counts
+import app.posato.generated.resources.session_restrictions_active
+import app.posato.generated.resources.session_restrictions_attention
+import app.posato.generated.resources.session_restrictions_attention_again
+import app.posato.generated.resources.session_restrictions_clear
+import app.posato.generated.resources.session_restrictions_not_active_mac
+import app.posato.generated.resources.session_review_eyebrow
+import app.posato.generated.resources.session_review_heading
+import app.posato.generated.resources.session_review_heading_blocked
+import app.posato.generated.resources.session_review_lead
+import app.posato.generated.resources.session_saved_on_device
+import app.posato.generated.resources.session_setup_incomplete
+import app.posato.generated.resources.session_short_pause_computer
+import app.posato.generated.resources.session_short_pause_ipad
+import app.posato.generated.resources.session_short_pause_iphone
+import app.posato.generated.resources.session_short_pause_mac
+import app.posato.generated.resources.session_short_pause_phone
+import app.posato.generated.resources.session_showing_set
+import app.posato.generated.resources.session_start_applies
+import app.posato.generated.resources.session_starting_ellipsis
+import app.posato.generated.resources.session_stay_in_control
+import app.posato.generated.resources.session_until
+import app.posato.generated.resources.session_until_end_of_day
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -81,9 +121,16 @@ internal fun SessionOverviewContent(
         if (scheduled != null && scheduledRestricts) {
             ScheduledPauseRunning(scheduled, onEndSchedule)
         } else if (active) {
-            PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
-            state.setName?.let { name -> PosatoCaption("Set: $name") }
-            PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
+            PosatoEndTime(
+                stringResource(Res.string.session_until, state.formattedActiveEnd.orEmpty()),
+                supportingText = state.remainingMillis?.let {
+                    remainingText(it)
+                },
+            )
+            state.setName?.let { name -> PosatoCaption(stringResource(Res.string.schedule_set_label, name)) }
+            PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd(), controlId = "action_end_session_early") {
+                Text(stringResource(Res.string.action_end_session_early))
+            }
         } else {
             SessionEndedCaption(state)
             scheduled?.let { ScheduledPauseAttention(it, macSetup, macActions, onSetup) }
@@ -96,7 +143,7 @@ internal fun SessionOverviewContent(
             FrozenSetCaption(state)
             SessionSelectionSummary(state, deviceLabel, onEditItems, onShowItems)
         }
-        PosatoCaption("Saved on this device. Restrictions apply only during a pause you start or a schedule you set.")
+        PosatoCaption(stringResource(Res.string.session_saved_on_device))
         SyncSection(syncState)
         macSetup?.let { presentation ->
             MacSetupSection(
@@ -142,12 +189,16 @@ private fun SessionStartAction(
     onSetup: () -> Unit,
     onItems: () -> Unit,
 ) {
-    PosatoButton(if (needsMacSetup || hasItems) onSetup else onItems, enabled = state.canEnterSetup()) {
+    PosatoButton(
+        if (needsMacSetup || hasItems) onSetup else onItems,
+        enabled = state.canEnterSetup(),
+        controlId = "action_start_a_session",
+    ) {
         Text(
             when {
-                needsMacSetup -> "Finish setup"
-                hasItems -> "Start a session"
-                else -> "Choose paused items"
+                needsMacSetup -> stringResource(Res.string.action_finish_setup)
+                hasItems -> stringResource(Res.string.action_start_a_session)
+                else -> stringResource(Res.string.action_choose_paused_items)
             },
         )
     }
@@ -163,7 +214,7 @@ private fun MacSetupNotice(
     if (macSetup == null) return
     if (!active && macSetup.needsSetup() && enforcement is EnforcementState.Inactive) {
         PosatoNotice(tone = PosatoTone.Caution) {
-            Text("Setup incomplete. Posato is not blocking websites or apps on this Mac. Finish setup to start a pause.")
+            Text(stringResource(Res.string.session_setup_incomplete))
         }
         return
     }
@@ -187,25 +238,37 @@ private fun EnforcementNotice(
     state: SessionUiState,
     onRetryEnforcement: () -> Unit,
 ) {
+    val shortPause = stringResourceForDevice(
+        Res.string.session_short_pause_mac,
+        Res.string.session_short_pause_iphone,
+        Res.string.session_short_pause_ipad,
+        Res.string.session_short_pause_computer,
+        Res.string.session_short_pause_phone,
+    )
+    val restrictionsActive = stringResource(Res.string.session_restrictions_active)
     if (state.enforcementRecovering && state.status is LocalSessionStatus.Active && state.enforcement is EnforcementState.ActionRequired) {
-        PosatoCaption("Applying restrictions again…")
+        PosatoCaption(stringResource(Res.string.session_applying))
         return
     }
     when (val enforcement = state.enforcement) {
         is EnforcementState.Active -> {
-            if (enforcement.belowPlatformMinimum) {
-                PosatoCaption("Short pause — ${platformDevice().noun} restricts it only while the app stays open.")
-            } else {
-                PosatoCaption("Restrictions active.")
-            }
+            PosatoCaption(if (enforcement.belowPlatformMinimum) shortPause else restrictionsActive)
         }
 
         is EnforcementState.ActionRequired -> {
             PosatoNotice(
                 tone = PosatoTone.Critical,
                 actionContent = {
-                    PosatoButton(onRetryEnforcement, enabled = !state.enforcementBusy) {
-                        Text(if (enforcement.kind == EnforcementActionKind.RESUME_REQUIRED) "Resume restrictions" else "Retry")
+                    PosatoButton(onRetryEnforcement, enabled = !state.enforcementBusy, controlId = "action_retry") {
+                        Text(
+                            if (enforcement.kind ==
+                                EnforcementActionKind.RESUME_REQUIRED
+                            ) {
+                                stringResource(Res.string.action_resume_restrictions)
+                            } else {
+                                stringResource(Res.string.action_retry)
+                            },
+                        )
                     }
                 },
             ) {
@@ -217,22 +280,23 @@ private fun EnforcementNotice(
     }
 }
 
+@Composable
 private fun EnforcementState.ActionRequired.attentionMessage(): String {
     return when (kind) {
         EnforcementActionKind.APPLY_FAILED -> {
             if (repeatsSystemPrompt) {
-                "Restrictions need attention — approving again applies them."
+                stringResource(Res.string.session_restrictions_attention_again)
             } else {
-                "Restrictions need attention."
+                stringResource(Res.string.session_restrictions_attention)
             }
         }
 
         EnforcementActionKind.CLEAR_FAILED -> {
-            "Restrictions may still apply — retry clearing them."
+            stringResource(Res.string.session_restrictions_clear)
         }
 
         EnforcementActionKind.RESUME_REQUIRED -> {
-            "Restrictions not active on this Mac."
+            stringResource(Res.string.session_restrictions_not_active_mac)
         }
     }
 }
@@ -244,9 +308,9 @@ private fun FrozenSetCaption(state: SessionUiState) {
     }
     PosatoCaption(
         if (state.showsPersistedStartSet()) {
-            "These counts stay as they were at session start. Added items pause now. Removed items stay paused until this session ends."
+            stringResource(Res.string.session_frozen_counts)
         } else {
-            "Showing the items in this pause's set."
+            stringResource(Res.string.session_showing_set)
         },
     )
 }
@@ -276,33 +340,57 @@ internal fun SessionReviewContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
-            title = if (state.review.actionRequired?.blocksStart == true) "A small step first." else "Your pause, your choice.",
-            eyebrow = "ONE LAST LOOK".takeUnless { platformUsesCupertinoChrome },
-            description = "Review your saved choices and the ending time for this session.",
+            title = if (state.review.actionRequired?.blocksStart ==
+                true
+            ) {
+                stringResource(Res.string.session_review_heading_blocked)
+            } else {
+                stringResource(Res.string.session_review_heading)
+            },
+            eyebrow = stringResource(Res.string.session_review_eyebrow).takeUnless { platformUsesCupertinoChrome },
+            description = stringResource(Res.string.session_review_lead),
             layout = layout,
         )
+        val untilEndOfDay = stringResource(Res.string.session_until_end_of_day)
+        val length = sessionLengthText(state.durationMinutes)
+        val stayInControl = stringResource(Res.string.session_stay_in_control, if (state.untilEndOfDay) untilEndOfDay else length)
         if (!state.isReviewReady) {
             PosatoActivityIndicator()
         } else {
             PosatoEndTime(
-                "Until ${state.formattedReviewEnd.orEmpty()}",
+                stringResource(Res.string.session_until, state.formattedReviewEnd.orEmpty()),
                 Modifier.fillMaxWidth(),
-                "${if (state.untilEndOfDay) END_OF_DAY_LABEL else sessionLengthText(state.durationMinutes)} · you stay in control",
+                stayInControl,
             )
-            state.setName?.let { name -> Text("Set: $name", style = MaterialTheme.typography.titleMedium) }
+            state.setName?.let { name -> Text(stringResource(Res.string.schedule_set_label, name), style = MaterialTheme.typography.titleMedium) }
             state.review.actionRequired?.let { required -> SessionReadinessNotice(required, onRetry) }
             PosatoActionRow {
                 if (state.review.actionRequired == SessionActionRequired.NO_EFFECTIVE_ITEMS) {
-                    PosatoButton(onItems) { Text("Add websites or apps") }
+                    PosatoButton(onItems, controlId = "action_add_websites_or_apps") { Text(stringResource(Res.string.action_add_websites_or_apps)) }
                 } else {
-                    PosatoButton(onStart, enabled = state.canStart()) { Text(if (state.isStarting) "Starting…" else "Start this pause") }
+                    PosatoButton(onStart, enabled = state.canStart(), controlId = "action_start_this_pause") {
+                        Text(
+                            if (state.isStarting) {
+                                stringResource(
+                                    Res.string.session_starting_ellipsis,
+                                )
+                            } else {
+                                stringResource(Res.string.action_start_this_pause)
+                            },
+                        )
+                    }
                 }
                 if (!platformUsesCupertinoChrome) {
-                    PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
+                    PosatoButton(
+                        onChangeDuration,
+                        style = PosatoButtonStyle.Quiet,
+                        enabled = !state.isStarting,
+                        controlId = "action_change_duration",
+                    ) { Text(stringResource(Res.string.action_change_duration)) }
                 }
             }
             SessionSelectionSummary(state, deviceLabel, onEditItems, onShowItems)
-            PosatoCaption("This starts the session and applies the chosen restrictions on this device.")
+            PosatoCaption(stringResource(Res.string.session_start_applies))
         }
     }
 }
@@ -312,14 +400,21 @@ private fun SessionReadinessNotice(
     required: SessionActionRequired,
     onRetry: () -> Unit,
 ) {
-    val noun = remember { platformDevice().noun }
+    val noItems = stringResourceForDevice(
+        Res.string.session_action_no_items_mac,
+        Res.string.session_action_no_items_iphone,
+        Res.string.session_action_no_items_ipad,
+        Res.string.session_action_no_items_computer,
+        Res.string.session_action_no_items_phone,
+    )
+    val reported = stringResource(required.actionMessage())
     PosatoNotice(tone = PosatoTone.Caution, actionContent = {
         when (required) {
             SessionActionRequired.MAPPINGS_LOAD_FAILED -> {
-                PosatoButton(onRetry) { Text("Retry") }
+                PosatoButton(onRetry, controlId = "action_retry") { Text(stringResource(Res.string.action_retry)) }
             }
 
             SessionActionRequired.NO_EFFECTIVE_ITEMS -> {}
         }
-    }) { Text(stringResource(required.actionMessage(), noun)) }
+    }) { Text(if (required == SessionActionRequired.NO_EFFECTIVE_ITEMS) noItems else reported) }
 }

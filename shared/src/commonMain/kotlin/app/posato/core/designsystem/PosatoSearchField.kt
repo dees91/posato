@@ -15,6 +15,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.search_clear
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun PosatoSearchField(
@@ -33,7 +36,7 @@ internal fun PosatoSearchField(
         trailingContent = {
             if (state.text.isNotEmpty()) {
                 PosatoTextButton(onClick = { state.edit { replace(0, length, "") } }) {
-                    PosatoIcon(PosatoIcons.Close, "Clear search")
+                    PosatoIcon(PosatoIcons.Close, stringResource(Res.string.search_clear))
                 }
             }
         },
