@@ -56,7 +56,8 @@ complete, the checks name each missing file and list entry.
        `macosHelper/Resources/HelperInfo.plist`;
      - `knownRegions` in `iosApp/iosApp.xcodeproj/project.pbxproj`, together
        with a file reference for `<code>.lproj/InfoPlist.strings` in the
-       `InfoPlist.strings` variant group (copy the `pl` entries);
+       `InfoPlist.strings` variant group (copy the `pl` entries, changing only
+       the id, `name`, and `path`; the file type stays `text.plist.strings`);
      - `androidApp/src/main/res/xml/locales_config.xml`.
 3. **Website.** Under `website/src/pages/<code>/`, add one page for each
    English `.astro` page. Add `_PRIVACY.md` for the privacy page. Add
