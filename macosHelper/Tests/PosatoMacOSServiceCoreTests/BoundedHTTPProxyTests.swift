@@ -132,9 +132,11 @@ import Testing
 
 @Test func givenBlockedPageCopyWhenEndTimeIsAbsentThenHeadlineHasNoUntilClause() throws {
   let locale = Locale(identifier: "en_US")
-  #expect(BlockedPage.headline(sessionEndEpochMilliseconds: nil, locale: locale) == "This site is paused")
+  #expect(
+    BlockedPage.headline(sessionEndEpochMilliseconds: nil, locale: locale) == "This site is paused")
   let html = try #require(
-    String(bytes: BlockedPage.html(sessionEndEpochMilliseconds: nil, locale: locale), encoding: .utf8)
+    String(
+      bytes: BlockedPage.html(sessionEndEpochMilliseconds: nil, locale: locale), encoding: .utf8)
   )
   #expect(html.contains("This site is paused"))
   #expect(html.contains(PauseCopy.pageMarker))

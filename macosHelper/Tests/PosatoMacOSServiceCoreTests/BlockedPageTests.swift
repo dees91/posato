@@ -43,7 +43,8 @@ func givenFixedPageWhenEncodedThenLengthMatchesAndFitsPageSizeBudget(end: UInt64
     BlockedPage.headline(sessionEndEpochMilliseconds: end, locale: locale)
       == "This site is paused until \(expected)")
   let html = try #require(
-    String(data: BlockedPage.html(sessionEndEpochMilliseconds: end, locale: locale), encoding: .utf8))
+    String(
+      data: BlockedPage.html(sessionEndEpochMilliseconds: end, locale: locale), encoding: .utf8))
   #expect(html.contains(expected))
   #expect(html.contains(PauseCopy.pageMarker))
 }

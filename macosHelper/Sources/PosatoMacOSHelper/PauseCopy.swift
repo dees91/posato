@@ -37,7 +37,8 @@ enum PauseCopy {
 
   private static func localizationBundle(locale: Locale) -> Bundle? {
     let directory = code(locale) + ".lproj"
-    guard let url = Bundle.main.resourceURL?.appendingPathComponent(directory, isDirectory: true) else {
+    guard let url = Bundle.main.resourceURL?.appendingPathComponent(directory, isDirectory: true)
+    else {
       return nil
     }
     return Bundle(url: url)

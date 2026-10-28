@@ -17,7 +17,8 @@ enum BlockedPage {
     sessionEndEpochMilliseconds: UInt64?,
     locale: Locale = PauseCopy.locale()
   ) -> Data {
-    let title = escapedText(headline(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds, locale: locale))
+    let title = escapedText(
+      headline(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds, locale: locale))
     let language = PauseCopy.language(locale: locale)
     let returnText = escapedText(
       PauseCopy.phrase(
