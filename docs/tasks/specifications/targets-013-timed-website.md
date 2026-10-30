@@ -36,5 +36,5 @@ A website in a pause set can carry a window rule, for example open for 5 minutes
 
 ## Decisions or blockers
 
-- Product decisions for the maintainer: whether the rule belongs to the website inside a set or to the set, the rhythm model (every N minutes from the pause start or at fixed clock times), the bounds of N and of the window, and whether the window opens by itself or on a press on the pause page.
+- `user-confirmed` (2026-10-30, questionnaire): the rule belongs to a website inside a set, so the same website in another set may have none; windows sit at fixed clock times aligned to the hour (every 30 minutes, 1 hour, or 2 hours, starting at :00), not counted from the pause start; the window lasts 5, 10, or 15 minutes, fixed choices only; the website opens by itself in its window, and the pause page says when it opens next.
 - iPhone constraint: Device Activity intervals have a 15-minute minimum (`observed`, `SuspendedExpiryActivity.minimumInterval`), and the shield cannot run a timer of its own; the decision must name what the iPhone can honor.
