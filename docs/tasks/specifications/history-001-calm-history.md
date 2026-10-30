@@ -30,4 +30,5 @@ A recorded product and privacy decision for a quiet history of pauses kept as pl
 
 ## Decisions or blockers
 
-- Product decisions for the maintainer: device-only or synchronized, what counts as a day kept as planned, and whether the history is visible by default.
+- `user-confirmed` (2026-10-30, questionnaire): the history stays on each device and is derived from the session and occurrence facts it already has, with no new synchronized record and no ADR 0006 amendment; a day is kept as planned when every scheduled occurrence that day ran to its end without **End early**, a `SCHEDULE-007` break does not spoil it, skipped occurrences do not count, and a day without a plan is neutral rather than empty; the history is visible by default and can be hidden and cleared; it sits in Schedules below the list, with no new tab.
+- Still open for the proposal: the visual form within the `DESIGN.md` brand rule.
