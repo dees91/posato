@@ -37,4 +37,5 @@ During a running scheduled occurrence, a person can take a break: restrictions a
 ## Decisions or blockers
 
 - `user-confirmed` (2026-10-30, questionnaire): one break per occurrence; fixed lengths of 5, 10, and 15 minutes; a running break can be ended early and restrictions return at once, with no friction; starting a break asks the same confirmation as **End early** today, and stronger friction stays with `SESSION-005` for both.
+- `user-confirmed` (2026-10-30, questionnaire): with several scheduled occurrences running, all of them break together. One press authors one break per running occurrence with the same start and length; the action is unavailable while any running occurrence has used its break or a manual pause restricts; an occurrence that starts during the break restricts its own items at once.
 - iPhone constraint: Device Activity intervals have a 15-minute minimum (`observed`, `SuspendedExpiryActivity.minimumInterval`); a shorter break needs a re-apply mechanism that the plan proves on the device.
