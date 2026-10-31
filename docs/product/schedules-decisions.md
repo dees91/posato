@@ -75,6 +75,183 @@ provenance label.
 - **A scheduled occurrence during a manual session** joins it. Restrictions
   continue until the later end.
 
+### Breaks (`SCHEDULE-007`)
+
+A break releases a running scheduled pause for a few minutes on every device
+of the workspace. Each device then applies the restrictions again on its
+own, without a press, until the occurrence ends.
+
+The decisions and rules below are `user-confirmed` (2026-10-30): the
+maintainer took the decisions and accepted the rules, with their three gate
+choices, at the `SCHEDULE-007` gate. The task brief is
+[`schedule-007-break.md`](../tasks/specifications/schedule-007-break.md).
+
+#### Decisions
+
+- **One break per occurrence.** An occurrence `(schedule identifier, local
+  start date)` has at most one break.
+- **Fixed lengths.** 5, 10, or 15 minutes.
+- **End break.** A running break can be ended early. Restrictions return at
+  once, with no friction.
+- **Friction.** Starting a break asks for the same confirmation as **End
+  early** does today. Stronger friction for both stays with `SESSION-005`.
+- **Overlap (option A).** When several scheduled occurrences are running,
+  all of them break together. One press authors one break per running
+  occurrence, all with the same start and length. The action is unavailable
+  while any running occurrence has used its break, or while a manual pause
+  restricts. An occurrence that starts during the break restricts its own
+  items at once.
+
+#### Rules
+
+- **Scheduled occurrences only.** A manual session has no break; it keeps
+  **End early**.
+- **Manual part.** For the availability check, a manual part is any active
+  manual session of the workspace, started here or received, whether or not
+  this device enforces it now. While one is active, the action is
+  unavailable and says why.
+- **Manual session during a break.** A manual session that becomes active
+  during a break (started on a device that offered Start, for example in
+  another time zone) is never released by the break. On every device except
+  the Mac it restricts its own items at once, like an occurrence that starts
+  during the break. On the Mac, a received session is handled as when an
+  occurrence ends while it is active: the Mac shows **Resume restrictions**
+  for it at once.
+- **Never ends or shortens an occurrence.** A break suspends enforcement of
+  the occurrence; it does not change when the occurrence starts or ends.
+  An occurrence that reaches its planned end during a break ends there, and
+  the rest of the break is not taken.
+- **End early and Skip stay final.** **End early** during a break ends every
+  running part as today, and nothing is applied again at the break's end.
+  **Skip next session** is unchanged; a skipped occurrence has no break.
+- **Option A, in detail.**
+  - Available only when every running scheduled occurrence on this device
+    has an unused break, and no manual part is active.
+  - One press authors one break per running occurrence, with one start (the
+    device's clock at the press) and one length.
+  - During the break, items needed only by the broken occurrences are
+    released. An occurrence that starts during the break restricts its own
+    items at once (the union rule of
+    [pause set rules](pause-sets-decisions.md) "Overlap"); an item that
+    both the broken and the new occurrence name stays restricted.
+  - While a part is on a break, the items it holds still count toward the
+    device's limits as occupied, though they are not applied. A part that
+    starts or grows during the break, and a manual session that becomes
+    active during it, admit only what fits beside them, so the returning
+    part always fits.
+  - After the break ends, the action stays unavailable with "A break was
+    already taken in this scheduled pause" while any occurrence that used
+    its break still runs, even if a newer occurrence has an unused one.
+  - `inferred`: presses on two devices before either sees the other's can
+    leave different windows for different occurrences (each occurrence keeps
+    its earliest start). The union rule keeps this safe: no item is released
+    outside its own occurrence's window.
+- **Availability on a device that cannot enforce now.** The action is
+  offered whenever a scheduled occurrence runs and the rules above allow it,
+  also while this device shows "Setup required on this Mac", is waiting,
+  retrying, or has nothing to pause, because the break applies to the whole
+  workspace.
+- **Late receipt.** A device that receives a break late releases only the
+  part that remains, measured on its own clock. A break whose end has
+  passed when it arrives releases nothing there.
+- **Offline.** A break that starts and ends while a device is offline is
+  never taken there; that device stays restricted throughout. A closed
+  iPhone does not receive a break or an **End break** until Posato opens;
+  until then it keeps its previous state and returns at the break's own
+  end.
+- **No leftover.** A break belongs to one occurrence. When that occurrence
+  ends, for any reason, its break releases and blocks nothing, on any later
+  date or for any later occurrence of the same schedule.
+- **Each device's own clock.** Like schedules, a break is evaluated against
+  each device's own clock. Clock skew between devices can shift when a
+  device releases, never how long: no device releases for longer than the
+  chosen length, nor outside its own running occurrence. The exceptions are
+  a late return on a closed iPhone, and on an Android device without exact
+  alarms, which can arrive after the break's end (below); they still never
+  release outside the occurrence. A device whose clock is more than 2
+  minutes behind the break's start, when it first sees the break, does not
+  release for it at all. A clock set back into a window whose end this
+  device already observed does not release again
+  ([ADR 0006](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-007-schedule-break-amendment),
+  clock invariant).
+- **Time zones.** `inferred`: a device applies a break only to its own
+  occurrence with the same local date, as for skip and end; when that is not
+  running there, it releases nothing.
+- **Edits.** An edit that stops the occurrence ends its break with it. An
+  edit that later runs the same `(schedule, date)` again finds the break
+  already used.
+- **Unlink.** Unlinking or removing the workspace during a break ends a
+  break received from another device on this device at once; a break taken
+  on this device keeps running here until its end.
+- **Concurrent breaks.** If two devices take a break for the same occurrence
+  before they see each other's, the one with the earlier start wins on every
+  device; ties fall to the operation total order.
+- **Local persistence.** A device remembers its own break and **End break**
+  across restart and relaunch before the first sync, in the same local
+  transaction as the operation it authors, like skip and end. An unlinked
+  device takes breaks locally the same way, and publishes its breaks from
+  yesterday on when it first links, as it does for skips and ends.
+- **Notices.** No notice at a break's start or end. The scheduled pause's
+  start and end notices are unchanged: the notifier keeps planning from the
+  occurrence's end, and an occurrence that ends during a break still posts
+  **Pause over**, also on iPhone.
+
+#### Occurrence lifetime versus enforcement
+
+A break suspends **enforcement** only. Everything that belongs to the
+occurrence's **lifetime** stays as if it were restricting:
+
+- the occurrence key, its pin, the notices recorded on the pin, and the
+  observed natural end;
+- the local retention record of items handed to the host for that part
+  (ADR 0006 `SCHEDULE-003` amendment), on iPhone the held and start records
+  the monitor keeps: a break deletes none of them, so items retained for the
+  part return at the break's end;
+- the room those items take in the device's limits (above);
+- the running pause that the schedule host publishes: Session still shows
+  the scheduled pause, with the break line, and **End early** still ends it;
+- notice ownership: the end notice stays planned for the combined pause's
+  latest end; no end notice fires at a break's start, and no start notice
+  fires at its end;
+- the Mac menu still names the running scheduled pause.
+
+What the break changes is only the set of items handed to the enforcement
+host while it runs: the union of the running parts that are not on a break.
+
+#### Per platform
+
+- **Mac.** The resident evaluator also evaluates at the exact break end,
+  besides the minute tick, wake, launch, and clock change. Release uses the
+  existing clear of the schedule claim; the return uses the existing
+  automatic Apply through the standing grant under the automatic-start
+  consent ([ADR 0004](../decisions/0004-macos-helper-ownership-and-lifecycle.md),
+  [ADR 0009](../decisions/0009-macos-menu-bar-presence.md)). If the grant or
+  consent is missing at the break end, the Mac shows "Setup required on this
+  Mac" as for a scheduled start and never prompts. While every part is on a
+  break, nothing is requested from the helper.
+- **iPhone and iPad.** The app arms one shared Device Activity before it
+  releases anything; the monitor extension applies the shields again at the
+  break's end while the app is closed (a `hypothesis` until proven on the
+  test iPhone by `SCHEDULE-007`). Such callbacks can arrive minutes late:
+  `observed` about 4 minutes once (`IOS-002`), and the platform promises no
+  time. So with the app closed, the return can come minutes after the
+  break's end; verification accepts up to 5 minutes and records each
+  measured delay. If the iPhone cannot arm the return, it takes no break and
+  says so; the press then takes no break anywhere.
+- **Android, Linux, Windows.** The existing schedule host releases and
+  applies again through its existing occurrence path, with a wake at the
+  break end (Android: an exact alarm when permitted). Restrictions return at
+  the break end, or within a minute of the device next waking.
+
+#### Older releases
+
+A device on 1.5 or earlier rejects the break operations as invalid, like the
+pause set operations in 1.3, and stops receiving until it updates; it keeps
+restricting, and still publishes its own changes. Release 1.6 notes say:
+"Update Posato on your other devices to keep them in sync." Downgrading an
+iPhone to 1.5 after a break is not supported: a 1.5 extension cannot read
+the 1.6 table and clears the schedule shields at its next end callback.
+
 ### Paused items
 
 - A scheduled occurrence restricts the current paused items at each moment,
@@ -140,6 +317,16 @@ Four additive format-1 operation kinds, from the accepted ADR 0006 amendment:
 | `9` `schedule-remove` | 16-byte schedule id | Permanently removes that id, whatever the order. |
 | `10` `schedule-skip` | 16-byte schedule id, `u16` year, `u8` month, `u8` day | Grow-only set of skipped occurrences. |
 | `11` `schedule-occurrence-end` | same as kind 10 | Grow-only set of ended occurrences. |
+
+`SCHEDULE-007` adds two mandatory kinds for [breaks](#breaks-schedule-007),
+from the accepted
+[ADR 0006 amendment](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-007-schedule-break-amendment)
+(`user-confirmed` 2026-10-30):
+
+| Kind | Payload | Reduction |
+| --- | --- | --- |
+| `20` `schedule-break` | 16-byte schedule id, `u16` year, `u8` month, `u8` day, `i64` start epoch ms, `u8` minutes (5, 10, or 15) | Per `(schedule, date)` the earliest start wins, ties by total order. |
+| `21` `schedule-break-end` | same as kind 10 | Grow-only set: any copy ends that occurrence's break. |
 
 - The effective set holds at most 10 live schedules. A put beyond the cap
   gets a truthful `schedule-capacity` outcome, like the domain cap.
