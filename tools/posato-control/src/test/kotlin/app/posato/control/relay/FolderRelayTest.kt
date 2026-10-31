@@ -1,9 +1,11 @@
 package app.posato.control.relay
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -42,6 +44,61 @@ class FolderRelayTest {
 
         assertContentEquals(bytes, other.files[path])
         assertContentEquals(bytes, author.files[path])
+    }
+
+    @Test
+    fun `given a synchronized file that turns dataless on a Mac guest when a round runs then no device loses it`() {
+        val root = Files.createTempDirectory("relay-dataless")
+        val evicted = root.resolve("evicted")
+        val tools = macTools(root, evicted)
+        val guestFolder = Files.createDirectories(root.resolve("guest"))
+        val peerFolder = Files.createDirectories(root.resolve("peer"))
+        val hub = root.resolve("hub")
+        val guest = ShellEndpoint("primary", "'$guestFolder'", localShell(tools))
+        val peer = ShellEndpoint("linux", "'$peerFolder'", localShell(null))
+        Files.createDirectories(guestFolder.resolve(path).parent)
+        Files.write(guestFolder.resolve(path), bytes)
+        val relay = FolderRelay(hub, listOf(guest, peer))
+        relay.round()
+
+        Files.createFile(evicted)
+        relay.round()
+
+        assertContentEquals(bytes, Files.readAllBytes(hub.resolve(path)))
+        assertContentEquals(bytes, Files.readAllBytes(peerFolder.resolve(path)))
+        assertTrue(Files.exists(guestFolder.resolve(path)))
+        assertEquals(0, relay.deletions)
+    }
+
+    /** Stands in for the guest's `uname`, `stat` and `brctl`: every file reads as dataless once [evicted] exists, and a download stays pending. */
+    private fun macTools(
+        root: Path,
+        evicted: Path,
+    ): Path {
+        val tools = Files.createDirectories(root.resolve("tools"))
+        val scripts = mapOf(
+            "uname" to "echo Darwin",
+            "stat" to "if [ -f '$evicted' ]; then echo dataless; else echo -; fi",
+            "brctl" to "exit 0",
+        )
+        scripts.forEach { (name, body) ->
+            val tool = tools.resolve(name)
+            Files.writeString(tool, "#!/bin/sh\n$body\n")
+            tool.toFile().setExecutable(true)
+        }
+        return tools
+    }
+
+    private fun localShell(tools: Path?): DeviceShell {
+        return DeviceShell { script, stdin ->
+            val builder = ProcessBuilder("/bin/sh", "-c", script).redirectError(ProcessBuilder.Redirect.INHERIT)
+            if (tools != null) builder.environment()["PATH"] = "$tools:" + builder.environment()["PATH"]
+            val process = builder.start()
+            process.outputStream.use { input -> stdin?.let { input.write(it.encodeToByteArray()) } }
+            val output = process.inputStream.readAllBytes().decodeToString()
+            check(process.waitFor() == 0) { "Shell failed: $script" }
+            output
+        }
     }
 
     private fun unreadableAuthor(): MemoryEndpoint {
