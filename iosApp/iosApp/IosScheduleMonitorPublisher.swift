@@ -4,32 +4,6 @@ import Foundation
 import ManagedSettings
 import PosatoShared
 
-/// Narrow seam over Device Activity monitoring for scheduled pauses.
-protocol ScheduleActivityCenter {
-    var monitoredActivities: [DeviceActivityName] { get }
-    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule?
-    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws
-    func stopMonitoringSchedules(_ activities: [DeviceActivityName])
-}
-
-extension DeviceActivityCenter: ScheduleActivityCenter {
-    var monitoredActivities: [DeviceActivityName] {
-        activities
-    }
-
-    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule? {
-        schedule(for: activity)
-    }
-
-    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
-        try startMonitoring(activity, during: schedule)
-    }
-
-    func stopMonitoringSchedules(_ activities: [DeviceActivityName]) {
-        stopMonitoring(activities)
-    }
-}
-
 /// Writes the schedule table the monitor extension reads, keeps one repeating
 /// activity per enabled plan registered, and announces a running start the
 /// extension has not recorded, such as one an edit began inside its interval.
@@ -180,6 +154,14 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
                 body: schedule.startBody
             )
         }
+    }
+
+    func armBreak(deadlineEpochSeconds: Int64) -> Bool {
+        false
+    }
+
+    func coveredBreaks() -> [String] {
+        []
     }
 
     func startedOccurrences() -> [String] {

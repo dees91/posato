@@ -48,6 +48,7 @@ final class FakeScheduleCenter: ScheduleActivityCenter {
     var installed: [DeviceActivityName: DeviceActivitySchedule] = [:]
     var starts: [DeviceActivityName] = []
     var stops: [[DeviceActivityName]] = []
+    var refusing: Set<DeviceActivityName> = []
 
     var monitoredActivities: [DeviceActivityName] {
         Array(installed.keys)
@@ -58,6 +59,9 @@ final class FakeScheduleCenter: ScheduleActivityCenter {
     }
 
     func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
+        if refusing.contains(activity) {
+            throw CocoaError(.featureUnsupported)
+        }
         starts.append(activity)
         installed[activity] = schedule
     }
@@ -76,8 +80,8 @@ final class ScheduleMonitorTests: XCTestCase {
         return calendar
     }
 
-    private func local(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int = 0) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))!
+    private func local(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int = 0, _ second: Int = 0) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute, second: second))!
     }
 
     private func schedule(
@@ -415,11 +419,11 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: hosts("sched", 1 ... 5)))
     }
 
-    func testAnUnreadableVersionTwoTableClearsAndNeverFallsBackToVersionOne() throws {
+    func testAnUnreadableNewestTableClearsAndNeverFallsBackToAnOlderOne() throws {
         let files = try isolatedFiles()
         try files.writeLegacyTable(legacyFile())
         try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: []))
-        try Data("not json".utf8).write(to: files.directoryURL.appendingPathComponent("table-v2.json"))
+        try Data("not json".utf8).write(to: files.directoryURL.appendingPathComponent("table-v3.json"))
         try files.writeLegacyTable(legacyFile())
         let store = FakeScheduleShieldStore()
         store.applySchedule(domains: PosatoWebDomains.domains(from: ["example.com"]), applications: [])
@@ -933,6 +937,333 @@ final class ScheduleMonitorTests: XCTestCase {
 
             XCTAssertEqual(calendar.date(from: cap.intervalEnd), setup.bCap, "bFirst \(bFirst)")
         }
+    }
+
+    // MARK: - Breaks (version 3)
+
+    /// 2026-09-28 (a Monday): Focus runs 09:00-10:00 on the work set; a 5-minute break from 09:10 to 09:15.
+    private func breakFile(
+        _ schedules: [ScheduleMonitorFile.Schedule]? = nil,
+        sets: [(id: String, domains: [String])]? = nil,
+        breaks: [ScheduleMonitorFile.Break]? = nil,
+        notices: Bool = false
+    ) -> ScheduleMonitorFile {
+        var table = setsFile(
+            schedules ?? [plan(focusId, set: workSet)],
+            sets: sets ?? [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
+        )
+        table = ScheduleMonitorFile(
+            version: table.version, schedules: table.schedules, running: table.running, domains: table.domains,
+            applicationTokens: table.applicationTokens,
+            notices: ScheduleMonitorFile.Notices(enabled: notices, endTitle: "Pause over", endBody: ""),
+            sets: table.sets, breaks: breaks ?? [focusBreak()]
+        )
+        return table
+    }
+
+    private func focusBreak(
+        id: String? = nil,
+        from start: Date? = nil,
+        minutes: Int = 5,
+        over: Bool = false
+    ) -> ScheduleMonitorFile.Break {
+        let begin = start ?? local(2026, 9, 28, 9, 10)
+        return ScheduleMonitorFile.Break(
+            id: id ?? focusId, date: "2026-09-28",
+            startEpoch: Int64(begin.timeIntervalSince1970),
+            endEpoch: Int64(begin.timeIntervalSince1970) + Int64(minutes * 60), over: over
+        )
+    }
+
+    private func armedCenter(deadline: Date?) -> FakeScheduleCenter {
+        let center = FakeScheduleCenter()
+        if let deadline {
+            center.installed[ScheduleMonitor.breakActivity] = ScheduleBreakActivity.schedule(deadline: deadline, calendar: calendar)
+        }
+        return center
+    }
+
+    private func breakCallback(
+        files: ScheduleMonitorFileStore?,
+        store: FakeScheduleShieldStore,
+        center: FakeScheduleCenter,
+        at time: Date,
+        session: FakeScheduleShieldStore = FakeScheduleShieldStore()
+    ) {
+        ScheduleMonitorEvents.handleBreakCallback(
+            store: store, sessionStore: session, files: files, center: center, now: { time }, calendar: calendar
+        )
+    }
+
+    private func scheduleStart(
+        _ scheduleId: String,
+        files: ScheduleMonitorFileStore,
+        store: FakeScheduleShieldStore,
+        center: FakeScheduleCenter,
+        at time: Date
+    ) {
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: scheduleId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), center: center, now: { time }, calendar: calendar
+        )
+    }
+
+    func testTableVersionThreeKeepsBreaksAndAVersionTwoTableReadsAsNoBreak() throws {
+        let files = try isolatedFiles()
+        var older = setsFile([plan(focusId, set: workSet)], sets: [(workSet, ["work.example"])])
+        older = ScheduleMonitorFile(
+            version: ScheduleMonitor.setsFileVersion, schedules: older.schedules, running: [], domains: older.domains,
+            applicationTokens: [], notices: older.notices, sets: older.sets
+        )
+        try files.writeSetsTable(older)
+        XCTAssertEqual(files.readTable()?.version, 2)
+        XCTAssertNil(files.readTable()?.breaks)
+
+        let table = breakFile()
+        try files.writeTable(table)
+        XCTAssertEqual(files.readTable(), table)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: files.directoryURL.appendingPathComponent("table-v2.json").path))
+    }
+
+    func testTheBreakActivityIsRoutedApartAndItsCallbackNeverClears() throws {
+        XCTAssertTrue(ScheduleMonitor.isScheduleActivity(ScheduleMonitor.breakActivity))
+        XCTAssertNil(ScheduleMonitor.scheduleId(of: ScheduleMonitor.breakActivity))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example"]), applications: [])
+
+        breakCallback(files: try isolatedFiles(), store: store, center: armedCenter(deadline: nil), at: local(2026, 9, 28, 9, 15))
+        breakCallback(files: nil, store: store, center: armedCenter(deadline: nil), at: local(2026, 9, 28, 9, 15))
+
+        XCTAssertEqual(store.clears, 0)
+        XCTAssertNotNil(store.applied)
+    }
+
+    func testTheNearestOpenDeadlineIsChosenAndOnlyARegistrationInsideAWindowCoversIt() {
+        let early = focusBreak()
+        let late = focusBreak(id: eveningId, from: local(2026, 9, 28, 9, 12), minutes: 10)
+        let ended = focusBreak(id: "000000000000400080000000000000a3", from: local(2026, 9, 28, 9, 0), over: true)
+        let table = breakFile(breaks: [late, early, ended])
+
+        XCTAssertEqual(ScheduleBreakWindows.nearestDeadline(table, over: [], at: local(2026, 9, 28, 9, 11)), local(2026, 9, 28, 9, 15))
+        XCTAssertEqual(ScheduleBreakWindows.nearestDeadline(table, over: [early.key], at: local(2026, 9, 28, 9, 11)), local(2026, 9, 28, 9, 22))
+        XCTAssertNil(ScheduleBreakWindows.nearestDeadline(table, over: [], at: local(2026, 9, 28, 9, 22)))
+
+        XCTAssertTrue(ScheduleBreakWindows.covered(early, armed: local(2026, 9, 28, 9, 15)))
+        XCTAssertTrue(ScheduleBreakWindows.covered(late, armed: local(2026, 9, 28, 9, 15)))
+        // A registration left from an earlier break, or none, covers nothing.
+        XCTAssertFalse(ScheduleBreakWindows.covered(early, armed: local(2026, 9, 28, 9, 5)))
+        XCTAssertFalse(ScheduleBreakWindows.covered(early, armed: nil))
+    }
+
+    func testTheShapeRoundTripsItsDeadline() {
+        let deadline = local(2026, 9, 28, 9, 15)
+        let schedule = ScheduleBreakActivity.schedule(deadline: deadline, calendar: calendar)
+        XCTAssertFalse(schedule.repeats)
+        XCTAssertEqual(ScheduleBreakActivity.deadline(of: schedule, calendar: calendar), deadline)
+    }
+
+    func testTheAppReleasesACoveredBreakAndKeepsWhatThePartHolds() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: nil)
+        let time = local(2026, 9, 28, 9, 11)
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            scheduleStore: { store }, sessionStore: { FakeScheduleShieldStore() }, calendar: { self.calendar }, now: { time }
+        )
+        let occurrence = ScheduleMonitorOccurrence(scheduleId: focusId, date: "2026-09-28", start: local(2026, 9, 28, 9), end: local(2026, 9, 28, 10))
+        try files.recordHeld(occurrence, domains: ["work.example"], tokens: [])
+        try files.recordStarted(occurrence, at: local(2026, 9, 28, 9))
+        try files.writeTable(breakFile())
+
+        XCTAssertTrue(publisher.armBreak(deadlineEpochSeconds: Int64(local(2026, 9, 28, 9, 15).timeIntervalSince1970)))
+        XCTAssertEqual(try applySchedule(publisher), .nothingToEnforce)
+        XCTAssertNil(store.applied)
+        XCTAssertEqual(publisher.coveredBreaks(), ["\(focusId):2026-09-28"])
+        XCTAssertEqual(files.held(scheduleId: focusId, date: "2026-09-28")?.domains, ["work.example"])
+        XCTAssertTrue(files.hasStarted(scheduleId: focusId, date: "2026-09-28"))
+        XCTAssertEqual(files.heldDuringBreak(at: time).domains, ["work.example"])
+    }
+
+    func testAnUncoveredWindowReleasesNothing() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile())
+        let store = FakeScheduleShieldStore()
+
+        scheduleStart(focusId, files: files, store: store, center: armedCenter(deadline: nil), at: local(2026, 9, 28, 9, 11))
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+    }
+
+    func testArmingThatFailsTakesNoBreak() throws {
+        let files = try isolatedFiles()
+        let center = FakeScheduleCenter()
+        center.refusing = [ScheduleMonitor.breakActivity]
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            calendar: { self.calendar }, now: { self.local(2026, 9, 28, 9, 10) }
+        )
+
+        XCTAssertFalse(publisher.armBreak(deadlineEpochSeconds: Int64(local(2026, 9, 28, 9, 15).timeIntervalSince1970)))
+        XCTAssertEqual(publisher.coveredBreaks(), [])
+    }
+
+    func testTheBreakCallbackBeforeTheDeadlineChangesNothingAndAtTheDeadlineReappliesOnce() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile())
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+
+        // The start callback of an interval that began in the past arrives right after registration.
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 10, 30))
+        XCTAssertNil(store.applied)
+        XCTAssertEqual(center.starts, [])
+        XCTAssertEqual(center.stops, [])
+
+        // Up to a minute early counts as the deadline.
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 14, 30))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+        XCTAssertEqual(files.breaksOver(), ["\(focusId):2026-09-28"])
+
+        // A clock set back afterwards never releases that break again.
+        store.clearSchedule()
+        scheduleStart(focusId, files: files, store: store, center: center, at: local(2026, 9, 28, 9, 11))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+    }
+
+    func testAnotherScheduleStartingDuringABreakRestrictsOnlyItsOwnItems() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile([plan(focusId, set: workSet), plan(eveningId, set: leisureSet, start: 9 * 60 + 12, end: 11 * 60)]))
+        let store = FakeScheduleShieldStore()
+
+        scheduleStart(eveningId, files: files, store: store, center: armedCenter(deadline: local(2026, 9, 28, 9, 15)), at: local(2026, 9, 28, 9, 12))
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["leisure.example"]))
+    }
+
+    func testAnOverlapEndingDuringABreakKeepsTheBrokenPartReleased() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile(
+            [plan(focusId, set: workSet, end: 11 * 60), plan(eveningId, set: leisureSet, start: 8 * 60, end: 9 * 60 + 12)],
+            breaks: [focusBreak(), focusBreak(id: eveningId)]
+        ))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["leisure.example"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: eveningId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), center: armedCenter(deadline: local(2026, 9, 28, 9, 15)),
+            now: { self.local(2026, 9, 28, 9, 12) }, calendar: calendar
+        )
+
+        XCTAssertNil(store.applied)
+    }
+
+    func testARestartCallbackDuringABreakDoesNotReapply() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile())
+        let store = FakeScheduleShieldStore()
+
+        scheduleStart(focusId, files: files, store: store, center: armedCenter(deadline: local(2026, 9, 28, 9, 15)), at: local(2026, 9, 28, 9, 12))
+
+        XCTAssertNil(store.applied)
+    }
+
+    func testTheDeadlineCallbackChainsToTheNextWindowAndAStartRightAfterKeepsItReleased() throws {
+        let files = try isolatedFiles()
+        let later = focusBreak(id: eveningId, from: local(2026, 9, 28, 9, 12), minutes: 10)
+        try files.writeTable(breakFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet)],
+            breaks: [focusBreak(), later]
+        ))
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 15))
+
+        XCTAssertEqual(ScheduleBreakActivity.armed(center: center, calendar: calendar), local(2026, 9, 28, 9, 22))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+        // The new registration's immediate start callback.
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 15, 5))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+        XCTAssertEqual(center.starts, [ScheduleMonitor.breakActivity])
+    }
+
+    func testAFailedChainReappliesEveryPendingBreakAndNoLaterCallbackReleasesThem() throws {
+        let files = try isolatedFiles()
+        let later = focusBreak(id: eveningId, from: local(2026, 9, 28, 9, 12), minutes: 10)
+        try files.writeTable(breakFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet)],
+            breaks: [focusBreak(), later]
+        ))
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+        center.refusing = [ScheduleMonitor.breakActivity]
+
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 15))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example", "leisure.example"]))
+        XCTAssertEqual(files.breaksOver(), ["\(focusId):2026-09-28", "\(eveningId):2026-09-28"])
+
+        store.clearSchedule()
+        scheduleStart(focusId, files: files, store: store, center: center, at: local(2026, 9, 28, 9, 16))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example", "leisure.example"]))
+    }
+
+    func testAnOccurrenceEndingBeforeTheDeadlineIsNotReshieldedAndSaysPauseOver() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile(
+            [plan(focusId, set: workSet, end: 9 * 60 + 13)], breaks: [focusBreak()], notices: true
+        ))
+        let store = FakeScheduleShieldStore()
+        let poster = FakeSchedulePoster()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: poster, center: center, now: { self.local(2026, 9, 28, 9, 13) }, calendar: calendar
+        )
+        XCTAssertEqual(poster.posted, [ScheduleMonitor.endNoticeIdentifier])
+
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 15, 30))
+        XCTAssertNil(store.applied)
+    }
+
+    func testAPartStartingDuringABreakAdmitsOnlyWhatFitsBesideTheBrokenPartsHold() throws {
+        let files = try isolatedFiles()
+        let held = hosts("held", 1 ... 20)
+        try files.writeTable(breakFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, start: 9 * 60 + 12, end: 11 * 60)],
+            sets: [(workSet, held), (leisureSet, hosts("new", 1 ... 10))]
+        ))
+        try files.recordHeld(
+            ScheduleMonitorOccurrence(scheduleId: focusId, date: "2026-09-28", start: local(2026, 9, 28, 9), end: local(2026, 9, 28, 10)),
+            domains: held, tokens: []
+        )
+        let store = FakeScheduleShieldStore()
+
+        scheduleStart(eveningId, files: files, store: store, center: armedCenter(deadline: local(2026, 9, 28, 9, 15)), at: local(2026, 9, 28, 9, 12))
+
+        // Twenty held hosts cost 40 of the 50 web domains, so the new part takes five, and the return always fits.
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: hosts("new", 1 ... 5)))
+        XCTAssertEqual(files.held(scheduleId: focusId, date: "2026-09-28")?.domains, held)
+    }
+
+    func testReconcileArmsTheNearestOpenDeadlineLeavesItAloneAndStopsItWhenNoBreakRemains() throws {
+        let center = FakeScheduleCenter()
+        var time = local(2026, 9, 28, 9, 11)
+        let publisher = IosScheduleMonitorPublisher(
+            files: try isolatedFiles(), center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            calendar: { self.calendar }, now: { time }
+        )
+
+        publisher.reconcile(breakFile())
+        publisher.reconcile(breakFile())
+        XCTAssertEqual(ScheduleBreakActivity.armed(center: center, calendar: calendar), local(2026, 9, 28, 9, 15))
+        XCTAssertEqual(center.starts.filter { $0 == ScheduleMonitor.breakActivity }.count, 1)
+
+        time = local(2026, 9, 28, 9, 13)
+        publisher.reconcile(breakFile(breaks: [focusBreak(over: true)]))
+        XCTAssertNil(center.installed[ScheduleMonitor.breakActivity])
     }
 }
 

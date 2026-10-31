@@ -16,6 +16,7 @@ enum ScheduleMonitorEvents {
         files: ScheduleMonitorFileStore?,
         poster: ScheduleNoticePoster,
         caps: ScheduleCapRegistrar? = nil,
+        center: ScheduleActivityCenter? = nil,
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
     ) {
@@ -103,6 +104,7 @@ enum ScheduleMonitorEvents {
         files: ScheduleMonitorFileStore?,
         poster: ScheduleNoticePoster,
         caps: ScheduleCapRegistrar? = nil,
+        center: ScheduleActivityCenter? = nil,
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
     ) {
@@ -143,6 +145,15 @@ enum ScheduleMonitorEvents {
             poster.post(identifier: ScheduleMonitor.endNoticeIdentifier, title: file.notices.endTitle, body: file.notices.endBody)
         }
     }
+
+    static func handleBreakCallback(
+        store: ScheduleShieldStore,
+        sessionStore: ScheduleShieldStore,
+        files: ScheduleMonitorFileStore?,
+        center: ScheduleActivityCenter,
+        now: () -> Date = Date.init,
+        calendar: Calendar = ScheduleMonitor.calendar
+    ) {}
 
     /// Registers the nearest 24-hour cap among the running fall-back occurrences. Every cap shares one
     /// activity name, and a registration replaces the previous one, so only the nearest is kept; its end
