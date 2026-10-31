@@ -2,6 +2,7 @@ package app.posato.control.cli
 
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import app.posato.control.model.Query
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
@@ -24,7 +25,8 @@ class FlowBreakCommand : ControlCommand("break", "Take a break of 5, 10, or 15 m
     override fun execute(session: Session): JsonElement {
         if (minutes !in LENGTHS) throw ControlException(ErrorCode.USAGE, "--minutes is 5, 10, or 15.")
         val backend = session.backend()
-        val apple = session.target().isApple
+        // Android's dialog window carries no verification IDs, so its length buttons are found by label as on Apple.
+        val byLabel = session.target().isApple || session.target() == Target.ANDROID
         val takeBreak = FlowControls.byId("action_take_a_break")
         val endBreak = FlowControls.byId("action_end_break")
         val steps = if (action == START) {
@@ -33,7 +35,7 @@ class FlowBreakCommand : ControlCommand("break", "Take a break of 5, 10, or 15 m
                 FlowSteps.reveal(takeBreak),
                 FlowSteps.tap(takeBreak),
                 FlowSteps.waitFor(Query(text = "Take a break?")),
-                FlowControls.alertButton("action_break_$minutes", "$minutes minutes", apple),
+                FlowControls.alertButton("action_break_$minutes", "$minutes minutes", byLabel),
                 FlowSteps.waitFor(endBreak, timeoutSeconds = OUTCOME_SECONDS),
                 FlowSteps.screenshot("break-started"),
             )

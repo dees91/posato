@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "launch": { "skip": true },
+  "defaults": { "timeoutSeconds": 20 },
+  "onFailure": { "screenshot": true, "snapshot": false },
+  "steps": [
+    { "name": "posato-closed", "action": "terminateApp", "bundleId": "app.posato.ios" },
+    { "name": "open-app", "action": "launchApp", "bundleId": "com.apple.calculator" },
+    { "name": "app-shielded", "action": "waitFor", "state": "exists", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
+    { "name": "app-shot", "action": "screenshot" },
+    { "name": "fresh-safari", "action": "terminateApp", "bundleId": "com.apple.mobilesafari" },
+    { "name": "open-site", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-loaded", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.mobilesafari", "text": "Example Domain" } },
+    { "name": "not-blocked", "action": "waitFor", "state": "absent", "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
+    { "name": "site-shot", "action": "screenshot" }
+  ]
+}

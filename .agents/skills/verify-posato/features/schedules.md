@@ -118,6 +118,21 @@ input. On Windows `flow schedule` takes about four minutes, so start the
 schedule six minutes out. On a Mac whose helper runs, the picker's helper
 is a second `PosatoMacOSHelper` process; pass its process id to `--process`.
 
+On the test iPhone (`-t device`, `observed` 2026-10-31) the return is the
+Device Activity monitor's, so prove it with Posato closed: after `flow break
+start`, `run --scenario schedule-break-closed-allowed-ios.json` (it closes
+Posato first), `monitor -t device` (the `breakDeadline` and an activity count
+of at most 13: ten schedules, the cap, the manual expiry, the break), then
+from the deadline run `schedule-break-closed-blocked-ios.json` every ten
+seconds until it passes and record the delay. An occurrence that starts
+during the break: give it a set with only Calculator and the breaking one a
+set with only `example.com`, then `schedule-break-started-during-ios.json`.
+On Android (the XCover7, `--udid <serial>`) use `observe -t android
+--website http://example.org/ --application com.sec.android.app.clockpackage`
+with Posato in the background (`press --key home`); an exact alarm wakes it
+at the break's end. Safari's first load after a change sometimes shows no
+"Website Not Allowed"; the closed scenarios terminate Safari first.
+
 Breaks use real time; there is no shortened clock. A break is one per
 occurrence, so each End break or limit check needs a fresh occurrence: a
 new schedule, or End early and a schedule that starts later.

@@ -47,6 +47,7 @@ fresh clone or `launch --fresh`.
 | `pause-sets-notice-desktop` | right after `flow icloud link`, before any scenario or `flow set` opens Pause sets | the one-time notice used up | a freshly linked clone before a rerun |
 | `pause-sets-device` | no `Work` set | nothing; it deletes `Work` | none |
 | `schedule-break-desktop`, `schedule-break-end-desktop`, `schedule-break-manual-session-desktop` | a running scheduled pause on this device; for `-end`, a break taken by `schedule-break-desktop`; for `-manual-session`, a manual session inside which the schedule started | a running break (`schedule-break-desktop`); the used break (`-end`) | let the occurrence end, or End early |
+| `schedule-break-closed-blocked-ios`, `schedule-break-closed-allowed-ios`, `schedule-break-started-during-ios` | the test iPhone with a running scheduled pause; for `-started-during`, a break running in one occurrence (website) while another occurrence with only Calculator has started | Posato terminated (each scenario closes it first, so the Device Activity monitor alone acts) | launch Posato |
 
 An interrupted run leaves whatever it created so far; remove those rows by
 hand with the same controls before rerunning.
