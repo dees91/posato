@@ -28,6 +28,7 @@ import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
 import app.posato.control.cli.MenuCommand
+import app.posato.control.cli.MonitorCommand
 import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PrEvidenceCommand
@@ -181,6 +182,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ArtifactsCommand(),
     PrEvidenceCommand(),
     ObserveCommand(),
+    MonitorCommand(),
     MenuCommand(),
     CloseWindowCommand(),
     ResizeWindowCommand(),
