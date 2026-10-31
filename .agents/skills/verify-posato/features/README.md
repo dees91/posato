@@ -46,6 +46,7 @@ fresh clone or `launch --fresh`.
 | `pause-sets-desktop` | only My set, no schedules | nothing; it deletes its sets and schedule | none |
 | `pause-sets-notice-desktop` | right after `flow icloud link`, before any scenario or `flow set` opens Pause sets | the one-time notice used up | a freshly linked clone before a rerun |
 | `pause-sets-device` | no `Work` set | nothing; it deletes `Work` | none |
+| `schedule-break-desktop`, `schedule-break-end-desktop`, `schedule-break-manual-session-desktop` | a running scheduled pause on this device; for `-end`, a break taken by `schedule-break-desktop`; for `-manual-session`, a manual session inside which the schedule started | a running break (`schedule-break-desktop`); the used break (`-end`) | let the occurrence end, or End early |
 
 An interrupted run leaves whatever it created so far; remove those rows by
 hand with the same controls before rerunning.

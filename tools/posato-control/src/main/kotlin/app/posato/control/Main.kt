@@ -14,6 +14,7 @@ import app.posato.control.cli.DevicesListCommand
 import app.posato.control.cli.DevicesShutdownCommand
 import app.posato.control.cli.DoctorCommand
 import app.posato.control.cli.FindCommand
+import app.posato.control.cli.FlowBreakCommand
 import app.posato.control.cli.FlowCommand
 import app.posato.control.cli.FlowExportCommand
 import app.posato.control.cli.FlowFolderCommand
@@ -147,6 +148,7 @@ private fun flowCommand(): FlowCommand {
         FlowScheduleAddCommand(),
         FlowSetCommand(),
         FlowSessionCommand(),
+        FlowBreakCommand(),
         FlowICloudCommand(),
         FlowFolderCommand(),
         FlowExportCommand(),
