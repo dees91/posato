@@ -531,6 +531,16 @@ Para lo que importa.</string>
     <string name="action_reload_short">Recargar</string>
     <string name="action_finish_setup">Terminar configuración</string>
     <string name="action_end_early">Terminar antes</string>
+    <string name="action_take_a_break">Tomar un descanso</string>
+    <string name="action_end_break">Terminar descanso</string>
+    <string name="session_break_title">¿Tomar un descanso?</string>
+    <string name="session_break_body">Las restricciones se detienen ahora en este dispositivo, y en tus otros dispositivos cuando se sincronicen. Vuelven solas. Puedes tomar un descanso en esta pausa programada.</string>
+    <string name="session_break_together">%1$s y %2$s se detienen a la vez.</string>
+    <string name="session_on_break_until">En un descanso hasta %1$s</string>
+    <string name="session_break_started">%1$s empezó y está restringiendo.</string>
+    <string name="session_break_taken">Ya se tomó un descanso en esta pausa programada.</string>
+    <string name="session_break_manual">Los descansos son solo para pausas programadas. Terminar antes termina esta sesión.</string>
+    <string name="presence_on_break">Pausa programada: %1$s, en un descanso hasta %2$s</string>
     <string name="action_end_pause">Terminar pausa</string>
     <string name="action_keep_pausing">Seguir en pausa</string>
     <string name="action_keep_this_pause">Mantener esta pausa</string>

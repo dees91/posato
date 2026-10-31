@@ -530,6 +530,16 @@ Dla tego, co ważne.</string>
     <string name="action_reload_short">Wczytaj ponownie</string>
     <string name="action_finish_setup">Dokończ ustawienie</string>
     <string name="action_end_early">Zakończ wcześniej</string>
+    <string name="action_take_a_break">Zrób przerwę</string>
+    <string name="action_end_break">Zakończ przerwę</string>
+    <string name="session_break_title">Zrobić przerwę?</string>
+    <string name="session_break_body">Ograniczenia wstrzymują się teraz na tym urządzeniu, a na innych urządzeniach po synchronizacji. Wracają same. W tej zaplanowanej pauzie możesz zrobić jedną przerwę.</string>
+    <string name="session_break_together">%1$s i %2$s wstrzymują się razem.</string>
+    <string name="session_on_break_until">Przerwa do %1$s</string>
+    <string name="session_break_started">%1$s się zaczyna i ogranicza.</string>
+    <string name="session_break_taken">W tej zaplanowanej pauzie przerwa została już wykorzystana.</string>
+    <string name="session_break_manual">Przerwy są tylko w zaplanowanych pauzach. Zakończ wcześniej kończy tę sesję.</string>
+    <string name="presence_on_break">Zaplanowana pauza: %1$s, przerwa do %2$s</string>
     <string name="action_end_pause">Zakończ pauzę</string>
     <string name="action_keep_pausing">Zostań przy pauzie</string>
     <string name="action_keep_this_pause">Zostaw tę pauzę</string>

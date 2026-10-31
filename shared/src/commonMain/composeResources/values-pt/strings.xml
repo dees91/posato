@@ -531,6 +531,16 @@ Para o que importa.</string>
     <string name="action_reload_short">Recarregar</string>
     <string name="action_finish_setup">Concluir configuração</string>
     <string name="action_end_early">Encerrar agora</string>
+    <string name="action_take_a_break">Fazer um intervalo</string>
+    <string name="action_end_break">Encerrar intervalo</string>
+    <string name="session_break_title">Fazer um intervalo?</string>
+    <string name="session_break_body">As restrições param agora neste dispositivo, e nos seus outros dispositivos quando eles sincronizarem. Elas voltam sozinhas. Você pode fazer um intervalo nesta pausa agendada.</string>
+    <string name="session_break_together">%1$s e %2$s param ao mesmo tempo.</string>
+    <string name="session_on_break_until">Em intervalo até %1$s</string>
+    <string name="session_break_started">%1$s começou e está restringindo.</string>
+    <string name="session_break_taken">Já foi feito um intervalo nesta pausa agendada.</string>
+    <string name="session_break_manual">Intervalos são só para pausas agendadas. Encerrar agora encerra esta sessão.</string>
+    <string name="presence_on_break">Pausa agendada: %1$s, em intervalo até %2$s</string>
     <string name="action_end_pause">Encerrar pausa</string>
     <string name="action_keep_pausing">Continuar a pausa</string>
     <string name="action_keep_this_pause">Manter esta pausa</string>

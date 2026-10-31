@@ -531,6 +531,16 @@ Pour l’essentiel.</string>
     <string name="action_reload_short">Recharger</string>
     <string name="action_finish_setup">Terminer la configuration</string>
     <string name="action_end_early">Arrêter plus tôt</string>
+    <string name="action_take_a_break">Faire une pause</string>
+    <string name="action_end_break">Finir la pause</string>
+    <string name="session_break_title">Faire une pause ?</string>
+    <string name="session_break_body">Les restrictions s’interrompent maintenant sur cet appareil, et sur vos autres appareils dès leur synchronisation. Elles reprennent d’elles-mêmes. Vous pouvez faire une seule pause dans cette pause programmée.</string>
+    <string name="session_break_together">%1$s et %2$s s’interrompent ensemble.</string>
+    <string name="session_on_break_until">En pause jusqu’à %1$s</string>
+    <string name="session_break_started">%1$s a commencé et restreint.</string>
+    <string name="session_break_taken">Une pause a déjà été faite dans cette pause programmée.</string>
+    <string name="session_break_manual">Les pauses existent seulement dans les pauses programmées. Arrêter plus tôt arrête cette session.</string>
+    <string name="presence_on_break">Pause programmée : %1$s, en pause jusqu’à %2$s</string>
     <string name="action_end_pause">Arrêter la pause</string>
     <string name="action_keep_pausing">Continuer la pause</string>
     <string name="action_keep_this_pause">Garder cette pause</string>

@@ -44,6 +44,7 @@ internal fun presenceMenuModel(
         }
 
         PresenceState.ENFORCING -> {
+            menu.breakEndEpochMillis?.let { breakEnd -> status += label(copy.onBreak.format(menu.breakName.orEmpty(), formatTime(breakEnd))) }
             end?.let { status += label(copy.activeUntil.format(formatTime(it))) }
             end?.let { status += label(remaining(copy, it - nowEpochMillis)) }
             actions += item(copy.endSessionEarly, PresenceMenuActionId.END_SESSION_EARLY)

@@ -40,6 +40,7 @@ import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.promptInProgress
 import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.schedules.domain.ScheduleZone
+import app.posato.feature.schedules.host.ScheduledBreaks
 import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
@@ -99,25 +100,14 @@ internal fun SessionScreen(
     val scheduledEnd = remember(viewModel, scheduledPauses) {
         ScheduledEndState(viewModel::setEarlyEndConfirmation, viewModel::confirmEarlyEnd, { scheduledPauses?.endEarly() }, scope)
     }
-    val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
-    LaunchedEffect(windowRequest) {
-        if (windowRequest == null) return@LaunchedEffect
-        viewModel.uiState.first { it.status != null }
-        when (windowRequest) {
-            SessionWindowRequest.START_SESSION -> {
-                viewModel.setSetupVisible(true)
-            }
-
-            SessionWindowRequest.END_SESSION_EARLY -> {
-                viewModel.setEarlyEndConfirmation(true)
-                scheduledEnd.confirming = scheduledPauses?.pause?.value?.restricts == true
-            }
-
-            SessionWindowRequest.SESSION -> {}
-        }
-        consumeWindowRequest()
+    val awaitLoaded: suspend () -> Unit = { viewModel.uiState.first { it.status != null } }
+    WindowRequestEffect(windowRequest, awaitLoaded, { viewModel.setSetupVisible(true) }, onConsumeWindowRequest) {
+        viewModel.setEarlyEndConfirmation(true)
+        scheduledEnd.confirming = scheduledPauses?.pause?.value?.restricts == true
     }
     val scheduledView = scheduledPauseView(scheduledPauses, state, timeFormat, clock)
+    val manualActive by rememberUpdatedState(state.status is LocalSessionStatus.Active)
+    val scheduledBreak = remember(scheduledPauses) { ScheduledBreakState({ scheduledPauses?.breaks }, { manualActive }, scope) }
     val manualNotPaused = notPausedYet?.collectAsState()?.value?.takeIf { state.status is LocalSessionStatus.Active } ?: 0
     val waiting = manualNotPaused + (scheduledView?.takeIf { it.restricts }?.notPausedYet ?: 0)
     CloseSetupDuringScheduledPause(scheduledView?.restricts == true) { viewModel.setSetupVisible(false) }
@@ -125,6 +115,7 @@ internal fun SessionScreen(
         state = state,
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
+        scheduledBreak = scheduledBreak.actions(scheduledView != null),
         pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count) },
         onOpenAbout = onOpenAbout,
         onEnterSetup = { viewModel.setSetupVisible(true) },
@@ -171,7 +162,18 @@ private fun scheduledPauseView(
             scheduledPartLine(part.name, setName(part.setId), timeFormat.formatTime(part.endEpochMillis, now))
         }
     }
-    return ScheduledPauseView(scheduled.name, until, scheduled.state, manual.orEmpty() + parts, scheduled.notPausedYet)
+    val breakEnd = scheduled.breakEndEpochMillis
+    val breakView = ScheduledBreakView(
+        until = breakEnd?.let { timeFormat.formatTime(it, now) },
+        startedDuring = scheduled.parts.filter { breakEnd != null && it.key != null && it.key !in scheduled.onBreak }.map { it.name },
+        unavailable = when {
+            scheduled.breakUsed -> BreakUnavailable.TAKEN
+            state.status is LocalSessionStatus.Active -> BreakUnavailable.MANUAL_SESSION
+            else -> null
+        },
+        names = scheduled.parts.map { it.name }.distinct(),
+    )
+    return ScheduledPauseView(scheduled.name, until, scheduled.state, manual.orEmpty() + parts, scheduled.notPausedYet, breakView)
 }
 
 @Composable
@@ -256,6 +258,7 @@ internal fun SessionScreen(
     scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
     pauseNotice: String? = null,
     onOpenAbout: (() -> Unit)? = null,
+    scheduledBreak: ScheduledBreakActions = ScheduledBreakActions(),
 ) {
     val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
     var shownItems by rememberSaveable { mutableStateOf<TargetsCategory?>(null) }
@@ -307,13 +310,12 @@ internal fun SessionScreen(
                 scheduledEnd = scheduledEnd,
                 pauseNotice = pauseNotice,
                 onShowItems = showItems,
+                scheduledBreak = scheduledBreak,
             )
         }
         SessionRouteFrame(route, layout, onOpenAbout, onExitSetup, onExitReview, backEnabled, routeBody)
     }
-    if (platformUsesCupertinoChrome) {
-        SessionEarlyEndAlerts(state, scheduled, scheduledEnd, onConfirmEarlyEnd, onCancelEarlyEnd)
-    }
+    SessionAlerts(state, scheduled, scheduledEnd, scheduledBreak, onConfirmEarlyEnd, onCancelEarlyEnd)
 }
 
 @Composable
@@ -344,6 +346,7 @@ private fun SessionRouteContent(
     scheduledEnd: ScheduledEndActions,
     pauseNotice: String?,
     onShowItems: ((TargetsCategory) -> Unit)?,
+    scheduledBreak: ScheduledBreakActions,
 ) {
     when (route) {
         SessionRoute.ScheduledEarlyEnd -> {
@@ -387,6 +390,7 @@ private fun SessionRouteContent(
                     scheduledEnd.onRequest,
                     pauseNotice,
                     onShowItems,
+                    scheduledBreak,
                 )
             }
         }

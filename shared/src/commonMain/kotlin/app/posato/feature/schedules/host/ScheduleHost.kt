@@ -214,7 +214,7 @@ internal class ScheduleHost(
         }
         val parts = step.running.map { occurrence ->
             val plan = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan
-            ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis)
+            ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis, occurrence.key)
         }
         val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)
             ?.copy(

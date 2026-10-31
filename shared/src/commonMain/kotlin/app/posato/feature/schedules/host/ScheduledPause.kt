@@ -26,6 +26,7 @@ internal data class ScheduledPart(
     val name: String,
     val setId: PauseSetId?,
     val endEpochMillis: Long,
+    val key: OccurrenceKey? = null,
 ) {
     override fun toString(): String {
         return "ScheduledPart(redacted)"
