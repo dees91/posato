@@ -19,6 +19,11 @@ closed, through the standing grant and never with a password dialog.
 - `schedules-sync` shows a plan saved on one linked device on the other
   after an exchange; a plan beyond the shared cap of 10 says it could not
   sync.
+- `schedules-break` (`SCHEDULE-007`): a running scheduled pause offers
+  **Take a break** beside **End early**; a 5, 10, or 15 minute break
+  releases websites and chosen apps and they return at its end with no
+  input, or at once on **End break**; one break per occurrence, and none
+  while a manual session is active, each with its reason.
 
 ## How to get to it (user POV)
 
@@ -75,6 +80,47 @@ Start from a set-up Mac (the unified setup records the consent) with
 6. A login launch is a `vm shutdown` and `vm boot`; Posato opens without a
    window, so `launch --adopt` and open the window from the menu
    (`menu --choose "Open Posato"`) before scenario steps.
+
+## Breaks in a running scheduled pause
+
+Start from a set-up device with a default set that holds `example.com` and
+one chosen application (Safari on a Mac, Calculator on Linux and Windows).
+
+1. Add a schedule with that set that starts two to three minutes later and
+   lasts at least 20 minutes (`flow schedule --name Morning --start HH:MM
+   --end HH:MM --set Focus`, times from the guest clock).
+2. After the start, `observe --website http://example.com/ --application
+   <app> --expect blocked`.
+3. `flow break start --minutes 5` (or `run --scenario
+   schedule-break-desktop.json`, which also checks **Cancel**); Session reads
+   "On a break until HH:MM" and offers **End break**. `observe --expect
+   allowed` within a minute.
+4. Touch nothing until the break end, then `observe --expect blocked`;
+   Session reads "A break was already taken in this scheduled pause." with
+   **Take a break** disabled (`schedule-break-end-desktop.json` checks the
+   same after **End break**).
+5. End break: in a second occurrence, `flow break start`, wait a minute,
+   `observe --expect allowed`, `flow break end`, `observe --expect blocked`
+   at once.
+6. Manual session: start one with `flow session`, let a schedule start
+   inside it, then `run --scenario schedule-break-manual-session-desktop.json`
+   (reason "Breaks are only for scheduled pauses. End early ends this
+   session." and a disabled **Take a break**).
+
+Per target (`observed` 2026-10-31, `SCHEDULE-007`): on a Mac the proof is
+`observe --application Safari`; Linux uses `--application
+/usr/bin/gnome-calculator`; Windows has no `observe`, so use `windows check
+connect --host example.com --expect blocked|allowed` and start Microsoft
+Edge (the only program **Choose apps** lists in the golden) with `windows
+exec`, then `windows check process --name msedge --expect absent|running`.
+Leave the app running across the break end to prove it is ended with no
+input. On Windows `flow schedule` takes about four minutes, so start the
+schedule six minutes out. On a Mac whose helper runs, the picker's helper
+is a second `PosatoMacOSHelper` process; pass its process id to `--process`.
+
+Breaks use real time; there is no shortened clock. A break is one per
+occurrence, so each End break or limit check needs a fresh occurrence: a
+new schedule, or End early and a schedule that starts later.
 
 ## Gotchas
 
