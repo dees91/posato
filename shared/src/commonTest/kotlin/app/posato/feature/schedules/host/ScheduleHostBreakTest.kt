@@ -93,6 +93,9 @@ private class BreakHostFixture(
 ) {
     var now = at(9, 10)
     var clock: () -> Long = { now }
+
+    /** Runs whenever the host reads a set's targets, the moment between its decision and the new composition. */
+    var onTargetsRead: () -> Unit = {}
     val helper = BreakHelper { clock() }
     val retention = SqlPartRetentionStore(database, Dispatchers.Default)
     val claims = PauseClaims(helper)
@@ -110,6 +113,7 @@ private class BreakHostFixture(
             gate = { StartGate.READY },
             hadConsent = { true },
             targets = { setId ->
+                onTargetsRead()
                 val domains = sets[setId] ?: listOf("a.example", "b.example")
                 val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(domains, null)).policy
                 SessionTargetsState(policy, LocalApplicationMappingsLoadResult.Unavailable())
@@ -426,6 +430,69 @@ class ScheduleHostBreakTest {
 
             assertNull(fixture.host.pause.value)
             assertTrue(fixture.helper.calls.none { it.startsWith("apply") })
+        }
+    }
+
+    @Test
+    fun `given a running break when the host evaluates again then the held items stay counted throughout`() = runTest {
+        // Failure mode: dropping the reservation before the new composition exists lets a manual session take the
+        // room the returning part still needs, which leaves the union over the limit at the break's end.
+        withBreakHost("break-reservation-interval.db", limits = PauseLimits(2, 64) { it.size }) { fixture ->
+            fixture.host.evaluate()
+            fixture.host.breaks.start(5)
+            fixture.host.evaluate()
+            val seen = mutableListOf<PauseItems>()
+            fixture.onTargetsRead = { seen += fixture.claims.scheduleItems() }
+
+            fixture.evaluateAt(9, 11)
+            fixture.evaluateAt(9, 15)
+
+            val held = PauseItems(setOf("a.example", "b.example"))
+            assertTrue(seen.isNotEmpty())
+            assertEquals(listOf(held), seen.distinct())
+            assertEquals(held, fixture.claims.scheduleItems())
+        }
+    }
+
+    @Test
+    fun `given a running break when an edit stops the occurrence and another restarts it then the break stays over`() = runTest {
+        // Failure mode: a break outliving the edit that stopped its occurrence would release the restarted run.
+        withBreakHost("break-edit-disable.db") { fixture ->
+            fixture.host.evaluate()
+            fixture.host.breaks.start(5)
+            fixture.host.evaluate()
+            val plan = fixture.snapshot().schedules.single().plan
+
+            fixture.store.save(plan.copy(enabled = false), null)
+            fixture.evaluateAt(9, 11)
+            assertNull(fixture.host.pause.value)
+            fixture.store.save(plan, null)
+            fixture.evaluateAt(9, 12)
+
+            val pause = assertIs<ScheduledPause>(fixture.host.pause.value)
+            assertEquals(emptySet(), pause.onBreak)
+            assertTrue(pause.breakUsed)
+            assertEquals("apply a.example,b.example", fixture.helper.calls.last())
+        }
+    }
+
+    @Test
+    fun `given a running break when a time edit moves the occurrence away and back then the break stays over`() = runTest {
+        withBreakHost("break-edit-times.db") { fixture ->
+            fixture.host.evaluate()
+            fixture.host.breaks.start(5)
+            fixture.host.evaluate()
+            val plan = fixture.snapshot().schedules.single().plan
+
+            fixture.store.save(plan.copy(startMinute = 11 * 60, endMinute = 12 * 60), null)
+            fixture.evaluateAt(9, 11)
+            assertNull(fixture.host.pause.value)
+            fixture.store.save(plan, null)
+            fixture.evaluateAt(9, 12)
+
+            val pause = assertIs<ScheduledPause>(fixture.host.pause.value)
+            assertEquals(emptySet(), pause.onBreak)
+            assertEquals("apply a.example,b.example", fixture.helper.calls.last())
         }
     }
 }

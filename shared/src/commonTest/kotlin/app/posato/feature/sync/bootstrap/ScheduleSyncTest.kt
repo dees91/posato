@@ -261,4 +261,71 @@ class ScheduleSyncTest {
             assertEquals(setOf(OccurrenceKey(focus.id, today)), store.shown().facts.breakEnds)
         }
     }
+
+    @Test
+    fun `given a pending break earlier than a received one when drained then the earlier break is published`() = runTest {
+        // Failure mode: treating any shared break as this intent's would keep the earlier local break off every
+        // other device, so devices release different windows after a completed sync.
+        withSync("schedule-sync-earlier-break.db") { store, writer ->
+            val focus = plan(32)
+            val ref = ScheduleOccurrenceRef(ScheduleSyncId(testIdentifier(32)), today)
+            val key = OccurrenceKey(focus.id, today)
+            val sync = ScheduleSync(store) { today }
+            store.save(focus, workspaceId = null)
+            sync.pass(writer, workspace) { null }
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(1, 5)), today, testContext.workspaceId.value.copyBytes())
+            writer.receive(SyncOperationPayload.ScheduleBreak(ref, 2, 15))
+
+            assertEquals(ScheduleSyncResult.Done(refused = false), sync.pass(writer, workspace) { null })
+
+            assertEquals(mapOf(ref to SynchronizedBreak(1, 5)), writer.projection().scheduleBreaks)
+            assertEquals(mapOf(key to ScheduleBreak(1, 5)), store.shown().facts.breaks)
+            assertEquals(emptyList(), store.pending())
+        }
+    }
+
+    @Test
+    fun `given a pending break later than a received one when drained then nothing is authored and the shared break shows`() = runTest {
+        withSync("schedule-sync-later-break.db") { store, writer ->
+            val focus = plan(33)
+            val ref = ScheduleOccurrenceRef(ScheduleSyncId(testIdentifier(33)), today)
+            val key = OccurrenceKey(focus.id, today)
+            val sync = ScheduleSync(store) { today }
+            store.save(focus, workspaceId = null)
+            sync.pass(writer, workspace) { null }
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(3, 5)), today, testContext.workspaceId.value.copyBytes())
+            writer.receive(SyncOperationPayload.ScheduleBreak(ref, 2, 15))
+            val auditBefore = writer.projection().audit.size
+
+            assertEquals(ScheduleSyncResult.Done(refused = false), sync.pass(writer, workspace) { null })
+
+            assertEquals(auditBefore, writer.projection().audit.size)
+            assertEquals(mapOf(ref to SynchronizedBreak(2, 15)), writer.projection().scheduleBreaks)
+            assertEquals(mapOf(key to ScheduleBreak(2, 15)), store.shown().facts.breaks)
+            assertEquals(emptyList(), store.pending())
+        }
+    }
+
+    @Test
+    fun `given a local break earlier than the workspace's when first linked then the local break is published`() = runTest {
+        // Failure mode: seeding skipped every occurrence the workspace already holds a break for, whatever its start.
+        withSync("schedule-sync-seed-break.db") { store, writer ->
+            val focus = plan(34)
+            val id = ScheduleSyncId(testIdentifier(34))
+            val ref = ScheduleOccurrenceRef(id, today)
+            val key = OccurrenceKey(focus.id, today)
+            store.save(focus, workspaceId = null)
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(1, 5)), today, null)
+            writer.receive(
+                SyncOperationPayload.SchedulePut(id, focus.name, 0b0011111, 540, 600, true),
+                SyncOperationPayload.ScheduleBreak(ref, 2, 15),
+            )
+
+            assertEquals(ScheduleSyncResult.Done(refused = false), ScheduleSync(store) { today }.pass(writer, workspace) { null })
+
+            assertEquals(mapOf(ref to SynchronizedBreak(1, 5)), writer.projection().scheduleBreaks)
+            assertEquals(mapOf(key to ScheduleBreak(1, 5)), store.shown().facts.breaks)
+            assertEquals(emptyList(), store.pending())
+        }
+    }
 }
