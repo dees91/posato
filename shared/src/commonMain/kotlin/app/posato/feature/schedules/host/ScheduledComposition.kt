@@ -5,16 +5,21 @@ import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.RunningPartItems
 import app.posato.feature.enforcement.planPause
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.toBytes
 import app.posato.feature.session.data.PART_OCCURRENCE
 import app.posato.feature.session.data.RetainedItems
 import app.posato.feature.session.data.RetainedPart
 
-/** The request for the running occurrences and how many of their added items wait for room. */
+/**
+ * The request for the running occurrences, how many of their added items wait for room, and what parts on a break
+ * hold without applying it.
+ */
 internal class ScheduledComposition(
     val request: EnforcementRequest,
     val notPausedYet: Int,
+    val reserved: PauseItems = PauseItems(),
 )
 
 /**
@@ -26,6 +31,7 @@ internal suspend fun composeScheduledRequest(
     running: List<ScheduleOccurrence>,
     snapshot: ScheduleSnapshot,
     ports: ScheduleHostPorts,
+    onBreak: Set<OccurrenceKey> = emptySet(),
 ): ScheduledComposition {
     val parts = running.map { occurrence ->
         val setId = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan?.setId
@@ -45,16 +51,24 @@ internal suspend fun composeScheduledRequest(
         val occurrence = running.first { candidate -> candidate.partId() == part.partId }
         ports.retention?.hold(occurrence.retainedPart(), RetainedItems(held.domains, ports.keptApplications(held.appIds - part.retained.appIds)))
     }
+    // A part on a break keeps what it holds, which counts toward the limits, but only the others are applied.
+    val broken = running.filter { it.key in onBreak }.map { it.partId() }.toSet()
+    val applied = if (broken.isEmpty()) {
+        plan.items
+    } else {
+        parts.filter { it.partId !in broken }.fold(PauseItems()) { union, part -> union + (plan.held[part.partId] ?: PauseItems()) }
+    }
     val first = running.minBy(ScheduleOccurrence::startEpochMillis)
     val date = first.key.date
     val request = EnforcementRequest(
-        domains = plan.items.domains.sorted(),
-        mappingIds = plan.items.appIds.sorted(),
+        domains = applied.domains.sorted(),
+        mappingIds = applied.appIds.sorted(),
         sessionId = "schedule-${first.key.schedule.hex}-${date.year}-${date.month}-${date.day}",
         sessionStartEpochMillis = first.startEpochMillis,
         sessionEndEpochMillis = plan.endEpochMillis,
     )
-    return ScheduledComposition(request, plan.deferred.values.sum())
+    val reserved = PauseItems(plan.items.domains - applied.domains, plan.items.appIds - applied.appIds)
+    return ScheduledComposition(request, plan.deferred.values.sum(), reserved)
 }
 
 internal fun ScheduleOccurrence.retainedPart(): RetainedPart {

@@ -162,13 +162,13 @@ class ScheduleEditRuleTest {
     @Test
     fun `given a skipped or ended occurrence when the plan moves later the same day then it stays stopped`() = runTest {
         withPlan("edit-after-skip.db") { fixture ->
-            fixture.store.stop(setOf(fixture.key), OccurrenceStop.SKIP, monday, null)
+            fixture.store.recordFact(setOf(fixture.key), OccurrenceFact.Skip, monday, null)
             fixture.edit { copy(startMinute = 22 * 60, endMinute = 23 * 60) }
             assertTrue(fixture.step(at(22, 5)).running.isEmpty())
         }
         withPlan("edit-after-end.db") { fixture ->
             fixture.step(at(9, 30))
-            fixture.store.stop(setOf(fixture.key), OccurrenceStop.END, monday, null)
+            fixture.store.recordFact(setOf(fixture.key), OccurrenceFact.End, monday, null)
             fixture.edit { copy(startMinute = 22 * 60, endMinute = 23 * 60) }
             assertTrue(fixture.step(at(22, 5)).running.isEmpty())
         }

@@ -84,40 +84,46 @@ class SqlScheduleMigrationTest {
     }
 
     @Test
-    fun `given a released version fourteen database with pending intents when migrated then they survive and breaks can be recorded`() =
-        runTest {
-            // Failure mode: rebuilding the intent queue for break kinds could drop a skip or end not yet published.
-            val testDatabase = createLocalPolicyTestDatabase("schedule-migration-14.db")
-            val seeding = testDatabase.openDriverAt(14)
-            seeding.executeSql(
-                "INSERT INTO local_schedule(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id) " +
-                    "VALUES (X'$FOCUS_HEX', 'Focus', 1, 540, 600, 1, 0, zeroblob(16))",
-            )
-            seeding.executeSql(
-                "INSERT INTO sync_schedule_intent(workspace_id, kind, schedule_id, year, month, day, author_year, author_month, " +
-                    "author_day, set_id) VALUES (X'$WORKSPACE_HEX', 'skip', X'$FOCUS_HEX', 2026, 10, 5, 2026, 10, 1, zeroblob(16))",
-            )
-            seeding.close()
+    fun `given a released version fourteen database with pending intents when migrated then they survive and breaks can be recorded`() = runTest {
+        // Failure mode: rebuilding the intent queue for break kinds could drop a skip or end not yet published.
+        val testDatabase = createLocalPolicyTestDatabase("schedule-migration-14.db")
+        val seeding = testDatabase.openDriverAt(14)
+        seeding.executeSql(
+            "INSERT INTO local_schedule(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id) " +
+                "VALUES (X'$FOCUS_HEX', 'Focus', 1, 540, 600, 1, 0, zeroblob(16))",
+        )
+        seeding.executeSql(
+            "INSERT INTO sync_schedule_intent(workspace_id, kind, schedule_id, year, month, day, author_year, author_month, " +
+                "author_day, set_id) VALUES (X'$WORKSPACE_HEX', 'skip', X'$FOCUS_HEX', 2026, 10, 5, 2026, 10, 1, zeroblob(16))",
+        )
+        seeding.close()
 
-            val driver = testDatabase.openDriver()
-            try {
-                val store = SqlScheduleStore(PosatoDatabase(driver), Dispatchers.Default)
-                val focus = ScheduleId(FOCUS_HEX.lowercase())
-                val workspace = WORKSPACE_HEX.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-                val key = OccurrenceKey(focus, ScheduleDate(2026, 10, 5))
-                val skip = ScheduleIntent.Skip(key, ScheduleDate(2026, 10, 1))
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlScheduleStore(PosatoDatabase(driver), Dispatchers.Default)
+            val focus = ScheduleId(FOCUS_HEX.lowercase())
+            val workspace = WORKSPACE_HEX.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            val key = OccurrenceKey(focus, ScheduleDate(2026, 10, 5))
+            val skip = ScheduleIntent.Skip(key, ScheduleDate(2026, 10, 1))
 
-                assertEquals(listOf<ScheduleIntent>(skip), assertIs<ScheduleResult.Success<List<SequencedScheduleIntent>>>(store.readIntents()).value.map { it.intent })
-                val taken = ScheduleBreak(1_790_000_000_000, 5)
-                assertIs<ScheduleResult.Success<Unit>>(store.startBreak(setOf(key), taken, ScheduleDate(2026, 10, 5), workspace))
-                val intents = assertIs<ScheduleResult.Success<List<SequencedScheduleIntent>>>(store.readIntents()).value.map { it.intent }
-                assertEquals(listOf(skip, ScheduleIntent.Break(key, ScheduleDate(2026, 10, 5), taken)), intents)
-                assertEquals(mapOf(key to taken), assertIs<ScheduleResult.Success<ScheduleSnapshot>>(store.read()).value.facts.breaks)
-            } finally {
-                driver.close()
-                testDatabase.delete()
-            }
+            assertEquals(
+                listOf<ScheduleIntent>(skip),
+                assertIs<ScheduleResult.Success<List<SequencedScheduleIntent>>>(store.readIntents()).value.map {
+                    it.intent
+                },
+            )
+            val taken = ScheduleBreak(1_790_000_000_000, 5)
+            assertIs<ScheduleResult.Success<Unit>>(
+                store.recordFact(setOf(key), OccurrenceFact.Break(taken), ScheduleDate(2026, 10, 5), workspace),
+            )
+            val intents = assertIs<ScheduleResult.Success<List<SequencedScheduleIntent>>>(store.readIntents()).value.map { it.intent }
+            assertEquals(listOf(skip, ScheduleIntent.Break(key, ScheduleDate(2026, 10, 5), taken)), intents)
+            assertEquals(mapOf(key to taken), assertIs<ScheduleResult.Success<ScheduleSnapshot>>(store.read()).value.facts.breaks)
+        } finally {
+            driver.close()
+            testDatabase.delete()
         }
+    }
 }
 
 private const val WORKSPACE_HEX: String = "09090909090909090909090909090909"

@@ -8,6 +8,7 @@ import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.PauseClaims
 import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
+import app.posato.feature.schedules.data.OccurrenceFact
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.data.SqlScheduleStore
@@ -94,6 +95,7 @@ private class BreakHostFixture(
     var clock: () -> Long = { now }
     val helper = BreakHelper { clock() }
     val retention = SqlPartRetentionStore(database, Dispatchers.Default)
+    val claims = PauseClaims(helper)
     val sets = mapOf(
         workSet to listOf("a.example", "b.example"),
         leisureSet to listOf("c.example"),
@@ -104,7 +106,7 @@ private class BreakHostFixture(
         zone = CentralEuropeanZone,
         clock = { clock() },
         ports = ScheduleHostPorts(
-            claims = PauseClaims(helper),
+            claims = claims,
             gate = { StartGate.READY },
             hadConsent = { true },
             targets = { setId ->
@@ -163,7 +165,7 @@ class ScheduleHostBreakTest {
             fixture.host.evaluate()
             val pinsBefore = fixture.snapshot().pins
 
-            assertEquals(BreakStart.STARTED, fixture.host.startBreak(5))
+            assertEquals(BreakStart.STARTED, fixture.host.breaks.start(5))
             fixture.host.evaluate()
 
             assertEquals(listOf("apply a.example,b.example", "clear"), fixture.helper.calls)
@@ -184,7 +186,7 @@ class ScheduleHostBreakTest {
     fun `given a running break when its end comes then restrictions return at that instant and no second break is offered`() = runTest {
         withBreakHost("break-return.db") { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
 
             fixture.now = at(9, 15) - 1
@@ -199,7 +201,7 @@ class ScheduleHostBreakTest {
             assertNull(pause.breakEndEpochMillis)
             assertTrue(pause.breakUsed)
             assertEquals(setOf(focusKey), fixture.snapshot().facts.breaksOver)
-            assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(5))
+            assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(5))
         }
     }
 
@@ -208,7 +210,7 @@ class ScheduleHostBreakTest {
         // Failure mode: waiting for the next minute tick would keep a device released up to a minute too long.
         withBreakHost("break-timer.db") { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             val base = testScheduler.currentTime
             fixture.clock = { at(9, 10) + (testScheduler.currentTime - base) }
             val running = launch { fixture.host.run() }
@@ -226,18 +228,18 @@ class ScheduleHostBreakTest {
     fun `given a running break when End break is pressed then restrictions return at once and the break stays used`() = runTest {
         withBreakHost("break-end.db") { fixture ->
             fixture.host.evaluate()
-            assertFalse(fixture.host.endBreak())
-            fixture.host.startBreak(10)
+            assertFalse(fixture.host.breaks.end())
+            fixture.host.breaks.start(10)
             fixture.host.evaluate()
 
             fixture.now = at(9, 12)
-            assertTrue(fixture.host.endBreak())
+            assertTrue(fixture.host.breaks.end())
             fixture.host.evaluate()
 
             assertEquals(listOf("apply a.example,b.example", "clear", "apply a.example,b.example"), fixture.helper.calls)
             assertEquals(setOf(focusKey), fixture.snapshot().facts.breakEnds)
             assertEquals(emptySet(), fixture.host.pause.value?.onBreak)
-            assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(5))
+            assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(5))
         }
     }
 
@@ -245,7 +247,7 @@ class ScheduleHostBreakTest {
     fun `given a running break when End early is pressed then nothing is applied at the break end or later`() = runTest {
         withBreakHost("break-end-early.db") { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
 
             fixture.now = at(9, 12)
@@ -265,7 +267,7 @@ class ScheduleHostBreakTest {
         withBreakHost("break-outlasts.db") { fixture ->
             fixture.host.evaluate()
             fixture.now = at(9, 57)
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
 
             fixture.evaluateAt(10, 0)
@@ -278,40 +280,39 @@ class ScheduleHostBreakTest {
     }
 
     @Test
-    fun `given overlapping occurrences when a break is taken then all break together and one starting during it restricts at once`() =
-        runTest {
-            val plans = listOf(
-                SchedulePlan(focus, "Focus", EVERY_DAY, 9 * 60, 10 * 60, true, workSet),
-                SchedulePlan(evening, "Evening", EVERY_DAY, 9 * 60 + 5, 10 * 60 + 30, true, leisureSet),
-                SchedulePlan(late, "Late", EVERY_DAY, 9 * 60 + 12, 10 * 60 + 30, true, lateSet),
-            )
-            withBreakHost("break-overlap.db", plans = plans) { fixture ->
-                fixture.host.evaluate()
-                assertEquals(BreakStart.STARTED, fixture.host.startBreak(10))
-                fixture.host.evaluate()
-                val eveningKey = OccurrenceKey(evening, monday)
-                val taken = ScheduleBreak(at(9, 10), 10)
-                assertEquals(mapOf(focusKey to taken, eveningKey to taken), fixture.snapshot().facts.breaks)
+    fun `given overlapping occurrences when a break is taken then all break together and one starting during it restricts at once`() = runTest {
+        val plans = listOf(
+            SchedulePlan(focus, "Focus", EVERY_DAY, 9 * 60, 10 * 60, true, workSet),
+            SchedulePlan(evening, "Evening", EVERY_DAY, 9 * 60 + 5, 10 * 60 + 30, true, leisureSet),
+            SchedulePlan(late, "Late", EVERY_DAY, 9 * 60 + 12, 10 * 60 + 30, true, lateSet),
+        )
+        withBreakHost("break-overlap.db", plans = plans) { fixture ->
+            fixture.host.evaluate()
+            assertEquals(BreakStart.STARTED, fixture.host.breaks.start(10))
+            fixture.host.evaluate()
+            val eveningKey = OccurrenceKey(evening, monday)
+            val taken = ScheduleBreak(at(9, 10), 10)
+            assertEquals(mapOf(focusKey to taken, eveningKey to taken), fixture.snapshot().facts.breaks)
 
-                fixture.evaluateAt(9, 12)
-                assertEquals("apply d.example", fixture.helper.calls.last())
-                assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(5))
+            fixture.evaluateAt(9, 12)
+            assertEquals("apply d.example", fixture.helper.calls.last())
+            assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(5))
 
-                fixture.evaluateAt(9, 20)
-                assertEquals("apply a.example,b.example,c.example,d.example", fixture.helper.calls.last())
-                assertTrue(assertIs<ScheduledPause>(fixture.host.pause.value).breakUsed)
-                assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(5))
-            }
+            fixture.evaluateAt(9, 20)
+            assertEquals("apply a.example,b.example,c.example,d.example", fixture.helper.calls.last())
+            assertTrue(assertIs<ScheduledPause>(fixture.host.pause.value).breakUsed)
+            assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(5))
         }
+    }
 
     @Test
     fun `given lengths that are not offered or no running pause when a break is asked for then nothing is recorded`() = runTest {
         withBreakHost("break-unavailable.db") { fixture ->
             fixture.now = at(8)
             fixture.host.evaluate()
-            assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(5))
+            assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(5))
             fixture.evaluateAt(9, 10)
-            listOf(0, 4, 7, 20).forEach { minutes -> assertEquals(BreakStart.UNAVAILABLE, fixture.host.startBreak(minutes)) }
+            listOf(0, 4, 7, 20).forEach { minutes -> assertEquals(BreakStart.UNAVAILABLE, fixture.host.breaks.start(minutes)) }
 
             assertTrue(fixture.snapshot().facts.breaks.isEmpty())
         }
@@ -326,9 +327,11 @@ class ScheduleHostBreakTest {
         )
         withBreakHost("break-limits.db", limits = PauseLimits(2, 64) { it.size }, plans = plans) { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
-            assertEquals(PauseItems(setOf("a.example", "b.example")), fixture.host.reservedDuringBreak())
+            assertEquals(PauseItems(setOf("a.example", "b.example")), fixture.host.reservedDuringBreak)
+            // A manual session counts what the occurrences hold, also on a break, so it cannot take the room.
+            assertEquals(PauseItems(setOf("a.example", "b.example")), fixture.claims.scheduleItems())
 
             fixture.evaluateAt(9, 12)
             assertEquals("clear", fixture.helper.calls.last())
@@ -336,14 +339,15 @@ class ScheduleHostBreakTest {
 
             fixture.evaluateAt(9, 15)
             assertEquals("apply a.example,b.example", fixture.helper.calls.last())
-            assertEquals(PauseItems(), fixture.host.reservedDuringBreak())
+            assertEquals(PauseItems(), fixture.host.reservedDuringBreak)
+            assertEquals(PauseItems(setOf("a.example", "b.example")), fixture.claims.scheduleItems())
         }
     }
 
     @Test
     fun `given a break whose end passed before this device first saw it then it never releases`() = runTest {
         withBreakHost("break-expired.db") { fixture ->
-            fixture.store.startBreak(setOf(focusKey), ScheduleBreak(at(9, 0), 5), monday, null)
+            fixture.store.recordFact(setOf(focusKey), OccurrenceFact.Break(ScheduleBreak(at(9, 0), 5)), monday, null)
 
             fixture.evaluateAt(9, 10)
 
@@ -356,7 +360,7 @@ class ScheduleHostBreakTest {
     fun `given a break this device saw end when its clock is set back into the window then it does not release again`() = runTest {
         withBreakHost("break-rollback.db") { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
             fixture.evaluateAt(9, 15)
 
@@ -370,7 +374,7 @@ class ScheduleHostBreakTest {
     @Test
     fun `given a break starting more than two minutes after this device's clock then it never releases here`() = runTest {
         withBreakHost("break-far-future.db") { fixture ->
-            fixture.store.startBreak(setOf(focusKey), ScheduleBreak(at(9, 13), 5), monday, null)
+            fixture.store.recordFact(setOf(focusKey), OccurrenceFact.Break(ScheduleBreak(at(9, 13), 5)), monday, null)
 
             fixture.evaluateAt(9, 10)
             fixture.evaluateAt(9, 13)
@@ -384,7 +388,7 @@ class ScheduleHostBreakTest {
     @Test
     fun `given a break starting two minutes after this device's clock then it releases once the clock reaches it`() = runTest {
         withBreakHost("break-near-future.db") { fixture ->
-            fixture.store.startBreak(setOf(focusKey), ScheduleBreak(at(9, 12), 5), monday, null)
+            fixture.store.recordFact(setOf(focusKey), OccurrenceFact.Break(ScheduleBreak(at(9, 12), 5)), monday, null)
 
             fixture.evaluateAt(9, 10)
             assertTrue(fixture.snapshot().facts.breaksOver.isEmpty())
@@ -400,7 +404,7 @@ class ScheduleHostBreakTest {
         // Failure mode: a leftover keyed by schedule only would release a later day's occurrence.
         withBreakHost("break-no-leftover.db") { fixture ->
             fixture.host.evaluate()
-            fixture.host.startBreak(5)
+            fixture.host.breaks.start(5)
             fixture.host.evaluate()
 
             fixture.now = at(9, 12, monday.plusDays(1))
@@ -415,8 +419,8 @@ class ScheduleHostBreakTest {
     @Test
     fun `given a skipped occurrence with a break fact then the fact releases nothing`() = runTest {
         withBreakHost("break-skipped.db") { fixture ->
-            fixture.store.startBreak(setOf(focusKey), ScheduleBreak(at(9, 10), 15), monday, null)
-            fixture.store.stop(setOf(focusKey), app.posato.feature.schedules.data.OccurrenceStop.SKIP, monday, null)
+            fixture.store.recordFact(setOf(focusKey), OccurrenceFact.Break(ScheduleBreak(at(9, 10), 15)), monday, null)
+            fixture.store.recordFact(setOf(focusKey), OccurrenceFact.Skip, monday, null)
 
             fixture.evaluateAt(9, 11)
 

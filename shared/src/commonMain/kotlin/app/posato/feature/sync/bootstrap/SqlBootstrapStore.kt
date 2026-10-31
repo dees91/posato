@@ -3,6 +3,7 @@ package app.posato.feature.sync.bootstrap
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.Sync_bootstrap_state
+import app.posato.feature.schedules.data.endReceivedBreaksAfterUnlink
 import app.posato.feature.sync.domain.KeyEpochId
 import app.posato.feature.sync.domain.SyncContext
 import app.posato.feature.sync.domain.SyncIdentifier
@@ -96,6 +97,7 @@ internal class SqlBootstrapStore(
             database.syncSessionQueries.deleteSessionIntents()
             database.scheduleQueries.deleteAllScheduleIntents()
             database.scheduleQueries.deleteAllSeeds()
+            database.endReceivedBreaksAfterUnlink()
             database.scheduleQueries.deleteAllPauseSetsEnabled()
             database.scheduleQueries.promoteRefusedSchedules()
             database.syncLocalPolicyQueries.deleteBaseMarker()

@@ -6,11 +6,13 @@ import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.enforcement.ScheduleClaims
 import app.posato.feature.schedules.data.LocalScheduleStore
-import app.posato.feature.schedules.data.OccurrenceStop
+import app.posato.feature.schedules.data.OccurrenceFact
 import app.posato.feature.schedules.data.ScheduleHostUpdate
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleBreak
+import app.posato.feature.schedules.domain.ScheduleBreakRules
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.data.PartRetentionStore
@@ -28,10 +30,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
 
 /** What the host needs besides the store; each piece is a port so the host is tested without a helper. */
 internal class ScheduleHostPorts(
@@ -63,8 +67,9 @@ internal class ScheduleHostPorts(
 
 /**
  * Starts and ends scheduled pauses on this device while the process runs, with the window open or
- * closed. It evaluates at launch, every wall-clock minute, and whenever plans or facts change; the
- * evaluations run one at a time, and each makes at most one attempt to apply.
+ * closed. It evaluates at launch, every wall-clock minute, at the exact start and end of a break, and
+ * whenever plans or facts change; the evaluations run one at a time, and each makes at most one attempt
+ * to apply.
  */
 internal class ScheduleHost(
     private val store: LocalScheduleStore,
@@ -78,6 +83,14 @@ internal class ScheduleHost(
     private val announced = MutableStateFlow<Set<Pair<OccurrenceKey, Int>>>(emptySet())
     private var unknownReads = 0
     private var notPausedYet = 0
+    private val breakChange = MutableStateFlow<Long?>(null)
+
+    @Volatile
+    private var reserved = PauseItems()
+        set(value) {
+            field = value
+            ports.claims.reservedForBreak = value
+        }
 
     private val mutableAnyEnabled = MutableStateFlow(false)
 
@@ -91,6 +104,14 @@ internal class ScheduleHost(
             launch { store.changes.collect { triggers.trySend(Unit) } }
             launch { ticks.collect { triggers.trySend(Unit) } }
             launch { ports.targetChanges.collect { triggers.trySend(Unit) } }
+            // A break starts and ends at its exact instant, not at the next minute tick.
+            launch {
+                breakChange.collectLatest { at ->
+                    at ?: return@collectLatest
+                    sleepUntil(clock, at)
+                    triggers.trySend(Unit)
+                }
+            }
             triggers.trySend(Unit)
             for (ignored in triggers) {
                 // One failed evaluation must never stop the resident process; the next trigger tries again.
@@ -109,9 +130,12 @@ internal class ScheduleHost(
         get() = ports.announcesStarts
 
     /** What running parts on a break still hold here: it counts toward the limits but is not applied. */
-    fun reservedDuringBreak(): PauseItems {
-        return PauseItems()
-    }
+    val reservedDuringBreak: PauseItems
+        get() {
+            return reserved
+        }
+
+    override val breaks: ScheduledBreaks = HostBreaks()
 
     override fun refresh() {
         triggers.trySend(Unit)
@@ -124,7 +148,7 @@ internal class ScheduleHost(
             return false
         }
         val now = clock.currentEpochMillis()
-        val ended = store.stop(keys, OccurrenceStop.END, zone.localAt(now).date, workspaceId = null)
+        val ended = store.recordFact(keys, OccurrenceFact.End, zone.localAt(now).date, workspaceId = null)
         triggers.trySend(Unit)
         return ended is ScheduleResult.Success
     }
@@ -158,8 +182,11 @@ internal class ScheduleHost(
         val observed = (snapshot.facts.expired.keys + step.update.expired.keys - step.update.forgotten).associateWith { key ->
             maxOf(snapshot.facts.expired[key] ?: Long.MIN_VALUE, step.update.expired[key] ?: Long.MIN_VALUE)
         }
+        breakChange.value = step.nextBreakChange
+        reserved = PauseItems()
+        val facts = snapshot.facts.copy(expired = observed, breaksOver = snapshot.facts.breaksOver + step.update.breaksOver)
         val published = ScheduleMonitorInput(
-            snapshot.copy(facts = snapshot.facts.copy(expired = observed), pins = step.pins),
+            snapshot.copy(facts = facts, pins = step.pins),
             step.running,
             now,
             ports.targets,
@@ -176,14 +203,26 @@ internal class ScheduleHost(
         ports.publish(published)
         recordAnnouncedElsewhere(step.running.map { it.key }.toSet())
         val hadConsent = ports.hadConsent()
+        // Where the claims compose themselves (the iPhone's monitor), they also leave out the parts on a break.
+        val onBreak = if (ports.claimsCompose) emptySet() else step.onBreak
         // A held claim is kept current: paused items and the latest end may have changed since it was applied.
-        val state = if (holdsRestrictions()) apply(step.running, snapshot) else attempt(step.running, snapshot)
+        val state = when {
+            step.running.all { it.key in onBreak } -> rest(step.running, snapshot, onBreak)
+            holdsRestrictions() -> apply(step.running, snapshot, onBreak)
+            else -> attempt(step.running, snapshot, onBreak)
+        }
         val parts = step.running.map { occurrence ->
             val plan = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan
             ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis)
         }
         val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)
-            ?.copy(parts = parts, notPausedYet = notPausedYet)
+            ?.copy(
+                parts = parts,
+                notPausedYet = notPausedYet,
+                onBreak = step.onBreak,
+                breakEndEpochMillis = step.breakEndEpochMillis,
+                breakUsed = step.breakUsed,
+            )
             ?.withoutAnnounced(announced.value)
         mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
     }
@@ -213,19 +252,38 @@ internal class ScheduleHost(
     private suspend fun attempt(
         running: List<ScheduleOccurrence>,
         snapshot: ScheduleSnapshot,
+        onBreak: Set<OccurrenceKey>,
     ): ScheduledPauseState {
         if (ports.maintenanceClosed()) {
             return ScheduledPauseState.WAITING
         }
         val gate = ports.gate.check()
-        return if (gate == StartGate.READY) apply(running, snapshot) else gate.toState()
+        return if (gate == StartGate.READY) apply(running, snapshot, onBreak) else gate.toState()
+    }
+
+    /**
+     * Every running part is on a break: nothing is asked of the helper and the start gate is not run, so a break
+     * never reports setup by itself. What the parts hold is kept, and returns at the break's end.
+     */
+    private suspend fun rest(
+        running: List<ScheduleOccurrence>,
+        snapshot: ScheduleSnapshot,
+        onBreak: Set<OccurrenceKey>,
+    ): ScheduledPauseState {
+        val composed = composeScheduledRequest(running, snapshot, ports, onBreak)
+        notPausedYet = composed.notPausedYet
+        reserved = composed.reserved
+        ports.claims.releaseSchedule()
+        return ScheduledPauseState.APPLIED
     }
 
     private suspend fun apply(
         running: List<ScheduleOccurrence>,
         snapshot: ScheduleSnapshot,
+        onBreak: Set<OccurrenceKey> = emptySet(),
     ): ScheduledPauseState {
-        val composed = composeScheduledRequest(running, snapshot, ports)
+        val composed = composeScheduledRequest(running, snapshot, ports, onBreak)
+        reserved = composed.reserved
         // Where the claims compose themselves (the iPhone's monitor), only they know what waits for room.
         notPausedYet = if (ports.claimsCompose) 0 else composed.notPausedYet
         val request = composed.request
@@ -242,6 +300,48 @@ internal class ScheduleHost(
 
             else -> if (ports.maintenanceClosed()) ScheduledPauseState.WAITING else ScheduledPauseState.RETRYING
         }
+    }
+
+    /** Take a break and End break for the occurrences running on this device. */
+    private inner class HostBreaks : ScheduledBreaks {
+        /** Unavailable while any running occurrence already used its break; the caller checks for a manual session. */
+        override suspend fun start(minutes: Int): BreakStart {
+            val keys = mutablePause.value?.keys.orEmpty()
+            if (minutes !in ScheduleBreakRules.MINUTES || keys.isEmpty()) {
+                return BreakStart.UNAVAILABLE
+            }
+            val snapshot = (store.read() as? ScheduleResult.Success)?.value ?: return BreakStart.FAILED
+            if (keys.any { it in snapshot.facts.breaks }) {
+                return BreakStart.UNAVAILABLE
+            }
+            val now = clock.currentEpochMillis()
+            val taken = store.recordFact(keys, OccurrenceFact.Break(ScheduleBreak(now, minutes)), zone.localAt(now).date, workspaceId = null)
+            triggers.trySend(Unit)
+            return if (taken is ScheduleResult.Success) BreakStart.STARTED else BreakStart.FAILED
+        }
+
+        override suspend fun end(): Boolean {
+            val keys = mutablePause.value?.onBreak.orEmpty()
+            if (keys.isEmpty()) {
+                return false
+            }
+            val now = clock.currentEpochMillis()
+            val ended = store.recordFact(keys, OccurrenceFact.BreakEnd, zone.localAt(now).date, workspaceId = null)
+            triggers.trySend(Unit)
+            return ended is ScheduleResult.Success
+        }
+    }
+}
+
+/** Sleeps until [at] on [clock], so a break starts and ends at its exact instant. */
+private suspend fun sleepUntil(
+    clock: SessionClock,
+    at: Long,
+) {
+    var remaining = at - clock.currentEpochMillis()
+    while (remaining > 0) {
+        delay(remaining)
+        remaining = at - clock.currentEpochMillis()
     }
 }
 

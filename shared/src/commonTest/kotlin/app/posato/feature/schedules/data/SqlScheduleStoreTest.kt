@@ -121,7 +121,7 @@ class SqlScheduleStoreTest {
     fun `given a schedule with facts when removed then its facts go and the removal is recorded`() = runTest {
         withStore("schedules-remove.db") { store ->
             store.save(plan(1), null)
-            store.stop(setOf(OccurrenceKey(id(1), today)), OccurrenceStop.SKIP, today, null)
+            store.recordFact(setOf(OccurrenceKey(id(1), today)), OccurrenceFact.Skip, today, null)
 
             store.remove(id(1), workspace)
 
@@ -136,7 +136,7 @@ class SqlScheduleStoreTest {
             store.save(plan(1), null)
             val key = OccurrenceKey(id(1), today.plusDays(1))
 
-            store.stop(setOf(key), OccurrenceStop.SKIP, today, workspace)
+            store.recordFact(setOf(key), OccurrenceFact.Skip, today, workspace)
 
             assertEquals(setOf(key), store.snapshot().facts.skipped)
             assertEquals(listOf(ScheduleIntent.Skip(key, today)), store.intents())
@@ -171,7 +171,7 @@ class SqlScheduleStoreTest {
         withStore("schedules-end.db") { store ->
             val keys = setOf(OccurrenceKey(id(1), today), OccurrenceKey(id(2), today))
 
-            store.stop(keys, OccurrenceStop.END, today, workspace)
+            store.recordFact(keys, OccurrenceFact.End, today, workspace)
 
             assertEquals(keys, store.snapshot().facts.ended)
             assertEquals(keys.map { ScheduleIntent.End(it, today) }.toSet(), store.intents().toSet())
@@ -184,8 +184,8 @@ class SqlScheduleStoreTest {
             store.save(plan(1), null)
             store.save(plan(2), null)
             store.save(plan(3), null)
-            store.stop(setOf(OccurrenceKey(id(1), today.plusDays(-5))), OccurrenceStop.SKIP, today, null)
-            store.stop(setOf(OccurrenceKey(id(1), today)), OccurrenceStop.SKIP, today, null)
+            store.recordFact(setOf(OccurrenceKey(id(1), today.plusDays(-5))), OccurrenceFact.Skip, today, null)
+            store.recordFact(setOf(OccurrenceKey(id(1), today)), OccurrenceFact.Skip, today, null)
             val synced = SyncedSchedules(live = listOf(plan(2, "Shared")), removed = setOf(id(3)))
 
             assertEquals(ScheduleResult.Success(true), store.seedOnce(workspace, synced, today))

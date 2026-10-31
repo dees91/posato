@@ -2,7 +2,9 @@ package app.posato.feature.schedules.host
 
 import app.posato.feature.schedules.data.ScheduleHostUpdate
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.OccurrencePin
+import app.posato.feature.schedules.domain.ScheduleBreakEvaluation
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleOccurrences
 import app.posato.feature.schedules.domain.ScheduleZone
@@ -11,6 +13,14 @@ internal data class HostStep(
     val running: List<ScheduleOccurrence>,
     val update: ScheduleHostUpdate,
     val pins: List<OccurrencePin>,
+    /** Running occurrences a break releases now. */
+    val onBreak: Set<OccurrenceKey> = emptySet(),
+    /** When the running break ends. */
+    val breakEndEpochMillis: Long? = null,
+    /** The next instant a break of a running occurrence starts or ends. */
+    val nextBreakChange: Long? = null,
+    /** Whether a running occurrence used its break. */
+    val breakUsed: Boolean = false,
 )
 
 internal object ScheduleHostPolicy {
@@ -37,8 +47,29 @@ internal object ScheduleHostPolicy {
         val yesterday = zone.localAt(nowEpochMillis).date.plusDays(-1)
         val forgotten = snapshot.facts.expired.keys.filter { it.date < yesterday }.toSet()
         val pins = snapshot.pins.filter { it.key in runningKeys } + newPins
-        val update = ScheduleHostUpdate(pins = newPins, released = released, expired = expired, forgotten = forgotten)
-        return HostStep(running, update, pins)
+        val facts = snapshot.facts
+        val newlyOver = ScheduleBreakEvaluation.newlyOver(facts, nowEpochMillis, yesterday)
+        val over = facts.breaksOver + newlyOver
+        val active = running.mapNotNull { occurrence ->
+            ScheduleBreakEvaluation.active(facts, occurrence.key, nowEpochMillis, over)?.let { occurrence.key to it }
+        }.toMap()
+        val update = ScheduleHostUpdate(
+            pins = newPins,
+            released = released,
+            expired = expired,
+            forgotten = forgotten,
+            breaksOver = newlyOver,
+            breaksOverBefore = yesterday,
+        )
+        return HostStep(
+            running = running,
+            update = update,
+            pins = pins,
+            onBreak = active.keys,
+            breakEndEpochMillis = active.values.minOfOrNull { it.endEpochMillis },
+            nextBreakChange = ScheduleBreakEvaluation.nextChange(facts, runningKeys, nowEpochMillis, over),
+            breakUsed = runningKeys.any { it in facts.breaks },
+        )
     }
 
     /**

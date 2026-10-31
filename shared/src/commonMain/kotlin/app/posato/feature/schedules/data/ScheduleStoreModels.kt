@@ -14,10 +14,21 @@ internal data class StoredSchedule(
     val refused: Boolean = false,
 )
 
-/** A skip or an early end: both are one fact per occurrence and stop it on every device. */
-internal enum class OccurrenceStop {
-    SKIP,
-    END,
+/** A fact about one occurrence that every device learns: a skip, an early end, a break, or a break ended early. */
+internal sealed interface OccurrenceFact {
+    /** Stops the occurrence before it starts. */
+    data object Skip : OccurrenceFact
+
+    /** Ends the running occurrence early. */
+    data object End : OccurrenceFact
+
+    /** Releases the running occurrence from [taken]'s start for its length. */
+    data class Break(
+        val taken: ScheduleBreak,
+    ) : OccurrenceFact
+
+    /** Ends the occurrence's break early. */
+    data object BreakEnd : OccurrenceFact
 }
 
 /**

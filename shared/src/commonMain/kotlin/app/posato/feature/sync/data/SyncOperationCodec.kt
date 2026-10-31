@@ -43,7 +43,9 @@ internal object SyncOperationCodec {
             writer.writeU16(operation.clock.logicalCounter)
 
             val payload = operation.payload
-            val written = if (payload.isPauseSetKind()) writer.writePauseSetPayload(payload) else writer.writePayload(payload)
+            // The start consistency rule of kind 20: a break never starts after its own operation's clock.
+            val consistent = (payload as? SyncOperationPayload.ScheduleBreak)?.let { it.startEpochMillis <= operation.clock.physicalMillis } ?: true
+            val written = consistent && if (payload.isPauseSetKind()) writer.writePauseSetPayload(payload) else writer.writePayload(payload)
             if (written) {
                 val encodedOperation = writer.consumeBytes()
                 if (encodedOperation.size <= SyncFormatLimits.PLAINTEXT_BYTES) {
@@ -215,7 +217,7 @@ private fun CanonicalReader.readPayload(): SyncOperationPayload? {
         APPLICATION_POLICY_ABSENT_TAG -> readSingletonIdentifier()?.let { SyncOperationPayload.ApplicationPolicyAbsent }
         SESSION_START_TAG -> readSessionStart()
         SESSION_END_TAG -> readUuidIdentifier()?.let(::SessionId)?.let(SyncOperationPayload::SessionEnd)
-        in SCHEDULE_TAGS, in SyncFormatLimits.OPTIONAL_KINDS -> tag?.let { kind -> readSchedulePayload(kind) }
+        in SCHEDULE_TAGS, in SCHEDULE_BREAK_TAGS, in SyncFormatLimits.OPTIONAL_KINDS -> tag?.let { kind -> readSchedulePayload(kind) }
         in PAUSE_SET_TAGS -> tag?.let { kind -> readPauseSetPayload(kind) }
         else -> null
     }

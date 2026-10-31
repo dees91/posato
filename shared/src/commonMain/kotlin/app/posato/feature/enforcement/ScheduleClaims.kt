@@ -15,4 +15,9 @@ internal interface ScheduleClaims {
     suspend fun scheduleStatus(): EnforcementOutcome
 
     suspend fun forgetSchedule()
+
+    /** What running occurrences on a break hold without applying it; it still counts toward the device's limits. */
+    var reservedForBreak: PauseItems
+        get() = PauseItems()
+        set(_) = Unit
 }

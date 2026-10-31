@@ -338,7 +338,8 @@ internal class SyncWriter internal constructor(
                     LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN)
                 }
             }
-            val prepared = localMutationPreparer.prepare(payload, reservedClocks, authoringIncarnation, checkpoint.context)
+            val authored = payload.clampedTo(reservedClocks.last())
+            val prepared = localMutationPreparer.prepare(authored, reservedClocks, authoringIncarnation, checkpoint.context)
             if (prepared == null) {
                 freeze()
                 return@withLock LocalMutationResult.Failure(LocalMutationFailure.CRYPTOGRAPHY_FAILURE)
@@ -683,4 +684,16 @@ internal fun advanceRemoteClock(
     }
 
     return state
+}
+
+/**
+ * A break starts at the earlier of the press and the reserved clock's physical time, so a clock set back between
+ * the press and the drain never yields a start that every decoder rejects. An earlier start only releases less.
+ */
+private fun SyncOperationPayload.clampedTo(clock: HybridLogicalClock): SyncOperationPayload {
+    return if (this is SyncOperationPayload.ScheduleBreak && startEpochMillis > clock.physicalMillis) {
+        copy(startEpochMillis = clock.physicalMillis)
+    } else {
+        this
+    }
 }

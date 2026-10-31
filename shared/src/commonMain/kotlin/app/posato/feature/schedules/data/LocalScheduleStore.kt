@@ -42,31 +42,16 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
 
-    /** Skips or ends [keys]: one fact each, and one intent each while linked. */
-    suspend fun stop(
+    /**
+     * Records [fact] for every occurrence of [keys]: one fact each, and one intent each while linked, in one
+     * transaction. One press that breaks several running occurrences records all of them together.
+     */
+    suspend fun recordFact(
         keys: Set<OccurrenceKey>,
-        kind: OccurrenceStop,
+        kind: OccurrenceFact,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
-
-    /**
-     * Takes one break in each occurrence of [keys], all from [taken]'s start for its length: one fact each, and
-     * one intent each while linked, in one transaction.
-     */
-    suspend fun startBreak(
-        keys: Set<OccurrenceKey>,
-        taken: ScheduleBreak,
-        authorDate: ScheduleDate,
-        workspaceId: ByteArray?,
-    ): ScheduleResult<Unit> = ScheduleResult.Failure(ScheduleStoreFailure.STORAGE_FAILURE)
-
-    /** Ends the breaks of [keys] early: one fact each, and one intent each while linked. */
-    suspend fun endBreak(
-        keys: Set<OccurrenceKey>,
-        authorDate: ScheduleDate,
-        workspaceId: ByteArray?,
-    ): ScheduleResult<Unit> = ScheduleResult.Failure(ScheduleStoreFailure.STORAGE_FAILURE)
 
     /** Records what the host saw: pins with their notice bits, released runs, and observed natural ends. */
     suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit>

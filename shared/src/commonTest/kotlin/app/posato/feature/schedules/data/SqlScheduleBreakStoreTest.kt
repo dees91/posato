@@ -57,7 +57,7 @@ class SqlScheduleBreakStoreTest {
             val keys = setOf(OccurrenceKey(focus, day), OccurrenceKey(evening, day))
             val taken = ScheduleBreak(1_000_000, 10)
 
-            assertIs<ScheduleResult.Success<Unit>>(store.startBreak(keys, taken, day, linked))
+            assertIs<ScheduleResult.Success<Unit>>(store.recordFact(keys, OccurrenceFact.Break(taken), day, linked))
 
             val facts = reopen().snapshot().facts
             assertEquals(keys.associateWith { taken }, facts.breaks)
@@ -70,9 +70,9 @@ class SqlScheduleBreakStoreTest {
         withStores("breaks-end.db") { store, reopen ->
             store.save(focusPlan, null)
             val key = OccurrenceKey(focus, day)
-            store.startBreak(setOf(key), ScheduleBreak(1_000_000, 5), day, null)
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(1_000_000, 5)), day, null)
 
-            assertIs<ScheduleResult.Success<Unit>>(store.endBreak(setOf(key), day, linked))
+            assertIs<ScheduleResult.Success<Unit>>(store.recordFact(setOf(key), OccurrenceFact.BreakEnd, day, linked))
 
             val facts = reopen().snapshot().facts
             assertEquals(setOf(key), facts.breakEnds)
@@ -89,10 +89,10 @@ class SqlScheduleBreakStoreTest {
             val yesterday = OccurrenceKey(focus, day.plusDays(-1))
             val today = OccurrenceKey(focus, day)
             val shared = OccurrenceKey(evening, day)
-            store.startBreak(setOf(old), ScheduleBreak(100_000, 5), day, null)
-            store.startBreak(setOf(yesterday), ScheduleBreak(200_000, 10), day, null)
-            store.startBreak(setOf(today), ScheduleBreak(300_000, 15), day, null)
-            store.endBreak(setOf(today), day, null)
+            store.recordFact(setOf(old), OccurrenceFact.Break(ScheduleBreak(100_000, 5)), day, null)
+            store.recordFact(setOf(yesterday), OccurrenceFact.Break(ScheduleBreak(200_000, 10)), day, null)
+            store.recordFact(setOf(today), OccurrenceFact.Break(ScheduleBreak(300_000, 15)), day, null)
+            store.recordFact(setOf(today), OccurrenceFact.BreakEnd, day, null)
             val synced = SyncedSchedules(live = listOf(focusPlan), breaks = mapOf(shared to ScheduleBreak(1, 5)))
 
             assertEquals(ScheduleResult.Success(true), store.seedOnce(linked, synced, day))
@@ -109,37 +109,36 @@ class SqlScheduleBreakStoreTest {
     }
 
     @Test
-    fun `given shared breaks when materialized then the earliest start wins over the local press and ends are kept for live plans`() =
-        runTest {
-            withStores("breaks-materialize.db") { store, _ ->
-                store.save(focusPlan, null)
-                store.save(eveningPlan, null)
-                val earlierShared = OccurrenceKey(focus, day)
-                val laterShared = OccurrenceKey(evening, day)
-                val orphan = OccurrenceKey(ScheduleId("000000000000400080000000000000c3"), day)
-                store.startBreak(setOf(earlierShared, laterShared), ScheduleBreak(500_000, 10), day, null)
+    fun `given shared breaks when materialized then the earliest start wins over the local press and ends are kept for live plans`() = runTest {
+        withStores("breaks-materialize.db") { store, _ ->
+            store.save(focusPlan, null)
+            store.save(eveningPlan, null)
+            val earlierShared = OccurrenceKey(focus, day)
+            val laterShared = OccurrenceKey(evening, day)
+            val orphan = OccurrenceKey(ScheduleId("000000000000400080000000000000c3"), day)
+            store.recordFact(setOf(earlierShared, laterShared), OccurrenceFact.Break(ScheduleBreak(500_000, 10)), day, null)
 
-                store.materialize(
-                    linked,
-                    SyncedSchedules(
-                        live = listOf(focusPlan, eveningPlan),
-                        breaks = mapOf(
-                            earlierShared to ScheduleBreak(400_000, 10),
-                            laterShared to ScheduleBreak(600_000, 5),
-                            orphan to ScheduleBreak(1, 5),
-                        ),
-                        breakEnds = setOf(laterShared, orphan),
+            store.materialize(
+                linked,
+                SyncedSchedules(
+                    live = listOf(focusPlan, eveningPlan),
+                    breaks = mapOf(
+                        earlierShared to ScheduleBreak(400_000, 10),
+                        laterShared to ScheduleBreak(600_000, 5),
+                        orphan to ScheduleBreak(1, 5),
                     ),
-                )
+                    breakEnds = setOf(laterShared, orphan),
+                ),
+            )
 
-                val facts = store.snapshot().facts
-                assertEquals(
-                    mapOf(earlierShared to ScheduleBreak(400_000, 10), laterShared to ScheduleBreak(500_000, 10)),
-                    facts.breaks,
-                )
-                assertEquals(setOf(laterShared), facts.breakEnds)
-            }
+            val facts = store.snapshot().facts
+            assertEquals(
+                mapOf(earlierShared to ScheduleBreak(400_000, 10), laterShared to ScheduleBreak(500_000, 10)),
+                facts.breaks,
+            )
+            assertEquals(setOf(laterShared), facts.breakEnds)
         }
+    }
 
     @Test
     fun `given breaks the host saw end when recorded then they persist and older dates are dropped`() = runTest {
@@ -160,14 +159,44 @@ class SqlScheduleBreakStoreTest {
         withStores("breaks-remove.db") { store, _ ->
             store.save(focusPlan, null)
             val key = OccurrenceKey(focus, day)
-            store.startBreak(setOf(key), ScheduleBreak(500_000, 5), day, null)
-            store.endBreak(setOf(key), day, null)
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(500_000, 5)), day, null)
+            store.recordFact(setOf(key), OccurrenceFact.BreakEnd, day, null)
             store.recordHost(ScheduleHostUpdate(breaksOver = setOf(key)))
 
             store.remove(focus, null)
 
             val facts = store.snapshot().facts
             assertTrue(facts.breaks.isEmpty() && facts.breakEnds.isEmpty() && facts.breaksOver.isEmpty())
+        }
+    }
+
+    @Test
+    fun `given a received break and one taken here when the workspace is removed then only the received one ends here`() = runTest {
+        // Failure mode: a break received from a workspace this device left would keep releasing it.
+        val testDatabase = createLocalPolicyTestDatabase("breaks-unlink.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlScheduleStore(database, Dispatchers.Default)
+            store.save(focusPlan, null)
+            store.save(eveningPlan, null)
+            val here = OccurrenceKey(focus, day)
+            val received = OccurrenceKey(evening, day)
+            store.recordFact(setOf(here), OccurrenceFact.Break(ScheduleBreak(500_000, 10)), day, null)
+            store.materialize(
+                linked,
+                SyncedSchedules(
+                    live = listOf(focusPlan, eveningPlan),
+                    breaks = mapOf(here to ScheduleBreak(400_000, 10), received to ScheduleBreak(450_000, 5)),
+                ),
+            )
+
+            database.endReceivedBreaksAfterUnlink()
+
+            assertEquals(setOf(received), store.snapshot().facts.breaksOver)
+        } finally {
+            driver.close()
+            testDatabase.delete()
         }
     }
 }

@@ -11,10 +11,16 @@ private const val SCHEDULE_PUT_TAG = 8
 private const val SCHEDULE_REMOVE_TAG = 9
 private const val SCHEDULE_SKIP_TAG = 10
 private const val SCHEDULE_OCCURRENCE_END_TAG = 11
+private const val SCHEDULE_BREAK_TAG = 20
+private const val SCHEDULE_BREAK_END_TAG = 21
 
 internal val SCHEDULE_TAGS: IntRange = SCHEDULE_PUT_TAG..SCHEDULE_OCCURRENCE_END_TAG
+internal val SCHEDULE_BREAK_TAGS: IntRange = SCHEDULE_BREAK_TAG..SCHEDULE_BREAK_END_TAG
 
-/** Kinds 8-11 and the optional kinds, in the ADR 0006 schedule amendment's layout. Returns false for a payload the rules refuse. */
+/**
+ * Kinds 8-11, 20-21 and the optional kinds, in the ADR 0006 schedule amendments' layout. Returns false for a payload
+ * the rules refuse.
+ */
 internal fun CanonicalWriter.writeSchedulePayload(payload: SyncOperationPayload): Boolean {
     return when (payload) {
         is SyncOperationPayload.SchedulePut -> {
@@ -35,6 +41,18 @@ internal fun CanonicalWriter.writeSchedulePayload(payload: SyncOperationPayload)
             writeOccurrence(SCHEDULE_OCCURRENCE_END_TAG, payload.occurrence)
         }
 
+        is SyncOperationPayload.ScheduleBreak -> {
+            ScheduleWireRules.isValid(payload) && writeOccurrence(SCHEDULE_BREAK_TAG, payload.occurrence) && run {
+                writeLong(payload.startEpochMillis)
+                writeByte(payload.minutes)
+                true
+            }
+        }
+
+        is SyncOperationPayload.ScheduleBreakEnd -> {
+            writeOccurrence(SCHEDULE_BREAK_END_TAG, payload.occurrence)
+        }
+
         is SyncOperationPayload.OptionalExtension -> {
             writeByte(payload.kind)
             writeOwnedBytes(payload.tail.copyBytes())
@@ -53,6 +71,8 @@ internal fun CanonicalReader.readSchedulePayload(tag: Int): SyncOperationPayload
         SCHEDULE_REMOVE_TAG -> readUuidIdentifier()?.let(::ScheduleSyncId)?.let(SyncOperationPayload::ScheduleRemove)
         SCHEDULE_SKIP_TAG -> readOccurrence()?.let(SyncOperationPayload::ScheduleSkip)
         SCHEDULE_OCCURRENCE_END_TAG -> readOccurrence()?.let(SyncOperationPayload::ScheduleOccurrenceEnd)
+        SCHEDULE_BREAK_TAG -> readBreak()
+        SCHEDULE_BREAK_END_TAG -> readOccurrence()?.let(SyncOperationPayload::ScheduleBreakEnd)
         in SyncFormatLimits.OPTIONAL_KINDS -> readOptionalExtension(tag)
         else -> null
     }
@@ -122,6 +142,17 @@ private fun CanonicalReader.readOccurrence(): ScheduleOccurrenceRef? {
     return if (complete) {
         ScheduleOccurrenceRef(checkNotNull(scheduleId), ScheduleDate(checkNotNull(year), checkNotNull(month), checkNotNull(day)))
             .takeIf { occurrence -> ScheduleWireRules.isValidDate(occurrence.date) }
+    } else {
+        null
+    }
+}
+
+private fun CanonicalReader.readBreak(): SyncOperationPayload.ScheduleBreak? {
+    val occurrence = readOccurrence()
+    val start = readLong()
+    val minutes = readByte()
+    return if (occurrence != null && start != null && minutes != null) {
+        SyncOperationPayload.ScheduleBreak(occurrence, start, minutes).takeIf(ScheduleWireRules::isValid)
     } else {
         null
     }

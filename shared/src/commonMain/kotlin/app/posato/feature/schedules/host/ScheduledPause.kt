@@ -74,6 +74,25 @@ internal enum class BreakStart {
     FAILED,
 }
 
+/** The break actions of a running scheduled pause. */
+internal interface ScheduledBreaks {
+    /** Takes one break of [minutes] in every running occurrence (overlap option A). */
+    suspend fun start(minutes: Int): BreakStart
+
+    /** Ends the running break: restrictions return at once. */
+    suspend fun end(): Boolean
+}
+
+internal object NoScheduledBreaks : ScheduledBreaks {
+    override suspend fun start(minutes: Int): BreakStart {
+        return BreakStart.UNAVAILABLE
+    }
+
+    override suspend fun end(): Boolean {
+        return false
+    }
+}
+
 /** Notice bits kept on each pin, so a relaunch never posts a notice twice. */
 internal object ScheduleNotices {
     const val STARTED: Int = 1
@@ -91,11 +110,9 @@ internal interface ScheduledPauses {
 
     suspend fun endEarly(): Boolean
 
-    /** Takes one break of [minutes] in every running occurrence (overlap option A). */
-    suspend fun startBreak(minutes: Int): BreakStart = BreakStart.UNAVAILABLE
-
-    /** Ends the running break: restrictions return at once. */
-    suspend fun endBreak(): Boolean = false
+    /** Take a break and End break; a device without a host offers neither. */
+    val breaks: ScheduledBreaks
+        get() = NoScheduledBreaks
 
     /** Runs the host where this process hosts schedules; a device without a host returns at once. */
     suspend fun run() = Unit

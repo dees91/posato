@@ -5,6 +5,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.OccurrencePin
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleFacts
 import app.posato.feature.schedules.domain.ScheduleId
@@ -18,6 +19,8 @@ internal const val FACT_SKIP: String = "skip"
 internal const val FACT_END: String = "end"
 private const val INTENT_PUT = "put"
 private const val INTENT_REMOVE = "remove"
+internal const val INTENT_BREAK: String = "break"
+internal const val INTENT_BREAK_END: String = "break_end"
 
 internal class ScheduleStoreException(
     val reason: ScheduleStoreFailure,
@@ -39,7 +42,7 @@ internal suspend fun PosatoDatabase.readSnapshot(): ScheduleSnapshot {
     val expired = scheduleExpiryQueries.selectExpiries { id, year, month, day, end ->
         OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt())) to end
     }.awaitAsList().toMap()
-    return ScheduleSnapshot(schedules, ScheduleFacts(skipped, ended, expired), pins)
+    return ScheduleSnapshot(schedules, readBreakFacts(ScheduleFacts(skipped, ended, expired)), pins)
 }
 
 /** Whether a scheduled pause runs on this device, so an update waits for it like for a manual session. */
@@ -74,13 +77,7 @@ internal suspend fun PosatoDatabase.deleteScheduleEverywhere(id: ScheduleId) {
     scheduleQueries.deleteFactsForSchedule(bytes)
     scheduleQueries.deletePinsForSchedule(bytes)
     scheduleExpiryQueries.deleteExpiriesForSchedule(bytes)
-}
-
-internal suspend fun PosatoDatabase.writeFact(
-    kind: String,
-    key: OccurrenceKey,
-) {
-    scheduleQueries.insertFact(key.schedule.toBytes(), kind, key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
+    deleteBreakRows(bytes)
 }
 
 internal suspend fun PosatoDatabase.writeHostUpdate(update: ScheduleHostUpdate) {
@@ -106,6 +103,7 @@ internal suspend fun PosatoDatabase.writeHostUpdate(update: ScheduleHostUpdate) 
     update.forgotten.forEach { key ->
         scheduleExpiryQueries.deleteExpiry(key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
     }
+    writeBreaksOver(update)
 }
 
 internal suspend fun PosatoDatabase.writeIntent(
@@ -116,8 +114,11 @@ internal suspend fun PosatoDatabase.writeIntent(
     val (key, author) = when (intent) {
         is ScheduleIntent.Skip -> intent.key to intent.authorDate
         is ScheduleIntent.End -> intent.key to intent.authorDate
+        is ScheduleIntent.Break -> intent.key to intent.authorDate
+        is ScheduleIntent.BreakEnd -> intent.key to intent.authorDate
         else -> null to null
     }
+    val taken = (intent as? ScheduleIntent.Break)?.taken
     scheduleQueries.insertScheduleIntent(
         workspaceId = workspaceId,
         kind = intent.kind(),
@@ -134,6 +135,8 @@ internal suspend fun PosatoDatabase.writeIntent(
         authorMonth = author?.month?.toLong(),
         authorDay = author?.day?.toLong(),
         setId = (plan?.setId ?: PauseSetId.FIRST).value.copyBytes(),
+        breakStartEpochMillis = taken?.startEpochMillis,
+        breakMinutes = taken?.minutes?.toLong(),
     )
 }
 
@@ -155,6 +158,8 @@ internal suspend fun PosatoDatabase.readIntentRows(): List<SequencedScheduleInte
         authorMonth,
         authorDay,
         setId,
+        breakStart,
+        breakMinutes,
         ->
         val scheduleId = scheduleIdOf(id)
         val date = if (year != null && month != null && day != null) ScheduleDate(year.toInt(), month.toInt(), day.toInt()) else null
@@ -180,6 +185,14 @@ internal suspend fun PosatoDatabase.readIntentRows(): List<SequencedScheduleInte
 
             FACT_SKIP -> ScheduleIntent.Skip(OccurrenceKey(scheduleId, checkNotNull(date)), checkNotNull(author))
 
+            INTENT_BREAK -> ScheduleIntent.Break(
+                OccurrenceKey(scheduleId, checkNotNull(date)),
+                checkNotNull(author),
+                ScheduleBreak(checkNotNull(breakStart), checkNotNull(breakMinutes).toInt()),
+            )
+
+            INTENT_BREAK_END -> ScheduleIntent.BreakEnd(OccurrenceKey(scheduleId, checkNotNull(date)), checkNotNull(author))
+
             else -> ScheduleIntent.End(OccurrenceKey(scheduleId, checkNotNull(date)), checkNotNull(author))
         }
         SequencedScheduleIntent(sequence, workspace, intent)
@@ -197,6 +210,7 @@ private fun ScheduleIntent.kind(): String {
         is ScheduleIntent.Remove -> INTENT_REMOVE
         is ScheduleIntent.Skip -> FACT_SKIP
         is ScheduleIntent.End -> FACT_END
-        is ScheduleIntent.Break, is ScheduleIntent.BreakEnd -> throw ScheduleStoreException(ScheduleStoreFailure.INVALID_SCHEDULE)
+        is ScheduleIntent.Break -> INTENT_BREAK
+        is ScheduleIntent.BreakEnd -> INTENT_BREAK_END
     }
 }

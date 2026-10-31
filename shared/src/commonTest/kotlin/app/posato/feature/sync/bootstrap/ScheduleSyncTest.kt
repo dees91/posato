@@ -1,6 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.schedules.data.OccurrenceFact
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.data.SequencedScheduleIntent
@@ -142,9 +143,9 @@ class ScheduleSyncTest {
         withSync("schedule-sync-invalid.db") { store, writer ->
             store.save(plan(10), workspaceId = null)
             ScheduleSync(store) { today }.pass(writer, workspace) { null }
-            store.stop(
+            store.recordFact(
                 setOf(OccurrenceKey(plan(10).id, today.plusDays(500))),
-                app.posato.feature.schedules.data.OccurrenceStop.SKIP,
+                OccurrenceFact.Skip,
                 today,
                 testContext.workspaceId.value.copyBytes(),
             )
@@ -229,8 +230,8 @@ class ScheduleSyncTest {
             val key = OccurrenceKey(focus.id, today)
             val ref = ScheduleOccurrenceRef(ScheduleSyncId(testIdentifier(30)), today)
             val workspaceId = testContext.workspaceId.value.copyBytes()
-            store.startBreak(setOf(key), ScheduleBreak(5_000, 10), today, workspaceId)
-            store.endBreak(setOf(key), today, workspaceId)
+            store.recordFact(setOf(key), OccurrenceFact.Break(ScheduleBreak(5_000, 10)), today, workspaceId)
+            store.recordFact(setOf(key), OccurrenceFact.BreakEnd, today, workspaceId)
 
             assertEquals(ScheduleSyncResult.Done(refused = false), sync.pass(writer, workspace) { null })
 
