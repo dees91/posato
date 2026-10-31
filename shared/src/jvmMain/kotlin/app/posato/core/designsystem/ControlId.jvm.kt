@@ -10,7 +10,7 @@ import java.io.File
  * Desktop accessibility has no identifier field, so the id rides the description, which screen readers announce.
  * It is published only on a verification host, marked by a file `posato-control` creates in the user's home.
  */
-private val publishesControlIds: Boolean by lazy {
+internal val publishesControlIds: Boolean by lazy {
     runCatching { File(System.getProperty("user.home"), ".posato-control-ids").isFile }.getOrDefault(false)
 }
 

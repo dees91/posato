@@ -41,6 +41,7 @@ import app.posato.feature.onboarding.promptInProgress
 import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.schedules.host.ScheduledBreaks
+import app.posato.feature.schedules.host.ScheduledPauseState
 import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
@@ -165,7 +166,10 @@ private fun scheduledPauseView(
     val breakEnd = scheduled.breakEndEpochMillis
     val breakView = ScheduledBreakView(
         until = breakEnd?.let { timeFormat.formatTime(it, now) },
-        startedDuring = scheduled.parts.filter { breakEnd != null && it.key != null && it.key !in scheduled.onBreak }.map { it.name },
+        // Only a device that applies the pause may say a part started and is restricting.
+        startedDuring = scheduled.parts
+            .filter { breakEnd != null && scheduled.state == ScheduledPauseState.APPLIED && it.key != null && it.key !in scheduled.onBreak }
+            .map { it.name },
         unavailable = when {
             scheduled.breakUsed -> BreakUnavailable.TAKEN
             state.status is LocalSessionStatus.Active -> BreakUnavailable.MANUAL_SESSION

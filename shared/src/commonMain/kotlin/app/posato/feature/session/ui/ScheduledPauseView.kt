@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoAlert
 import app.posato.core.designsystem.PosatoAlertAction
@@ -17,6 +19,7 @@ import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.accessibilityHint
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.schedules.domain.ScheduleBreakRules
 import app.posato.feature.schedules.host.ScheduledPauseState
@@ -87,7 +90,7 @@ internal enum class BreakUnavailable {
 
 /**
  * The break of a running scheduled pause as Session shows it: [until] is the running break's end, ready to display;
- * [startedDuring] names the running parts that started during it and restrict; [names] are the running schedules.
+ * [startedDuring] names the running parts that started during it and that this device restricts; [names] are the running schedules.
  */
 internal data class ScheduledBreakView(
     val until: String? = null,
@@ -116,15 +119,26 @@ internal fun ScheduledPauseRunning(
     onEnd: () -> Unit,
     breakActions: ScheduledBreakActions = ScheduledBreakActions(),
 ) {
-    PosatoEndTime(stringResource(Res.string.session_until, view.until), supportingText = stringResource(Res.string.session_named_running, view.name))
-    ScheduledBreakLines(view.breakView)
+    // The break line belongs to the summary's accessible label, so assistive technology reads them as one.
+    Column(Modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        PosatoEndTime(
+            stringResource(Res.string.session_until, view.until),
+            supportingText = stringResource(Res.string.session_named_running, view.name),
+        )
+        BreakUntilLine(view.breakView)
+    }
+    StartedDuringLines(view.breakView)
     view.parts.forEach { part -> PosatoCaption(part) }
     ScheduledPauseActions(view.breakView, breakActions, onEnd)
 }
 
 @Composable
-private fun ScheduledBreakLines(view: ScheduledBreakView) {
+private fun BreakUntilLine(view: ScheduledBreakView) {
     view.until?.let { until -> PosatoCaption(stringResource(Res.string.session_on_break_until, until)) }
+}
+
+@Composable
+private fun StartedDuringLines(view: ScheduledBreakView) {
     view.startedDuring.forEach { name -> PosatoCaption(stringResource(Res.string.session_break_started, name)) }
 }
 
@@ -141,7 +155,14 @@ private fun ScheduledPauseActions(
                 Text(stringResource(Res.string.action_end_break))
             }
         } else {
-            PosatoButton(actions.onRequest, style = PosatoButtonStyle.Quiet, enabled = view.unavailable == null, controlId = "action_take_a_break") {
+            val reason = view.unavailable?.let { unavailable -> breakUnavailableText(unavailable) }
+            PosatoButton(
+                actions.onRequest,
+                modifier = reason?.let { Modifier.accessibilityHint(it) } ?: Modifier,
+                style = PosatoButtonStyle.Quiet,
+                enabled = reason == null,
+                controlId = "action_take_a_break",
+            ) {
                 Text(stringResource(Res.string.action_take_a_break))
             }
         }
@@ -150,11 +171,16 @@ private fun ScheduledPauseActions(
         }
     }
     if (view.until == null) {
-        when (view.unavailable) {
-            BreakUnavailable.TAKEN -> PosatoCaption(stringResource(Res.string.session_break_taken))
-            BreakUnavailable.MANUAL_SESSION -> PosatoCaption(stringResource(Res.string.session_break_manual))
-            null -> Unit
-        }
+        view.unavailable?.let { unavailable -> PosatoCaption(breakUnavailableText(unavailable)) }
+    }
+}
+
+/** The caption under a disabled Take a break, which the button also exposes as its accessibility hint. */
+@Composable
+private fun breakUnavailableText(unavailable: BreakUnavailable): String {
+    return when (unavailable) {
+        BreakUnavailable.TAKEN -> stringResource(Res.string.session_break_taken)
+        BreakUnavailable.MANUAL_SESSION -> stringResource(Res.string.session_break_manual)
     }
 }
 
@@ -237,7 +263,8 @@ internal fun ScheduledPauseAttention(
         ScheduledPauseState.APPLIED -> Unit
     }
     // A break can be taken whenever a scheduled pause runs, also on a device it does not restrict now.
-    ScheduledBreakLines(view.breakView)
+    BreakUntilLine(view.breakView)
+    StartedDuringLines(view.breakView)
     ScheduledPauseActions(view.breakView, breakActions, onEnd = null)
 }
 
