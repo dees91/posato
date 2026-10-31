@@ -100,6 +100,14 @@ outlives the command that started it, and never start a second one.
 - Until the offer reaches the joining device's folder, the app waits and
   checks again by itself (for up to 10 minutes, then "No offer for this
   code"); `flow folder join` only waits.
+- In a Mac guest bridged to iCloud Drive, a file the iPhone wrote arrives
+  dataless, and `tart exec` reads it as empty. The relay asks `brctl
+  download` for it and copies it in a later round (`observed` 2026-10-31,
+  `SCHEDULE-007`; before that fix the relay deleted it, and so did iCloud
+  on the iPhone). iPhone to Linux then took about 30 s. The other way,
+  iCloud brought a guest's file to the iPhone in 22 s once and after
+  2 min 18 s and 13 min on the same evening, so time an iPhone receipt
+  against what iCloud delivers, not against the relay.
 - A file the product rejects (wrong name, size, or content) is skipped and
   never accepted; when one device misses a change, compare the bundle files'
   checksums across folders before suspecting the product.
