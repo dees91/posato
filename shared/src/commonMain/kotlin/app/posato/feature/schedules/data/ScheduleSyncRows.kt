@@ -52,6 +52,7 @@ internal suspend fun PosatoDatabase.applySynced(
             is ScheduleIntent.Remove -> rows.remove(intent.scheduleId)
             is ScheduleIntent.Skip -> writeFact(FACT_SKIP, intent.key)
             is ScheduleIntent.End -> writeFact(FACT_END, intent.key)
+            is ScheduleIntent.Break, is ScheduleIntent.BreakEnd -> Unit
         }
     }
     val before = readSnapshot().schedules.map { it.plan.id }

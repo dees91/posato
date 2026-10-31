@@ -6,6 +6,7 @@ import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.data.SequencedScheduleIntent
 import app.posato.feature.schedules.data.SqlScheduleStore
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
@@ -15,11 +16,13 @@ import app.posato.feature.sync.domain.OpenSyncWriterResult
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.RemoteAcceptanceResult
 import app.posato.feature.sync.domain.RemoteTransportReceipt
+import app.posato.feature.sync.domain.ScheduleOccurrenceRef
 import app.posato.feature.sync.domain.ScheduleSyncId
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.domain.SyncWriter
+import app.posato.feature.sync.domain.SynchronizedBreak
 import app.posato.feature.sync.domain.remoteBundle
 import app.posato.feature.sync.domain.snapshot
 import app.posato.feature.sync.domain.transportKey
@@ -211,6 +214,50 @@ class ScheduleSyncTest {
 
             assertEquals(published, replica.current.pendingBundles.size)
             assertEquals(emptyList(), store.pending())
+        }
+    }
+
+    @Test
+    fun `given a break pressed after the writer's clock when drained then it is authored clamped and the intent is consumed`() = runTest {
+        // Failure mode: a clock set back between the press and the drain must neither freeze the writer nor keep the
+        // intent pending forever; the local fact keeps the press instant.
+        withSync("schedule-sync-break.db") { store, writer ->
+            val focus = plan(30)
+            store.save(focus, workspaceId = null)
+            val sync = ScheduleSync(store) { today }
+            sync.pass(writer, workspace) { null }
+            val key = OccurrenceKey(focus.id, today)
+            val ref = ScheduleOccurrenceRef(ScheduleSyncId(testIdentifier(30)), today)
+            val workspaceId = testContext.workspaceId.value.copyBytes()
+            store.startBreak(setOf(key), ScheduleBreak(5_000, 10), today, workspaceId)
+            store.endBreak(setOf(key), today, workspaceId)
+
+            assertEquals(ScheduleSyncResult.Done(refused = false), sync.pass(writer, workspace) { null })
+
+            assertEquals(emptyList(), store.pending())
+            assertEquals(mapOf(ref to SynchronizedBreak(100, 10)), writer.projection().scheduleBreaks)
+            assertEquals(setOf(ref), writer.projection().scheduleBreakEnds)
+            assertEquals(mapOf(key to ScheduleBreak(100, 10)), store.shown().facts.breaks)
+            assertEquals(setOf(key), store.shown().facts.breakEnds)
+        }
+    }
+
+    @Test
+    fun `given a break from another device when a pass runs then this device shows it with its end`() = runTest {
+        withSync("schedule-sync-remote-break.db") { store, writer ->
+            val focus = plan(31)
+            val id = ScheduleSyncId(testIdentifier(31))
+            val ref = ScheduleOccurrenceRef(id, today)
+            writer.receive(
+                SyncOperationPayload.SchedulePut(id, focus.name, 0b0011111, 540, 600, true),
+                SyncOperationPayload.ScheduleBreak(ref, 2, 15),
+                SyncOperationPayload.ScheduleBreakEnd(ref),
+            )
+
+            ScheduleSync(store) { today }.pass(writer, workspace) { null }
+
+            assertEquals(mapOf(OccurrenceKey(focus.id, today) to ScheduleBreak(2, 15)), store.shown().facts.breaks)
+            assertEquals(setOf(OccurrenceKey(focus.id, today)), store.shown().facts.breakEnds)
         }
     }
 }

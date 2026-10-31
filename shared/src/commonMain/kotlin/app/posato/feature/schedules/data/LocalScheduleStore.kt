@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.data
 
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
@@ -49,6 +50,24 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
 
+    /**
+     * Takes one break in each occurrence of [keys], all from [taken]'s start for its length: one fact each, and
+     * one intent each while linked, in one transaction.
+     */
+    suspend fun startBreak(
+        keys: Set<OccurrenceKey>,
+        taken: ScheduleBreak,
+        authorDate: ScheduleDate,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit> = ScheduleResult.Failure(ScheduleStoreFailure.STORAGE_FAILURE)
+
+    /** Ends the breaks of [keys] early: one fact each, and one intent each while linked. */
+    suspend fun endBreak(
+        keys: Set<OccurrenceKey>,
+        authorDate: ScheduleDate,
+        workspaceId: ByteArray?,
+    ): ScheduleResult<Unit> = ScheduleResult.Failure(ScheduleStoreFailure.STORAGE_FAILURE)
+
     /** Records what the host saw: pins with their notice bits, released runs, and observed natural ends. */
     suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit>
 }
@@ -60,6 +79,8 @@ internal data class SyncedSchedules(
     val removed: Set<ScheduleId> = emptySet(),
     val skips: Set<OccurrenceKey> = emptySet(),
     val ends: Set<OccurrenceKey> = emptySet(),
+    val breaks: Map<OccurrenceKey, ScheduleBreak> = emptyMap(),
+    val breakEnds: Set<OccurrenceKey> = emptySet(),
 ) {
     override fun toString(): String {
         return "SyncedSchedules(redacted)"

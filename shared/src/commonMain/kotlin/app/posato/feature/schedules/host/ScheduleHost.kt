@@ -108,6 +108,11 @@ internal class ScheduleHost(
     override val ownsNotices: Boolean
         get() = ports.announcesStarts
 
+    /** What running parts on a break still hold here: it counts toward the limits but is not applied. */
+    fun reservedDuringBreak(): PauseItems {
+        return PauseItems()
+    }
+
     override fun refresh() {
         triggers.trySend(Unit)
     }

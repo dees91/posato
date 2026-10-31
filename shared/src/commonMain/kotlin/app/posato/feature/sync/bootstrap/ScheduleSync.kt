@@ -131,6 +131,8 @@ private fun ScheduleIntent.toMutation(): LocalSyncMutation? {
         is ScheduleIntent.Skip -> key.toRef()?.let { ref -> LocalSyncMutation.SkipOccurrence(ref, authorDate) }
 
         is ScheduleIntent.End -> key.toRef()?.let { ref -> LocalSyncMutation.EndOccurrence(ref, authorDate) }
+
+        is ScheduleIntent.Break, is ScheduleIntent.BreakEnd -> null
     }
 }
 
@@ -140,6 +142,7 @@ private fun SyncProjection.reflects(intent: ScheduleIntent): Boolean {
         is ScheduleIntent.Remove -> removedScheduleIds.any { it.toScheduleId() == intent.scheduleId }
         is ScheduleIntent.Skip -> scheduleSkips.any { it.toKey() == intent.key }
         is ScheduleIntent.End -> scheduleEnds.any { it.toKey() == intent.key }
+        is ScheduleIntent.Break, is ScheduleIntent.BreakEnd -> false
     }
 }
 

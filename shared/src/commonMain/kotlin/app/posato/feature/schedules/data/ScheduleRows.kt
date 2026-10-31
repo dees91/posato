@@ -197,5 +197,6 @@ private fun ScheduleIntent.kind(): String {
         is ScheduleIntent.Remove -> INTENT_REMOVE
         is ScheduleIntent.Skip -> FACT_SKIP
         is ScheduleIntent.End -> FACT_END
+        is ScheduleIntent.Break, is ScheduleIntent.BreakEnd -> throw ScheduleStoreException(ScheduleStoreFailure.INVALID_SCHEDULE)
     }
 }

@@ -87,4 +87,51 @@ class SyncWriterScheduleTest {
                 .open(testContext, transportKey()),
         )
     }
+
+    @Test
+    fun `given a break pressed later than the writer's clock when authored then its start is clamped and the writer stays usable`() = runTest {
+        // Failure mode: a clock set back between the press and the drain would make the authored start later than
+        // its own HLC, which every decoder rejects; refusing instead would freeze the writer and lose the break.
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = openWriter(store)
+        val ref = ScheduleOccurrenceRef(scheduleId, today)
+
+        val result = writer.mutate(LocalSyncMutation.BreakOccurrence(ref, today, startEpochMillis = 5_000, minutes = 10))
+
+        assertIs<LocalMutationResult.Success>(result)
+        val authored = store.current.acceptedBundles.values.map { it.operation }.single { it.payload is SyncOperationPayload.ScheduleBreak }
+        val payload = authored.payload as SyncOperationPayload.ScheduleBreak
+        assertEquals(authored.clock.physicalMillis, payload.startEpochMillis)
+        assertEquals(100, payload.startEpochMillis)
+        assertEquals(mapOf(ref to SynchronizedBreak(100, 10)), writer.projection().scheduleBreaks)
+        assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndOccurrenceBreak(ref, today)))
+        assertEquals(setOf(ref), writer.projection().scheduleBreakEnds)
+    }
+
+    @Test
+    fun `given a break pressed before the writer's clock when authored then the press instant is kept`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot())
+        val ref = ScheduleOccurrenceRef(scheduleId, today)
+
+        assertIs<LocalMutationResult.Success>(openWriter(store).mutate(LocalSyncMutation.BreakOccurrence(ref, today, 40, 5)))
+
+        val payload = store.current.acceptedBundles.values.map { it.operation.payload }.filterIsInstance<SyncOperationPayload.ScheduleBreak>()
+        assertEquals(listOf(40L), payload.map { it.startEpochMillis })
+    }
+
+    @Test
+    fun `given invalid break mutations when mutated then each is refused and the writer stays usable`() = runTest {
+        listOf(
+            LocalSyncMutation.BreakOccurrence(ScheduleOccurrenceRef(scheduleId, today), today, 50, 7),
+            LocalSyncMutation.BreakOccurrence(ScheduleOccurrenceRef(scheduleId, today.plusDays(401)), today, 50, 5),
+            LocalSyncMutation.BreakOccurrence(ScheduleOccurrenceRef(scheduleId, today), today, -1, 5),
+            LocalSyncMutation.EndOccurrenceBreak(ScheduleOccurrenceRef(scheduleId, ScheduleDate(2023, 2, 29)), today),
+        ).forEach { invalid ->
+            val store = FakeSyncReplicaStore(snapshot())
+            val writer = openWriter(store)
+
+            assertEquals(LocalMutationFailure.INVALID_MUTATION, assertIs<LocalMutationResult.Failure>(writer.mutate(invalid)).reason)
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
+        }
+    }
 }

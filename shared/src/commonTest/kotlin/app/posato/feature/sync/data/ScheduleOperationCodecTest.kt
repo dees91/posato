@@ -174,8 +174,65 @@ class ScheduleOperationCodecTest {
     }
 
     @Test
+    fun `given a break and a break end when encoded then the plaintext equals the hand-written vector and decodes back`() {
+        // Failure mode: a layout drift between targets would make one replica reject another's break as invalid.
+        val ref = ScheduleOccurrenceRef(scheduleId, ScheduleDate(2026, 9, 28))
+        val start = 1_790_000_000_000L
+        val vectors = listOf(
+            SyncOperationPayload.ScheduleBreak(ref, start, 10) to
+                byteArrayOf(20) + identifier(70) + u16(2026) + byteArrayOf(9, 28) + u64(start) + byteArrayOf(10),
+            SyncOperationPayload.ScheduleBreakEnd(ref) to byteArrayOf(21) + identifier(70) + u16(2026) + byteArrayOf(9, 28),
+        )
+
+        vectors.forEach { (payload, payloadBytes) ->
+            val operation = testOperation(60, 2, payload, physical = start)
+            val expected = breakHeader(60, start) + payloadBytes
+
+            assertContentEquals(expected, SyncOperationCodec.encode(operation), "kind ${payloadBytes[0]}")
+            assertEquals(operation, SyncOperationCodec.decode(expected), "kind ${payloadBytes[0]}")
+        }
+        assertEquals(29, vectors.first().second.size - 1)
+    }
+
+    @Test
+    fun `given each offered break length when decoded then five ten and fifteen are accepted and every other length is rejected`() {
+        val start = 1_790_000_000_000L
+        listOf(5, 10, 15).forEach { minutes -> assertNotNull(SyncOperationCodec.decode(breakBytes(start, start, minutes)), "$minutes") }
+        listOf(0, 1, 4, 6, 9, 11, 14, 16, 20, 30, 255).forEach { minutes ->
+            assertNull(SyncOperationCodec.decode(breakBytes(start, start, minutes)), "$minutes")
+            val payload = SyncOperationPayload.ScheduleBreak(ScheduleOccurrenceRef(scheduleId, ScheduleDate(2026, 9, 28)), start, minutes)
+            assertNull(SyncOperationCodec.encode(testOperation(61, 2, payload, physical = start)), "$minutes")
+        }
+    }
+
+    @Test
+    fun `given a break start after the operation's own clock when coded then the encoder and the decoder refuse it`() {
+        // Failure mode: a start ahead of its HLC would let one author's clock push a window into the future.
+        val clock = 1_790_000_000_000L
+        assertNotNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock - 1)))
+        assertNotNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock)))
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock + 1)))
+        val ahead = SyncOperationPayload.ScheduleBreak(ScheduleOccurrenceRef(scheduleId, ScheduleDate(2026, 9, 28)), clock + 1, 5)
+        assertNull(SyncOperationCodec.encode(testOperation(62, 2, ahead, physical = clock)))
+    }
+
+    @Test
+    fun `given a break start outside the instant range an invalid date or trailing bytes when decoded then it is rejected`() {
+        val clock = 1_790_000_000_000L
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = -1)))
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock, year = 2023, month = 2, day = 29)))
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock, year = 2101, month = 1, day = 1)))
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock) + byteArrayOf(0)))
+        assertNull(SyncOperationCodec.decode(breakBytes(physical = clock, start = clock).copyOf(breakBytes(clock, clock).size - 1)))
+        val endBytes = breakHeader(63, clock) + byteArrayOf(21) + identifier(70) + u16(2026) + byteArrayOf(9, 28)
+        assertNotNull(SyncOperationCodec.decode(endBytes))
+        assertNull(SyncOperationCodec.decode(endBytes + byteArrayOf(0)))
+        assertNull(SyncOperationCodec.decode(breakHeader(63, clock) + byteArrayOf(21) + identifier(70) + u16(2026) + byteArrayOf(2, 30)))
+    }
+
+    @Test
     fun `given mandatory kinds outside the known set when decoded then they are still rejected`() {
-        listOf(0, 20, 99, 127).forEach { kind ->
+        listOf(0, 22, 99, 127).forEach { kind ->
             assertNull(SyncOperationCodec.decode(header(51, 2) + byteArrayOf(kind.toByte()) + identifier(70)), "kind $kind")
         }
     }
@@ -195,6 +252,27 @@ class ScheduleOperationCodecTest {
     ): ByteArray {
         return header(40, 2) + byteArrayOf(8) + identifier(70) + u16(name.size) + name + byteArrayOf(weekdays.toByte()) + u16(start) +
             u16(end) + byteArrayOf(enabled.toByte())
+    }
+
+    private fun breakBytes(
+        physical: Long,
+        start: Long,
+        minutes: Int = 5,
+        year: Int = 2026,
+        month: Int = 9,
+        day: Int = 28,
+    ): ByteArray {
+        return breakHeader(64, physical) + byteArrayOf(20) + identifier(70) + u16(year) + byteArrayOf(month.toByte(), day.toByte()) +
+            u64(start) + byteArrayOf(minutes.toByte())
+    }
+
+    /** The header with sequence 2 and the given HLC physical time. */
+    private fun breakHeader(
+        id: Int,
+        physical: Long,
+    ): ByteArray {
+        val header = header(id, 2)
+        return header.copyOf(header.size - 10) + u64(physical) + u16(0)
     }
 
     private fun fact(

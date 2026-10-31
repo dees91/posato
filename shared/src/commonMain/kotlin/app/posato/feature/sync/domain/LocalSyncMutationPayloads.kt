@@ -55,6 +55,10 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
             SyncOperationPayload.ScheduleOccurrenceEnd(occurrence)
                 .takeIf { occurrence.isAuthorable(authorLocalDate) }
         }
+
+        is LocalSyncMutation.BreakOccurrence, is LocalSyncMutation.EndOccurrenceBreak -> {
+            null
+        }
     }
 }
 

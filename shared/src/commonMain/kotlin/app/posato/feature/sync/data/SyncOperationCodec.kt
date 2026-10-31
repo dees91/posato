@@ -189,6 +189,8 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
         is SyncOperationPayload.ScheduleRemove,
         is SyncOperationPayload.ScheduleSkip,
         is SyncOperationPayload.ScheduleOccurrenceEnd,
+        is SyncOperationPayload.ScheduleBreak,
+        is SyncOperationPayload.ScheduleBreakEnd,
         is SyncOperationPayload.OptionalExtension -> {
             return writeSchedulePayload(payload)
         }

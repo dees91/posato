@@ -180,4 +180,89 @@ class SyncReducerScheduleTest {
             assertEquals(expected.canonicalDigest(provider), shuffled.canonicalDigest(provider), "seed $seed")
         }
     }
+
+    // Failure mode for the break tests: replicas that see the same operations in another order must agree on
+    // which window an occurrence has, or one device releases while another restricts for the same break.
+    private fun takeBreak(
+        operationId: Int,
+        sequence: Long,
+        ref: ScheduleOccurrenceRef,
+        start: Long,
+        minutes: Int = 5,
+        author: Int = 10,
+    ): SyncOperation {
+        return testOperation(operationId, sequence, SyncOperationPayload.ScheduleBreak(ref, start, minutes), author, physical = start + 1)
+    }
+
+    @Test
+    fun `given concurrent breaks for one occurrence when reduced in any order then the earliest start wins everywhere`() {
+        val second = testOperation(2, 1, SyncOperationPayload.AuthorRegister, author = 11)
+        val operations = listOf(
+            register,
+            second,
+            testOperation(3, 2, put(60)),
+            takeBreak(4, 3, ref(60), start = 1_000_000, minutes = 10),
+            takeBreak(5, 2, ref(60), start = 900_000, minutes = 15, author = 11),
+        )
+        val expected = SyncReducer.reduce(operations)
+
+        assertEquals(mapOf(ref(60) to SynchronizedBreak(900_000, 15)), expected.scheduleBreaks)
+        repeat(20) { seed -> assertEquals(expected, SyncReducer.reduce(operations.shuffled(Random(seed))), "seed $seed") }
+    }
+
+    @Test
+    fun `given two breaks with the same start when reduced then the smaller total order wins in every order`() {
+        val second = testOperation(2, 1, SyncOperationPayload.AuthorRegister, author = 11)
+        val first = takeBreak(4, 2, ref(61), start = 500_000, minutes = 5)
+        val later = takeBreak(5, 2, ref(61), start = 500_000, minutes = 15, author = 11)
+        val operations = listOf(register, second, first, later)
+
+        listOf(operations, operations.reversed(), operations.shuffled(Random(7))).forEach { ordered ->
+            assertEquals(mapOf(ref(61) to SynchronizedBreak(500_000, 5)), SyncReducer.reduce(ordered).scheduleBreaks)
+        }
+    }
+
+    @Test
+    fun `given a break end before or after its break when reduced then the break is ended for good`() {
+        val end = testOperation(6, 3, SyncOperationPayload.ScheduleBreakEnd(ref(62)))
+        val onlyEnd = SyncReducer.reduce(listOf(register, end.copy(authorSequence = 2)))
+        assertEquals(setOf(ref(62)), onlyEnd.scheduleBreakEnds)
+        assertEquals(emptyMap(), onlyEnd.scheduleBreaks)
+
+        listOf(
+            listOf(register, takeBreak(5, 2, ref(62), start = 400_000), end),
+            listOf(end, takeBreak(5, 2, ref(62), start = 400_000), register),
+        ).forEach { operations ->
+            val projection = SyncReducer.reduce(operations)
+
+            assertEquals(setOf(ref(62)), projection.scheduleBreakEnds)
+            assertEquals(mapOf(ref(62) to SynchronizedBreak(400_000, 5)), projection.scheduleBreaks)
+        }
+    }
+
+    @Test
+    fun `given breaks for a removed schedule when reduced then they are ignored whatever the order`() {
+        val remove = testOperation(7, 4, SyncOperationPayload.ScheduleRemove(id(63)))
+        listOf(
+            listOf(register, takeBreak(5, 2, ref(63), start = 300_000), testOperation(6, 3, SyncOperationPayload.ScheduleBreakEnd(ref(63))), remove),
+            listOf(remove, register, testOperation(6, 3, SyncOperationPayload.ScheduleBreakEnd(ref(63))), takeBreak(5, 2, ref(63), start = 300_000)),
+        ).forEach { operations ->
+            val projection = SyncReducer.reduce(operations)
+
+            assertEquals(emptyMap(), projection.scheduleBreaks)
+            assertEquals(emptySet(), projection.scheduleBreakEnds)
+        }
+    }
+
+    @Test
+    fun `given breaks on two dates of one schedule when reduced then each date keeps its own break`() {
+        val projection = SyncReducer.reduce(
+            listOf(register, takeBreak(5, 2, ref(64, day = 28), start = 300_000), takeBreak(6, 3, ref(64, day = 29), start = 700_000, minutes = 10)),
+        )
+
+        assertEquals(
+            mapOf(ref(64, day = 28) to SynchronizedBreak(300_000, 5), ref(64, day = 29) to SynchronizedBreak(700_000, 10)),
+            projection.scheduleBreaks,
+        )
+    }
 }

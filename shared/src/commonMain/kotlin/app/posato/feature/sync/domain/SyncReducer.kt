@@ -32,6 +32,16 @@ internal data class SynchronizedPauseSet(
     }
 }
 
+/** The winning break of one occurrence. */
+internal data class SynchronizedBreak(
+    val startEpochMillis: Long,
+    val minutes: Int,
+) {
+    override fun toString(): String {
+        return "SynchronizedBreak(redacted)"
+    }
+}
+
 /** The effective schedule for one identifier: its greatest total-order put. */
 internal data class SynchronizedSchedule(
     val scheduleId: ScheduleSyncId,
@@ -76,6 +86,9 @@ internal data class SyncProjection(
     val scheduleSkips: Set<ScheduleOccurrenceRef> = emptySet(),
     val scheduleEnds: Set<ScheduleOccurrenceRef> = emptySet(),
     val refusedSchedules: List<SynchronizedSchedule> = emptyList(),
+    /** Each occurrence's winning break: the earliest start, ties by total order. */
+    val scheduleBreaks: Map<ScheduleOccurrenceRef, SynchronizedBreak> = emptyMap(),
+    val scheduleBreakEnds: Set<ScheduleOccurrenceRef> = emptySet(),
     val pauseSets: List<SynchronizedPauseSet> = emptyList(),
     val removedPauseSetIds: Set<PauseSetId> = emptySet(),
     val refusedPauseSetIds: Set<PauseSetId> = emptySet(),
@@ -298,6 +311,8 @@ private class ProjectionAccumulator(
             is SyncOperationPayload.ScheduleRemove,
             is SyncOperationPayload.ScheduleSkip,
             is SyncOperationPayload.ScheduleOccurrenceEnd,
+            is SyncOperationPayload.ScheduleBreak,
+            is SyncOperationPayload.ScheduleBreakEnd,
             is SyncOperationPayload.OptionalExtension -> {
                 applySchedule(payload)
             }

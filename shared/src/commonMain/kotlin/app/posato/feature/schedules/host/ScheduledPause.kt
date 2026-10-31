@@ -46,6 +46,12 @@ internal data class ScheduledPause(
     val setupUnannounced: Set<OccurrenceKey> = emptySet(),
     val parts: List<ScheduledPart> = emptyList(),
     val notPausedYet: Int = 0,
+    /** Running occurrences whose break releases them now; their lifetime is unchanged. */
+    val onBreak: Set<OccurrenceKey> = emptySet(),
+    /** When the running break ends, or null while none runs. */
+    val breakEndEpochMillis: Long? = null,
+    /** Whether any running occurrence already used its break, so no break can be taken now. */
+    val breakUsed: Boolean = false,
 ) {
     val restricts: Boolean
         get() {
@@ -55,6 +61,17 @@ internal data class ScheduledPause(
     override fun toString(): String {
         return "ScheduledPause(redacted)"
     }
+}
+
+/** What a press of Take a break did. */
+internal enum class BreakStart {
+    STARTED,
+
+    /** No scheduled pause runs, a running occurrence already used its break, or the length is not offered. */
+    UNAVAILABLE,
+
+    /** The break could not be recorded; nothing was released. */
+    FAILED,
 }
 
 /** Notice bits kept on each pin, so a relaunch never posts a notice twice. */
@@ -73,6 +90,12 @@ internal interface ScheduledPauses {
     )
 
     suspend fun endEarly(): Boolean
+
+    /** Takes one break of [minutes] in every running occurrence (overlap option A). */
+    suspend fun startBreak(minutes: Int): BreakStart = BreakStart.UNAVAILABLE
+
+    /** Ends the running break: restrictions return at once. */
+    suspend fun endBreak(): Boolean = false
 
     /** Runs the host where this process hosts schedules; a device without a host returns at once. */
     suspend fun run() = Unit
