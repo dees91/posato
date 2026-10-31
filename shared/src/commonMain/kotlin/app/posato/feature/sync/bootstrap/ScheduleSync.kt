@@ -153,8 +153,10 @@ private fun SyncProjection.reflects(intent: ScheduleIntent): Boolean {
 
         is ScheduleIntent.End -> scheduleEnds.any { it.toKey() == intent.key }
 
-        // Any shared break for the occurrence means it has used its break, whatever start won.
-        is ScheduleIntent.Break -> scheduleBreaks.keys.any { it.toKey() == intent.key }
+        // Only a shared break starting no later holds the occurrence's place; an earlier local one is still published.
+        is ScheduleIntent.Break -> scheduleBreaks.entries.any { (ref, shared) ->
+            ref.toKey() == intent.key && ScheduleBreak(shared.startEpochMillis, shared.minutes).prevailsOver(intent.taken)
+        }
 
         is ScheduleIntent.BreakEnd -> scheduleBreakEnds.any { it.toKey() == intent.key }
     }

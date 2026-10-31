@@ -48,7 +48,9 @@ internal object ScheduleHostPolicy {
         val forgotten = snapshot.facts.expired.keys.filter { it.date < yesterday }.toSet()
         val pins = snapshot.pins.filter { it.key in runningKeys } + newPins
         val facts = snapshot.facts
-        val newlyOver = ScheduleBreakEvaluation.newlyOver(facts, nowEpochMillis, yesterday)
+        // An occurrence that stopped running here ends its break with it, so a restart the same day is not released.
+        val stopped = released.filter { key -> key in facts.breaks && key !in facts.breaksOver && key.date >= yesterday }
+        val newlyOver = ScheduleBreakEvaluation.newlyOver(facts, nowEpochMillis, yesterday) + stopped
         val over = facts.breaksOver + newlyOver
         val active = running.mapNotNull { occurrence ->
             ScheduleBreakEvaluation.active(facts, occurrence.key, nowEpochMillis, over)?.let { occurrence.key to it }

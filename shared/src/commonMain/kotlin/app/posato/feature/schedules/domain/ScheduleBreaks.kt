@@ -10,6 +10,14 @@ internal data class ScheduleBreak(
             return startEpochMillis + minutes * MINUTE_MILLIS
         }
 
+    /**
+     * Whether this break keeps its occurrence's place against [candidate]: the earliest start wins, and an equal start
+     * keeps the break already known, so publishing [candidate] would change nothing.
+     */
+    fun prevailsOver(candidate: ScheduleBreak): Boolean {
+        return startEpochMillis <= candidate.startEpochMillis
+    }
+
     override fun toString(): String {
         return "ScheduleBreak(redacted)"
     }

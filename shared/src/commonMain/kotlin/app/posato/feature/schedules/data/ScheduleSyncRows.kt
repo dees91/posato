@@ -30,7 +30,10 @@ internal suspend fun PosatoDatabase.seedWorkspace(
     return true
 }
 
-/** Publishes this device's facts from yesterday on that the workspace does not hold yet, for the plans it keeps. */
+/**
+ * Publishes this device's facts from yesterday on that the workspace does not hold yet, for the plans it keeps; a
+ * break is held only when the workspace's break for the occurrence starts no later.
+ */
 private suspend fun PosatoDatabase.seedFacts(
     workspaceId: ByteArray,
     facts: ScheduleFacts,
@@ -42,7 +45,8 @@ private suspend fun PosatoDatabase.seedFacts(
     val recent = { key: OccurrenceKey -> kept(key) && key.date >= yesterday }
     val pending = facts.skipped.filter { recent(it) && it !in synced.skips }.map { key -> ScheduleIntent.Skip(key, today) } +
         facts.ended.filter { recent(it) && it !in synced.ends }.map { key -> ScheduleIntent.End(key, today) } +
-        facts.breaks.filter { (key) -> recent(key) && key !in synced.breaks }.map { (key, taken) -> ScheduleIntent.Break(key, today, taken) } +
+        facts.breaks.filter { (key, taken) -> recent(key) && synced.breaks[key]?.prevailsOver(taken) != true }
+            .map { (key, taken) -> ScheduleIntent.Break(key, today, taken) } +
         facts.breakEnds.filter { recent(it) && it !in synced.breakEnds }.map { key -> ScheduleIntent.BreakEnd(key, today) }
     pending.forEach { intent -> writeIntent(workspaceId, intent) }
 }

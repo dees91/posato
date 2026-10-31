@@ -183,7 +183,7 @@ internal class ScheduleHost(
             maxOf(snapshot.facts.expired[key] ?: Long.MIN_VALUE, step.update.expired[key] ?: Long.MIN_VALUE)
         }
         breakChange.value = step.nextBreakChange
-        reserved = PauseItems()
+        // The previous reservation stays until its replacement exists, so the room it holds is never seen free.
         val facts = snapshot.facts.copy(expired = observed, breaksOver = snapshot.facts.breaksOver + step.update.breaksOver)
         val published = ScheduleMonitorInput(
             snapshot.copy(facts = facts, pins = step.pins),
@@ -195,6 +195,7 @@ internal class ScheduleHost(
             // Idempotent: it clears only a held claim, and retries a clear that failed. It runs before the monitor
             // sees the new table, so a pause an edit stopped is not reported as over.
             ports.claims.releaseSchedule()
+            reserved = PauseItems()
             ports.publish(published)
             unknownReads = 0
             mutablePause.value = null
@@ -254,11 +255,16 @@ internal class ScheduleHost(
         snapshot: ScheduleSnapshot,
         onBreak: Set<OccurrenceKey>,
     ): ScheduledPauseState {
-        if (ports.maintenanceClosed()) {
-            return ScheduledPauseState.WAITING
+        val gate = if (ports.maintenanceClosed()) null else ports.gate.check()
+        if (gate != StartGate.READY && onBreak.isEmpty()) {
+            // Nothing is on a break, so nothing waits to return; parts on a break keep their reservation.
+            reserved = PauseItems()
         }
-        val gate = ports.gate.check()
-        return if (gate == StartGate.READY) apply(running, snapshot, onBreak) else gate.toState()
+        return when (gate) {
+            null -> ScheduledPauseState.WAITING
+            StartGate.READY -> apply(running, snapshot, onBreak)
+            else -> gate.toState()
+        }
     }
 
     /**
@@ -283,15 +289,19 @@ internal class ScheduleHost(
         onBreak: Set<OccurrenceKey> = emptySet(),
     ): ScheduledPauseState {
         val composed = composeScheduledRequest(running, snapshot, ports, onBreak)
-        reserved = composed.reserved
+        // Both reservations count while the claim changes; only the new one once the helper holds the request.
+        reserved += composed.reserved
         // Where the claims compose themselves (the iPhone's monitor), only they know what waits for room.
         notPausedYet = if (ports.claimsCompose) 0 else composed.notPausedYet
         val request = composed.request
         if (!ports.claimsCompose && request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()
+            reserved = composed.reserved
             return ScheduledPauseState.APPLIED
         }
-        return when (ports.claims.updateSchedule(request).outcome) {
+        val outcome = ports.claims.updateSchedule(request).outcome
+        reserved = composed.reserved
+        return when (outcome) {
             EnforcementOutcome.APPLIED -> ScheduledPauseState.APPLIED
 
             // The daemon also refuses the grant while another account has the console or the grant read had no answer.
