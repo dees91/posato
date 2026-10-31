@@ -19,7 +19,7 @@ class FolderRelayTest {
 
     @Test
     fun `given a listed file whose bytes cannot be read yet when a round runs then it stays on its device`() {
-        val author = MemoryEndpoint("primary").apply { files[path] = bytes; unreadable += path }
+        val author = unreadableAuthor()
         val other = MemoryEndpoint("linux")
         val relay = FolderRelay(Files.createTempDirectory("relay-hub"), listOf(author, other))
 
@@ -32,7 +32,7 @@ class FolderRelayTest {
 
     @Test
     fun `given a file that becomes readable when the next round runs then every device receives it`() {
-        val author = MemoryEndpoint("primary").apply { files[path] = bytes; unreadable += path }
+        val author = unreadableAuthor()
         val other = MemoryEndpoint("linux")
         val relay = FolderRelay(Files.createTempDirectory("relay-hub"), listOf(author, other))
         relay.round()
@@ -44,8 +44,17 @@ class FolderRelayTest {
         assertContentEquals(bytes, author.files[path])
     }
 
+    private fun unreadableAuthor(): MemoryEndpoint {
+        val author = MemoryEndpoint("primary")
+        author.files[path] = bytes
+        author.unreadable += path
+        return author
+    }
+
     /** A folder in memory; an unreadable file lists with the hash of no bytes and is left out of a pull, as a dataless placeholder is. */
-    private class MemoryEndpoint(override val name: String) : RelayEndpoint {
+    private class MemoryEndpoint(
+        override val name: String,
+    ) : RelayEndpoint {
         val files = linkedMapOf<String, ByteArray>()
         val unreadable = mutableSetOf<String>()
 
