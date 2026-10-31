@@ -52,6 +52,8 @@ class GuardService : Service() {
                 delay(WAKE_INTERVAL_MILLIS)
             }
         }
+        // A break ends at its exact instant even while the phone idles, not at the next minute's wake.
+        scope.launch { runtime.nextBreakChange.collect { at -> scheduleBreakWake(this@GuardService, at) } }
     }
 
     override fun onStartCommand(
@@ -126,9 +128,33 @@ class GuardService : Service() {
         private const val WATCH_MILLIS = 500L
         private const val INITIAL_LOOKBACK_MILLIS = 3_600_000L
         private const val WAKE_INTERVAL_MILLIS = 60_000L
+        private const val BREAK_WAKE_REQUEST = 1
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, GuardService::class.java))
+        }
+
+        /** An exact alarm at a break's start or end, replacing the previous one; none while no break runs. */
+        fun scheduleBreakWake(
+            context: Context,
+            at: Long?,
+        ) {
+            val alarms = context.getSystemService(AlarmManager::class.java)
+            val wake = PendingIntent.getBroadcast(
+                context,
+                BREAK_WAKE_REQUEST,
+                Intent(context, WakeReceiver::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            alarms.cancel(wake)
+            if (at == null) {
+                return
+            }
+            if (alarms.canScheduleExactAlarms()) {
+                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, wake)
+            } else {
+                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, wake)
+            }
         }
 
         /** An exact alarm a minute ahead, so schedules and expiries are evaluated on time even while the phone idles. */
