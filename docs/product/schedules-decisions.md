@@ -115,8 +115,10 @@ choices, at the `SCHEDULE-007` gate. The task brief is
   another time zone) is never released by the break. On every device except
   the Mac it restricts its own items at once, like an occurrence that starts
   during the break. On the Mac, a received session is handled as when an
-  occurrence ends while it is active: the Mac shows **Resume restrictions**
-  for it at once.
+  occurrence ends while it is active (`agent-delegated` 2026-10-31, awaiting
+  the maintainer's confirmation): with **Start sessions without the
+  password** on, the Mac applies it by itself (`MACOS-029`); only with that
+  switch off does it show **Resume restrictions** for it at once.
 - **Never ends or shortens an occurrence.** A break suspends enforcement of
   the occurrence; it does not change when the occurrence starts or ends.
   An occurrence that reaches its planned end during a break ends there, and

@@ -1082,9 +1082,12 @@ own the decisions.
   - on iPhone, when the device cannot arm the return: "Can't take a break on
     this iPhone right now." (fail closed, nothing is released).
 - **Manual session during a break.** On the Mac, a session received during
-  a break shows **Resume restrictions** at once, as when a scheduled pause
-  ends while it runs. Elsewhere it shows as a
-  restricting part, like a pause that started during the break.
+  a break is handled as when a scheduled pause ends while it runs
+  (`agent-delegated` 2026-10-31, awaiting the maintainer's confirmation):
+  with **Start sessions without the password** on, Posato applies it by
+  itself (`MACOS-029`) and Session reads "Restrictions active."; with the
+  switch off, it shows **Resume restrictions** at once. Elsewhere it shows
+  as a restricting part, like a pause that started during the break.
 - **After the break.** The break line disappears at the break end and the
   limit caption shows. Nothing announces the break's start or end; Session
   and the menu show the truth.
