@@ -540,6 +540,7 @@ Pour l’essentiel.</string>
     <string name="session_break_started">%1$s a commencé et restreint.</string>
     <string name="session_break_taken">Une pause a déjà été faite dans cette pause programmée.</string>
     <string name="session_break_manual">Les pauses existent seulement dans les pauses programmées. Arrêter plus tôt arrête cette session.</string>
+    <string name="session_break_cannot_arm">Impossible de faire une pause sur cet iPhone pour le moment.</string>
     <string name="presence_on_break">Pause programmée : %1$s, en pause jusqu’à %2$s</string>
     <string name="action_end_pause">Arrêter la pause</string>
     <string name="action_keep_pausing">Continuer la pause</string>

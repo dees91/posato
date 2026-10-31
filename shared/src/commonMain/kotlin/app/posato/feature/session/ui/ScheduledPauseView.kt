@@ -35,6 +35,7 @@ import app.posato.generated.resources.action_take_a_break
 import app.posato.generated.resources.duration_minutes
 import app.posato.generated.resources.notification_schedule_setup_title
 import app.posato.generated.resources.session_break_body
+import app.posato.generated.resources.session_break_cannot_arm
 import app.posato.generated.resources.session_break_manual
 import app.posato.generated.resources.session_break_started
 import app.posato.generated.resources.session_break_taken
@@ -86,6 +87,9 @@ internal enum class BreakUnavailable {
 
     /** A manual session is active in the workspace, here or received. */
     MANUAL_SESSION,
+
+    /** This iPhone could not register the break's return, so it takes no break right now. */
+    CANNOT_ARM,
 }
 
 /**
@@ -181,6 +185,7 @@ private fun breakUnavailableText(unavailable: BreakUnavailable): String {
     return when (unavailable) {
         BreakUnavailable.TAKEN -> stringResource(Res.string.session_break_taken)
         BreakUnavailable.MANUAL_SESSION -> stringResource(Res.string.session_break_manual)
+        BreakUnavailable.CANNOT_ARM -> stringResource(Res.string.session_break_cannot_arm)
     }
 }
 

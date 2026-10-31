@@ -36,6 +36,15 @@ public class IosMonitorRunning(
     public val endEpochSeconds: Long,
 )
 
+/** A running occurrence's break, in epoch seconds; over once End break or this device ended it. */
+public class IosMonitorBreak(
+    public val id: String,
+    public val date: String,
+    public val startEpochSeconds: Long,
+    public val endEpochSeconds: Long,
+    public val over: Boolean,
+)
+
 /**
  * What the Device Activity monitor needs to start and end schedules while the app is closed. Dates are
  * local `YYYY-MM-DD`; application identifiers are resolved to tokens on the Swift side.
@@ -50,6 +59,8 @@ public class IosScheduleMonitorTable(
     public val manualSessionEndEpochSeconds: Long,
     /** The sets the listed plans and running occurrences use, each once. */
     public val sets: List<IosMonitorSet>,
+    /** The breaks of the running occurrences. */
+    public val breaks: List<IosMonitorBreak>,
 ) {
     override fun toString(): String {
         return "IosScheduleMonitorTable(redacted)"
@@ -68,6 +79,15 @@ public interface IosScheduleMonitorProvider {
      * set and what it already holds, within what the manual session leaves, and applies them.
      */
     public fun applySchedule(handler: (IosEnforcementOutcome) -> Unit)
+
+    /**
+     * Registers the monitor's return at the nearest pending break deadline, [deadlineEpochSeconds] included, before
+     * a break is recorded; false takes no break.
+     */
+    public fun armBreak(deadlineEpochSeconds: Long): Boolean
+
+    /** Occurrences a break releases now, as `<schedule id>:<YYYY-MM-DD>`: only those whose return is registered. */
+    public fun coveredBreaks(): List<String>
 }
 
 /** A process without a monitor, such as a test host. */
@@ -80,6 +100,14 @@ public object UnavailableIosScheduleMonitor : IosScheduleMonitorProvider {
 
     override fun applySchedule(handler: (IosEnforcementOutcome) -> Unit) {
         handler(IosEnforcementOutcome.UNAVAILABLE)
+    }
+
+    override fun armBreak(deadlineEpochSeconds: Long): Boolean {
+        return false
+    }
+
+    override fun coveredBreaks(): List<String> {
+        return emptyList()
     }
 }
 

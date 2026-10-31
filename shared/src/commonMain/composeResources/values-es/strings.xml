@@ -540,6 +540,7 @@ Para lo que importa.</string>
     <string name="session_break_started">%1$s empezó y está restringiendo.</string>
     <string name="session_break_taken">Ya se tomó un descanso en esta pausa programada.</string>
     <string name="session_break_manual">Los descansos son solo para pausas programadas. Terminar antes termina esta sesión.</string>
+    <string name="session_break_cannot_arm">Ahora no se puede tomar un descanso en este iPhone.</string>
     <string name="presence_on_break">Pausa programada: %1$s, en un descanso hasta %2$s</string>
     <string name="action_end_pause">Terminar pausa</string>
     <string name="action_keep_pausing">Seguir en pausa</string>

@@ -540,6 +540,7 @@ Für das, was zählt.</string>
     <string name="session_break_started">%1$s hat begonnen und schränkt ein.</string>
     <string name="session_break_taken">In dieser geplanten Pause wurde schon eine Pause gemacht.</string>
     <string name="session_break_manual">Pausen gibt es nur in geplanten Pausen. Vorzeitig beenden beendet diese Sitzung.</string>
+    <string name="session_break_cannot_arm">Auf diesem iPhone ist gerade keine Pause möglich.</string>
     <string name="presence_on_break">Geplante Pause: %1$s, in der Pause bis %2$s</string>
     <string name="action_end_pause">Pause beenden</string>
     <string name="action_keep_pausing">Weiter pausieren</string>

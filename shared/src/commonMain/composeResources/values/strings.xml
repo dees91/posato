@@ -540,6 +540,7 @@ For what matters.</string>
     <string name="session_break_started">%1$s started and is restricting.</string>
     <string name="session_break_taken">A break was already taken in this scheduled pause.</string>
     <string name="session_break_manual">Breaks are only for scheduled pauses. End early ends this session.</string>
+    <string name="session_break_cannot_arm">Can’t take a break on this iPhone right now.</string>
     <string name="presence_on_break">Scheduled pause: %1$s, on a break until %2$s</string>
     <string name="action_end_pause">End pause</string>
     <string name="action_keep_pausing">Keep pausing</string>

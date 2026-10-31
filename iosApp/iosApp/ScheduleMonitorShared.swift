@@ -424,16 +424,35 @@ struct ScheduleMonitorFileStore {
 
     /// A small record per occurrence whose break this device saw end, written by the app or the extension, so a
     /// clock set back afterwards never releases that break again.
-    func recordBreakOver(scheduleId: String, date: String) throws {}
-
-    func breaksOver() -> Set<String> {
-        []
+    func recordBreakOver(scheduleId: String, date: String) throws {
+        let record = BreakOverRecord(version: Self.breakOverRecordVersion, id: scheduleId, date: date)
+        try write(JSONEncoder().encode(record), fileName: "breakover-\(scheduleId)-\(date)-v1.json")
     }
 
-    func removeBreakOver(except keep: Set<String>) {}
+    /// Occurrences whose break is over on this device, as `<id>:<date>`.
+    func breaksOver() -> Set<String> {
+        Set(breakOverNames().compactMap { breakOverRecord($0) }.map { "\($0.id):\($0.date)" })
+    }
 
+    func removeBreakOver(except keep: Set<String>) {
+        for name in breakOverNames() {
+            guard let record = breakOverRecord(name), !keep.contains("\(record.id):\(record.date)") else { continue }
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(name))
+        }
+    }
+
+    /// What running parts on a break hold now: it is not applied, but it counts toward the device's limits.
     func heldDuringBreak(at time: Date) -> (domains: Set<String>, tokens: Set<Data>) {
-        ([], [])
+        guard let file = readTable() else { return ([], []) }
+        let over = breaksOver()
+        var domains = Set<String>()
+        var tokens = Set<Data>()
+        for window in file.breaks ?? [] where !window.over && !over.contains(window.key) && window.start <= time && time < window.end {
+            guard let record = held(scheduleId: window.id, date: window.date) else { continue }
+            domains.formUnion(record.domains)
+            tokens.formUnion(record.tokens)
+        }
+        return (domains, tokens)
     }
 
     private struct BreakOverRecord: Codable {
@@ -763,19 +782,28 @@ enum ScheduleBreakActivity {
 
 /// Which break windows release their part now, and which deadline the break activity must stand for.
 enum ScheduleBreakWindows {
+    /// Windows not over in the table or in this device's break-over records.
     static func open(_ file: ScheduleMonitorFile, over: Set<String>) -> [ScheduleMonitorFile.Break] {
-        []
+        (file.breaks ?? []).filter { !$0.over && !over.contains($0.key) }
     }
 
+    /// The nearest deadline of an open window that has not passed at `time`.
     static func nearestDeadline(_ file: ScheduleMonitorFile, over: Set<String>, at time: Date) -> Date? {
-        nil
+        open(file, over: over).map(\.end).filter { $0 > time }.min()
     }
 
+    /// A window is covered when the break activity is registered for a deadline inside it: that deadline's
+    /// callback re-applies every window that ended and chains to the next.
     static func covered(_ window: ScheduleMonitorFile.Break, armed: Date?) -> Bool {
-        false
+        guard let armed else { return false }
+        return armed >= window.start && armed <= window.end
     }
 
+    /// Running parts a break releases at `time`: covered, open, and before its end less the early-callback
+    /// margin, so a callback up to a minute early re-applies.
     static func releasing(_ file: ScheduleMonitorFile, over: Set<String>, armed: Date?, at time: Date) -> Set<String> {
-        []
+        Set(open(file, over: over).filter { window in
+            covered(window, armed: armed) && window.start <= time && time < window.end.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin)
+        }.map(\.key))
     }
 }

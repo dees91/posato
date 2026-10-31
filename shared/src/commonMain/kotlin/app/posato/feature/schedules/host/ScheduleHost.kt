@@ -63,6 +63,10 @@ internal class ScheduleHostPorts(
     val claimsCompose: Boolean = false,
     /** Hands the plans, facts and running occurrences to whatever starts schedules while the app is closed. */
     val publish: suspend (ScheduleMonitorInput) -> Unit = {},
+    /** Registers the return at a new break's end before the break is recorded (iPhone); false takes no break. */
+    val armBreak: suspend (Long) -> Boolean = { true },
+    /** The parts on a break that this device actually releases now; elsewhere every part on a break. */
+    val coveredBreaks: suspend (Set<OccurrenceKey>) -> Set<OccurrenceKey> = { it },
 )
 
 /**
@@ -86,6 +90,9 @@ internal class ScheduleHost(
     private val breakChange = MutableStateFlow<Long?>(null)
 
     @Volatile
+    private var armFailedAt: Long? = null
+
+    @Volatile
     private var reserved = PauseItems()
         set(value) {
             field = value
@@ -95,6 +102,9 @@ internal class ScheduleHost(
     private val mutableAnyEnabled = MutableStateFlow(false)
 
     override val pause: StateFlow<ScheduledPause?> = mutablePause.asStateFlow()
+
+    /** The next instant a running break starts or ends, so a platform can wake the process exactly then. */
+    val nextBreakChange: StateFlow<Long?> = breakChange.asStateFlow()
 
     /** Whether any schedule can start here; Quit asks first while one can. */
     val anyEnabled: StateFlow<Boolean> = mutableAnyEnabled.asStateFlow()
@@ -217,15 +227,25 @@ internal class ScheduleHost(
             ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis, occurrence.key)
         }
         val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)
-            ?.copy(
-                parts = parts,
-                notPausedYet = notPausedYet,
-                onBreak = step.onBreak,
-                breakEndEpochMillis = step.breakEndEpochMillis,
-                breakUsed = step.breakUsed,
-            )
+            ?.copy(parts = parts, notPausedYet = notPausedYet)
+            ?.withBreak(step, now)
             ?.withoutAnnounced(announced.value)
         mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
+    }
+
+    /** The break as this device applies it: only parts whose return is registered here show as on a break. */
+    private suspend fun ScheduledPause.withBreak(
+        step: HostStep,
+        now: Long,
+    ): ScheduledPause {
+        val shownOnBreak = ports.coveredBreaks(step.onBreak)
+        val armFailed = armFailedAt?.let { now - it < ARM_RETRY_MILLIS } ?: false
+        return copy(
+            onBreak = shownOnBreak,
+            breakEndEpochMillis = step.breakEndEpochMillis.takeIf { shownOnBreak.isNotEmpty() },
+            breakUsed = step.breakUsed,
+            breakArmFailed = armFailed && !step.breakUsed,
+        )
     }
 
     /** Starts another process announced are marked like the host's own, so a relaunch never announces them. */
@@ -325,9 +345,17 @@ internal class ScheduleHost(
                 return BreakStart.UNAVAILABLE
             }
             val now = clock.currentEpochMillis()
-            val taken = store.recordFact(keys, OccurrenceFact.Break(ScheduleBreak(now, minutes)), zone.localAt(now).date, workspaceId = null)
+            val taken = ScheduleBreak(now, minutes)
+            // The return is registered before anything is recorded: a phone that cannot arm it takes no break anywhere.
+            if (!ports.armBreak(taken.endEpochMillis)) {
+                armFailedAt = now
+                mutablePause.update { pause -> pause?.copy(breakArmFailed = true) }
+                return BreakStart.CANNOT_ARM
+            }
+            armFailedAt = null
+            val recorded = store.recordFact(keys, OccurrenceFact.Break(taken), zone.localAt(now).date, workspaceId = null)
             triggers.trySend(Unit)
-            return if (taken is ScheduleResult.Success) BreakStart.STARTED else BreakStart.FAILED
+            return if (recorded is ScheduleResult.Success) BreakStart.STARTED else BreakStart.FAILED
         }
 
         override suspend fun end(): Boolean {
@@ -415,3 +443,6 @@ internal fun minuteTicks(clock: SessionClock): Flow<Unit> {
 private const val MINUTE_MILLIS: Long = 60_000L
 private const val TICK_SLACK_MILLIS: Long = 250L
 private const val UNKNOWN_READS_BEFORE_RETRY: Int = 2
+
+/** How long Take a break stays unavailable after this device could not register the break's return. */
+private const val ARM_RETRY_MILLIS: Long = 60_000L

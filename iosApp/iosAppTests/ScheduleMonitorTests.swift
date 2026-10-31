@@ -584,7 +584,7 @@ final class ScheduleMonitorTests: XCTestCase {
                 setId: ScheduleMonitor.firstSetId
             )],
             running: [], noticesEnabled: true, endTitle: "Pause over", endBody: "Available again.", manualSessionEndEpochSeconds: 0,
-            sets: [IosMonitorSet(id: ScheduleMonitor.firstSetId, domains: ["example.com"], mappingIds: [])]
+            sets: [IosMonitorSet(id: ScheduleMonitor.firstSetId, domains: ["example.com"], mappingIds: [])], breaks: []
         )
 
         publisher.publish(table: table)
@@ -610,7 +610,7 @@ final class ScheduleMonitorTests: XCTestCase {
                     stoppedDates: [], startTitle: "", startBody: "", setId: leisureSet
                 ),
             ],
-            running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets
+            running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets, breaks: []
         )
     }
 
@@ -682,7 +682,7 @@ final class ScheduleMonitorTests: XCTestCase {
         }
 
         publisher.publish(table: IosScheduleMonitorTable(
-            schedules: schedules, running: [], noticesEnabled: true, endTitle: title, endBody: title, manualSessionEndEpochSeconds: 0, sets: sets
+            schedules: schedules, running: [], noticesEnabled: true, endTitle: title, endBody: title, manualSessionEndEpochSeconds: 0, sets: sets, breaks: []
         ))
 
         let table = try XCTUnwrap(files.readTable())

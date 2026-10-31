@@ -173,6 +173,7 @@ private fun scheduledPauseView(
         unavailable = when {
             scheduled.breakUsed -> BreakUnavailable.TAKEN
             state.status is LocalSessionStatus.Active -> BreakUnavailable.MANUAL_SESSION
+            scheduled.breakArmFailed -> BreakUnavailable.CANNOT_ARM
             else -> null
         },
         names = scheduled.parts.map { it.name }.distinct(),

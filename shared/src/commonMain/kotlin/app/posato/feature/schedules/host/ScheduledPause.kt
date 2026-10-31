@@ -53,6 +53,8 @@ internal data class ScheduledPause(
     val breakEndEpochMillis: Long? = null,
     /** Whether any running occurrence already used its break, so no break can be taken now. */
     val breakUsed: Boolean = false,
+    /** Whether this device just could not register a break's return, so it cannot take one right now. */
+    val breakArmFailed: Boolean = false,
 ) {
     val restricts: Boolean
         get() {
@@ -73,6 +75,9 @@ internal enum class BreakStart {
 
     /** The break could not be recorded; nothing was released. */
     FAILED,
+
+    /** This device could not register the break's return, so nothing was recorded or released. */
+    CANNOT_ARM,
 }
 
 /** The break actions of a running scheduled pause. */

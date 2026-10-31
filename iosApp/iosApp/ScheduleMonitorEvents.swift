@@ -20,16 +20,23 @@ enum ScheduleMonitorEvents {
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
     ) {
-        guard ScheduleMonitor.isScheduleActivity(activity), let files, let file = files.readTable() else { return }
+        guard ScheduleMonitor.isScheduleActivity(activity), let files else { return }
         let time = now()
-        let running = ScheduleMonitorRule.running(
-            in: file, at: time, calendar: calendar, leading: ScheduleMonitor.earlyCallbackMargin
-        )
-        guard !running.isEmpty else { return }
-        let applied = files.withComposeLock {
-            applyComposed(running: running, file: file, files: files, store: store, sessionStore: sessionStore)
+        // The table is read inside the lock, so a callback that waited never composes from a table read before
+        // the app wrote a new break.
+        let composed = files.withComposeLock { () -> (file: ScheduleMonitorFile, running: [ScheduleMonitorOccurrence])? in
+            guard let file = files.readTable() else { return nil }
+            let running = ScheduleMonitorRule.running(
+                in: file, at: time, calendar: calendar, leading: ScheduleMonitor.earlyCallbackMargin
+            )
+            guard !running.isEmpty else { return nil }
+            let releasing = ScheduleBreakWindows.releasing(
+                file, over: files.breaksOver(), armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
+            )
+            let applied = applyComposed(running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing)
+            return applied ? (file, running) : nil
         }
-        guard applied else { return }
+        guard let (file, running) = composed else { return }
         registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
         // A manual session ending inside this pause must not say Pause over early; the end of the
         // combined pause is announced here instead.
@@ -54,16 +61,20 @@ enum ScheduleMonitorEvents {
 
     /// Composes the running occurrences, each with its own set and what it already holds, within what the
     /// manual session's store leaves of the device's limits; applies the union and records what each now holds.
-    /// Returns false when there is nothing to pause.
+    /// Parts in `releasing` are on a break: they stay running and keep their records, but only what they hold
+    /// counts toward the limits, so their return always fits. Returns false when there is nothing to pause.
     @discardableResult
     static func applyComposed(
         running: [ScheduleMonitorOccurrence],
         file: ScheduleMonitorFile,
         files: ScheduleMonitorFileStore,
         store: ScheduleShieldStore,
-        sessionStore: ScheduleShieldStore?
+        sessionStore: ScheduleShieldStore?,
+        releasing: Set<String> = []
     ) -> Bool {
-        let parts = running.map { occurrence -> PausePlanner.Part in
+        let onBreak = running.filter { releasing.contains("\($0.scheduleId):\($0.date)") }
+        let composing = running.filter { !releasing.contains("\($0.scheduleId):\($0.date)") }
+        let parts = composing.map { occurrence -> PausePlanner.Part in
             let items = file.setItems(scheduleId: occurrence.scheduleId)
             let held = files.held(scheduleId: occurrence.scheduleId, date: occurrence.date)
             return PausePlanner.Part(
@@ -76,12 +87,18 @@ enum ScheduleMonitorEvents {
             )
         }
         let encoder = JSONEncoder()
-        let occupiedTokens = Set((sessionStore?.shieldedTokens ?? []).compactMap { try? encoder.encode($0) })
-        let plan = PausePlanner.plan(parts, occupiedDomains: Set(sessionStore?.shieldedHosts ?? []), occupiedTokens: occupiedTokens)
+        var occupiedTokens = Set((sessionStore?.shieldedTokens ?? []).compactMap { try? encoder.encode($0) })
+        var occupiedDomains = Set(sessionStore?.shieldedHosts ?? [])
+        for occurrence in onBreak {
+            let held = files.held(scheduleId: occurrence.scheduleId, date: occurrence.date)
+            occupiedDomains.formUnion(held?.domains ?? [])
+            occupiedTokens.formUnion(held?.tokens ?? [])
+        }
+        let plan = PausePlanner.plan(parts, occupiedDomains: occupiedDomains, occupiedTokens: occupiedTokens)
         let applications = Set(plan.tokens.compactMap { try? JSONDecoder().decode(ApplicationToken.self, from: $0) })
         guard !plan.domains.isEmpty || !applications.isEmpty else { return false }
         store.applySchedule(domains: PosatoWebDomains.domains(from: Array(plan.domains)), applications: applications)
-        for occurrence in running {
+        for occurrence in composing {
             let id = "\(occurrence.scheduleId):\(occurrence.date)"
             try? files.recordHeld(
                 occurrence,
@@ -126,9 +143,13 @@ enum ScheduleMonitorEvents {
         }
         if othersRun {
             // Only items no remaining occurrence needs are released: the rest compose again without this one.
-            let remaining = running.filter { $0.scheduleId != own }
-            let applied = files.withComposeLock {
-                applyComposed(running: remaining, file: file, files: files, store: store, sessionStore: sessionStore)
+            let applied = files.withComposeLock { () -> Bool in
+                let table = files.readTable() ?? file
+                let remaining = ScheduleMonitorRule.running(in: table, at: time, calendar: calendar).filter { $0.scheduleId != own }
+                let releasing = ScheduleBreakWindows.releasing(
+                    table, over: files.breaksOver(), armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
+                )
+                return applyComposed(running: remaining, file: table, files: files, store: store, sessionStore: sessionStore, releasing: releasing)
             }
             // The remaining occurrences pause nothing, such as when their set is empty: nothing stays paused.
             if !applied {
@@ -138,7 +159,12 @@ enum ScheduleMonitorEvents {
             registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
             return
         }
-        let held = store.holdsAnyShield
+        // An occurrence that ends during its break held its items for the person, so Pause over still follows.
+        let over = files.breaksOver()
+        let onBreakAtEnd = ScheduleBreakWindows.open(file, over: over).contains { window in
+            window.id == own && window.start <= time && window.end >= time.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin)
+        }
+        let held = store.holdsAnyShield || onBreakAtEnd
         store.clearSchedule()
         let sessionEnded = (file.notices.manualSessionEnd ?? 0) <= Int64(time.timeIntervalSince1970)
         if held, file.notices.enabled, sessionEnded, !sessionStore.holdsAnyShield {
@@ -146,6 +172,11 @@ enum ScheduleMonitorEvents {
         }
     }
 
+    /// Both callbacks of the break activity evaluate at their time and never clear. One at or after the
+    /// registered deadline, less the early-callback margin, marks every window that ended as over on this device,
+    /// registers the next open deadline, and composes, which re-applies the parts whose break ended. A deadline
+    /// that cannot be registered ends every open break here, so no window is left without a return. An earlier
+    /// callback, such as the start right after registration, only composes.
     static func handleBreakCallback(
         store: ScheduleShieldStore,
         sessionStore: ScheduleShieldStore,
@@ -153,7 +184,40 @@ enum ScheduleMonitorEvents {
         center: ScheduleActivityCenter,
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
-    ) {}
+    ) {
+        guard let files else { return }
+        let time = now()
+        files.withComposeLock {
+            guard let file = files.readTable() else { return }
+            var armed = ScheduleBreakActivity.armed(center: center, calendar: calendar)
+            var over = files.breaksOver()
+            if let deadline = armed, time >= deadline.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin) {
+                for window in ScheduleBreakWindows.open(file, over: over)
+                where time >= window.end.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin) {
+                    try? files.recordBreakOver(scheduleId: window.id, date: window.date)
+                    over.insert(window.key)
+                }
+                if let next = ScheduleBreakWindows.nearestDeadline(file, over: over, at: time), next != deadline {
+                    do {
+                        try center.startMonitoringSchedule(
+                            ScheduleMonitor.breakActivity, during: ScheduleBreakActivity.schedule(deadline: next, calendar: calendar)
+                        )
+                        armed = next
+                    } catch {
+                        for window in ScheduleBreakWindows.open(file, over: over) {
+                            try? files.recordBreakOver(scheduleId: window.id, date: window.date)
+                            over.insert(window.key)
+                        }
+                        armed = nil
+                    }
+                }
+            }
+            let running = ScheduleMonitorRule.running(in: file, at: time, calendar: calendar)
+            guard !running.isEmpty else { return }
+            let releasing = ScheduleBreakWindows.releasing(file, over: over, armed: armed, at: time)
+            applyComposed(running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing)
+        }
+    }
 
     /// Registers the nearest 24-hour cap among the running fall-back occurrences. Every cap shares one
     /// activity name, and a registration replaces the previous one, so only the nearest is kept; its end

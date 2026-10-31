@@ -539,6 +539,7 @@ Dla tego, co ważne.</string>
     <string name="session_break_started">%1$s się zaczyna i ogranicza.</string>
     <string name="session_break_taken">W tej zaplanowanej pauzie przerwa została już wykorzystana.</string>
     <string name="session_break_manual">Przerwy są tylko w zaplanowanych pauzach. Zakończ wcześniej kończy tę sesję.</string>
+    <string name="session_break_cannot_arm">Na tym iPhonie nie można teraz zrobić przerwy.</string>
     <string name="presence_on_break">Zaplanowana pauza: %1$s, przerwa do %2$s</string>
     <string name="action_end_pause">Zakończ pauzę</string>
     <string name="action_keep_pausing">Zostań przy pauzie</string>

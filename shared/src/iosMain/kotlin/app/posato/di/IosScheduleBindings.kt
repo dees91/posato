@@ -64,6 +64,8 @@ internal interface IosScheduleBindings : ScheduleBindings {
             announcesStarts = false,
             announcedElsewhere = { publisher.startedOccurrences() },
             publish = publisher::publish,
+            armBreak = publisher::armBreak,
+            coveredBreaks = publisher::coveredBreaks,
         )
         return ScheduleHost(schedules.store, schedules.zone, clock, ports)
     }
