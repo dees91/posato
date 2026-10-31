@@ -135,19 +135,22 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             guard let files = self.files, let file = files.readTable() else { return handler(.platformFailure) }
             let store = self.scheduleStore()
             let time = self.now()
+            // The clear belongs to the same lock as the composition, so a callback that waited for the lock never
+            // has its return erased by a release decided before it.
             let compose = { (breaks: Bool) -> Bool in
                 let table = files.readTable() ?? file
                 let running = ScheduleMonitorRule.running(in: table, at: time, calendar: self.calendar())
                 let releasing = breaks ? self.releasing(table, files: files, at: time) : []
-                return ScheduleMonitorEvents.applyComposed(
+                let applied = ScheduleMonitorEvents.applyComposed(
                     running: running, file: table, files: files, store: store, sessionStore: self.sessionStore(), releasing: releasing
                 )
+                if !applied {
+                    store.clearSchedule()
+                }
+                return applied
             }
             // Without the lock nothing is released for a break.
             let applied = files.withComposeLockIfAvailable { compose(true) } ?? compose(false)
-            if !applied {
-                store.clearSchedule()
-            }
             handler(applied ? .applied : .nothingToEnforce)
         }
     }
@@ -223,7 +226,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             wanted[ScheduleMonitor.capActivity] = cap
         }
         // Kept while any break is open, so it is never stopped as stale; computed from the windows, never from
-        // what is registered. A registration that fails leaves the window uncovered: nothing is released for it.
+        // what is registered.
         if let deadline = ScheduleBreakWindows.nearestDeadline(file, over: files?.breaksOver() ?? [], at: now()) {
             wanted[ScheduleMonitor.breakActivity] = ScheduleBreakActivity.schedule(deadline: deadline, calendar: calendar())
         }
@@ -231,12 +234,45 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         if !stale.isEmpty {
             center.stopMonitoringSchedules(stale)
         }
+        var breakRefused = false
         for (activity, schedule) in wanted {
             // Restarting calls the end early, so an unchanged plan is left alone.
             if let current = center.monitoredSchedule(for: activity), Self.sameInterval(current, schedule) { continue }
-            try? center.startMonitoringSchedule(activity, during: schedule)
+            do {
+                try center.startMonitoringSchedule(activity, during: schedule)
+            } catch {
+                breakRefused = breakRefused || activity == ScheduleMonitor.breakActivity
+            }
+        }
+        if breakRefused {
+            retireBreaks(center)
         }
         writeReadout(center)
+    }
+
+    /// A break deadline that cannot be registered while an earlier registration still covers an open window ends
+    /// every open break on this phone, as a failed chain does in the extension: the windows are recorded as over,
+    /// that registration is stopped, and every running part is composed, all under the compose lock, so no
+    /// registration releases them later. A phone where no registration covers a window has released nothing:
+    /// it records nothing and arms on the next evaluation, as a receiving phone whose first arming failed.
+    private func retireBreaks(_ center: ScheduleActivityCenter) {
+        guard let files else { return }
+        let time = now()
+        files.withComposeLock {
+            guard let table = files.readTable() else { return }
+            let windows = ScheduleBreakWindows.open(table, over: files.breaksOver())
+            let armed = ScheduleBreakActivity.armed(center: center, calendar: calendar())
+            guard windows.contains(where: { ScheduleBreakWindows.covered($0, armed: armed) }) else { return }
+            for window in windows {
+                try? files.recordBreakOver(scheduleId: window.id, date: window.date)
+            }
+            center.stopMonitoringSchedules([ScheduleMonitor.breakActivity])
+            let store = scheduleStore()
+            let running = ScheduleMonitorRule.running(in: table, at: time, calendar: calendar())
+            if !ScheduleMonitorEvents.applyComposed(running: running, file: table, files: files, store: store, sessionStore: sessionStore()) {
+                store.clearSchedule()
+            }
+        }
     }
 
     /// What Device Activity monitors for Posato after this evaluation, in the app's own container: no backup,

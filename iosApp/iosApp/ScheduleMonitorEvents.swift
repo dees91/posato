@@ -131,45 +131,70 @@ enum ScheduleMonitorEvents {
             return
         }
         let time = now()
-        let running = ScheduleMonitorRule.running(in: file, at: time, calendar: calendar)
         let own = ScheduleMonitor.scheduleId(of: activity)
-        // A restart or stop of monitoring calls this plan's end early; its own occurrence still runs.
-        let ownStillRuns = running.contains { $0.scheduleId == own && $0.end > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
-        // Another occurrence running now keeps the shields; one that starts later reapplies them itself.
-        let othersRun = running.contains { $0.scheduleId != own }
-        if ownStillRuns {
-            registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
+        // A restart or stop of monitoring calls this plan's end early; its own occurrence still runs. This first
+        // read only skips the lock for that case and changes nothing.
+        let early = ScheduleMonitorRule.running(in: file, at: time, calendar: calendar)
+        if ownStillRuns(early, own: own, at: time) {
+            registerNextCap(running: early, file: file, caps: caps, at: time, calendar: calendar)
             return
         }
-        if othersRun {
-            // Only items no remaining occurrence needs are released: the rest compose again without this one.
-            let applied = files.withComposeLock { () -> Bool in
-                let table = files.readTable() ?? file
-                let remaining = ScheduleMonitorRule.running(in: table, at: time, calendar: calendar).filter { $0.scheduleId != own }
+        // Everything that changes the store is decided again from the table read under the lock and done in that
+        // same hold, so an occurrence the app published and applied meanwhile is never cleared.
+        let outcome = files.withComposeLock { () -> EndOutcome in
+            guard let table = files.readTable() else {
+                store.clearSchedule()
+                return .unreadable
+            }
+            let running = ScheduleMonitorRule.running(in: table, at: time, calendar: calendar)
+            if ownStillRuns(running, own: own, at: time) {
+                return .ownRuns(table, running)
+            }
+            // Another occurrence running now keeps the shields; one that starts later reapplies them itself.
+            if running.contains(where: { $0.scheduleId != own }) {
+                // Only items no remaining occurrence needs are released: the rest compose again without this one.
+                let remaining = running.filter { $0.scheduleId != own }
                 let releasing = ScheduleBreakWindows.releasing(
                     table, over: files.breaksOver(), armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
                 )
-                return applyComposed(running: remaining, file: table, files: files, store: store, sessionStore: sessionStore, releasing: releasing)
+                // The remaining occurrences pause nothing, such as when their set is empty: nothing stays paused.
+                if !applyComposed(running: remaining, file: table, files: files, store: store, sessionStore: sessionStore, releasing: releasing) {
+                    store.clearSchedule()
+                }
+                return .othersRun(table, running)
             }
-            // The remaining occurrences pause nothing, such as when their set is empty: nothing stays paused.
-            if !applied {
-                store.clearSchedule()
+            // An occurrence that ends during its break held its items for the person, so Pause over still follows.
+            let onBreakAtEnd = ScheduleBreakWindows.open(table, over: files.breaksOver()).contains { window in
+                window.id == own && window.start <= time && window.end >= time.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin)
             }
-            // The one cap activity may have just fired for an overlapping occurrence; chain the next cap.
-            registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
+            let held = store.holdsAnyShield || onBreakAtEnd
+            store.clearSchedule()
+            return .ended(table, held: held)
+        }
+        switch outcome {
+        case .unreadable:
             return
+        case let .ownRuns(table, running), let .othersRun(table, running):
+            // The one cap activity may have just fired for an overlapping occurrence; chain the next cap.
+            registerNextCap(running: running, file: table, caps: caps, at: time, calendar: calendar)
+        case let .ended(table, held):
+            let sessionEnded = (table.notices.manualSessionEnd ?? 0) <= Int64(time.timeIntervalSince1970)
+            if held, table.notices.enabled, sessionEnded, !sessionStore.holdsAnyShield {
+                poster.post(identifier: ScheduleMonitor.endNoticeIdentifier, title: table.notices.endTitle, body: table.notices.endBody)
+            }
         }
-        // An occurrence that ends during its break held its items for the person, so Pause over still follows.
-        let over = files.breaksOver()
-        let onBreakAtEnd = ScheduleBreakWindows.open(file, over: over).contains { window in
-            window.id == own && window.start <= time && window.end >= time.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin)
-        }
-        let held = store.holdsAnyShield || onBreakAtEnd
-        store.clearSchedule()
-        let sessionEnded = (file.notices.manualSessionEnd ?? 0) <= Int64(time.timeIntervalSince1970)
-        if held, file.notices.enabled, sessionEnded, !sessionStore.holdsAnyShield {
-            poster.post(identifier: ScheduleMonitor.endNoticeIdentifier, title: file.notices.endTitle, body: file.notices.endBody)
-        }
+    }
+
+    /// What an end callback did under the lock, with the table it decided from.
+    private enum EndOutcome {
+        case unreadable
+        case ownRuns(ScheduleMonitorFile, [ScheduleMonitorOccurrence])
+        case othersRun(ScheduleMonitorFile, [ScheduleMonitorOccurrence])
+        case ended(ScheduleMonitorFile, held: Bool)
+    }
+
+    private static func ownStillRuns(_ running: [ScheduleMonitorOccurrence], own: String?, at time: Date) -> Bool {
+        running.contains { $0.scheduleId == own && $0.end > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
     }
 
     /// Both callbacks of the break activity evaluate at their time and never clear. One at or after the
