@@ -9,11 +9,17 @@ import kotlin.io.path.exists
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.relativeTo
 
+/** The hash a listing gives a file that exists on the device but whose bytes are still downloading. */
+const val PENDING = "pending"
+
 /** One device's synchronized folder, reached through a shell: a Tart guest through `tart exec`, an emulator through `adb shell`. */
 interface RelayEndpoint {
     val name: String
 
-    /** Relative path to SHA-256 of every file, without temporary files. */
+    /**
+     * Relative path to SHA-256 of every file, without temporary files. A file that exists but whose bytes are not on the
+     * device yet lists with [PENDING]: it is neither changed nor deleted until a later round reads it.
+     */
     fun list(): Map<String, String>
 
     fun pull(paths: Collection<String>): Map<String, ByteArray>
@@ -42,13 +48,13 @@ class ShellEndpoint(
     private val shell: DeviceShell,
 ) : RelayEndpoint {
     /**
-     * On a Mac, a file another device put in iCloud Drive arrives dataless, and `tart exec` reads it as empty; such a
-     * file is asked to download and left out until a later round finds its bytes.
+     * On a Mac, a file in iCloud Drive can be dataless, and `tart exec` reads it as empty; such a file is asked to
+     * download and lists as [PENDING] until a later round finds its bytes.
      */
     override fun list(): Map<String, String> {
         val script = "mkdir -p $root && cd $root && find . -type f ! -name '$TEMPORARY*' | while IFS= read -r f; do " +
             "if [ \"\$(uname)\" = Darwin ] && stat -f %Sf \"\$f\" | grep -q dataless; then " +
-            "brctl download \"\$f\" >/dev/null 2>&1; continue; fi; " +
+            "brctl download \"\$f\" >/dev/null 2>&1; echo \"$PENDING \${f#./}\"; continue; fi; " +
             "h=\$( (sha256sum \"\$f\" 2>/dev/null || shasum -a 256 \"\$f\") | cut -d ' ' -f 1); echo \"\$h \${f#./}\"; done"
         return shell.run(script, null).lineSequence()
             .mapNotNull { line -> line.trim().takeIf { it.isNotEmpty() }?.split(" ", limit = 2)?.takeIf { it.size == 2 } }
@@ -116,16 +122,18 @@ class FolderRelay(
     }
 
     /**
-     * Returns the endpoint's files as collected, so distribution leaves alone what changed on it since. A changed file
-     * whose bytes did not come back is not collected: distribution never deletes it, and a later round pulls it again.
+     * Returns the endpoint's files as collected, so distribution leaves alone what changed on it since. A [PENDING] file
+     * or a changed file whose bytes did not come back is not collected but still counts as present: no device loses it,
+     * and a later round reads it again.
      */
     private fun collect(endpoint: RelayEndpoint): Map<String, String> {
         val listed = endpoint.list()
         val previous = lastSeen[endpoint.name] ?: emptyMap()
         val hubNow = hubState()
-        val changed = listed.filter { (path, hash) -> previous[path] != hash && hubNow[path] != hash }.keys
+        val readable = listed.filterValues { it != PENDING }
+        val changed = readable.filter { (path, hash) -> previous[path] != hash && hubNow[path] != hash }.keys
         val pulled = endpoint.pull(changed)
-        val current = listed - (changed - pulled.keys)
+        val current = readable - (changed - pulled.keys)
         pulled.forEach { (path, bytes) ->
             val target = hub.resolve(path)
             Files.createDirectories(target.parent)
