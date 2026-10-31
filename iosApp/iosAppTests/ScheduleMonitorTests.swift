@@ -8,12 +8,17 @@ import XCTest
 final class FakeScheduleShieldStore: ScheduleShieldStore {
     var applied: (domains: Set<WebDomain>, applications: Set<ApplicationToken>)?
     var clears = 0
+    /// Runs once just before the next clear, where a test lets another caller act.
+    var beforeClear: (() -> Void)?
 
     func applySchedule(domains: Set<WebDomain>, applications: Set<ApplicationToken>) {
         applied = (domains, applications)
     }
 
     func clearSchedule() {
+        let hook = beforeClear
+        beforeClear = nil
+        hook?()
         clears += 1
         applied = nil
     }
@@ -1264,6 +1269,164 @@ final class ScheduleMonitorTests: XCTestCase {
         time = local(2026, 9, 28, 9, 13)
         publisher.reconcile(breakFile(breaks: [focusBreak(over: true)]))
         XCTAssertNil(center.installed[ScheduleMonitor.breakActivity])
+    }
+
+    // MARK: - Compose lock races and failed reconciliation (repairs R1 and R2)
+
+    // The extension's callbacks run in another process; another thread contending for the same App Group file lock
+    // stands for it. E2E cannot place a callback at these exact points. Every wait is bounded, so a deadlock fails.
+
+    private func concurrently(_ group: DispatchGroup, _ work: @escaping () -> Void) {
+        DispatchQueue.global().async(group: group, execute: work)
+    }
+
+    func testADeadlineCallbackWaitingWhileTheAppReleasesABreakKeepsItsShields() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile())
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            scheduleStore: { store }, sessionStore: { FakeScheduleShieldStore() },
+            calendar: { self.calendar }, now: { self.local(2026, 9, 28, 9, 13, 59) }
+        )
+        let callback = DispatchGroup()
+        store.beforeClear = {
+            self.concurrently(callback) {
+                self.breakCallback(files: files, store: store, center: center, at: self.local(2026, 9, 28, 9, 14))
+            }
+            // Outside the lock the callback completes here; inside it, the callback waits until the app is done.
+            _ = callback.wait(timeout: .now() + 0.5)
+        }
+
+        XCTAssertEqual(try applySchedule(publisher), .nothingToEnforce)
+
+        XCTAssertEqual(callback.wait(timeout: .now() + 5), .success, "The deadline callback never got the lock")
+        XCTAssertEqual(files.breaksOver(), ["\(focusId):2026-09-28"])
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]), "The app erased the return the callback applied")
+    }
+
+    func testADeadlineCallbackWaitingWhileAnOverlapEndsKeepsItsShields() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile([plan(focusId, set: workSet), plan(eveningId, set: leisureSet, start: 8 * 60, end: 9 * 60 + 14)]))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["leisure.example"]), applications: [])
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+        let callback = DispatchGroup()
+        store.beforeClear = {
+            self.concurrently(callback) {
+                self.breakCallback(files: files, store: store, center: center, at: self.local(2026, 9, 28, 9, 14))
+            }
+            _ = callback.wait(timeout: .now() + 0.5)
+        }
+
+        // The overlap's end, 30 seconds early, while Focus is on its break: nothing remains to pause.
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: eveningId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), center: center,
+            now: { self.local(2026, 9, 28, 9, 13, 30) }, calendar: calendar
+        )
+
+        XCTAssertEqual(callback.wait(timeout: .now() + 5), .success, "The deadline callback never got the lock")
+        XCTAssertEqual(files.breaksOver(), ["\(focusId):2026-09-28"])
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]), "The end erased the return the callback applied")
+    }
+
+    func testAnOccurrencePublishedAndAppliedWhileAnotherEndsKeepsItsShields() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(breakFile([plan(focusId, set: workSet)], breaks: [], notices: true))
+        // Published by the app while Focus ends: Evening runs from 09:30 and so still runs at 10:00.
+        let withEvening = breakFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, start: 9 * 60 + 30, end: 11 * 60)], breaks: [], notices: true
+        )
+        let end = local(2026, 9, 28, 10)
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example"]), applications: [])
+        let poster = FakeSchedulePoster()
+
+        // The app holds the lock, then publishes and applies Evening when released.
+        let publishing = DispatchGroup()
+        let holding = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        concurrently(publishing) {
+            files.withComposeLock {
+                holding.signal()
+                _ = release.wait(timeout: .now() + 5)
+                try? files.writeTable(withEvening)
+                let running = ScheduleMonitorRule.running(in: withEvening, at: end, calendar: self.calendar)
+                ScheduleMonitorEvents.applyComposed(running: running, file: withEvening, files: files, store: store, sessionStore: nil)
+            }
+        }
+        XCTAssertEqual(holding.wait(timeout: .now() + 5), .success)
+        // An end that read the table without Evening and clears without the lock lets the app apply first.
+        store.beforeClear = {
+            release.signal()
+            _ = publishing.wait(timeout: .now() + 5)
+        }
+
+        let ending = DispatchGroup()
+        concurrently(ending) {
+            ScheduleMonitorEvents.handleIntervalEnd(
+                activity: ScheduleMonitor.activityName(scheduleId: self.focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+                files: files, poster: poster, now: { end }, calendar: self.calendar
+            )
+        }
+        // An end that waits for the lock sees the app's table only once the app is done.
+        _ = ending.wait(timeout: .now() + 0.5)
+        release.signal()
+
+        XCTAssertEqual(publishing.wait(timeout: .now() + 5), .success, "The app never published")
+        XCTAssertEqual(ending.wait(timeout: .now() + 5), .success, "The end never got the lock")
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["leisure.example"]), "The end erased Evening's shields")
+        XCTAssertEqual(poster.posted, [], "Pause over while Evening runs")
+    }
+
+    func testAFailedReconcileRetiresPendingBreaksSoAFiredRegistrationReleasesNothing() throws {
+        let files = try isolatedFiles()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+        let store = FakeScheduleShieldStore()
+        try files.writeTable(breakFile())
+        // The 09:15 callback has fired and ended the first break before a second one reaches this phone.
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 15))
+        let later = focusBreak(id: eveningId, from: local(2026, 9, 28, 9, 12), minutes: 10)
+        let table = breakFile([plan(focusId, set: workSet), plan(eveningId, set: leisureSet)], breaks: [focusBreak(), later])
+        try files.writeTable(table)
+        center.refusing = [ScheduleMonitor.breakActivity]
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            scheduleStore: { store }, sessionStore: { FakeScheduleShieldStore() },
+            calendar: { self.calendar }, now: { self.local(2026, 9, 28, 9, 16) }
+        )
+
+        publisher.reconcile(table)
+
+        XCTAssertTrue(files.breaksOver().contains(later.key), "The pending break was not retired on this phone")
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example", "leisure.example"]))
+        XCTAssertEqual(publisher.coveredBreaks(), [], "A fired registration still covers the new window")
+        XCTAssertEqual(try applySchedule(publisher), .applied)
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example", "leisure.example"]))
+    }
+
+    /// A receiving phone whose first arming fails has released nothing: it records nothing and arms on a later try.
+    func testAFailedFirstArmingOnAReceivingPhoneRecordsNothingAndArmsLater() throws {
+        let files = try isolatedFiles()
+        let center = FakeScheduleCenter()
+        center.refusing = [ScheduleMonitor.breakActivity]
+        let store = FakeScheduleShieldStore()
+        try files.writeTable(breakFile())
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            scheduleStore: { store }, sessionStore: { FakeScheduleShieldStore() },
+            calendar: { self.calendar }, now: { self.local(2026, 9, 28, 9, 11) }
+        )
+
+        publisher.reconcile(breakFile())
+        XCTAssertEqual(files.breaksOver(), [])
+        XCTAssertEqual(publisher.coveredBreaks(), [])
+
+        center.refusing = []
+        publisher.reconcile(breakFile())
+        XCTAssertEqual(publisher.coveredBreaks(), ["\(focusId):2026-09-28"])
     }
 }
 
