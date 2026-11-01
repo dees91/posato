@@ -64,7 +64,14 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   (`url`, `text`) after `sleepUntil` steps (`atEpochMs` on the device clock)
   in one scenario with `launch.skip` and `continueOnFailure`, so one driver
   launch covers the series; each step reports `observed` (`blocked`, `open`,
-  `none`) and `observedAtEpochMs`.
+  `none`) and `observedAtEpochMs`. Each boundary is its own Device Activity
+  named `app.posato.window.<epoch second>`; `monitor -t device` lists them
+  after the app's last evaluation. A Safari load that starts within a second
+  of a shield change can hang until the step's limit and report `none`; label
+  that gap instead of counting it. On iOS `flow set --window` still refuses;
+  set the rule with a scenario: `swipeLeft` on the website row,
+  **Open briefly…**, `targets_window_period_30`, `targets_window_length_5`,
+  `action_save_short`.
 
 ## Driving notes
 

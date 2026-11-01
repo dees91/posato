@@ -346,42 +346,41 @@ amendments, and the screens in
 - **iPhone and iPad.** The monitor extension changes the shields at window
   boundaries while Posato is closed, from the table it already keeps for
   scheduled parts and the manual session. The transition contract:
-  - **Close before open.** Before any website opens, a registered activity
-    deadline lies at or before that window's close (the nearest boundary of
-    breaks and windows). If that registration fails, nothing opens; the next
-    callback or app start retries. A close time inside a repeated hour that
-    cannot be armed unambiguously counts as a failed registration.
+  - **One activity per boundary (G21).** Every upcoming opening and close
+    is its own named Device Activity, registered by the app when it
+    applies a pause and topped up by every callback: an interval ending at
+    the boundary when that leaves its start at least 15 minutes ahead,
+    otherwise one starting at the boundary, so no registration starts in
+    the past. A callback reads the clock and registers the boundaries
+    ahead that no activity covers; it never restarts or stops the activity
+    it was called for. The device probe of 2026-11-01 showed that
+    re-registering one activity from its own callback lost the next close.
+    Breaks keep their own activity.
+  - **Close before open.** A website opens only while an activity is
+    registered for its close. If that registration fails, or the platform's
+    limit of 20 activities leaves no room for it, nothing opens; the next
+    callback or app start retries.
   - **The clock decides.** Every callback recomputes what is blocked from
-    the real clock, not from the callback's name or the deadline it was
-    armed for, so callbacks are idempotent.
+    the real clock, so callbacks are idempotent.
   - **Never early.** The 60-second early-callback margin of breaks is not
     used for windows. A callback that arrives before an opening, by any
-    amount, inside or outside 60 seconds, keeps the website blocked and does
-    not consume the opening. It registers an activity only when the armed
-    deadline is no longer that opening; the start callback that follows a
-    registration never registers again, so registration cannot loop. If the
-    system refuses the same-deadline registration or delivers its end again
-    before the opening, the deadline is the opening plus 20 seconds instead,
-    at most once per opening; "that opening" then means the fallback
-    deadline, so the two never alternate: later, never earlier.
-  - **Closing.** A callback before a close applies the clock: within 60
-    seconds before the close it closes early, which only blocks more;
-    earlier than that it keeps the website open and registers the close only
-    when the armed deadline is no longer that close.
+    amount, keeps the website blocked. An end of the opening's own activity
+    before its boundary no longer covers it, so the callback registers the
+    opening's fallback, the opening plus 20 seconds, as a separate
+    activity, once; the fallback's own early callback adds nothing more.
+    Re-registering an activity with the same name and interval is accepted
+    and does not end it early (device probe, 2026-11-01).
+  - **Closing.** A callback within 60 seconds before a close closes early,
+    which only blocks more; an earlier end of the close's activity
+    registers the close's fallback in the same way.
   - **Late, duplicate, stale.** A late callback applies the current state,
     so a late opening after its window ended stays blocked. A duplicate or
-    stale callback re-arms the nearest boundary not yet passed and changes
-    nothing else.
-  - **One activity.** One activity is armed at the nearest boundary of breaks
-    and windows together. Break deadlines keep their own margin rule; a
-    break's end restores the state from the clock, windows included.
+    stale callback tops up the boundaries ahead and changes nothing else.
   - **Manual sessions too.** The window callback evaluates the manual
     session's windows even when no scheduled pause runs.
-  - **A missed close is a real leak.** If the system never delivers a close
-    callback, the website stays open until the next callback or until
-    Posato opens; nothing inside iOS recovers it sooner. This is stated
-    plainly on the limits page. A second, independent close activity is the
-    named mitigation, taken only if the device probe shows a missed close.
+  - **Opening Posato repairs.** Each app start evaluates the windows from
+    the clock and tops up the boundaries, so a missed callback lasts at
+    most until the next callback or until Posato opens.
   - **Timing tolerance.** An opening happens in `[boundary, boundary + 60
     s]`. A close happens in `[end - 60 s, end + 60 s]`, where the early part
     is the restrictive direction. An early opening is never allowed.

@@ -200,7 +200,17 @@ enum WindowEvaluation {
 
     /// The manual session's next boundaries after `time`, each plan's in order up to its last segment.
     static func manualBoundaries(_ record: ManualWindowRecord?, after time: Date, calendar: Calendar) -> [Date] {
-        []
+        guard let record, time < record.end else { return [] }
+        var boundaries: [Date] = []
+        for plan in record.validPlans {
+            var instant = time
+            for _ in 0 ..< boundariesAhead {
+                guard let next = plan.nextBoundary(after: instant, calendar: calendar), next <= record.end else { break }
+                boundaries.append(next)
+                instant = next
+            }
+        }
+        return boundaries
     }
 }
 
@@ -329,8 +339,43 @@ enum WindowActivities {
         calendar: Calendar,
         log: (String) -> Void = { _ in }
     ) -> Outcome {
-        // Red stub (TARGETS-013 G21): nothing is registered yet.
-        Outcome(fires: [], stale: [])
+        var fires = covering(center: center, calling: calling, callback: callback, calendar: calendar)
+        let wantedSet = Set(wanted)
+        // What no plan wants any more and what has fired, never the caller; the caller decides whether to stop it.
+        let stale = center.monitoredActivities.filter { activity in
+            guard activity != calling, let fire = fireInstant(of: activity) else { return false }
+            if fire <= time { return true }
+            return !wantedSet.contains(where: { abs(fire.timeIntervalSince($0)) < 0.5 || (fire > $0 && fire.timeIntervalSince($0) <= WindowEvaluation.fallbackDelay + 0.5) })
+        }
+        fires.removeAll { fire in stale.contains { fireInstant(of: $0) == fire } }
+        let others = center.monitoredActivities.filter { !isWindowActivity($0) }.count
+        var budget = platformLimit - reserve - others - center.monitoredActivities.filter(isWindowActivity).count
+        for boundary in wanted.sorted() where boundary > time {
+            if covers(fires, boundary) { continue }
+            guard budget > 0 else {
+                log("budget")
+                break
+            }
+            var fire = boundary
+            if let calling, fireInstant(of: calling) == boundary {
+                fire = boundary.addingTimeInterval(WindowEvaluation.fallbackDelay)
+            } else if let calling, let own = fireInstant(of: calling), own > boundary, own.timeIntervalSince(boundary) <= WindowEvaluation.fallbackDelay {
+                // The caller is this boundary's fallback, called early: nothing more is registered for it.
+                log("fallback-early")
+                continue
+            }
+            let activity = name(firingAt: fire)
+            if activity == calling { continue }
+            do {
+                try center.startMonitoringSchedule(activity, during: schedule(fire: fire, at: time, calendar: calendar))
+                fires.append(fire)
+                budget -= 1
+                log("registered \(activity.rawValue)")
+            } catch {
+                log("refused \(activity.rawValue)")
+            }
+        }
+        return Outcome(fires: fires, stale: stale)
     }
 }
 

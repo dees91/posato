@@ -297,8 +297,30 @@ enum ScheduleMonitorEvents {
         calendar: Calendar = ScheduleMonitor.calendar,
         log: (String) -> Void = { _ in }
     ) -> [DeviceActivityName] {
-        // Red stub (TARGETS-013 G21): nothing is evaluated yet.
-        []
+        guard let files else { return [] }
+        let time = now()
+        return files.withComposeLock { () -> [DeviceActivityName] in
+            let file = files.readTable()
+            let over = files.breaksOver()
+            let topUp = windowTopUp(
+                file: file, over: over, files: files, center: center, calling: activity, callback: callback, at: time, calendar: calendar, log: log
+            )
+            applyManualWindows(manualFilter: manualFilter, files: files, covered: topUp.covered, at: time, calendar: calendar)
+            guard let file else { return topUp.stale }
+            let running = ScheduleMonitorRule.running(in: file, at: time, calendar: calendar)
+            guard !running.isEmpty else { return topUp.stale }
+            let releasing = ScheduleBreakWindows.releasing(
+                file, over: over, armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
+            )
+            applyComposed(
+                running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
+                covered: topUp.covered, at: time, calendar: calendar
+            )
+            // A part that started just now records what it holds while composing; its boundaries follow.
+            return windowTopUp(
+                file: file, over: over, files: files, center: center, calling: activity, callback: callback, at: time, calendar: calendar, log: log
+            ).stale
+        }
     }
 
     /// The window boundaries wanted at `time`: the manual session's and the running scheduled parts'.
