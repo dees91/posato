@@ -22,7 +22,7 @@ internal class AndroidEnforcement(
         if (request.domains.isEmpty() && request.mappingIds.isEmpty()) return report(EnforcementOutcome.NOTHING_TO_ENFORCE)
         if (!Permissions.blockingReady(context)) return report(EnforcementOutcome.AUTHORIZATION_REQUIRED)
         val packages = mappings.targets(request.mappingIds).toSet()
-        state.apply(AppliedPause(request.sessionId, request.sessionEndEpochMillis, request.domains.toSet(), packages))
+        state.apply(AppliedPause(request.sessionId, request.sessionEndEpochMillis, request.domains.toSet(), packages, request.windows))
         DnsVpnService.refresh(context)
         GuardService.start(context)
         return report(EnforcementOutcome.APPLIED)

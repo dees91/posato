@@ -111,7 +111,8 @@ class DnsPacketTest {
         val secondTtl = firstTtl + first.size
         assertEquals(120, ttl(clamped, firstTtl))
         assertEquals(10, ttl(clamped, secondTtl))
-        assertContentEquals(reply.copyOfRange(clamped.size - additional.size, reply.size), clamped.copyOfRange(clamped.size - additional.size, clamped.size))
+        val additionalStart = reply.size - additional.size
+        assertContentEquals(reply.copyOfRange(additionalStart, reply.size), clamped.copyOfRange(additionalStart, clamped.size))
         assertNull(DnsPacket.clampTtl(reply.copyOf(reply.size - 3), 120))
     }
 

@@ -2,6 +2,7 @@ package app.posato.android
 
 import android.content.Context
 import app.posato.feature.enforcement.DomainWindowPlan
+import app.posato.feature.enforcement.WindowPlanLine
 
 /** What a pause enforces on this phone, kept so the services restore it after the process or the phone restarts. */
 internal data class AppliedPause(
@@ -28,6 +29,8 @@ internal class PauseState(
             preferences.getLong(END, 0),
             preferences.getStringSet(DOMAINS, emptySet()).orEmpty(),
             preferences.getStringSet(PACKAGES, emptySet()).orEmpty(),
+            // Plans that cannot be read are dropped, so their websites stay blocked.
+            WindowPlanLine.decode(preferences.getString(WINDOWS, null).orEmpty()).orEmpty(),
         )
     }
 
@@ -41,13 +44,14 @@ internal class PauseState(
             .putLong(END, pause.endEpochMillis)
             .putStringSet(DOMAINS, pause.domains)
             .putStringSet(PACKAGES, pause.packages)
+            .putString(WINDOWS, WindowPlanLine.encode(pause.windows))
             .remove(EXPIRED.takeIf { preferences.getString(EXPIRED, null) == pause.sessionId } ?: NONE)
             .commit()
     }
 
     fun clear(expired: Boolean) {
         val sessionId = preferences.getString(SESSION, null)
-        val editor = preferences.edit().remove(SESSION).remove(END).remove(DOMAINS).remove(PACKAGES)
+        val editor = preferences.edit().remove(SESSION).remove(END).remove(DOMAINS).remove(PACKAGES).remove(WINDOWS)
         if (expired && sessionId != null) editor.putString(EXPIRED, sessionId)
         editor.commit()
     }
@@ -62,6 +66,7 @@ internal class PauseState(
         const val END = "end"
         const val DOMAINS = "domains"
         const val PACKAGES = "packages"
+        const val WINDOWS = "windows"
         const val EXPIRED = "expired"
         const val NONE = "-"
     }
