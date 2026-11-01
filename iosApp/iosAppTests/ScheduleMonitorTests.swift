@@ -1090,6 +1090,26 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(files.heldDuringBreak(at: time).domains, ["work.example"])
     }
 
+    func testAnEvaluationInTheBreaksLastMinuteKeepsItReleasedUntilTheDeadlineCallback() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        let center = armedCenter(deadline: local(2026, 9, 28, 9, 15))
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { center }, authorized: { true }, isCapable: true, storedMappings: { [] },
+            scheduleStore: { store }, sessionStore: { FakeScheduleShieldStore() }, calendar: { self.calendar },
+            now: { self.local(2026, 9, 28, 9, 14, 30) }
+        )
+        try files.writeTable(breakFile())
+
+        XCTAssertEqual(try applySchedule(publisher), .nothingToEnforce)
+        XCTAssertNil(store.applied)
+        XCTAssertEqual(publisher.coveredBreaks(), ["\(focusId):2026-09-28"])
+
+        // The deadline callback alone, up to a minute early, ends the break.
+        breakCallback(files: files, store: store, center: center, at: local(2026, 9, 28, 9, 14, 30))
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example"]))
+    }
+
     func testAnUncoveredWindowReleasesNothing() throws {
         let files = try isolatedFiles()
         try files.writeTable(breakFile())

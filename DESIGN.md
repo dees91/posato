@@ -1081,10 +1081,15 @@ own the decisions.
     while a manual session is active in the workspace, here or received;
   - on iPhone, when the device cannot arm the return: "Can't take a break on
     this iPhone right now." (fail closed, nothing is released).
-- **Manual session during a break.** On the Mac, a session received during
-  a break shows **Resume restrictions** at once, as when a scheduled pause
-  ends while it runs. Elsewhere it shows as a
-  restricting part, like a pause that started during the break.
+- **Manual session during a break.** On a Mac with automatic-start consent
+  (**Start sessions without the password** on), a session received during a
+  break applies by itself, as `MACOS-029` applies any received session.
+  Without that consent it shows **Resume restrictions** at once, as when a
+  scheduled pause ends while it runs. Elsewhere it shows as a restricting
+  part, like a pause that started during the break. (Decided 2026-11-01 by
+  the owner's agent under the owner's explicit delegation of 2026-10-31,
+  as the owner's exception to the `agent-delegated` rule for PR #220;
+  pending the owner's confirmation in that pull request.)
 - **After the break.** The break line disappears at the break end and the
   limit caption shows. Nothing announces the break's start or end; Session
   and the menu show the truth.

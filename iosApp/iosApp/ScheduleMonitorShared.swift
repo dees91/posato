@@ -799,11 +799,12 @@ enum ScheduleBreakWindows {
         return armed >= window.start && armed <= window.end
     }
 
-    /// Running parts a break releases at `time`: covered, open, and before its end less the early-callback
-    /// margin, so a callback up to a minute early re-applies.
+    /// Running parts a break releases at `time`: covered, open, and before its actual end. A deadline callback
+    /// up to a minute early records the windows it ends as over before composing, so only that callback
+    /// shortens a break; an ordinary evaluation in the last minute keeps it released.
     static func releasing(_ file: ScheduleMonitorFile, over: Set<String>, armed: Date?, at time: Date) -> Set<String> {
         Set(open(file, over: over).filter { window in
-            covered(window, armed: armed) && window.start <= time && time < window.end.addingTimeInterval(-ScheduleMonitor.earlyCallbackMargin)
+            covered(window, armed: armed) && window.start <= time && time < window.end
         }.map(\.key))
     }
 }

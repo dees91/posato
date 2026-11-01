@@ -4,6 +4,7 @@
 - **Tier reason:** A break adds a synchronized fact to the format-1 operation vocabulary (ADR 0006) and makes every platform release and then re-apply restrictions without a person's action, which touches the automatic Apply path of the macOS helper (ADR 0004, ADR 0009) and the Linux and Windows services.
 - **Dependencies:** none (R1.6/W1). `DOCS-007` and `RELEASE-010` depend on this row.
 - **Integration group:** `PR-SCHEDULE-BREAK`
+- **Record:** [schedule-007-break.md](../executions/schedule-007-break.md)
 - **Authority:** [Release roadmap](../release-roadmap.md) row `SCHEDULE-007`; idea 45 in [open questions](../../wiki/topics/mvp-open-questions.md) (`user-confirmed` 2026-10-20); [schedule rules](../../product/schedules-decisions.md); [DESIGN.md](../../../DESIGN.md). The maintainer named the row on 2026-10-30.
 
 ## Outcome
