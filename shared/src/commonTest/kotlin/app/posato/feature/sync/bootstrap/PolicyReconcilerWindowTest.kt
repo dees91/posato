@@ -155,6 +155,51 @@ class PolicyReconcilerWindowTest {
         }
     }
 
+    /** The workspace ruled both keys, then removed them; one came back, one stays removed. */
+    private fun ruledThenRemoved(): SyncProjection {
+        val returned = domain("returned")
+        val gone = domain("gone")
+        return reduce(
+            SyncOperationPayload.PauseSetPut(work, "Work"),
+            SyncOperationPayload.DomainPresent(returned, work),
+            SyncOperationPayload.DomainPresent(gone, work),
+            SyncOperationPayload.SetDomainWindow(work, returned, halfHourly),
+            SyncOperationPayload.SetDomainWindow(work, gone, halfHourly),
+            SyncOperationPayload.DomainAbsent(returned, work),
+            SyncOperationPayload.DomainAbsent(gone, work),
+            SyncOperationPayload.DomainPresent(returned, work),
+        )
+    }
+
+    @Test
+    fun `given websites the workspace ruled and then removed when seeded at first link then their local rules are not published`() = runTest {
+        withStore("window-seed-removed.db") { store ->
+            store.replaceLocal(
+                LocalPauseSet(
+                    work,
+                    "Work",
+                    listOf(domain("gone"), domain("returned")),
+                    windows = mapOf(domain("gone") to hourly, domain("returned") to hourly),
+                ),
+            )
+
+            assertIs<LocalPolicyResult.Success<Unit>>(PolicyReconciler(store).seedLocalExtras(workspaceId, ruledThenRemoved()))
+
+            assertEquals(emptyList(), store.pending().filterIsInstance<StoredPolicyIntent.SetWindow>())
+        }
+    }
+
+    @Test
+    fun `given a website the workspace ruled and then removed and added again when first merged then the local rule does not survive`() = runTest {
+        withStore("window-merge-removed.db") { store ->
+            store.replaceLocal(LocalPauseSet(work, "Work", listOf(domain("returned")), windows = mapOf(domain("returned") to hourly)))
+
+            PolicyReconciler(store).apply(ruledThenRemoved(), null)
+
+            assertEquals(emptyMap(), store.local().sets.sets.single { it.id == work }.windows)
+        }
+    }
+
     private fun domain(label: String): ExactDomain {
         return checkNotNull(ExactDomain.restore("$label.example"))
     }

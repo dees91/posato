@@ -68,12 +68,16 @@ private fun combinedPlan(
 
 /**
  * Both requests' plans for every website either holds, as one plan through the later end: open only while each
- * request that still holds the website is open for it.
+ * request that still holds the website or its `www` form is open for it, so both stored forms share one plan.
  */
 internal fun EnforcementRequest.unionWindows(other: EnforcementRequest): List<DomainWindowPlan> {
     val requests = listOf(this, other)
     return (domains + other.domains).distinct().sorted().mapNotNull { domain ->
-        combinedPlan(domain, requests.filter { request -> domain in request.domains }.map { request -> request.coverageOf(domain) })
+        val website = setOfNotNull(domain, wwwCounterpart(domain))
+        val coverages = requests.flatMap { request ->
+            request.domains.filter { entry -> entry in website }.distinct().map { entry -> request.coverageOf(entry) }
+        }
+        combinedPlan(domain, coverages)
     }
 }
 
