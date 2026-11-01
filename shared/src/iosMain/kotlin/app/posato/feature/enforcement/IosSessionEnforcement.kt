@@ -67,7 +67,14 @@ public class IosSessionEnforcement(
     }
 
     private suspend fun applyBoth(request: EnforcementRequest): EnforcementApplyReport {
-        return when (enforcement.apply(IosEnforcementRequest(request.domains, request.mappingIds))) {
+        val windows = request.windows.map { plan ->
+            IosWindowPlan(
+                plan.domain,
+                plan.segments.map { segment -> IosWindowSegment(segment.untilEpochMillis, segment.periodMinutes, segment.lengthMinutes) },
+            )
+        }
+        val iosRequest = IosEnforcementRequest(request.domains, request.mappingIds, windows, request.sessionEndEpochMillis)
+        return when (enforcement.apply(iosRequest)) {
             IosEnforcementOutcome.APPLIED -> {
                 schedule(request)
             }

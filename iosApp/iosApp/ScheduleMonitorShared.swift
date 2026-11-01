@@ -76,6 +76,15 @@ struct ScheduleMonitorFile: Codable, Equatable {
         let id: String
         let domainIndexes: [Int]
         let tokenIndexes: [Int]
+        /// TARGETS-013: window rules of this set's websites, as indexes into the table's websites; absent means none.
+        var windows: [SetWindow]?
+    }
+
+    /// One website's window rule in a set.
+    struct SetWindow: Codable, Equatable {
+        let domainIndex: Int
+        let period: Int
+        let length: Int
     }
 
     struct Running: Codable, Equatable {
@@ -138,6 +147,21 @@ extension ScheduleMonitorFile {
     func setItems(scheduleId: String) -> (domains: [String], tokens: [Data]) {
         guard sets != nil else { return (domains, applicationTokens) }
         return setItems(setId: schedules.first { $0.id == scheduleId }?.setId ?? ScheduleMonitor.firstSetId)
+    }
+
+    /// The valid window rules of the set `scheduleId` uses, by website; none in a version-1 table.
+    func setRules(scheduleId: String) -> [String: WebsiteWindowRule] {
+        guard sets != nil else { return [:] }
+        let setId = schedules.first { $0.id == scheduleId }?.setId ?? ScheduleMonitor.firstSetId
+        guard let set = sets?.first(where: { $0.id == setId }) else { return [:] }
+        var rules: [String: WebsiteWindowRule] = [:]
+        for window in set.windows ?? [] where domains.indices.contains(window.domainIndex) && set.domainIndexes.contains(window.domainIndex) {
+            let rule = WebsiteWindowRule(period: window.period, length: window.length)
+            if rule.isValid {
+                rules[domains[window.domainIndex]] = rule
+            }
+        }
+        return rules
     }
 
     /// The websites and app tokens of the set `setId`; nothing when the table does not list it.
@@ -283,7 +307,7 @@ struct ScheduleMonitorFileStore {
     private static let maximumRecordBytes = 4096
 
     let directoryURL: URL
-    private let fileManager: FileManager
+    let fileManager: FileManager
 
     init(directoryURL: URL, fileManager: FileManager = .default) {
         self.directoryURL = directoryURL
@@ -528,7 +552,7 @@ struct ScheduleMonitorFileStore {
         return record
     }
 
-    private func read(_ name: String, limit: Int) -> Data? {
+    func read(_ name: String, limit: Int) -> Data? {
         let url = directoryURL.appendingPathComponent(name)
         guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
               let size = attributes[.size] as? NSNumber, size.intValue <= limit
@@ -536,7 +560,7 @@ struct ScheduleMonitorFileStore {
         return try? Data(contentsOf: url)
     }
 
-    private func write(_ data: Data, fileName: String) throws {
+    func write(_ data: Data, fileName: String) throws {
         try fileManager.createDirectory(
             at: directoryURL,
             withIntermediateDirectories: true,

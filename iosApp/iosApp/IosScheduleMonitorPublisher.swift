@@ -62,11 +62,20 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
     func publish(table: IosScheduleMonitorTable) {
         var tokenIndex = TokenIndex(mappings: table.sets.isEmpty ? [] : (try? storedMappings()) ?? [])
         var domainIndex = ListIndex<String>()
-        let sets = table.sets.map {
-            ScheduleMonitorFile.PauseSet(
-                id: $0.id,
-                domainIndexes: domainIndex.indexes(for: $0.domains),
-                tokenIndexes: tokenIndex.indexes(for: $0.mappingIds)
+        let sets = table.sets.map { set in
+            let windows = set.windows.compactMap { window -> ScheduleMonitorFile.SetWindow? in
+                guard set.domains.contains(window.domain) else { return nil }
+                return ScheduleMonitorFile.SetWindow(
+                    domainIndex: domainIndex.indexes(for: [window.domain])[0],
+                    period: Int(window.periodMinutes),
+                    length: Int(window.lengthMinutes)
+                )
+            }
+            return ScheduleMonitorFile.PauseSet(
+                id: set.id,
+                domainIndexes: domainIndex.indexes(for: set.domains),
+                tokenIndexes: tokenIndex.indexes(for: set.mappingIds),
+                windows: windows.isEmpty ? nil : windows
             )
         }
         var file = ScheduleMonitorFile(
@@ -137,20 +146,37 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             let time = self.now()
             // The clear belongs to the same lock as the composition, so a callback that waited for the lock never
             // has its return erased by a release decided before it.
+            var stale: [DeviceActivityName] = []
             let compose = { (breaks: Bool) -> Bool in
                 let table = files.readTable() ?? file
                 let running = ScheduleMonitorRule.running(in: table, at: time, calendar: self.calendar())
                 let releasing = breaks ? self.releasing(table, files: files, at: time) : []
+                // Close before open: every window boundary ahead is registered before any website opens.
+                let covered = breaks
+                    ? ScheduleMonitorEvents.windowTopUp(
+                        file: table, over: files.breaksOver(), files: files, center: self.center(), calling: nil, callback: .evaluation,
+                        at: time, calendar: self.calendar()
+                    ).covered
+                    : nil
                 let applied = ScheduleMonitorEvents.applyComposed(
-                    running: running, file: table, files: files, store: store, sessionStore: self.sessionStore(), releasing: releasing
+                    running: running, file: table, files: files, store: store, sessionStore: self.sessionStore(), releasing: releasing,
+                    covered: covered, at: time, calendar: self.calendar()
                 )
                 if !applied {
                     store.clearSchedule()
+                }
+                if breaks {
+                    // A part composed for the first time records what it holds; its window boundaries follow.
+                    stale = ScheduleMonitorEvents.windowTopUp(
+                        file: table, over: files.breaksOver(), files: files, center: self.center(), calling: nil, callback: .evaluation,
+                        at: time, calendar: self.calendar()
+                    ).stale
                 }
                 return applied
             }
             // Without the lock nothing is released for a break.
             let applied = files.withComposeLockIfAvailable { compose(true) } ?? compose(false)
+            ScheduleMonitorEvents.stopStale(stale, center: self.center())
             handler(applied ? .applied : .nothingToEnforce)
         }
     }
@@ -246,6 +272,16 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         }
         if breakRefused {
             retireBreaks(center)
+        }
+        // TARGETS-013 G21: the window boundaries ahead, each its own activity outside the schedule prefix.
+        if let files {
+            let stale = files.withComposeLockIfAvailable {
+                ScheduleMonitorEvents.windowTopUp(
+                    file: file, over: files.breaksOver(), files: files, center: center, calling: nil, callback: .evaluation, at: now(),
+                    calendar: calendar()
+                ).stale
+            }
+            ScheduleMonitorEvents.stopStale(stale ?? [], center: center)
         }
         writeReadout(center)
     }

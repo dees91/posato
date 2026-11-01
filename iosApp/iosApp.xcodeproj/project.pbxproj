@@ -36,11 +36,14 @@
 		PL0A000129CC810C00F8E227 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = PL0A000329CC810C00F8E227 /* InfoPlist.strings */; };
 		AA00000429CC810C00F8E227 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA00000329CC810C00F8E227 /* PrivacyInfo.xcprivacy */; };
 		CA00000229CC810C00F8E227 /* ScheduleMonitorShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000129CC810C00F8E227 /* ScheduleMonitorShared.swift */; };
+		CB00000229CC810C00F8E227 /* WebsiteWindowMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00000129CC810C00F8E227 /* WebsiteWindowMonitor.swift */; };
+		CB00000329CC810C00F8E227 /* WebsiteWindowMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00000129CC810C00F8E227 /* WebsiteWindowMonitor.swift */; };
 		CA00000329CC810C00F8E227 /* ScheduleMonitorShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000129CC810C00F8E227 /* ScheduleMonitorShared.swift */; };
 		CA00000529CC810C00F8E227 /* ScheduleMonitorEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000429CC810C00F8E227 /* ScheduleMonitorEvents.swift */; };
 		CA00000629CC810C00F8E227 /* ScheduleMonitorEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000429CC810C00F8E227 /* ScheduleMonitorEvents.swift */; };
 		CA00000829CC810C00F8E227 /* IosScheduleMonitorPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000729CC810C00F8E227 /* IosScheduleMonitorPublisher.swift */; };
 		CA00001029CC810C00F8E227 /* ScheduleMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA00000929CC810C00F8E227 /* ScheduleMonitorTests.swift */; };
+		CB00001029CC810C00F8E227 /* WebsiteWindowMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00000929CC810C00F8E227 /* WebsiteWindowMonitorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -108,9 +111,11 @@
 		AA00000229CC810C00F8E227 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA00000329CC810C00F8E227 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CA00000129CC810C00F8E227 /* ScheduleMonitorShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleMonitorShared.swift; sourceTree = "<group>"; };
+		CB00000129CC810C00F8E227 /* WebsiteWindowMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteWindowMonitor.swift; sourceTree = "<group>"; };
 		CA00000429CC810C00F8E227 /* ScheduleMonitorEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleMonitorEvents.swift; sourceTree = "<group>"; };
 		CA00000729CC810C00F8E227 /* IosScheduleMonitorPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosScheduleMonitorPublisher.swift; sourceTree = "<group>"; };
 		CA00000929CC810C00F8E227 /* ScheduleMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleMonitorTests.swift; sourceTree = "<group>"; };
+		CB00000929CC810C00F8E227 /* WebsiteWindowMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteWindowMonitorTests.swift; sourceTree = "<group>"; };
 		PL0A000229CC810C00F8E227 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		PL0A000429CC810C00F8E227 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		DE0A000429CC810C00F8E227 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -190,6 +195,7 @@
 				D200000229CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift */,
 				B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */,
 				CA00000129CC810C00F8E227 /* ScheduleMonitorShared.swift */,
+				CB00000129CC810C00F8E227 /* WebsiteWindowMonitor.swift */,
 				CA00000429CC810C00F8E227 /* ScheduleMonitorEvents.swift */,
 				CA00000729CC810C00F8E227 /* IosScheduleMonitorPublisher.swift */,
 				C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */,
@@ -213,6 +219,7 @@
 				E100000229CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift */,
 				B800000229CC810C00F8E227 /* IosEnforcementTests.swift */,
 				CA00000929CC810C00F8E227 /* ScheduleMonitorTests.swift */,
+				CB00000929CC810C00F8E227 /* WebsiteWindowMonitorTests.swift */,
 				C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */,
 				C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */,
 				F200000229CC810C00F8E227 /* ApplicationAuthorizationAccessTests.swift */,
@@ -404,6 +411,7 @@
 				CA00000829CC810C00F8E227 /* IosScheduleMonitorPublisher.swift in Sources */,
 				CA00000529CC810C00F8E227 /* ScheduleMonitorEvents.swift in Sources */,
 				CA00000229CC810C00F8E227 /* ScheduleMonitorShared.swift in Sources */,
+				CB00000229CC810C00F8E227 /* WebsiteWindowMonitor.swift in Sources */,
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
 				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
 				D7A1000129CC810C00F8E227 /* SessionNotificationCenter.swift in Sources */,
@@ -424,6 +432,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CA00001029CC810C00F8E227 /* ScheduleMonitorTests.swift in Sources */,
+				CB00001029CC810C00F8E227 /* WebsiteWindowMonitorTests.swift in Sources */,
 				B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */,
 				B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */,
 				B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */,
@@ -442,6 +451,7 @@
 			files = (
 				CA00000629CC810C00F8E227 /* ScheduleMonitorEvents.swift in Sources */,
 				CA00000329CC810C00F8E227 /* ScheduleMonitorShared.swift in Sources */,
+				CB00000329CC810C00F8E227 /* WebsiteWindowMonitor.swift in Sources */,
 				C900001029CC810C00F8E227 /* DeviceActivityMonitorExtension.swift in Sources */,
 				C900001129CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */,
 			);

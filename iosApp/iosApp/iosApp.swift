@@ -1,9 +1,25 @@
+import DeviceActivity
 import ManagedSettings
 import PosatoShared
 import SwiftUI
 
 @main
 struct PosatoApp: App {
+    init() {
+        // TARGETS-013 G13: opening Posato repairs the windows to the clock, also after a missed callback; the stale
+        // window activities are stopped after the compose lock is released.
+        let stale = ScheduleMonitorEvents.handleWindowCallback(
+            activity: nil,
+            callback: .evaluation,
+            store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
+            sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
+            manualFilter: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
+            files: ScheduleMonitorFileStore.live(),
+            center: DeviceActivityCenter()
+        )
+        ScheduleMonitorEvents.stopStale(stale, center: DeviceActivityCenter())
+    }
+
     var body: some Scene {
         WindowGroup {
             ComposeRoot()
