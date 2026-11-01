@@ -129,8 +129,8 @@ private fun WindowChoices(
             PosatoToggleButton(
                 selected = choice.minutes == selected,
                 onClick = { onSelect(choice.minutes) },
-                // The id comes last, so on a verification host it replaces the spoken label as every control id does.
-                modifier = Modifier.semantics { contentDescription = spoken }.controlId(choice.controlId),
+                // The id comes first, so on a verification host it replaces the spoken label as every control id does.
+                modifier = Modifier.controlId(choice.controlId).semantics { contentDescription = spoken },
             ) { Text(stringResource(choice.label)) }
         }
     }

@@ -35,6 +35,19 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   start a pause on a set the file lacks with `flow session`, then replace.
   A file sealed with another round count does not open by design.
 
+- Website windows (`TARGETS-013`, desktop and Android; iOS later): `flow set
+  --name Work --website window.example --website blocked.example --window
+  window.example=30/5` creates the set and sets the rule through the row's
+  **Open briefly…** dialog, waiting for the row caption "Opens every 30 min
+  for 5 min"; `--window window.example=off` presses **Don't open**. Then
+  `flow session --set Work` and `run --scenario
+  fixtures/scenarios/website-window-session-desktop.json`: Session lists
+  `window.example` with "Opens at HH:MM" or "Open until HH:MM" (the row's
+  accessible label is "window.example, opens at 10:30") and no row for the
+  unruled `blocked.example`. Clearing the rule during the session removes the
+  row within a second. The times follow the guest's clock (`vm exec date`);
+  whether a browser load is blocked at those times is phase 3's enforcement
+  rows, not this recipe.
 
 ## Driving notes
 
@@ -44,6 +57,10 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   `textContains "Pause set,"`.
 - On the Mac each row and the set screen have `More actions for <name>` with
   Rename, Make default (not on the default), and Delete (not on the default).
+  A website row's menu is `Actions for <website>` with Edit, Open briefly…
+  (`targets_open_briefly`), and Remove; the dialog's choices are
+  `targets_window_period_30|60|120` and `targets_window_length_5|10|15`, then
+  `action_save_short` or `targets_window_clear`.
   On iOS a row slides out Rename and Delete under `swipeLeft`, and the set
   screen's bar keeps `More actions for <name>` with all three.
 - The set choice is a `Pause set, <current>` button (on iOS a system pop-up

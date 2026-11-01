@@ -17,13 +17,18 @@ import kotlinx.serialization.json.putJsonArray
 
 /**
  * Creates a pause set, or renames one with --rename-from, and with --make-default makes it the default, all from
- * Pause sets and its set menus. Renaming the unnamed first set uses its shown name, "My set".
+ * Pause sets and its set menus. Renaming the unnamed first set uses its shown name, "My set". --window sets or
+ * clears a website's window rule (TARGETS-013) through the website row's Open briefly… dialog.
  */
-class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a pause set.") {
+class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a pause set, and set its window rules.") {
     private val name by option("--name", help = "Set name; the new name with --rename-from.").required()
     private val websites by option("--website", help = "A website to add to a new set; repeat for more.").multiple()
     private val renameFrom by option("--rename-from", help = "Rename the set shown with this name, such as \"My set\", to --name.")
     private val makeDefault by option("--make-default", help = "Make the set named --name the default.").flag()
+    private val windows by option(
+        "--window",
+        help = "A website's window rule in the set, <website>=<period>/<length> (30, 60, or 120 and 5, 10, or 15) or <website>=off; repeat for more.",
+    ).multiple()
 
     override fun execute(session: Session): JsonElement {
         if (renameFrom != null && websites.isNotEmpty()) {
@@ -32,24 +37,29 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         val backend = session.backend()
         // The iOS bar keeps the spoken "Back to Pause sets". Other hosts press the in-page Back by its catalog key.
         val apple = session.target().isApple
+        val rules = windowRules(apple)
         val back = FlowControls.pauseSetsBack(apple)
         openList(backend, back)
         val labels = FlowSteps.labels(backend)
         val from = renameFrom
         when {
             from != null -> rename(backend, from, labels, apple)
-            hasSetNamed(labels, name) && makeDefault && websites.isEmpty() -> Unit
+            hasSetNamed(labels, name) && editsOnly(rules) -> Unit
             else -> create(backend, back, labels, apple)
         }
         if (makeDefault && !isDefault(FlowSteps.labels(backend), name)) {
             FlowSteps.run(backend, listOf(FlowSteps.button(menuFor(name)), FlowSteps.button("Make default")))
             awaitList { labels -> isDefault(labels, name) }(backend, "Pause sets shows no default set named $name.")
         }
+        if (rules.isNotEmpty()) {
+            setWindows(backend, back, rules)
+        }
         return buildJsonObject {
             put("name", name)
             renameFrom?.let { put("renamedFrom", it) }
             put("isDefault", isDefault(FlowSteps.labels(backend), name))
             putJsonArray("websites") { websites.forEach(::add) }
+            putJsonArray("windows") { rules.forEach { add(it.toString()) } }
         }
     }
 
@@ -122,6 +132,84 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         FlowSteps.run(backend, steps)
         // The list redraws after Back; a screen read while it does shows the list before the save.
         awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name.")
+    }
+
+    private fun windowRules(apple: Boolean): List<WindowRule> {
+        val rules = windows.map(WindowRule::parse)
+        if (rules.isNotEmpty() && apple) {
+            throw ControlException(
+                ErrorCode.USAGE,
+                "--window drives the website row's menu, which iOS shows as a swipe; it runs on desktop and Android.",
+            )
+        }
+        return rules
+    }
+
+    /** An existing set is only made default or given rules; nothing is created. */
+    private fun editsOnly(rules: List<WindowRule>): Boolean = websites.isEmpty() && (makeDefault || rules.isNotEmpty())
+
+    /** Opens the set, then each website's Open briefly… dialog, chooses the rule or Don't open, and returns to the list. */
+    private fun setWindows(
+        backend: Backend,
+        back: Query,
+        rules: List<WindowRule>,
+    ) {
+        val steps = mutableListOf(FlowSteps.tap(Query(textContains = "$name, ", role = FlowSteps.ROLE_BUTTON)), FlowSteps.waitFor(back))
+        rules.forEach { rule ->
+            steps += FlowSteps.tap(Query(text = "Actions for ${rule.website}", role = FlowSteps.ROLE_BUTTON))
+            steps += FlowControls.buttonId("targets_open_briefly")
+            if (rule.period == null || rule.length == null) {
+                steps += FlowControls.buttonId("targets_window_clear")
+            } else {
+                steps += FlowControls.buttonId("targets_window_period_${rule.period}")
+                steps += FlowControls.buttonId("targets_window_length_${rule.length}")
+                steps += FlowControls.buttonId("action_save_short")
+                steps += FlowSteps.waitFor(Query(textContains = rule.caption()))
+            }
+        }
+        steps += listOf(FlowSteps.screenshot("set-windows"), FlowSteps.tap(back))
+        FlowSteps.run(backend, steps)
+        awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name after its rules.")
+    }
+
+    /** One --window value: a website and its rule, or off when [period] and [length] are null. */
+    private class WindowRule(
+        val website: String,
+        val period: Int?,
+        val length: Int?,
+    ) {
+        /** The row's caption for the rule, as English shows it. */
+        fun caption(): String {
+            val every = when (period) {
+                30 -> "every 30 min"
+                60 -> "every hour"
+                else -> "every 2 hours"
+            }
+            return "Opens $every for $length min"
+        }
+
+        override fun toString(): String = if (period == null) "$website=off" else "$website=$period/$length"
+
+        companion object {
+            private val periods = setOf(30, 60, 120)
+            private val lengths = setOf(5, 10, 15)
+
+            fun parse(value: String): WindowRule {
+                val website = value.substringBefore('=', "").trim()
+                val rule = value.substringAfter('=', "").trim()
+                if (website.isEmpty()) throw usage(value)
+                if (rule == "off") return WindowRule(website, null, null)
+                val period = rule.substringBefore('/').toIntOrNull()?.takeIf { it in periods }
+                val length = rule.substringAfter('/', "").toIntOrNull()?.takeIf { it in lengths }
+                return if (period != null && length != null) WindowRule(website, period, length) else throw usage(value)
+            }
+
+            private fun usage(value: String): ControlException = ControlException(
+                ErrorCode.USAGE,
+                "--window $value is not <website>=<period>/<length> or <website>=off.",
+                "Periods are 30, 60, or 120 minutes; lengths are 5, 10, or 15.",
+            )
+        }
     }
 
     private companion object {

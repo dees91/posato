@@ -46,6 +46,7 @@ fresh clone or `launch --fresh`.
 | `pause-sets-desktop` | only My set, no schedules | nothing; it deletes its sets and schedule | none |
 | `pause-sets-notice-desktop` | right after `flow icloud link`, before any scenario or `flow set` opens Pause sets | the one-time notice used up | a freshly linked clone before a rerun |
 | `pause-sets-device` | no `Work` set | nothing; it deletes `Work` | none |
+| `website-window-session-desktop` | a running manual session on a set with `window.example` ruled and `blocked.example` unruled (`flow set --window`, `flow session`) | the session | End early, or let it end |
 | `schedule-break-desktop`, `schedule-break-end-desktop`, `schedule-break-manual-session-desktop` | a running scheduled pause on this device; for `-end`, a break taken by `schedule-break-desktop`; for `-manual-session`, a manual session inside which the schedule started | a running break (`schedule-break-desktop`); the used break (`-end`) | let the occurrence end, or End early |
 | `schedule-break-closed-blocked-ios`, `schedule-break-closed-allowed-ios`, `schedule-break-started-during-ios` | the test iPhone with a running scheduled pause; for `-started-during`, a break running in one occurrence (website) while another occurrence with only Calculator has started | Posato terminated (each scenario closes it first, so the Device Activity monitor alone acts) | launch Posato |
 
@@ -155,8 +156,8 @@ handles, required state, commands, and observable proof.
 ## Features
 
 - [Pause sets](./pause-sets.md) covers the set list, creating, renaming,
-  choosing the default, deleting with Move to <set> and delete, and the set choice in
-  Session and schedules.
+  choosing the default, deleting with Move to <set> and delete, the set choice in
+  Session and schedules, and a website's window rule with Session's opening times.
 - [Schedules](./schedules.md) covers adding, validating, skipping, editing,
   turning off, deleting and persisting schedules, device readiness and sync.
 
