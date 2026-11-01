@@ -1,5 +1,6 @@
 package app.posato.desktop.macos
 
+import app.posato.feature.enforcement.DomainWindowPlan
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -23,6 +24,8 @@ internal object BrowserDomainConfigureLimits {
 internal data class BrowserDomainConfigurePayload(
     val domains: List<String>,
     val sessionEndEpochMilliseconds: Long?,
+    /** The window plans of held websites (TARGETS-013); the helper blocks a website without a valid one. */
+    val windows: List<DomainWindowPlan> = emptyList(),
 ) {
     init {
         require(domains.size in 1..BrowserDomainConfigureLimits.MAXIMUM_DOMAIN_COUNT)

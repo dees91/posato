@@ -8,11 +8,38 @@ public enum BrowserDomainConfigureLimits {
   public static let maximumLabelLength = 63
 }
 
+/// One segment of a held website's window plan (TARGETS-013, ADR 0004 amendment): until an instant (exclusive), with
+/// a rule of `period` and `length` minutes, or none when both are 0. The wire carries any byte; the helper decides
+/// validity, so an invalid plan leaves its website blocked instead of failing the request.
+public struct WindowSegmentWire: Equatable, Sendable {
+  public let untilEpochMilliseconds: UInt64
+  public let period: UInt8
+  public let length: UInt8
+
+  public init(untilEpochMilliseconds: UInt64, period: UInt8, length: UInt8) {
+    self.untilEpochMilliseconds = untilEpochMilliseconds
+    self.period = period
+    self.length = length
+  }
+}
+
+/// When a held website may be left open: its ordered segments up to the request's end.
+public struct DomainWindowPlanWire: Equatable, Sendable {
+  public let domain: String
+  public let segments: [WindowSegmentWire]
+
+  public init(domain: String, segments: [WindowSegmentWire]) {
+    self.domain = domain
+    self.segments = segments
+  }
+}
+
 public struct BrowserDomainConfigurePayload: Equatable, Sendable {
   public let domains: [String]
   public let sessionEndEpochMilliseconds: UInt64?
+  public let windows: [DomainWindowPlanWire]
 
-  public init(domains: [String], sessionEndEpochMilliseconds: UInt64?) throws {
+  public init(domains: [String], sessionEndEpochMilliseconds: UInt64?, windows: [DomainWindowPlanWire] = []) throws {
     guard domains.count >= 1,
       domains.count <= BrowserDomainConfigureLimits.maximumDomainCount,
       Set(domains).count == domains.count,
@@ -22,6 +49,7 @@ public struct BrowserDomainConfigurePayload: Equatable, Sendable {
     }
     self.domains = domains
     self.sessionEndEpochMilliseconds = sessionEndEpochMilliseconds
+    self.windows = windows
   }
 
   public func encode() throws -> Data {

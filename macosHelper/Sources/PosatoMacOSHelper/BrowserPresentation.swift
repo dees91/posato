@@ -68,7 +68,8 @@ struct BrowserPresentationAdapter {
 
   mutating func presentBlockedPage(
     port: UInt16,
-    selectedHosts: Set<String>
+    selectedHosts: Set<String>,
+    opensAt: (String) -> (hour: Int, minute: Int)? = { _ in nil }
   ) -> BrowserPresentationStatus {
     guard let browser = frontmostBrowser() else {
       return .skipped
