@@ -29,7 +29,10 @@ internal data class SynchronizedPauseSet(
     val domains: List<ExactDomain>,
     /** The window rule of each present domain that has one (kind 22). */
     val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
-    /** Present domains with any kind 22 since their latest removal, a none winner included: the workspace has ruled them. */
+    /**
+     * Domains with any kind 22 in the workspace, a none winner and one before a removal included: the workspace
+     * has ruled them, so first link publishes no local rule for them.
+     */
     val ruledDomains: Set<ExactDomain> = emptySet(),
 ) {
     override fun toString(): String {
@@ -260,6 +263,9 @@ private class ProjectionAccumulator(
 
     // Operations arrive in total order, so each (set, domain) keeps the latest kind 22 since its latest removal.
     private val windows = mutableMapOf<Pair<PauseSetId, ExactDomain>, WebsiteWindow?>()
+
+    // Every key with a kind 22, kept through removals: a removal clears the rule, not the workspace's authorship.
+    private val ruledKeys = mutableSetOf<Pair<PauseSetId, ExactDomain>>()
     private val appliedSetRemoves = mutableSetOf<PauseSetId>()
     private var chosenDefault: PauseSetId? = null
     private var pauseSetsEnabled = false
@@ -338,6 +344,7 @@ private class ProjectionAccumulator(
 
             is SyncOperationPayload.SetDomainWindow -> {
                 windows[payload.setId to payload.domain] = payload.window
+                ruledKeys += payload.setId to payload.domain
                 outcome(payload.setId in sets.liveIds)
             }
         }
@@ -372,7 +379,7 @@ private class ProjectionAccumulator(
         val pauseSets = sets.liveIds.sortedBy(PauseSetId::value).map { setId ->
             val domains = setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue)
             val rules = domains.mapNotNull { domain -> windows[setId to domain]?.let { window -> domain to window } }.toMap()
-            val ruled = domains.filterTo(mutableSetOf()) { domain -> (setId to domain) in windows }
+            val ruled = ruledKeys.filter { (ruledSet, _) -> ruledSet == setId }.mapTo(mutableSetOf()) { (_, domain) -> domain }
             SynchronizedPauseSet(setId, sets.nameOf(setId), domains, rules, ruled)
         }
         return SyncProjection(
