@@ -45,9 +45,26 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   `window.example` with "Opens at HH:MM" or "Open until HH:MM" (the row's
   accessible label is "window.example, opens at 10:30") and no row for the
   unruled `blocked.example`. Clearing the rule during the session removes the
-  row within a second. The times follow the guest's clock (`vm exec date`);
-  whether a browser load is blocked at those times is phase 3's enforcement
-  rows, not this recipe.
+  row within a second. The times follow the guest's clock (`vm exec date`).
+- Window enforcement on the Mac (hidden window, because quitting Posato ends
+  all Mac blocking): start the session, `close-window`, then before the
+  boundary run `$PC window-probe -t desktop --vm primary --website
+  http://window.example/ --website http://blocked.example/ --boundary 10:30
+  --boundary 10:35`. It loads each URL through the guest's system proxy with
+  a cache-busting `probe` query at b-90, -60, -45, -30, -15 and -3 s and every
+  15 s to b+120 s, on the guest's clock, and reports each probe
+  (`paused`/`loaded`, `opensAtPage` for "This site opens at") and each URL's
+  bounded transition interval. A row passes when every probe before the
+  opening is `paused`, one is `loaded` by b+60 s, the close is `paused` by
+  end+60 s, and the unruled control stays `paused`. Start it a minute before
+  b-90 s; it runs about 3.5 minutes per boundary. The page itself: `vm exec
+  --script "open -a Safari https://window.example/"`, `vm prompt
+  automation-allow` once, then `vm wait-text --text "This site opens at"`.
+- Window enforcement on the iPhone: Safari probes are `probeURL` steps
+  (`url`, `text`) after `sleepUntil` steps (`atEpochMs` on the device clock)
+  in one scenario with `launch.skip` and `continueOnFailure`, so one driver
+  launch covers the series; each step reports `observed` (`blocked`, `open`,
+  `none`) and `observedAtEpochMs`.
 
 ## Driving notes
 

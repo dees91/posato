@@ -77,6 +77,7 @@ import app.posato.control.cli.VmTypeCommand
 import app.posato.control.cli.VmVncHoldCommand
 import app.posato.control.cli.VmWaitTextCommand
 import app.posato.control.cli.WaitCommand
+import app.posato.control.cli.WindowProbeCommand
 import app.posato.control.cli.androidCommand
 import app.posato.control.cli.linuxCommand
 import app.posato.control.cli.windowsCommand
@@ -182,6 +183,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ArtifactsCommand(),
     PrEvidenceCommand(),
     ObserveCommand(),
+    WindowProbeCommand(),
     MonitorCommand(),
     MenuCommand(),
     CloseWindowCommand(),
