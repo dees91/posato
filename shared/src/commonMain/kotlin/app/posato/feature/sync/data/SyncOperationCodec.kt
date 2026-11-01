@@ -196,6 +196,10 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
         is SyncOperationPayload.OptionalExtension -> {
             return writeSchedulePayload(payload)
         }
+
+        is SyncOperationPayload.SetDomainWindow -> {
+            return false
+        }
     }
 
     return true

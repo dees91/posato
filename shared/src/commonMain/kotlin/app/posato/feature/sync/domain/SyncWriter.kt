@@ -19,6 +19,7 @@ import app.posato.feature.sync.data.SyncStoreFailure
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 import app.posato.feature.targets.domain.normalizeApplicationPolicyNameNfc
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -62,6 +63,20 @@ internal sealed interface LocalSyncMutation {
     ) : LocalSyncMutation
 
     data object EnablePauseSets : LocalSyncMutation
+
+    /**
+     * Kind 22: sets [domain]'s window rule in [setId], or clears it when [window] is null. The writer authors it
+     * only for a domain present in a live set of its own projection.
+     */
+    data class SetDomainWindow(
+        val domain: ExactDomain,
+        val setId: PauseSetId,
+        val window: WebsiteWindow?,
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.SetDomainWindow(redacted)"
+        }
+    }
 
     data class StartSession(
         val sessionId: SessionId,

@@ -60,6 +60,9 @@ internal suspend fun PosatoDatabase.writeBaseRows(base: Map<PauseSetId, List<Exa
 /** Records [write]'s intents; a set removal first drops that set's queued changes, which it makes moot. */
 internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
     write.intents.forEach { intent ->
+        if (intent is StoredPolicyIntent.SetWindow) {
+            return@forEach
+        }
         if (intent is StoredPolicyIntent.RemoveSet) {
             syncLocalPolicyQueries.deleteIntentsOfSet(intent.setId.value.copyBytes())
         }
@@ -69,6 +72,7 @@ internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
             is StoredPolicyIntent.PutSet -> Triple(INTENT_SET_PUT, null, intent.name)
             is StoredPolicyIntent.RemoveSet -> Triple(INTENT_SET_REMOVE, null, null)
             is StoredPolicyIntent.ChooseDefault -> Triple(INTENT_SET_DEFAULT, null, null)
+            is StoredPolicyIntent.SetWindow -> Triple(INTENT_SET_DEFAULT, null, null)
         }
         syncLocalPolicyQueries.insertIntent(write.workspaceId, kind, intent.setIdOf().value.copyBytes(), domain, name)
     }

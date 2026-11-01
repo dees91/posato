@@ -2,6 +2,7 @@ package app.posato.feature.sync.domain
 
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 
 internal enum class SyncAuditOutcome {
     AUTHOR_REGISTERED,
@@ -21,11 +22,13 @@ internal enum class PauseSetStatus {
     UNKNOWN,
 }
 
-/** A live set: its synchronized name, absent for the first set until someone names it, and its domains. */
+/** A live set: its synchronized name, absent for the first set until someone names it, its domains, and their rules. */
 internal data class SynchronizedPauseSet(
     val setId: PauseSetId,
     val name: String?,
     val domains: List<ExactDomain>,
+    /** The window rule of each present domain that has one (kind 22). */
+    val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
 ) {
     override fun toString(): String {
         return "SynchronizedPauseSet(redacted)"
@@ -324,6 +327,10 @@ private class ProjectionAccumulator(
             is SyncOperationPayload.PauseSetDefault,
             SyncOperationPayload.PauseSetsEnabled -> {
                 applyPauseSet(operation)
+            }
+
+            is SyncOperationPayload.SetDomainWindow -> {
+                SyncAuditOutcome.NO_OP
             }
         }
     }

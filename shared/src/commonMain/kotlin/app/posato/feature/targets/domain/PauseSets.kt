@@ -4,12 +4,14 @@ import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.sync.domain.SyncFormatLimits
 
-/** One pause set on this device: its synchronized name (absent for an unnamed first set) and its websites. */
+/** One pause set on this device: its synchronized name (absent for an unnamed first set), its websites, and their rules. */
 internal data class LocalPauseSet(
     val id: PauseSetId,
     val name: String?,
     val domains: List<ExactDomain>,
     val refused: Boolean = false,
+    /** The window rule of each of [domains] that has one; a website has none until one is saved. */
+    val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
 ) {
     override fun toString(): String {
         return "LocalPauseSet(redacted)"

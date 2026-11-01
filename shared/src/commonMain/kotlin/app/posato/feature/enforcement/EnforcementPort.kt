@@ -11,6 +11,59 @@ public enum class EnforcementOutcome {
     FAILED,
 }
 
+/**
+ * One stretch of a website's window plan, until [untilEpochMillis] (exclusive), from the previous segment's end.
+ * A rule of [periodMinutes] and [lengthMinutes] opens it at the aligned clock times; 0 and 0 keeps it blocked.
+ */
+public class WindowSegment(
+    public val untilEpochMillis: Long,
+    public val periodMinutes: Int,
+    public val lengthMinutes: Int,
+) {
+    override fun equals(other: Any?): Boolean {
+        return other is WindowSegment &&
+            untilEpochMillis == other.untilEpochMillis &&
+            periodMinutes == other.periodMinutes &&
+            lengthMinutes == other.lengthMinutes
+    }
+
+    override fun hashCode(): Int {
+        var result = untilEpochMillis.hashCode()
+        result = 31 * result + periodMinutes
+        result = 31 * result + lengthMinutes
+        return result
+    }
+
+    override fun toString(): String {
+        return "WindowSegment(redacted)"
+    }
+}
+
+/**
+ * When a held website may be left unblocked: ordered segments cut at every end of a running part that covers it.
+ * After the last segment, and for a held website with no plan, it is blocked until the request ends.
+ */
+public class DomainWindowPlan(
+    public val domain: String,
+    public val segments: List<WindowSegment>,
+) {
+    override fun equals(other: Any?): Boolean {
+        return other is DomainWindowPlan && domain == other.domain && segments == other.segments
+    }
+
+    override fun hashCode(): Int {
+        return 31 * domain.hashCode() + segments.hashCode()
+    }
+
+    override fun toString(): String {
+        return "DomainWindowPlan(redacted)"
+    }
+}
+
+/**
+ * What a host enforces: [domains] is every held website, and [windows] says when some of them may be left
+ * unblocked (TARGETS-013). A host that does not read [windows] blocks every held website, the safe direction.
+ */
 public class EnforcementRequest(
     public val domains: List<String>,
     public val mappingIds: List<String>,
@@ -19,9 +72,10 @@ public class EnforcementRequest(
     public val sessionEndEpochMillis: Long,
     /** Applies only through the standing grant and never asks for a password; scheduled starts use it. */
     public val grantOnly: Boolean = false,
+    public val windows: List<DomainWindowPlan> = emptyList(),
 ) {
     public fun withGrantOnly(): EnforcementRequest {
-        return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, sessionEndEpochMillis, grantOnly = true)
+        return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, sessionEndEpochMillis, grantOnly = true, windows)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -31,7 +85,8 @@ public class EnforcementRequest(
             mappingIds == other.mappingIds &&
             sessionId == other.sessionId &&
             sessionStartEpochMillis == other.sessionStartEpochMillis &&
-            sessionEndEpochMillis == other.sessionEndEpochMillis
+            sessionEndEpochMillis == other.sessionEndEpochMillis &&
+            windows == other.windows
     }
 
     override fun hashCode(): Int {
@@ -41,6 +96,7 @@ public class EnforcementRequest(
         result = 31 * result + sessionStartEpochMillis.hashCode()
         result = 31 * result + sessionEndEpochMillis.hashCode()
         result = 31 * result + grantOnly.hashCode()
+        result = 31 * result + windows.hashCode()
         return result
     }
 

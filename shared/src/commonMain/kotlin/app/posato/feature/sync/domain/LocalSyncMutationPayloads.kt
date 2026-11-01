@@ -36,6 +36,10 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
             SyncOperationPayload.SessionEnd(sessionId)
         }
 
+        is LocalSyncMutation.SetDomainWindow -> {
+            null
+        }
+
         is LocalSyncMutation.PutSchedule -> {
             val normalized = normalizeApplicationPolicyNameNfc(name.trim())
             SyncOperationPayload.SchedulePut(scheduleId, normalized, weekdays, startMinute, endMinute, enabled, setId)

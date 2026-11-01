@@ -54,11 +54,23 @@ internal data class MonitorBreak(
     val over: Boolean,
 )
 
-/** A set a listed schedule or a running occurrence uses: its websites and this device's app choices. */
+/** One website's window rule in a set, for the monitor to open it while the app is closed (TARGETS-013). */
+internal data class MonitorWindow(
+    val domain: String,
+    val periodMinutes: Int,
+    val lengthMinutes: Int,
+) {
+    override fun toString(): String {
+        return "MonitorWindow(redacted)"
+    }
+}
+
+/** A set a listed schedule or a running occurrence uses: its websites, this device's app choices, and its rules. */
 internal data class MonitorSet(
     val id: String,
     val domains: List<String>,
     val mappingIds: List<String>,
+    val windows: List<MonitorWindow> = emptyList(),
 ) {
     override fun toString(): String {
         return "MonitorSet(redacted)"

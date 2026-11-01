@@ -129,6 +129,7 @@ internal class AppleSyncAuthoring(
             is StoredPolicyIntent.PutSet -> LocalSyncMutation.PutPauseSet(intent.setId, intent.name)
             is StoredPolicyIntent.RemoveSet -> LocalSyncMutation.RemovePauseSet(intent.setId)
             is StoredPolicyIntent.ChooseDefault -> LocalSyncMutation.ChoosePauseSetDefault(intent.setId)
+            is StoredPolicyIntent.SetWindow -> LocalSyncMutation.SetDomainWindow(intent.domain, intent.setId, intent.window)
         }
         if (writer.mutate(mutation) is LocalMutationResult.Failure) {
             return DrainStep.Halt(fail())
@@ -175,5 +176,6 @@ private fun isSkipped(
         is StoredPolicyIntent.PutSet -> projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
         is StoredPolicyIntent.RemoveSet -> false
         is StoredPolicyIntent.ChooseDefault -> projection.defaultPauseSetId == intent.setId
+        is StoredPolicyIntent.SetWindow -> true
     }
 }

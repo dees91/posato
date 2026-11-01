@@ -73,5 +73,6 @@ internal fun StoredPolicyIntent.setIdOf(): PauseSetId {
         is StoredPolicyIntent.PutSet -> setId
         is StoredPolicyIntent.RemoveSet -> setId
         is StoredPolicyIntent.ChooseDefault -> setId
+        is StoredPolicyIntent.SetWindow -> setId
     }
 }

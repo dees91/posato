@@ -5,6 +5,7 @@ import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.sync.data.ImmutableBytes
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 import kotlin.jvm.JvmInline
 
 internal object SyncFormatLimits {
@@ -310,6 +311,20 @@ internal sealed interface SyncOperationPayload {
 
     /** Kind 19: marks the workspace as migrated to pause sets. */
     data object PauseSetsEnabled : SyncOperationPayload
+
+    /**
+     * Kind 22: the window rule of one website in one set; null is the none pair, which clears it. The greatest
+     * total-order operation per (set, domain) wins unless it orders before the greatest removal of that website.
+     */
+    data class SetDomainWindow(
+        val setId: PauseSetId,
+        val domain: ExactDomain,
+        val window: WebsiteWindow?,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.SetDomainWindow(redacted)"
+        }
+    }
 
     /**
      * Kinds 128-255 are optional extensions: accepted, retained and ignored in projection. Decoding stays

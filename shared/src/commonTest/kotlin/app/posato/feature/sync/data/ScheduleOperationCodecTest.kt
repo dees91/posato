@@ -232,7 +232,7 @@ class ScheduleOperationCodecTest {
 
     @Test
     fun `given mandatory kinds outside the known set when decoded then they are still rejected`() {
-        listOf(0, 22, 99, 127).forEach { kind ->
+        listOf(0, 23, 99, 127).forEach { kind ->
             assertNull(SyncOperationCodec.decode(header(51, 2) + byteArrayOf(kind.toByte()) + identifier(70)), "kind $kind")
         }
     }
