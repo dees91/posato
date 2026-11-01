@@ -307,12 +307,14 @@ final class WebsiteWindowMonitorTests: XCTestCase {
 
     // MARK: - The schedule's store
 
-    private func scheduledTable(schedules: [(id: String, set: String)], ruledSet: String, breakWindow: (Date, Date)? = nil) -> ScheduleMonitorFile {
+    private func scheduledTable(
+        schedules: [(id: String, set: String)], ruledSet: String, breakWindow: (Date, Date)? = nil, startMinute: Int = 9 * 60
+    ) -> ScheduleMonitorFile {
         ScheduleMonitorFile(
             version: ScheduleMonitor.fileVersion,
             schedules: schedules.map {
                 ScheduleMonitorFile.Schedule(
-                    id: $0.id, weekdays: 0b1111111, startMinute: 9 * 60, endMinute: 12 * 60, stoppedDates: [],
+                    id: $0.id, weekdays: 0b1111111, startMinute: startMinute, endMinute: 12 * 60, stoppedDates: [],
                     startTitle: "", startBody: "", setId: $0.set
                 )
             },
@@ -359,6 +361,44 @@ final class WebsiteWindowMonitorTests: XCTestCase {
         let bothStore = FakeScheduleShieldStore()
         evaluate(both, own(at(10, 30)), .end, at(10, 30), store: bothStore)
         XCTAssertEqual(bothStore.applied?.domains, PosatoWebDomains.domains(from: ["ruled.example"]))
+    }
+
+    /// Phase 3 review R2: a scheduled part's first start, with Posato closed and no record of what it holds yet,
+    /// registers its window boundaries from the composition it applies before it decides what is open.
+    private func startPart(_ table: ScheduleMonitorFile, id: String, at time: Date) throws -> (Fixture, FakeScheduleShieldStore) {
+        let files = try isolatedFiles()
+        try files.writeTable(table)
+        let fixture = Fixture(files: files, center: RecordingWindowCenter(), filter: FakeManualFilter())
+        let store = FakeScheduleShieldStore()
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: id), store: store, sessionStore: FakeScheduleShieldStore(), files: files,
+            poster: FakeSchedulePoster(), center: fixture.center, now: { time }, calendar: calendar
+        )
+        return (fixture, store)
+    }
+
+    func testAFirstScheduledStartInsideAWindowOpensItsRuledWebsiteAtTheStartAndRegistersItsClose() throws {
+        let ruledSet = "000000000000400080000000000000b1"
+        let first = "000000000000400080000000000000a1"
+        let (fixture, store) = try startPart(
+            scheduledTable(schedules: [(first, ruledSet)], ruledSet: ruledSet, startMinute: 10 * 60 + 32), id: first, at: at(10, 32)
+        )
+        XCTAssertTrue(fires(fixture).contains(at(10, 35)), "the close is registered before the website opens")
+        XCTAssertEqual(store.applied?.domains, [], "the part starts inside its window, so its ruled website is open at once")
+        evaluate(fixture, own(at(10, 35)), .end, at(10, 35), store: store)
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["ruled.example"]))
+    }
+
+    func testAnEarlyFirstScheduledStartRegistersTheOpeningAtTheStartAndKeepsTheWebsiteBlockedUntilThen() throws {
+        let ruledSet = "000000000000400080000000000000b1"
+        let first = "000000000000400080000000000000a1"
+        let (fixture, store) = try startPart(
+            scheduledTable(schedules: [(first, ruledSet)], ruledSet: ruledSet, startMinute: 10 * 60 + 30), id: first, at: at(10, 29, 58)
+        )
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["ruled.example"]), "never open before the opening")
+        XCTAssertTrue(fires(fixture).contains(at(10, 30)) && fires(fixture).contains(at(10, 35)))
+        evaluate(fixture, own(at(10, 30)), .end, at(10, 30), store: store)
+        XCTAssertEqual(store.applied?.domains, [])
     }
 
     func testAPartOnABreakIsReleasedAndAWindowCallbackDoesNotBlockItAgain() throws {
