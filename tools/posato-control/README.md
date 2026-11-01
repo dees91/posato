@@ -394,7 +394,13 @@ taps the element, located once, that many times with `seconds` between taps; not
 `relaunch`. `openURL` (`url`) opens a link on iOS and Android, as a message or a camera scan does. iOS only: `launchApp` (`bundleId`, brought forward without being
 terminated), `terminateApp` (`bundleId`, ended if it runs, for example Safari
 before `openURL`, because the first page an already running Safari opens after
-a website pause ends can hang), and `pressKeys` (`secret`: the name
+a website pause ends can hang), `sleepUntil` (`atEpochMs`: waits for that
+instant on the device clock; each iOS step result carries `startedAtEpochMs`),
+`probeURL` (`url`, `text`: one fresh load in a new Safari process with a
+cache-busting `probe` query; the result's `observed` is `blocked` for Safari's
+restricted page, `open` when `text` appears, or `none`, with the load start in
+`observedAtEpochMs`; the observation never fails the step, so a timed probe
+series reads every result), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are
 removed from the xcodebuild log; when the keypad's keys are not in the

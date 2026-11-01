@@ -55,6 +55,9 @@ final class ScenarioExecutor {
   private let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
   private let attach: Attach
   private var recordedIssues: [String] = []
+  /// What a `probeURL` step saw, and when its load started on the device clock.
+  private var stepObserved: String?
+  private var stepObservedAt: Int64?
 
   init(scenario: Scenario, bundleIdentifier: String, attach: @escaping Attach) {
     self.scenario = scenario
@@ -131,6 +134,8 @@ final class ScenarioExecutor {
   private func execute(_ step: Step, index: Int) -> StepResult {
     let start = Date()
     recordedIssues = []
+    stepObserved = nil
+    stepObservedAt = nil
     var artifacts: [String] = []
     var failure: DriverError?
     do {
@@ -168,8 +173,15 @@ final class ScenarioExecutor {
       ok: failure == nil,
       durationMs: durationMs,
       artifacts: artifacts,
-      error: failure
+      error: failure,
+      startedAtEpochMs: Self.epochMs(start),
+      observed: stepObserved,
+      observedAtEpochMs: stepObservedAt
     )
+  }
+
+  private static func epochMs(_ date: Date) -> Int64 {
+    Int64((date.timeIntervalSince1970 * 1000).rounded(.down))
   }
 
   private func perform(_ step: Step, index: Int, artifacts: inout [String]) throws {
@@ -200,6 +212,10 @@ final class ScenarioExecutor {
         throw DriverError(.scenarioInvalid, "sleep requires seconds")
       }
       Thread.sleep(forTimeInterval: seconds)
+    case "sleepUntil":
+      try sleepUntil(step)
+    case "probeURL":
+      try probeURL(step, timeout: timeout)
     case "scrollTo":
       try scrollTo(step, timeout: timeout)
     case "orient":
@@ -279,6 +295,58 @@ final class ScenarioExecutor {
       throw DriverError(.waitTimeout, "\(bundleId) was still running after \(timeout) s")
     }
   }
+
+  /// Waits until the device clock reaches `atEpochMs`, so probes land at fixed instants around a boundary; an
+  /// instant already passed returns at once, and the step's start time shows how late it ran.
+  private func sleepUntil(_ step: Step) throws {
+    guard let target = step.atEpochMs else {
+      throw DriverError(.scenarioInvalid, "sleepUntil requires atEpochMs")
+    }
+    let remaining = Double(target) / 1000 - Date().timeIntervalSince1970
+    if remaining > 0 {
+      Thread.sleep(forTimeInterval: remaining)
+    }
+  }
+
+  /// One fresh load of `url` in a new Safari process with a cache-busting query, reported as `observed`: `blocked`
+  /// when Safari shows its restricted page, `open` when `text` appears, `none` when neither does before the timeout.
+  /// The load's start on the device clock is `observedAtEpochMs`. The observation never fails the step.
+  private func probeURL(_ step: Step, timeout: TimeInterval) throws {
+    guard let text = step.url, let expected = step.text, var components = URLComponents(string: text) else {
+      throw DriverError(.scenarioInvalid, "probeURL requires a valid url and the text an open page shows")
+    }
+    let safari = XCUIApplication(bundleIdentifier: Self.safariBundle)
+    if safari.state != .notRunning {
+      safari.terminate()
+      _ = safari.wait(for: .notRunning, timeout: timeout)
+    }
+    let started = Date()
+    components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "probe", value: String(Self.epochMs(started)))]
+    guard let url = components.url else {
+      throw DriverError(.scenarioInvalid, "probeURL could not add its query")
+    }
+    stepObservedAt = Self.epochMs(started)
+    XCUIDevice.shared.system.open(url)
+    let blocked = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", Self.restrictedTitle)).firstMatch
+    let open = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", expected)).firstMatch
+    var seen = "none"
+    _ = poll(timeout: timeout) {
+      if blocked.exists {
+        seen = "blocked"
+        return true
+      }
+      if open.exists {
+        seen = "open"
+        return true
+      }
+      return false
+    }
+    stepObserved = seen
+  }
+
+  private static let safariBundle = "com.apple.mobilesafari"
+  /// The title of Safari's page for a website Screen Time restricts.
+  private static let restrictedTitle = "Website Not Allowed"
 
   private func openURL(_ step: Step) throws {
     guard let text = step.url, let url = URL(string: text) else {
