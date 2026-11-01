@@ -72,7 +72,7 @@ class PolicyReconcilerWindowTest {
     }
 
     @Test
-    fun `given a rule received for a live set when applied then this device keeps it, and a queued edit wins over it`() = runTest {
+    fun `given a rule received for a live set when applied then this device keeps it and a queued edit wins over it`() = runTest {
         withStore("window-apply.db") { store ->
             store.replaceLocal(LocalPauseSet(work, "Work", listOf(mail, news)))
             val projection = reduce(
@@ -119,10 +119,19 @@ class PolicyReconcilerWindowTest {
     }
 
     @Test
-    fun `given local rules at first link when seeded then only websites the workspace never ruled publish theirs, after the website`() = runTest {
+    fun `given local rules at first link when seeded then only websites the workspace never ruled publish theirs after the website`() = runTest {
         withStore("window-seed.db") { store ->
             store.replaceLocal(
-                LocalPauseSet(work, "Work", listOf(domain("fresh"), mail, news), windows = mapOf(news to hourly, mail to hourly, domain("fresh") to hourly)),
+                LocalPauseSet(
+                    work,
+                    "Work",
+                    listOf(domain("fresh"), mail, news),
+                    windows = mapOf(
+                        news to hourly,
+                        mail to hourly,
+                        domain("fresh") to hourly,
+                    ),
+                ),
             )
             val projection = reduce(
                 SyncOperationPayload.PauseSetPut(work, "Work"),

@@ -9,7 +9,6 @@ import app.posato.feature.targets.domain.ExactDomainPolicyLimits
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.StoredPolicyIntent
-import app.posato.feature.targets.domain.WebsiteWindow
 
 internal suspend fun PosatoDatabase.writeSetRows(sets: PauseSets) {
     localExactDomainPolicyQueries.deleteSets()
@@ -37,24 +36,17 @@ internal suspend fun PosatoDatabase.readSetsOrThrow(): PauseSets {
     val setRows = localExactDomainPolicyQueries.selectSets(MAX_STORED_SETS + 1).awaitAsList()
     val domainRows = localExactDomainPolicyQueries.selectSetDomains(MAX_STORED_SET_DOMAINS + 1).awaitAsList()
     val defaults = localExactDomainPolicyQueries.selectDefault().awaitAsList()
-    val windowRows = localExactDomainPolicyQueries.selectSetWindows(MAX_STORED_SET_DOMAINS + 1).awaitAsList()
-    if (setRows.size > MAX_STORED_SETS || domainRows.size > MAX_STORED_SET_DOMAINS || defaults.size > 1 || windowRows.size > MAX_STORED_SET_DOMAINS) {
+    if (setRows.size > MAX_STORED_SETS || domainRows.size > MAX_STORED_SET_DOMAINS || defaults.size > 1) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
-    val windowsBySet = windowRows.groupBy(
-        keySelector = { row -> restoreSetId(row.set_id) },
-        valueTransform = { row ->
-            restoreDomain(row.canonical_domain) to
-                (WebsiteWindow.of(row.period_minutes.toInt(), row.length_minutes.toInt()) ?: fail(LocalPolicyFailure.CORRUPTION))
-        },
-    )
+    val windowsBySet = readSetWindowsOrThrow()
     val domainsBySet = domainRows.groupBy(
         keySelector = { row -> restoreSetId(row.set_id) },
         valueTransform = { row -> restoreDomain(row.canonical_domain) },
     )
     val sets = setRows.map { row ->
         val setId = restoreSetId(row.set_id)
-        LocalPauseSet(setId, row.name, domainsBySet[setId].orEmpty(), row.refused == 1L, windowsBySet[setId].orEmpty().toMap())
+        LocalPauseSet(setId, row.name, domainsBySet[setId].orEmpty(), row.refused == 1L, windowsBySet[setId].orEmpty())
     }
     if ((domainsBySet.keys + windowsBySet.keys).any { setId -> sets.none { set -> set.id == setId } }) {
         fail(LocalPolicyFailure.CORRUPTION)
@@ -68,7 +60,7 @@ internal fun restoreSetId(bytes: ByteArray): PauseSetId {
 
 /** Ten live sets plus sets refused at the cap; well past what devices can create, so more rows mean corruption. */
 private const val MAX_STORED_SETS: Long = 64
-private const val MAX_STORED_SET_DOMAINS: Long = MAX_STORED_SETS * ExactDomainPolicyLimits.MAX_DOMAIN_COUNT
+internal const val MAX_STORED_SET_DOMAINS: Long = MAX_STORED_SETS * ExactDomainPolicyLimits.MAX_DOMAIN_COUNT
 
 internal suspend fun PosatoDatabase.readApplicationPolicyNameOrThrow(): ApplicationPolicyName? {
     val applicationPolicyNameBytes = localExactDomainPolicyQueries

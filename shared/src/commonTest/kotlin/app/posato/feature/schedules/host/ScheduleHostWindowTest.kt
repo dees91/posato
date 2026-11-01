@@ -202,7 +202,7 @@ class ScheduleHostWindowTest {
     }
 
     @Test
-    fun `given a running pause when a rule is added, edited, and removed then each change re-applies and removal closes at once`() = runTest {
+    fun `given a running pause when a rule is added edited and removed then each change re-applies and removal closes at once`() = runTest {
         withHost("schedule-window-edits.db") { fixture ->
             fixture.host.evaluate()
             assertEquals(emptyList(), fixture.held.windows)

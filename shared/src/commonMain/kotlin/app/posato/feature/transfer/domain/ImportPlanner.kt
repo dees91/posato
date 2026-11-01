@@ -212,7 +212,8 @@ private fun replaceSets(
     val result = mutableListOf<LocalPauseSet>()
     val mapping = mutableMapOf<String, PauseSetId>()
     if (localFirst != null) {
-        result += LocalPauseSet(PauseSetId.FIRST, fileFirst?.name ?: localFirst.name, fileFirst?.domains.orEmpty(), windows = fileFirst?.windows.orEmpty())
+        result +=
+            LocalPauseSet(PauseSetId.FIRST, fileFirst?.name ?: localFirst.name, fileFirst?.domains.orEmpty(), windows = fileFirst?.windows.orEmpty())
         fileFirst?.let { set -> mapping[set.ref] = PauseSetId.FIRST }
     }
     val taken = result.mapTo(mutableSetOf()) { set -> nameKey(displayNameOf(set.name)) }

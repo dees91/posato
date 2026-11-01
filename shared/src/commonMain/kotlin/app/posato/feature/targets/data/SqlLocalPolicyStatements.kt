@@ -17,7 +17,6 @@ import app.posato.feature.targets.domain.SequencedPolicyIntent
 import app.posato.feature.targets.domain.StoredPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
-import app.posato.feature.targets.domain.WebsiteWindow
 
 internal suspend fun PosatoDatabase.advanceRevisionOrThrow(expectedRevision: Long) {
     val changed = localExactDomainPolicyQueries.advanceRevision(
@@ -102,7 +101,11 @@ internal suspend fun PosatoDatabase.readIntentsOrThrow(): List<SequencedPolicyIn
 
             INTENT_SET_DEFAULT -> StoredPolicyIntent.ChooseDefault(setId)
 
-            INTENT_SET_WINDOW -> StoredPolicyIntent.SetWindow(restoreDomain(row.canonical_domain), setId, restoreWindow(row.window_period, row.window_length))
+            INTENT_SET_WINDOW -> StoredPolicyIntent.SetWindow(
+                restoreDomain(row.canonical_domain),
+                setId,
+                restoreWindow(row.window_period, row.window_length),
+            )
 
             else -> fail(LocalPolicyFailure.CORRUPTION)
         }
@@ -163,15 +166,3 @@ private const val INTENT_SET_PUT = "set_put"
 private const val INTENT_SET_REMOVE = "set_remove"
 private const val INTENT_SET_DEFAULT = "set_default"
 private const val INTENT_SET_WINDOW = "set_window"
-
-/** A queued rule: both codes from the fixed choices, or neither for a clearing. */
-private fun restoreWindow(
-    period: Long?,
-    length: Long?,
-): WebsiteWindow? {
-    return when {
-        period == null && length == null -> null
-        period == null || length == null -> fail(LocalPolicyFailure.CORRUPTION)
-        else -> WebsiteWindow.of(period.toInt(), length.toInt()) ?: fail(LocalPolicyFailure.CORRUPTION)
-    }
-}

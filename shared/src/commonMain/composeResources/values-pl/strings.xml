@@ -890,4 +890,38 @@ Tylko dla ciebie.</string>
         <item quantity="many">%1$d z %2$d stron</item>
         <item quantity="other">%1$d z %2$d stron</item>
     </plurals>
+    <string name="targets_open_briefly">Otwieraj na chwilę…</string>
+    <string name="targets_window_title">Otwieraj %1$s na chwilę</string>
+    <string name="targets_window_every">Co</string>
+    <string name="targets_window_for">Przez</string>
+    <string name="targets_window_period_30">30 minut</string>
+    <string name="targets_window_period_60">1 godzina</string>
+    <string name="targets_window_period_120">2 godziny</string>
+    <string name="targets_window_period_30_a11y">Co 30 minut</string>
+    <string name="targets_window_period_60_a11y">Co godzinę</string>
+    <string name="targets_window_period_120_a11y">Co 2 godziny</string>
+    <string name="targets_window_length_5">5 minut</string>
+    <string name="targets_window_length_10">10 minut</string>
+    <string name="targets_window_length_15">15 minut</string>
+    <string name="targets_window_length_5_a11y">Przez 5 minut</string>
+    <string name="targets_window_length_10_a11y">Przez 10 minut</string>
+    <string name="targets_window_length_15_a11y">Przez 15 minut</string>
+    <string name="targets_window_caption_30">Podczas pauzy otwiera się o :00 i co 30 minut, na %1$d minut.</string>
+    <string name="targets_window_caption_60">Podczas pauzy otwiera się o :00 i co godzinę, na %1$d minut.</string>
+    <string name="targets_window_caption_120">Podczas pauzy otwiera się o :00 i co 2 godziny, na %1$d minut.</string>
+    <string name="targets_window_row_30">Otwiera się co 30 min na %1$d min</string>
+    <string name="targets_window_row_60">Otwiera się co godzinę na %1$d min</string>
+    <string name="targets_window_row_120">Otwiera się co 2 godziny na %1$d min</string>
+    <string name="targets_window_clear">Nie otwieraj</string>
+    <string name="targets_window_in_use">Nowa reguła działa od razu.</string>
+    <string name="session_window_opens_at">Otworzy się o %1$s</string>
+    <string name="session_window_open_until">Otwarta do %1$s</string>
+    <string name="session_window_row_opens">%1$s, otworzy się o %2$s</string>
+    <string name="session_window_row_open">%1$s, otwarta do %2$s</string>
+    <plurals name="session_window_more">
+        <item quantity="one">i jeszcze %1$d</item>
+        <item quantity="few">i jeszcze %1$d</item>
+        <item quantity="many">i jeszcze %1$d</item>
+        <item quantity="other">i jeszcze %1$d</item>
+    </plurals>
 </resources>

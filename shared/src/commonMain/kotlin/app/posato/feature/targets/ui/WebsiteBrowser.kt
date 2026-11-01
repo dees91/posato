@@ -14,7 +14,10 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
@@ -45,6 +48,7 @@ import app.posato.core.designsystem.PosatoSwipeRow
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_back_to_adding
 import app.posato.generated.resources.action_cancel
@@ -56,6 +60,7 @@ import app.posato.generated.resources.schedule_actions_for
 import app.posato.generated.resources.targets_also_pauses
 import app.posato.generated.resources.targets_edit_website
 import app.posato.generated.resources.targets_host_www
+import app.posato.generated.resources.targets_open_briefly
 import app.posato.generated.resources.targets_save_changes
 import app.posato.generated.resources.targets_saved_websites
 import app.posato.generated.resources.targets_search
@@ -77,7 +82,11 @@ internal fun WebsiteBrowser(
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
     rowActionsEnabled: Boolean = true,
+    onSetWindow: (String, WebsiteWindow?) -> Unit = { _, _ -> },
+    setInUse: Boolean = false,
 ) {
+    var windowDomain by remember { mutableStateOf<String?>(null) }
+    WindowRuleDialogHost(state, windowDomain, setInUse, onSetWindow) { windowDomain = null }
     val focus = LocalFocusManager.current
     val query = browser.search.text.toString().trim()
     val domains = if (browser.searching) state.domains.filter { it.contains(query, ignoreCase = true) } else state.domains
@@ -104,23 +113,7 @@ internal fun WebsiteBrowser(
             modifier = Modifier.weight(1f).fillMaxWidth().semantics { contentDescription = savedWebsites },
         ) {
             if (domains.isEmpty()) {
-                item {
-                    PosatoEmptyState(
-                        title = if (state.domains.isEmpty()) {
-                            stringResource(
-                                Res.string.targets_websites_empty,
-                            )
-                        } else {
-                            stringResource(Res.string.targets_websites_none)
-                        },
-                        description = if (state.domains.isEmpty()) {
-                            stringResource(Res.string.targets_websites_empty_body)
-                        } else {
-                            stringResource(Res.string.targets_websites_none_body)
-                        },
-                        modifier = Modifier.padding(vertical = PosatoSpace.Section),
-                    )
-                }
+                item { WebsitesEmptyState(state.domains.isEmpty()) }
             }
             items(domains, key = { it }) { domain ->
                 WebsiteRow(domain, state.domains, state.canMutatePolicy() && rowActionsEnabled, {
@@ -129,7 +122,10 @@ internal fun WebsiteBrowser(
                 }, {
                     focus.clearFocus()
                     onRemove(domain)
-                })
+                }, state.windows[domain]) {
+                    focus.clearFocus()
+                    windowDomain = domain
+                }
             }
         }
     }
@@ -210,7 +206,9 @@ private fun WebsiteRow(
     listed: List<String>,
     enabled: Boolean,
     onEdit: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    window: WebsiteWindow? = null,
+    onOpenBriefly: () -> Unit = {},
 ) {
     val counterpart = remember(domain, listed) {
         val value = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
@@ -218,11 +216,14 @@ private fun WebsiteRow(
     }
     val alsoPauses = stringResource(Res.string.targets_also_pauses, counterpart.orEmpty())
     val caption = if (counterpart != null) alsoPauses else null
+    val ruleCaption = window?.let { windowRowCaption(it) }
+    val captions = listOfNotNull(caption, ruleCaption)
+    val openBriefly = stringResource(Res.string.targets_open_briefly)
     val row = @Composable { rowActions: List<CustomAccessibilityAction> ->
         PosatoItemRow(
             headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
-            supportingContent = caption?.let { covered ->
-                { PosatoCaption(covered) }
+            supportingContent = captions.takeIf { it.isNotEmpty() }?.let { lines ->
+                { Column { lines.forEach { line -> PosatoCaption(line) } } }
             },
             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
             modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClickLabel = stringResource(Res.string.action_edit)) { onEdit() }
@@ -233,6 +234,7 @@ private fun WebsiteRow(
                         stringResource(Res.string.schedule_actions_for, domain),
                         listOf(
                             PosatoMenuItem(stringResource(Res.string.action_edit), onEdit, PosatoMenuSymbol.Edit, controlId = "action_edit"),
+                            PosatoMenuItem(openBriefly, onOpenBriefly, controlId = "targets_open_briefly"),
                             PosatoMenuItem(
                                 stringResource(Res.string.action_remove),
                                 onRemove,
@@ -249,9 +251,48 @@ private fun WebsiteRow(
     // On iOS the row edits on a tap and removes under a left swipe, as list rows there do, with no button of its own.
     if (platformUsesCupertinoChrome && enabled) {
         PosatoSwipeRow(
-            listOf(PosatoSwipeAction(stringResource(Res.string.action_remove), onRemove, destructive = true, controlId = "action_remove")),
+            listOf(
+                PosatoSwipeAction(stringResource(Res.string.action_remove), onRemove, destructive = true, controlId = "action_remove"),
+                PosatoSwipeAction(openBriefly, onOpenBriefly, controlId = "targets_open_briefly"),
+            ),
         ) { rowActions -> row(rowActions) }
     } else {
         row(emptyList())
     }
+}
+
+/** The Open briefly dialog for [domain] while it is still in the set; saving or clearing closes it first. */
+@Composable
+private fun WindowRuleDialogHost(
+    state: TargetsUiState,
+    domain: String?,
+    setInUse: Boolean,
+    onSetWindow: (String, WebsiteWindow?) -> Unit,
+    onClose: () -> Unit,
+) {
+    val shown = domain?.takeIf { it in state.domains } ?: return
+    WebsiteWindowDialog(
+        domain = shown,
+        current = state.windows[shown],
+        inUse = setInUse,
+        onSave = { window ->
+            onClose()
+            onSetWindow(shown, window)
+        },
+        onClear = {
+            onClose()
+            onSetWindow(shown, null)
+        },
+        onDismiss = onClose,
+    )
+}
+
+/** No saved websites at all, or none matching the search. */
+@Composable
+private fun WebsitesEmptyState(noneSaved: Boolean) {
+    PosatoEmptyState(
+        title = stringResource(if (noneSaved) Res.string.targets_websites_empty else Res.string.targets_websites_none),
+        description = stringResource(if (noneSaved) Res.string.targets_websites_empty_body else Res.string.targets_websites_none_body),
+        modifier = Modifier.padding(vertical = PosatoSpace.Section),
+    )
 }

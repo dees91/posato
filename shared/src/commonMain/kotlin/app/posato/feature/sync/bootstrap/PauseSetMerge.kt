@@ -10,7 +10,6 @@ import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.StoredPolicyIntent
-import app.posato.feature.targets.domain.WebsiteWindow
 
 internal fun seedsFor(
     set: LocalPauseSet,
@@ -33,28 +32,6 @@ internal fun seedsFor(
         .filter { domain -> domain !in pendingDomains }
         .map { domain -> StoredPolicyIntent.PresentDomain(domain, set.id) }
     return listOfNotNull(put) + domains + windowSeedsFor(set, projection, pendingForSet)
-}
-
-/**
- * At first link a rule is published only for a website the workspace has never ruled, after the website's own
- * seed, so the workspace's rules win as its names and default do. A set the workspace refused takes none.
- */
-private fun windowSeedsFor(
-    set: LocalPauseSet,
-    projection: SyncProjection,
-    pending: List<StoredPolicyIntent>,
-): List<StoredPolicyIntent> {
-    val status = projection.pauseSetStatus(set.id)
-    if (status != PauseSetStatus.LIVE && status != PauseSetStatus.UNKNOWN) {
-        return emptyList()
-    }
-    val ruled = projection.pauseSets.firstOrNull { live -> live.setId == set.id }?.ruledDomains.orEmpty()
-    val queued = pending.filterIsInstance<StoredPolicyIntent.SetWindow>().mapTo(mutableSetOf()) { intent -> intent.domain }
-    return set.domains.mapNotNull { domain ->
-        set.windows[domain]
-            ?.takeIf { domain !in ruled && domain !in queued }
-            ?.let { window -> StoredPolicyIntent.SetWindow(domain, set.id, window) }
-    }
 }
 
 /**
@@ -109,32 +86,7 @@ private fun mergeLive(
     return LocalPauseSet(setId, pendingName ?: live?.name, merged, refused = false, windows = windows)
 }
 
-private fun LocalPauseSet.withPending(
-    pending: List<StoredPolicyIntent>,
-    refused: Boolean,
-): LocalPauseSet {
-    val merged = applyPending(domains.toMutableSet(), pending)
-    return copy(domains = merged, refused = refused, windows = applyPendingWindows(windows, pending, merged))
-}
-
-/** Queued changes in order: a removal clears its website's rule, a rule change sets or clears it. */
-private fun applyPendingWindows(
-    start: Map<ExactDomain, WebsiteWindow>,
-    pending: List<StoredPolicyIntent>,
-    domains: List<ExactDomain>,
-): Map<ExactDomain, WebsiteWindow> {
-    val windows = start.toMutableMap()
-    pending.forEach { intent ->
-        when (intent) {
-            is StoredPolicyIntent.RemoveDomain -> windows.remove(intent.domain)
-            is StoredPolicyIntent.SetWindow -> if (intent.window == null) windows.remove(intent.domain) else windows[intent.domain] = intent.window
-            else -> Unit
-        }
-    }
-    return windows.filterKeys { domain -> domain in domains }
-}
-
-private fun applyPending(
+internal fun applyPending(
     domains: MutableSet<ExactDomain>,
     pending: List<StoredPolicyIntent>,
 ): List<ExactDomain> {

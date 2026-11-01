@@ -60,6 +60,17 @@ internal class PauseSets private constructor(
         )
     }
 
+    /** The same sets with [domain]'s rule in [setId] set, or cleared when [window] is null; null when it is not in that set. */
+    fun withWindow(
+        setId: PauseSetId,
+        domain: ExactDomain,
+        window: WebsiteWindow?,
+    ): PauseSets? {
+        val set = sets.firstOrNull { candidate -> candidate.id == setId }?.takeIf { candidate -> domain in candidate.domains } ?: return null
+        val windows = if (window == null) set.windows - domain else set.windows + (domain to window)
+        return of(sets.map { candidate -> if (candidate.id == setId) set.copy(windows = windows) else candidate }, defaultSetId)
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is PauseSets && sets == other.sets && defaultSetId == other.defaultSetId
     }

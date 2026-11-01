@@ -48,6 +48,7 @@ import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
+import app.posato.feature.targets.domain.WebsiteWindow
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_reload_short
 import app.posato.generated.resources.targets_added_pause_now
@@ -84,6 +85,7 @@ internal fun TargetsScreen(
         },
         onCancelDomainEdit = viewModel::cancelEditingDomain,
         onRemoveDomain = viewModel::removeDomain,
+        onSetWindow = viewModel.windowRules::set,
         onRetry = viewModel::retry,
         onRetryApplicationMappings = viewModel::retryApplicationMappings,
         onChooseApplications = viewModel::chooseApplications,
@@ -106,6 +108,7 @@ internal fun TargetsScreen(
     onEditDomain: (String) -> Unit = {},
     onCancelDomainEdit: () -> Unit = {},
     onRemoveDomain: (String) -> Unit = {},
+    onSetWindow: (String, WebsiteWindow?) -> Unit = { _, _ -> },
     onRetry: () -> Unit = {},
     onRetryApplicationMappings: () -> Unit = {},
     onChooseApplications: () -> Unit = {},
@@ -126,6 +129,7 @@ internal fun TargetsScreen(
         onEditDomain = onEditDomain,
         onCancelDomainEdit = onCancelDomainEdit,
         onRemoveDomain = onRemoveDomain,
+        onSetWindow = onSetWindow,
         onRetry = onRetry,
         onRetryApplicationMappings = onRetryApplicationMappings,
         onChooseApplications = onChooseApplications,
@@ -163,6 +167,7 @@ internal class TargetsCallbacks(
     val onEditDomain: (String) -> Unit,
     val onCancelDomainEdit: () -> Unit,
     val onRemoveDomain: (String) -> Unit,
+    val onSetWindow: (String, WebsiteWindow?) -> Unit,
     val onRetry: () -> Unit,
     val onRetryApplicationMappings: () -> Unit,
     val onChooseApplications: () -> Unit,
@@ -215,6 +220,8 @@ private fun ColumnScope.TargetsBody(
                 onSubmitWebsites = callbacks.onSubmitWebsites,
                 onEditDomain = callbacks.onEditDomain,
                 onRemoveDomain = callbacks.onRemoveDomain,
+                onSetWindow = callbacks.onSetWindow,
+                setInUse = header.inUse,
                 onRetryApplicationMappings = callbacks.onRetryApplicationMappings,
                 onChooseApplications = callbacks.onChooseApplications,
                 onClearApplicationMappings = callbacks.onClearApplicationMappings,
@@ -273,6 +280,8 @@ private fun TargetsBrowser(
     onSubmitWebsites: (String, Long) -> Unit,
     onEditDomain: (String) -> Unit,
     onRemoveDomain: (String) -> Unit,
+    onSetWindow: (String, WebsiteWindow?) -> Unit,
+    setInUse: Boolean,
     onRetryApplicationMappings: () -> Unit,
     onChooseApplications: () -> Unit,
     onClearApplicationMappings: () -> Unit,
@@ -305,6 +314,8 @@ private fun TargetsBrowser(
                 onRemoveDomain,
                 rowActionsEnabled = !suspendedWebsiteEdit,
                 modifier = Modifier.weight(1f),
+                onSetWindow = onSetWindow,
+                setInUse = setInUse,
             )
 
             TargetsCategory.APPLICATIONS -> ApplicationBrowser(

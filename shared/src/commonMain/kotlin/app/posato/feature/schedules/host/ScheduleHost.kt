@@ -87,6 +87,9 @@ internal class ScheduleHost(
     private val announced = MutableStateFlow<Set<Pair<OccurrenceKey, Int>>>(emptySet())
     private var unknownReads = 0
     private var notPausedYet = 0
+
+    /** What the claims hold for the running occurrences, as last applied, for Session's window rows. */
+    private var appliedRequest: EnforcementRequest? = null
     private val breakChange = MutableStateFlow<Long?>(null)
 
     @Volatile
@@ -206,6 +209,7 @@ internal class ScheduleHost(
             // sees the new table, so a pause an edit stopped is not reported as over.
             ports.claims.releaseSchedule()
             reserved = PauseItems()
+            appliedRequest = null
             ports.publish(published)
             unknownReads = 0
             mutablePause.value = null
@@ -227,7 +231,7 @@ internal class ScheduleHost(
             ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis, occurrence.key)
         }
         val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)
-            ?.copy(parts = parts, notPausedYet = notPausedYet)
+            ?.copy(parts = parts, notPausedYet = notPausedYet, request = appliedRequest.takeIf { state == ScheduledPauseState.APPLIED })
             ?.withBreak(step, now)
             ?.withoutAnnounced(announced.value)
         mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
@@ -299,6 +303,7 @@ internal class ScheduleHost(
         val composed = composeScheduledRequest(running, snapshot, ports, onBreak)
         notPausedYet = composed.notPausedYet
         reserved = composed.reserved
+        appliedRequest = null
         ports.claims.releaseSchedule()
         return ScheduledPauseState.APPLIED
     }
@@ -317,10 +322,12 @@ internal class ScheduleHost(
         if (!ports.claimsCompose && request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()
             reserved = composed.reserved
+            appliedRequest = null
             return ScheduledPauseState.APPLIED
         }
         val outcome = ports.claims.updateSchedule(request).outcome
         reserved = composed.reserved
+        appliedRequest = request.takeIf { outcome == EnforcementOutcome.APPLIED }
         return when (outcome) {
             EnforcementOutcome.APPLIED -> ScheduledPauseState.APPLIED
 

@@ -44,6 +44,9 @@ internal class TargetsViewModel(
     private val domainEditorState = MutableStateFlow(ExactDomainEditorState())
     private val applicationEditorState = MutableStateFlow(ApplicationPolicyEditorState())
     private val submissionState = MutableStateFlow<TargetsSubmissionState>(TargetsSubmissionState.Idle)
+
+    /** Open briefly: sets or clears one website's window rule in this set. */
+    internal val windowRules = TargetsWindowRules(store, setId, policyState, submissionState, viewModelScope) { currentState.canMutatePolicy() }
     private val policyReadLifecycle: Flow<Unit> = refreshRequests.onStart { emit(Unit) }.transform {
         policyState.update { state -> state.copy(isLoading = true, failure = null) }
         emit(Unit)

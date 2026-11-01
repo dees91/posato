@@ -5,7 +5,6 @@ import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
-import app.posato.feature.targets.domain.WebsiteWindow
 import app.posato.feature.targets.domain.normalizeApplicationPolicyNameNfc
 import app.posato.feature.transfer.domain.FileSchedule
 import app.posato.feature.transfer.domain.FileSet
@@ -182,43 +181,6 @@ internal object PauseSetFileJson {
         val name = readSetName(set["name"], first) ?: return null
         val domains = readDomains(set["domains"]) ?: return null
         return FileSet(ref, name.value, first, domains, readWindows(set["windows"], domains))
-    }
-
-    /** Each set's rules as website to period and length, in the set's website order. */
-    private fun windowsJson(set: FileSet): JsonObject {
-        return buildJsonObject {
-            set.domains.forEach { domain ->
-                set.windows[domain]?.let { window ->
-                    put(
-                        domain.canonicalValue,
-                        buildJsonObject {
-                            put("period", window.periodMinutes)
-                            put("length", window.lengthMinutes)
-                        },
-                    )
-                }
-            }
-        }
-    }
-
-    /**
-     * The optional rules field. An entry outside the fixed choices or for a website not in the set is dropped and
-     * that website imports without a rule, which only blocks more; a field of another shape drops every rule.
-     */
-    private fun readWindows(
-        element: JsonElement?,
-        domains: List<ExactDomain>,
-    ): Map<ExactDomain, WebsiteWindow> {
-        val raw = element as? JsonObject ?: return emptyMap()
-        return raw.entries.mapNotNull { (key, value) ->
-            val domain = ExactDomain.restore(key)?.takeIf { it in domains && it.canonicalValue == key }
-            val rule = (value as? JsonObject)?.let { pair ->
-                val period = pair.int("period")
-                val length = pair.int("length")
-                if (period != null && length != null) WebsiteWindow.of(period, length) else null
-            }
-            if (domain != null && rule != null) domain to rule else null
-        }.toMap()
     }
 
     /** A set's name: absent only for the first set, which may stay unnamed. */

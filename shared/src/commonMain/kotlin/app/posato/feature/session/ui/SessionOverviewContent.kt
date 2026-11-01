@@ -138,6 +138,7 @@ internal fun SessionOverviewContent(
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
             macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
+        SessionWindowRowsSection(state.windowRows, shown = active)
         NotPausedYetNotice(pauseNotice.takeIf { active })
         // The summary describes this device's default set or a session's set; a running schedule's parts name their own sets.
         if (!scheduledRestricts || state.status is LocalSessionStatus.Active) {

@@ -171,11 +171,26 @@ private fun isSkipped(
     // authored and apply once it becomes live.
     val live = status == PauseSetStatus.LIVE
     return when (intent) {
-        is StoredPolicyIntent.PresentDomain -> live && intent.domain in projection.pauseSetDomains(intent.setId)
-        is StoredPolicyIntent.RemoveDomain -> live && intent.domain !in projection.pauseSetDomains(intent.setId)
-        is StoredPolicyIntent.PutSet -> projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
-        is StoredPolicyIntent.RemoveSet -> false
-        is StoredPolicyIntent.ChooseDefault -> projection.defaultPauseSetId == intent.setId
+        is StoredPolicyIntent.PresentDomain -> {
+            live && intent.domain in projection.pauseSetDomains(intent.setId)
+        }
+
+        is StoredPolicyIntent.RemoveDomain -> {
+            live && intent.domain !in projection.pauseSetDomains(intent.setId)
+        }
+
+        is StoredPolicyIntent.PutSet -> {
+            projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
+        }
+
+        is StoredPolicyIntent.RemoveSet -> {
+            false
+        }
+
+        is StoredPolicyIntent.ChooseDefault -> {
+            projection.defaultPauseSetId == intent.setId
+        }
+
         // The writer authors a rule only for a website in a live set; one that can never apply is discarded.
         is StoredPolicyIntent.SetWindow -> {
             val set = projection.pauseSets.firstOrNull { live -> live.setId == intent.setId }

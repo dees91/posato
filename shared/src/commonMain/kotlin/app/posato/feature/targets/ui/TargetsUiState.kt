@@ -4,8 +4,11 @@ import androidx.compose.runtime.Immutable
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
+import app.posato.feature.targets.domain.WebsiteWindow
 import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 
 internal enum class ExactDomainEntryFailure { EMPTY, TOO_LONG, INVALID_DOMAIN, DUPLICATE, LIMIT_REACHED }
 
@@ -53,6 +56,8 @@ internal data class TargetsUiState(
     val isLoading: Boolean = true,
     val hasLoaded: Boolean = false,
     val setMissing: Boolean = false,
+    /** Each website's window rule in this set, by canonical website. */
+    val windows: PersistentMap<String, WebsiteWindow> = persistentMapOf(),
 ) {
     val isSaving: Boolean
         get() = savingMutation != null

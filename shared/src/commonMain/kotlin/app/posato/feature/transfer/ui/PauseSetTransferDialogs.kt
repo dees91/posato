@@ -35,6 +35,7 @@ import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.feature.targets.ui.windowRowCaption
 import app.posato.feature.transfer.data.ExportCode
 import app.posato.feature.transfer.domain.ImportMode
 import app.posato.feature.transfer.domain.ImportPlanResult
@@ -184,6 +185,9 @@ private fun ReviewDialog(
         actions = { ReviewActions(state, replace, planned, dialog.busy) },
     ) {
         Text(contentsOf(dialog.preview.file), style = MaterialTheme.typography.titleSmall)
+        // A file that adds rules says so before Import: each ruled website with its rule caption.
+        dialog.preview.file.sets.flatMap { set -> set.domains.mapNotNull { domain -> set.windows[domain]?.let { domain to it } } }
+            .forEach { (domain, window) -> PosatoCaption("${domain.canonicalValue} · ${windowRowCaption(window)}") }
         Text(stringResource(Res.string.transfer_choose_how), style = MaterialTheme.typography.titleSmall)
         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
             ModeCard(

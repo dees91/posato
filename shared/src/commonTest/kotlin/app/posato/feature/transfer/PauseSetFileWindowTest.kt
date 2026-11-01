@@ -46,7 +46,13 @@ class PauseSetFileWindowTest {
 
         assertEquals(mapOf(news to hourly), file.sets.single().windows)
         assertEquals(file, assertIs<PauseSetJsonResult.Read>(PauseSetFileJson.decode(bytes)).file)
-        assertEquals(listOf("mail.example", "news.example"), checkNotNull(written["domains"]).jsonArray.map { it.jsonPrimitive.content }, "plain names")
+        assertEquals(
+            listOf("mail.example", "news.example"),
+            checkNotNull(written["domains"]).jsonArray.map {
+                it.jsonPrimitive.content
+            },
+            "plain names",
+        )
     }
 
     @Test
@@ -55,11 +61,11 @@ class PauseSetFileWindowTest {
             """{"format":"posato-pause-sets","version":1,"schedules":[],"sets":[{"ref":"s1","name":"Work","first":false,""" +
                 """"domains":["mail.example","news.example"],"windows":{"news.example":{"period":60,"length":5},""" +
                 """"mail.example":{"period":45,"length":5},"other.example":{"period":30,"length":5},"NEWS.example":{"period":30,"length":5}}}]}"""
-            ).encodeToByteArray()
+        ).encodeToByteArray()
         val oddField = (
             """{"format":"posato-pause-sets","version":1,"schedules":[],"sets":[{"ref":"s1","name":"Work","first":false,""" +
                 """"domains":["news.example"],"windows":["news.example"]}]}"""
-            ).encodeToByteArray()
+        ).encodeToByteArray()
 
         assertEquals(mapOf(news to hourly), assertIs<PauseSetJsonResult.Read>(PauseSetFileJson.decode(bytes)).file.sets.single().windows)
         assertEquals(emptyMap(), assertIs<PauseSetJsonResult.Read>(PauseSetFileJson.decode(oddField)).file.sets.single().windows)
@@ -76,7 +82,10 @@ class PauseSetFileWindowTest {
         val ids = ImportIds(mapOf("s1" to imported), emptyList())
         val current = ImportCurrent(here, emptyList(), emptySet(), emptySet())
 
-        fun windowsAfter(mode: ImportMode, setId: PauseSetId): Map<ExactDomain, WebsiteWindow> {
+        fun windowsAfter(
+            mode: ImportMode,
+            setId: PauseSetId
+        ): Map<ExactDomain, WebsiteWindow> {
             val plan = assertIs<ImportPlanResult.Planned>(planImport(current, file, mode, ids)).plan
             return plan.sets.sets.single { it.id == setId }.windows
         }

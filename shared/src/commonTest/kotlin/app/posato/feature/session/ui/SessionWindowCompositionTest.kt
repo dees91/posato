@@ -115,7 +115,7 @@ class SessionWindowCompositionTest {
     }
 
     @Test
-    fun `given a running session when a rule is added, edited, or removed then each change applies the session again`() = runTest {
+    fun `given a running session when a rule is added edited or removed then each change applies the session again`() = runTest {
         withComposition("session-window-edits.db") { composition ->
             setDomains = listOf("news.example")
             composition.compose(record)

@@ -3,6 +3,7 @@ package app.posato.feature.session.ui
 import androidx.compose.runtime.Composable
 import app.posato.core.designsystem.pluralStringResourceForDevice
 import app.posato.feature.enforcement.DomainWindowPlan
+import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
@@ -11,6 +12,7 @@ import app.posato.feature.enforcement.WindowPart
 import app.posato.feature.enforcement.devicePauseLimits
 import app.posato.feature.enforcement.deviceRetainsPausedItems
 import app.posato.feature.enforcement.planPause
+import app.posato.feature.enforcement.reconciliationId
 import app.posato.feature.enforcement.windowPlans
 import app.posato.feature.session.data.PART_SESSION
 import app.posato.feature.session.data.PartRetentionStore
@@ -77,6 +79,10 @@ internal class SessionComposition(
 
     /** How many items an edit added that this device's limits leave unpaused for now; each compose tries again. */
     val notPausedYet: StateFlow<Int> = mutableNotPausedYet.asStateFlow()
+    private val mutableComposed = MutableStateFlow<EnforcementRequest?>(null)
+
+    /** The running session's websites as last composed, with their window plans, for Session's rows. */
+    val composed: StateFlow<EnforcementRequest?> = mutableComposed.asStateFlow()
 
     /** Whether the session's websites, apps, or window rules changed since it was last applied, such as after a set edit. */
     suspend fun differs(record: SessionRecord): Boolean {
@@ -120,6 +126,14 @@ internal class SessionComposition(
             listOf(WindowPart(record.endEpochMillis, plan.items.domains, targets.windowRules().filterKeys { domain -> domain in current })),
         )
         last = Triple(record.sessionId, plan.items, windows)
+        mutableComposed.value = EnforcementRequest(
+            domains,
+            emptyList(),
+            record.sessionId.reconciliationId(),
+            record.startEpochMillis,
+            record.endEpochMillis,
+            windows = windows,
+        )
         val composed = TargetPolicy.fromStoredValues(domains, policy.applicationPolicyName?.canonicalValue)
         val applications = chosen.filter { mapping -> mapping.id.canonicalValue in plan.items.appIds } +
             retained.applications.filter { kept -> kept.mappingId.toHex() !in chosen.map { mapping -> mapping.id.canonicalValue } }

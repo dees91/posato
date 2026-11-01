@@ -876,4 +876,37 @@ Só para você.</string>
         <item quantity="many">%1$d de %2$d sites</item>
         <item quantity="other">%1$d de %2$d sites</item>
     </plurals>
+    <string name="targets_open_briefly">Abrir rapidamente…</string>
+    <string name="targets_window_title">Abrir %1$s rapidamente</string>
+    <string name="targets_window_every">A cada</string>
+    <string name="targets_window_for">Por</string>
+    <string name="targets_window_period_30">30 minutos</string>
+    <string name="targets_window_period_60">1 hora</string>
+    <string name="targets_window_period_120">2 horas</string>
+    <string name="targets_window_period_30_a11y">A cada 30 minutos</string>
+    <string name="targets_window_period_60_a11y">A cada hora</string>
+    <string name="targets_window_period_120_a11y">A cada 2 horas</string>
+    <string name="targets_window_length_5">5 minutos</string>
+    <string name="targets_window_length_10">10 minutos</string>
+    <string name="targets_window_length_15">15 minutos</string>
+    <string name="targets_window_length_5_a11y">Por 5 minutos</string>
+    <string name="targets_window_length_10_a11y">Por 10 minutos</string>
+    <string name="targets_window_length_15_a11y">Por 15 minutos</string>
+    <string name="targets_window_caption_30">Durante uma pausa, ele abre às :00 e a cada 30 minutos, por %1$d minutos.</string>
+    <string name="targets_window_caption_60">Durante uma pausa, ele abre às :00 e a cada hora, por %1$d minutos.</string>
+    <string name="targets_window_caption_120">Durante uma pausa, ele abre às :00 e a cada 2 horas, por %1$d minutos.</string>
+    <string name="targets_window_row_30">Abre a cada 30 min por %1$d min</string>
+    <string name="targets_window_row_60">Abre a cada hora por %1$d min</string>
+    <string name="targets_window_row_120">Abre a cada 2 h por %1$d min</string>
+    <string name="targets_window_clear">Não abrir</string>
+    <string name="targets_window_in_use">Uma regra nova vale a partir de agora.</string>
+    <string name="session_window_opens_at">Abre às %1$s</string>
+    <string name="session_window_open_until">Aberto até %1$s</string>
+    <string name="session_window_row_opens">%1$s, abre às %2$s</string>
+    <string name="session_window_row_open">%1$s, aberto até %2$s</string>
+    <plurals name="session_window_more">
+        <item quantity="one">e mais %1$d</item>
+        <item quantity="many">e mais %1$d</item>
+        <item quantity="other">e mais %1$d</item>
+    </plurals>
 </resources>

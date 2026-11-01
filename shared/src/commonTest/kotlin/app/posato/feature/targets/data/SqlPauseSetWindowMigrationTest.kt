@@ -53,7 +53,10 @@ class SqlPauseSetWindowMigrationTest {
             assertIs<LocalPolicyResult.Success<Unit>>(store.recordIntents(PolicySyncWrite(workspace, listOf(rule, clear))))
 
             assertEquals(listOf(present, rule, clear), store.readIntents().intents())
-            assertEquals(listOf(news), assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.read()).value.sets.domainsOf(PauseSetId.FIRST))
+            assertEquals(
+                listOf(news),
+                assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.read()).value.sets.domainsOf(PauseSetId.FIRST),
+            )
         } finally {
             driver.close()
             testDatabase.delete()

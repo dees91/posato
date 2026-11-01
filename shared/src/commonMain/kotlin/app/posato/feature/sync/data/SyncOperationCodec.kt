@@ -193,12 +193,9 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
         is SyncOperationPayload.ScheduleOccurrenceEnd,
         is SyncOperationPayload.ScheduleBreak,
         is SyncOperationPayload.ScheduleBreakEnd,
+        is SyncOperationPayload.SetDomainWindow,
         is SyncOperationPayload.OptionalExtension -> {
             return writeSchedulePayload(payload)
-        }
-
-        is SyncOperationPayload.SetDomainWindow -> {
-            return writePauseSetPayload(payload)
         }
     }
 

@@ -6,7 +6,6 @@ import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.targets.domain.ExactDomain
-import app.posato.feature.targets.domain.WebsiteWindow
 
 private const val SET_PUT_TAG = 12
 private const val SET_REMOVE_TAG = 13
@@ -111,21 +110,6 @@ internal fun CanonicalReader.readPauseSetPayload(tag: Int): SyncOperationPayload
     }
 }
 
-/** Kind 22: a rule from the fixed choices, or the none pair 0 and 0; any other pair is refused. */
-private fun CanonicalReader.readSetDomainWindow(): SyncOperationPayload.SetDomainWindow? {
-    val setId = readPauseSetId()
-    val domain = readCanonicalDomain()
-    val period = readByte()
-    val length = readByte()
-    if (setId == null || domain == null || period == null || length == null) {
-        return null
-    }
-    return when {
-        period == 0 && length == 0 -> SyncOperationPayload.SetDomainWindow(setId, domain, null)
-        else -> WebsiteWindow.of(period, length)?.let { window -> SyncOperationPayload.SetDomainWindow(setId, domain, window) }
-    }
-}
-
 private fun CanonicalWriter.writeSetPut(payload: SyncOperationPayload.PauseSetPut): Boolean {
     if (!ScheduleWireRules.isValidName(payload.name)) {
         return false
@@ -173,7 +157,7 @@ private fun CanonicalWriter.writeTrailingSet(
     return true
 }
 
-private fun CanonicalReader.readPauseSetId(): PauseSetId? {
+internal fun CanonicalReader.readPauseSetId(): PauseSetId? {
     return readBytes(SyncFormatLimits.IDENTIFIER_BYTES)
         ?.let(SyncIdentifier::fromExactBytes)
         ?.let(PauseSetId::of)

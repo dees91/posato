@@ -1,5 +1,6 @@
 package app.posato.feature.schedules.host
 
+import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.sync.domain.PauseSetId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +56,8 @@ internal data class ScheduledPause(
     val breakUsed: Boolean = false,
     /** Whether this device just could not register a break's return, so it cannot take one right now. */
     val breakArmFailed: Boolean = false,
+    /** What this device applies for the running occurrences, with its window plans; null where nothing is applied. */
+    val request: EnforcementRequest? = null,
 ) {
     val restricts: Boolean
         get() {

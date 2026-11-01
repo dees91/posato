@@ -102,7 +102,7 @@ class SyncReducerWindowTest {
     }
 
     @Test
-    fun `given a rule for an absent website or a removed set when reduced then nothing projects, and a later add shows the rule`() {
+    fun `given a rule for an absent website or a removed set when reduced then nothing projects and a later add shows the rule`() {
         val absent = SyncReducer.reduce(ops(SyncOperationPayload.PauseSetPut(workSet, "Work"), window(hourly)))
         val added = SyncReducer.reduce(
             ops(SyncOperationPayload.PauseSetPut(workSet, "Work"), window(hourly), SyncOperationPayload.DomainPresent(news, workSet)),

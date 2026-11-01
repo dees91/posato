@@ -157,7 +157,7 @@ class WindowPlansTest {
     }
 
     @Test
-    fun `given a website and its www form when one entry has no rule then both stay blocked, and with two rules both intersect`() {
+    fun `given a website and its www form when one entry has no rule then both stay blocked and with two rules both intersect`() {
         val unruled = windowPlans(
             listOf("example.com", "www.example.com"),
             listOf(WindowPart(at(11, 0), setOf("example.com", "www.example.com"), mapOf("example.com" to rule(30, 5)))),
@@ -187,7 +187,7 @@ class WindowPlansTest {
     }
 
     @Test
-    fun `given malformed plans when validated then only invalid data is refused, never a plan that has aged`() {
+    fun `given malformed plans when validated then only invalid data is refused never a plan that has aged`() {
         val end = at(12, 0)
         val valid = DomainWindowPlan("news.example", listOf(windowSegment(at(10, 0), null), windowSegment(at(11, 0), rule(30, 5))))
 
