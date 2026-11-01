@@ -3298,3 +3298,20 @@ first removal attempt that does not finish, not to a paused keychain.
   runs on the test iPhone. The narrow pass there shortened three languages'
   tab labels; the [localization guide](../development/localization.md)
   keeps the lessons.
+
+## [2026-11-01] feature | A break in a running scheduled pause
+
+- `SCHEDULE-007` (idea 45) lets a person take a break during a running
+  scheduled occurrence: restrictions are released on every device of the
+  workspace for the chosen minutes and return without a press until the
+  occurrence ends. The break is a synchronized fact (mandatory operation
+  kinds 20 and 21, ADR 0006); a device that receives it late releases only
+  the remainder, and a break that ends while a device is offline is never
+  taken there. The [schedule rules](../product/schedules-decisions.md) keep
+  the accepted limits and wording.
+- The serial cross-device matrix ran on a Mac in a Tart guest, the test
+  iPhone, Linux, Android, and Windows. A file from the iPhone reaches the
+  bridged guest's iCloud Drive dataless; the verification relay now leaves
+  such a file in place instead of deleting it everywhere, and the
+  folder-sync recipe in the verify-posato skill records the iCloud delivery
+  latency to the iPhone.
