@@ -35,9 +35,9 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   start a pause on a set the file lacks with `flow session`, then replace.
   A file sealed with another round count does not open by design.
 
-- Website windows (`TARGETS-013`, desktop and Android; iOS later): `flow set
-  --name Work --website window.example --website blocked.example --window
-  window.example=30/5` creates the set and sets the rule through the row's
+- Website windows (`TARGETS-013`, desktop, Linux, Windows, and Android; iOS
+  later): `flow set --name Work --website window.example --website
+  blocked.example --window window.example=30/5` creates the set and sets the rule through the row's
   **Open briefly…** dialog, waiting for the row caption "Opens every 30 min
   for 5 min"; `--window window.example=off` presses **Don't open**. Then
   `flow session --set Work` and `run --scenario
@@ -77,6 +77,34 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   set the rule with a scenario: `swipeLeft` on the website row,
   **Open briefly…**, `targets_window_period_30`, `targets_window_length_5`,
   `action_save_short`.
+- Window enforcement on Linux, Windows, and Android (`TARGETS-013` phase 4):
+  each enforcer follows the plans of the last apply on its own clock, so
+  terminate Posato (`terminate -t linux|windows`) after the pause starts and
+  the window still opens and closes. Probe inside the guest or phone on its
+  own clock with a script started detached before the boundary: on Linux
+  `getent ahosts` and a `curl` load with a `probe` query (`setsid nohup`
+  from `linux exec`); on Windows `curl.exe` (status `000` is blocked;
+  `Start-Process -WindowStyle Hidden` from `windows exec`); on Android
+  `ping -c 1 -W 2 <name>` for the resolved address (`127.0.0.1` is blocked;
+  `adb shell 'nohup sh script &'`). Linux and Windows evaluate on a
+  one-second tick, so a probe right at b can still read the old state.
+  Android caches DNS answers by TTL: a blocked answer lives 30 s and an open
+  one at most the window's rest (at least 30 s). On Windows choose a ruled
+  website and a control that share no address, or the ruled one stays
+  blocked by design. On Linux `sudo cat /var/lib/posato/state` shows the
+  apply line with its plans field.
+- To overlap a scheduled pause with a manual session on one device, start
+  the manual session first and add a schedule that starts during it;
+  Session offers no new session while a scheduled pause runs.
+- On the Galaxy XCover7 the new-set dialog's **Save** and a website row's
+  popup menu carry no resource id in the UIAutomator tree, so `flow set`
+  stops there; press them by their read bounds with `adb shell input tap`
+  and read the row caption back.
+- On a Mac clone whose iCloud row is offered, `flow folder link` cannot
+  reveal the folder field: type the path into the field under "Or sync
+  through a folder instead of iCloud." and press **Use this folder**, then
+  `flow folder join` works. A rule added or removed on one Mac reaches a
+  running pause on the other through the relay in under a minute.
 
 ## Driving notes
 
