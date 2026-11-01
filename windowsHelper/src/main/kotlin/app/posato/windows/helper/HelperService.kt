@@ -2,6 +2,8 @@ package app.posato.windows.helper
 
 import java.net.InetAddress
 import java.net.UnknownHostException
+import java.time.ZoneId
+import java.util.TimeZone
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -13,13 +15,15 @@ import java.util.concurrent.TimeoutException
 /**
  * The service of ADR 0010 on Windows. It answers one request per connection from the installing user (or the
  * system), keeps the block filters and the state file in step, resolves the paused names again every minute and only
- * adds addresses, ends the chosen programs while a pause runs, and clears a pause by itself at its end. It never
- * reads traffic and never logs hosts.
+ * adds addresses, ends the chosen programs while a pause runs, and clears a pause by itself at its end. Each second it
+ * follows the window plans of the last apply on the wall clock (TARGETS-013), with the application gone; [BlockPlan]
+ * keeps the addresses per host and discards stale resolutions. It never reads traffic and never logs hosts or plans.
  */
 internal class HelperService(
     private val folder: HelperFolder,
     config: HelperConfig,
     private val now: () -> Long = System::currentTimeMillis,
+    private val zone: () -> ZoneId = ::currentSystemZone,
 ) {
     private val lock = Any()
     private val filters = WfpFilters(config.sid)
@@ -29,6 +33,9 @@ internal class HelperService(
     private val workers = Executors.newFixedThreadPool(CONNECTION_WORKERS, daemon("posato-helper-connection"))
     private val server = PipeServer(config.sid, workers, ::answer)
     private var state = folder.read(folder.state)?.let(HelperState::decode) ?: HelperState.EMPTY
+
+    /** After a restart the saved apply has no addresses yet; the first refresh resolves them for the hosts blocked now. */
+    private var plan = state.applied?.let { applied -> BlockPlan.empty(zone).applied(applied, emptyMap(), now()) } ?: BlockPlan.empty(zone)
 
     /** Serves until [stop]; false when the pipe name is already taken, so the service should fail and restart. */
     fun serve(): Boolean {
@@ -51,6 +58,7 @@ internal class HelperService(
             is HelperRequest.Apply -> apply(request)
 
             HelperRequest.Clear -> synchronized(lock) {
+                plan = plan.cleared()
                 if (filters.replace(emptySet()) && save(state.copy(applied = null))) "ok" else "error\tclear"
             }
 
@@ -69,12 +77,17 @@ internal class HelperService(
         return HelperRequest.parse(line)?.let(::handle) ?: "error\trequest"
     }
 
-    /** Names are resolved before the lock is taken, so the old filters hold until the new ones replace them. */
+    /**
+     * Every held host is resolved before the lock is taken, so the old filters hold until the new ones replace them,
+     * and a host open in its window already has its addresses when the window closes.
+     */
     private fun apply(request: HelperRequest.Apply): String {
-        val resolved = resolve(FilterPlan.names(request.hosts), APPLY_RESOLVE_MILLIS)
+        val resolved = resolve(request.hosts, APPLY_RESOLVE_MILLIS)
         return synchronized(lock) {
             val next = HelperState(request, state.expiredSessionId.takeUnless { it == request.sessionId })
-            if (!filters.replace(FilterPlan.extend(emptySet(), resolved)) || !save(next)) return@synchronized "error\tapply"
+            val nextPlan = plan.applied(request, resolved, now())
+            if (!filters.replace(nextPlan.filters()) || !save(next)) return@synchronized "error\tapply"
+            plan = nextPlan
             ender.endMatching(request.executables)
             "ok"
         }
@@ -86,43 +99,61 @@ internal class HelperService(
             synchronized(lock) {
                 val applied = state.applied ?: return@runCatching
                 if (now() >= applied.endEpochMillis) {
-                    if (filters.replace(emptySet())) save(HelperState(null, applied.sessionId))
+                    if (filters.replace(emptySet())) {
+                        plan = plan.cleared()
+                        save(HelperState(null, applied.sessionId))
+                    }
                 } else {
+                    // A host that becomes blocked is resolved again at once instead of at the next minute.
+                    if (plan.evaluate(now())) timer.execute(::refresh)
+                    val wanted = plan.filters()
+                    if (wanted != filters.blocked) filters.replace(wanted)
                     ender.endMatching(applied.executables)
                 }
             }
         }
     }
 
-    /** Every minute during a pause: addresses that the names now resolve to are added, and none are removed. */
+    /**
+     * Every minute during a pause, and at once when a host becomes blocked: addresses that the hosts blocked now
+     * resolve to are added, and none are removed. A result that completes after a new apply or a window boundary is
+     * discarded; the next pass resolves again.
+     */
     private fun refresh() {
         runCatching {
-            val applied = synchronized(lock) { state.applied } ?: return@runCatching
-            val resolved = resolve(FilterPlan.names(applied.hosts), REFRESH_RESOLVE_MILLIS)
+            val (hosts, ticket) = synchronized(lock) { plan.blockedHosts() to plan.ticket() }
+            if (hosts.isEmpty()) return@runCatching
+            val resolved = resolve(hosts, REFRESH_RESOLVE_MILLIS)
             synchronized(lock) {
-                if (state.applied?.sessionId == applied.sessionId && now() < applied.endEpochMillis) {
-                    filters.replace(FilterPlan.extend(filters.blocked, resolved))
+                if (plan.merge(ticket, resolved, now())) {
+                    val wanted = plan.filters()
+                    if (wanted != filters.blocked) filters.replace(wanted)
                 }
             }
         }
     }
 
-    /** Resolves [names] in parallel through the system resolver; a name not answered in time waits for the next pass. */
+    /**
+     * Resolves each host and its `www` name in parallel through the system resolver; a name not answered in time
+     * waits for the next pass.
+     */
     private fun resolve(
-        names: List<String>,
+        hosts: List<String>,
         timeoutMillis: Long,
-    ): List<InetAddress> {
+    ): Map<String, List<InetAddress>> {
         val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
-        val lookups: List<Future<List<InetAddress>>> = names.map { name ->
-            resolvers.submit<List<InetAddress>> {
-                try {
-                    InetAddress.getAllByName(name).toList()
-                } catch (_: UnknownHostException) {
-                    emptyList()
+        val lookups: List<Pair<String, Future<List<InetAddress>>>> = hosts.distinct().flatMap { host ->
+            FilterPlan.names(listOf(host)).map { name ->
+                host to resolvers.submit<List<InetAddress>> {
+                    try {
+                        InetAddress.getAllByName(name).toList()
+                    } catch (_: UnknownHostException) {
+                        emptyList()
+                    }
                 }
             }
         }
-        return lookups.flatMap { lookup ->
+        return lookups.groupBy({ it.first }) { (_, lookup) ->
             try {
                 lookup.get((deadline - System.nanoTime()).coerceAtLeast(0), TimeUnit.NANOSECONDS)
             } catch (_: TimeoutException) {
@@ -131,7 +162,7 @@ internal class HelperService(
             } catch (_: ExecutionException) {
                 emptyList()
             }
-        }
+        }.mapValues { (_, results) -> results.flatten() }
     }
 
     private fun save(next: HelperState): Boolean {
@@ -149,5 +180,17 @@ internal class HelperService(
         const val REFRESH_RESOLVE_MILLIS = 30_000L
         const val RESOLVER_THREADS = 16
         const val CONNECTION_WORKERS = 4
+    }
+}
+
+/**
+ * The zone Windows uses now. The JVM keeps the zone it read at start, so the cached default is dropped and read from
+ * the system again at each call; a time-zone change then applies within a second, without a restart.
+ */
+internal fun currentSystemZone(): ZoneId {
+    return synchronized(TimeZone::class.java) {
+        System.clearProperty("user.timezone")
+        TimeZone.setDefault(null)
+        TimeZone.getDefault().toZoneId()
     }
 }
