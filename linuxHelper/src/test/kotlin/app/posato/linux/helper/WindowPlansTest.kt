@@ -48,7 +48,7 @@ class WindowPlansTest {
         assertNull(HelperRequest.parse("${head}example.com=$AT_1100:3a:5"))
         assertNull(HelperRequest.parse("${head}EXAMPLE.com=$AT_1100:30:5"))
         assertNull(HelperRequest.parse("${head}example.com=$AT_1100:30:5\n1.2.3.4 bank.example"))
-        assertNull(HelperRequest.parse("${head}=$AT_1100:30:5"))
+        assertNull(HelperRequest.parse("$head=$AT_1100:30:5"))
         assertNull(HelperRequest.parse("$head${"x".repeat(300_000)}"))
     }
 

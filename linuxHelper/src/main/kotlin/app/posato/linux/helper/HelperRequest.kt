@@ -34,7 +34,7 @@ internal sealed interface HelperRequest {
         fun parse(line: String): HelperRequest? {
             val fields = line.split('\t')
             return when (fields.first()) {
-                "apply" -> fields.takeIf { it.size == APPLY_FIELDS }?.let(::apply)
+                "apply" -> fields.takeIf { it.size == APPLY_FIELDS || it.size == APPLY_FIELDS + 1 }?.let(::apply)
                 "clear" -> Clear.takeIf { fields.size == 1 }
                 "status" -> Status.takeIf { fields.size == 1 }
                 "ack" -> fields.getOrNull(1)?.takeIf { fields.size == 2 && sessionPattern.matches(it) }?.let(::Acknowledge)
@@ -48,7 +48,8 @@ internal sealed interface HelperRequest {
             val hosts = fields[3].split(',').filter { it.isNotEmpty() }
             val executables = fields[4].split('\u001f').filter { it.isNotEmpty() }
             val valid = hosts.size <= MAX_HOSTS && hosts.all(::isHost) && executables.size <= MAX_EXECUTABLES && executables.all(::isPath)
-            return if (valid) Apply(sessionId, end, hosts, executables) else null
+            val windows = WindowPlans.parse(fields.getOrElse(APPLY_FIELDS) { "" }) ?: return null
+            return if (valid) Apply(sessionId, end, hosts, executables, windows) else null
         }
 
         private fun isHost(host: String): Boolean {
@@ -63,4 +64,10 @@ internal sealed interface HelperRequest {
 
         private val snapDirectory = Regex("/snap/[a-z0-9][a-z0-9-]*(_[a-z0-9]+)?/")
     }
+}
+
+/** The line this request travels as, and is kept as in the state file; plans add the sixth field. */
+internal fun HelperRequest.Apply.line(): String {
+    val five = "apply\t$sessionId\t$endEpochMillis\t${hosts.joinToString(",")}\t${executables.joinToString("\u001f")}"
+    return if (windows.isEmpty()) five else "$five\t${WindowPlans.encode(windows)}"
 }

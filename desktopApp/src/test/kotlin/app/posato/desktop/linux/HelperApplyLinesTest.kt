@@ -37,7 +37,7 @@ class HelperApplyLinesTest {
 
     @Test
     fun `given no plans or plans past the field limit when the lines are built then only the five field form is sent`() {
-        val segments = (1..22).map { index -> WindowSegment(index.toLong(), 30, 5) }
+        val segments = (1..22).map { index -> WindowSegment(1_793_613_600_000L + index, 30, 5) }
         val many = (0 until 1_000).map { index -> DomainWindowPlan("host-$index.example", segments) }
 
         assertEquals(1, HelperApplyLines.lines(request(emptyList()), "session-1", emptyList()).size)

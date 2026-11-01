@@ -30,6 +30,9 @@ internal class HelperService(
     private val lock = Any()
     private var state = readState()
 
+    /** The hosts the block holds since this process last wrote it; null until then, so a restart writes it once. */
+    private var written: List<String>? = null
+
     fun serve() {
         Files.createDirectories(paths.socket.parent)
         Files.setPosixFilePermissions(paths.socket.parent, PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -67,7 +70,7 @@ internal class HelperService(
         return synchronized(lock) {
             when (request) {
                 is HelperRequest.Apply -> {
-                    writeHosts(request.hosts)
+                    writeHosts(request.blockedAt(now(), zone()))
                     save(HelperState(request, state.expiredSessionId.takeUnless { it == request.sessionId }))
                     endChosenProcesses()
                     "ok"
@@ -108,7 +111,11 @@ internal class HelperService(
         }
     }
 
-    /** A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. */
+    /**
+     * A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. Each tick
+     * also follows the window plans of the last apply on the wall clock, so a window opens or closes, and a part's end
+     * changes the segment, with the application gone (ADR 0010 TARGETS-013 amendment).
+     */
     internal fun tick() {
         runCatching {
             synchronized(lock) {
@@ -117,6 +124,8 @@ internal class HelperService(
                     writeHosts(emptyList())
                     save(HelperState(null, applied.sessionId))
                 } else {
+                    val blocked = applied.blockedAt(now(), zone())
+                    if (blocked != written) writeHosts(blocked)
                     endChosenProcesses()
                 }
             }
@@ -138,6 +147,7 @@ internal class HelperService(
         val existing = if (Files.exists(paths.hosts)) Files.readString(paths.hosts) else ""
         val rewritten = HostsBlock.rewrite(existing, hosts)
         if (rewritten != existing) writeAtomically(paths.hosts, rewritten, "rw-r--r--")
+        written = hosts
     }
 
     private fun save(next: HelperState) {
