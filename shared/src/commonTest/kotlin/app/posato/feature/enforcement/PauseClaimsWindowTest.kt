@@ -104,7 +104,7 @@ class PauseClaimsWindowTest {
     }
 
     @Test
-    fun `given different rules on the two forms in the two requests then both forms follow their intersection and then the surviving rule`() = runTest {
+    fun `given different rules on the two forms in two requests then both follow the intersection and then the surviving rule`() = runTest {
         val helper = RecordingHelper()
         val claims = PauseClaims(helper)
         val quarter = checkNotNull(WebsiteWindow.of(30, 15))
