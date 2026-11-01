@@ -10,7 +10,12 @@ internal sealed interface HelperRequest {
         val endEpochMillis: Long,
         val hosts: List<String>,
         val executables: List<String>,
-    ) : HelperRequest
+        val windows: List<HostWindowPlan> = emptyList(),
+    ) : HelperRequest {
+        override fun toString(): String {
+            return "Apply(redacted)"
+        }
+    }
 
     data object Clear : HelperRequest
 

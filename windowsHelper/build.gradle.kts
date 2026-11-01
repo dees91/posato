@@ -22,4 +22,5 @@ dependencies {
     implementation(libs.jna)
     implementation(libs.jna.platform)
     testImplementation(kotlin("test-junit"))
+    testImplementation(libs.kotlinx.serialization.json)
 }

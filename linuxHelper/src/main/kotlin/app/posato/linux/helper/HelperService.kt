@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
+import java.time.ZoneId
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -24,6 +25,7 @@ internal class HelperService(
     private val paths: HelperPaths,
     private val person: Person,
     private val now: () -> Long = System::currentTimeMillis,
+    private val zone: () -> ZoneId = { currentSystemZone() },
 ) {
     private val lock = Any()
     private var state = readState()
@@ -107,7 +109,7 @@ internal class HelperService(
     }
 
     /** A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. */
-    private fun tick() {
+    internal fun tick() {
         runCatching {
             synchronized(lock) {
                 val applied = state.applied ?: return@runCatching
@@ -184,3 +186,9 @@ internal data class HelperPaths(
     val hosts: Path = Paths.get("/etc/hosts"),
     val config: Path = Paths.get("/etc/posato/helper.conf"),
 )
+
+/** The zone the system uses now: the `zoneinfo` link target, read at each call, or the JVM default when unreadable. */
+internal fun currentSystemZone(localtime: Path = Paths.get("/etc/localtime")): ZoneId {
+    return runCatching { ZoneId.of(Files.readSymbolicLink(localtime).toString().substringAfter("zoneinfo/")) }
+        .getOrElse { ZoneId.systemDefault() }
+}

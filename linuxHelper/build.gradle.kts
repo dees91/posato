@@ -20,4 +20,5 @@ java {
 
 dependencies {
     testImplementation(kotlin("test-junit"))
+    testImplementation(libs.kotlinx.serialization.json)
 }

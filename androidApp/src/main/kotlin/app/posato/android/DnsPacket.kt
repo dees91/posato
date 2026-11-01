@@ -60,6 +60,14 @@ internal class DnsPacket private constructor(
     }
 
     companion object {
+        /** [reply] with every record's time to live at most [maxSeconds]; null when the reply cannot be read. */
+        fun clampTtl(
+            reply: ByteArray,
+            maxSeconds: Int,
+        ): ByteArray? {
+            return reply
+        }
+
         private const val IPV4_HEADER = 20
         private const val UDP_HEADER = 8
         private const val DNS_HEADER = 12

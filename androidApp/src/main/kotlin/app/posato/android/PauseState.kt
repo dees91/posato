@@ -1,6 +1,7 @@
 package app.posato.android
 
 import android.content.Context
+import app.posato.feature.enforcement.DomainWindowPlan
 
 /** What a pause enforces on this phone, kept so the services restore it after the process or the phone restarts. */
 internal data class AppliedPause(
@@ -8,7 +9,12 @@ internal data class AppliedPause(
     val endEpochMillis: Long,
     val domains: Set<String>,
     val packages: Set<String>,
-)
+    val windows: List<DomainWindowPlan> = emptyList(),
+) {
+    override fun toString(): String {
+        return "AppliedPause(redacted)"
+    }
+}
 
 internal class PauseState(
     context: Context,
