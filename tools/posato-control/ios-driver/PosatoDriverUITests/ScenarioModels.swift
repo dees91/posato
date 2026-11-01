@@ -112,6 +112,8 @@ struct Step: Codable {
   var values: [String]?
   /// The device-clock instant `sleepUntil` waits for, in epoch milliseconds.
   var atEpochMs: Int64?
+  /// How many fresh loads `probeURL` retries at once after one shows nothing within the step's timeout.
+  var retries: Int?
 
   init(action: String, name: String? = nil, query: ElementQuery? = nil) {
     self.action = action
@@ -183,12 +185,15 @@ struct StepResult: Codable {
   /// What a `probeURL` step saw (`blocked`, `open`, or `none`) and when its load started.
   var observed: String?
   var observedAtEpochMs: Int64?
+  /// The `probeURL` loads that showed nothing before the one reported in `observed`.
+  var probeRetries: Int?
 
   func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encodeIfPresent(startedAtEpochMs, forKey: .startedAtEpochMs)
     try container.encodeIfPresent(observed, forKey: .observed)
     try container.encodeIfPresent(observedAtEpochMs, forKey: .observedAtEpochMs)
+    try container.encodeIfPresent(probeRetries, forKey: .probeRetries)
     try container.encode(index, forKey: .index)
     try container.encode(name, forKey: .name)
     try container.encode(action, forKey: .action)

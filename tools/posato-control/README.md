@@ -400,7 +400,9 @@ instant on the device clock; each iOS step result carries `startedAtEpochMs`),
 `probeURL` (`url`, `text`: one fresh load in a new Safari process with a
 cache-busting `probe` query; the result's `observed` is `blocked` for Safari's
 restricted page, `open` when `text` appears, or `none`, with the load start in
-`observedAtEpochMs`; the observation never fails the step, so a timed probe
+`observedAtEpochMs`; `retries` reloads at once, in a fresh Safari process, a
+load that showed nothing within the step's timeout, and the result's
+`probeRetries` counts those loads; the observation never fails the step, so a timed probe
 series reads every result), and `pressKeys` (`secret`: the name
 `devicePasscode`; the host reads the value from the configured Keychain item
 and passes it only through the test runner environment, and key-tap lines are

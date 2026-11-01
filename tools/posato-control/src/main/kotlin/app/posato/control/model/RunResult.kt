@@ -22,6 +22,8 @@ data class StepResult(
     /** iOS `probeURL`: `blocked`, `open`, or `none`, and when the load started on the device clock. */
     val observed: String? = null,
     val observedAtEpochMs: Long? = null,
+    /** iOS `probeURL`: the loads that showed nothing before the one reported in [observed]. */
+    val probeRetries: Int? = null,
 )
 
 @Serializable

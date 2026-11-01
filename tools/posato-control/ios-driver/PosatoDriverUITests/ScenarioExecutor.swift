@@ -58,6 +58,7 @@ final class ScenarioExecutor {
   /// What a `probeURL` step saw, and when its load started on the device clock.
   private var stepObserved: String?
   private var stepObservedAt: Int64?
+  private var stepProbeRetries: Int?
 
   init(scenario: Scenario, bundleIdentifier: String, attach: @escaping Attach) {
     self.scenario = scenario
@@ -136,6 +137,7 @@ final class ScenarioExecutor {
     recordedIssues = []
     stepObserved = nil
     stepObservedAt = nil
+    stepProbeRetries = nil
     var artifacts: [String] = []
     var failure: DriverError?
     do {
@@ -176,7 +178,8 @@ final class ScenarioExecutor {
       error: failure,
       startedAtEpochMs: Self.epochMs(start),
       observed: stepObserved,
-      observedAtEpochMs: stepObservedAt
+      observedAtEpochMs: stepObservedAt,
+      probeRetries: stepProbeRetries
     )
   }
 
@@ -310,14 +313,30 @@ final class ScenarioExecutor {
 
   /// One fresh load of `url` in a new Safari process with a cache-busting query, reported as `observed`: `blocked`
   /// when Safari shows its restricted page, `open` when `text` appears, `none` when neither does before the timeout.
-  /// The load's start on the device clock is `observedAtEpochMs`. The observation never fails the step.
+  /// A load that shows nothing is retried at once with a fresh load, up to `retries` times; `probeRetries` counts
+  /// them. The reported load's start on the device clock is `observedAtEpochMs`. The observation never fails the step.
   private func probeURL(_ step: Step, timeout: TimeInterval) throws {
     guard let text = step.url, let expected = step.text,
-      var components = URLComponents(string: text)
+      let components = URLComponents(string: text)
     else {
       throw DriverError(
         .scenarioInvalid, "probeURL requires a valid url and the text an open page shows")
     }
+    let attempts = 1 + max(0, step.retries ?? 0)
+    for attempt in 0..<attempts {
+      let seen = try loadOnce(components, expected: expected, timeout: timeout)
+      stepObserved = seen
+      stepProbeRetries = attempt
+      if seen != "none" {
+        return
+      }
+    }
+  }
+
+  private func loadOnce(
+    _ base: URLComponents, expected: String, timeout: TimeInterval
+  ) throws -> String {
+    var components = base
     let safari = XCUIApplication(bundleIdentifier: Self.safariBundle)
     if safari.state != .notRunning {
       safari.terminate()
@@ -351,7 +370,7 @@ final class ScenarioExecutor {
       }
       return false
     }
-    stepObserved = seen
+    return seen
   }
 
   private static let safariBundle = "com.apple.mobilesafari"

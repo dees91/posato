@@ -53,6 +53,8 @@ data class Step(
     val repeat: Int = 1,
     /** `sleepUntil`: the device-clock instant to wait for, in epoch milliseconds. */
     val atEpochMs: Long? = null,
+    /** `probeURL`: how many fresh loads to retry at once after one shows nothing within the step's timeout. */
+    val retries: Int = 0,
 )
 
 @Serializable
