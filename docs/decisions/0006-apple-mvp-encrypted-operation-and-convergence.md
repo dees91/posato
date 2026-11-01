@@ -7,6 +7,169 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## TARGETS-013 set domain window amendment
+
+Accepted under delegation: proposed on 2026-11-01 (`TARGETS-013`), passed an
+independent security review after fixes on 2026-11-01, and decided on
+2026-11-01 by the owner's agent under the owner's explicit delegation of
+2026-10-31, as the owner's exception to the `agent-delegated` rule, pending
+the owner's confirmation in the `TARGETS-013` pull request. `TARGETS-013`
+implements it. The product rules are in
+[pause set rules](../product/pause-sets-decisions.md#website-windows-targets-013).
+
+- **Supersedes.**
+  - "kinds 1-21 are mandatory, and unknown kinds 22-127 are rejected"
+    (`SCHEDULE-007` amendment) now reads: kinds 1-22 are mandatory, and
+    unknown kinds 23-127 are rejected.
+  - "A running part never releases an item early" and the local retention
+    rule of the `SCHEDULE-003` amendment keep their meaning for the **held**
+    set. A window is the one bounded exception for enforcement: it never
+    removes an item from a part's retention record or from the host-limit
+    count; it only lets the host leave a held domain unblocked while the
+    window is open (below).
+- **New mandatory kind in format 1.** The payload is canonical as below:
+  - `22` `set-domain-window`: 16-byte set identifier (validated like kinds
+    12-18), then the kind 2 domain payload, then `u8` period minutes and
+    `u8` length minutes. The pair is exactly one of: period 30, 60, or 120
+    with length 5, 10, or 15 (a rule); or period 0 with length 0 (**none**,
+    which clears the rule). Any other pair, including one zero and one
+    non-zero value, is rejected as `invalid-operation`. Total 23 to 273
+    bytes. Cross-target golden vectors pin every valid pair, the none pair,
+    each refused pair, an invalid set identifier, and trailing bytes;
+    reducer vectors pin a rule ordered before and after a removal of the
+    same key.
+- **Reduction.**
+  - The register is `(set, domain)`. Among kind 22 operations for one key,
+    the greatest in total order wins; a none winner means no rule.
+  - **A removal clears the rule.** The register's winner is ignored when it
+    orders before the greatest kind 15 for the same `(set, domain)` (kind 3
+    for the first set counts as kind 15 there). So a website that is removed
+    and added again projects no rule until a kind 22 that orders after the
+    removal, whichever device or release authored the removal; a removal
+    from a 1.5 device or an import clears it too. Kind 14 (and 2) resets
+    nothing, and kind 22 neither adds nor removes a domain.
+  - The projection exposes a rule only for a domain that is present in a
+    live set; a rule for an absent domain or a set that is not live projects
+    nothing.
+  - Kind 22 adds no capacity outcome: the registers that project are bounded
+    by the present `(set, domain)` pairs.
+- **Writers.**
+  - A writer authors a rule only for a domain that is present in a live set
+    on the writer, with a pair from the fixed sets.
+  - Removing a website needs no kind 22: the reduction above clears its
+    rule. `inferred`: a rule authored on another device that orders after the
+    removal (concurrently, or by a device that had not received the
+    removal) applies to the website once it is added again; it is visible in
+    the set's website row.
+  - Clearing authors the none pair. A writer never authors a rule for a
+    domain it is removing.
+  - **First link.** A device's local rules are published at first link only
+    for keys whose website is present in the workspace's set and that hold no
+    kind 22 in the workspace, after the domain and set operations of the
+    link, so the workspace's rules win, as for set names and the default. A
+    local-only rule for a key the workspace already rules is dropped here,
+    and the workspace's rule applies.
+  - **Import.** An import authors its removals before its additions and its
+    rules after its additions (kind 15, then kind 14, then kind 22), so an
+    imported rule survives its own replace.
+- **Evaluation (bounded release).** Let `held(p)` be a running part's
+  restriction under the `SCHEDULE-003` amendment (its set's current
+  resolution plus its retention record). Let `wall(t)` be the local
+  wall-clock reading at instant `t` in the device's current time zone,
+  `hour * 60 + minute` (0-1439), never the minutes elapsed since midnight.
+  For a held website `w` at instant `t`:
+  - a website is its stored exact domain together with its `www` form
+    (`TARGETS-006`); all stored entries that match the same website form one
+    class;
+  - a part `p` that covers `w` is **open for `w`** only when every entry of
+    `w`'s class that `p` holds has a projected rule `(period, length)` in
+    `p`'s set and `wall(t) mod period < length` for each of them;
+  - `w` is **open** when every running part that covers it is open for it.
+    A covering part with no rule for an entry of the class (including a part
+    that holds it only through its retention record, after it left its set)
+    keeps `w` blocked;
+  - the host enforces `blockedNow = held - open(t)`. Retention, the
+    host-limit count, the reservation of the `SCHEDULE-003` amendment, and
+    the items shown as not paused yet are computed on `held` alone; `open`
+    never feeds back into them, so an open window frees no capacity.
+  - Because every period divides the larger ones and every length is
+    shorter than the shortest period, the intersection of the rules of
+    several covering parts is the single rule `(max period, min length)`.
+    The effective state per domain is therefore at most one rule.
+- **Rule arrival in a running part.** A kind 22 applies to running parts
+  when it is reduced, like an addition. A rule added or edited during a
+  running part opens a domain only inside its window; a none, a removed
+  domain, or a removed set closes an open window at the next evaluation,
+  which hosts perform at once on a change. A break of the `SCHEDULE-007`
+  amendment is independent: while a part is on a break its items are not
+  handed to the host, and its windows do not matter; at the break's end the
+  host enforces `blockedNow` again.
+- **Bound.** The evaluation counts one website on one device as open only
+  inside windows of at most 15 minutes in any 30-minute aligned interval of
+  that device's wall clock, and only while every covering part has a rule.
+  No window extends a part, releases an item after the part ends, or
+  releases an item that a part with no rule holds. This bounds when a host
+  lets **new** connections through on a device that evaluates on time. It
+  does not bound:
+  - an iPhone or iPad whose close callback the system delays or never
+    delivers: the website stays open until the next extension callback, the
+    end of the part, or the app's next launch (the product rules' timing
+    tolerance covers delays up to 60 seconds; a missed close is a stated
+    leak);
+  - connections already open, and addresses cached during a window, on
+    Windows, Linux, and Android, which can outlast the window;
+  - a removed or narrowed rule on a device that has not received the change
+    or cannot apply it yet: a closed iPhone, and a Linux or Windows device
+    whose application process is terminated, keep the last rules they
+    applied until Posato runs there again or the pause ends.
+- **Local clock.** Windows follow each replica's own wall clock and time
+  zone, as schedules do, through `wall(t)`. On a skipped local hour the
+  windows inside it do not occur and no window moves: the next window is
+  the next aligned time that exists on the clock. On a repeated hour a
+  window opens once for each wall-clock occurrence, except where a host
+  cannot arm an unambiguous deadline for the second occurrence (iPhone and
+  iPad, product rules), which then skips it and only blocks more. A clock set
+  forward or back moves the windows on that device only; this is not a
+  security bound, as for schedules.
+- **One calculation, shared vectors.** The window test, the segment
+  evaluation, and the next opening are implemented in shared Kotlin, the two
+  JVM helpers, the Mac helper, and the iPhone extension. One cross-target
+  vector file pins them: instants in named zones (including a daylight
+  saving change forward and back), rules, segments, the expected open or
+  blocked state, and the next opening. Every implementation reads it in a
+  test written failing first.
+- **Compatibility.** `inferred` from the `observed` 1.2 and 1.3 behavior
+  (`AppleSync.exchangeLegsOrHalt`, `AppleMailboxExchange.acceptPage`): a 1.5
+  or 1.6-pre device rejects kind 22 as `invalid-operation` and stops
+  receiving once any device in the workspace sets or clears a rule, until it
+  updates. It still publishes its local changes before it fetches, and it
+  keeps restricting every website with no window. A 1.5 installation that
+  opens a database holding kind 22 (a downgrade) fails closed at snapshot
+  validation. Release 1.6 accepts this, and its notes say "Update Posato on
+  your other devices to keep them in sync."
+- **Optional range not used.** Kinds 128-255 must never carry restriction
+  semantics. A window changes what a running part enforces, and a replica
+  that ignored a none would keep a removed window open, so kind 22 is
+  mandatory.
+- **Security notes.** Workspace-key holders can already author any operation
+  (`R-01`), including kind 11 and session end, which end a part everywhere.
+  A rule is a new, smaller capability beside those: on a device that
+  evaluates on time, it lets new connections reach one held website for at
+  most 15 minutes in any 30 during a running part, only where every covering
+  part has a rule, and the person sees the rule in the set's website row and
+  in Session. The residuals under Bound (iPhone callbacks, open connections
+  and caches, devices that have not applied a removal) can extend that; a
+  rule that a key holder authors and then removes keeps working on such a
+  device until Posato runs there or the pause ends. Removing the rule closes
+  the window on every device that receives and applies it. Retention and the
+  host limits are unchanged, so a rule cannot make room for or drop any
+  other item. No new
+  key, identifier, or diagnostic crosses a boundary.
+- **Threat model.** Asset `A-01` includes window rules (which website in
+  which set opens, how often, and for how long); they stay out of
+  diagnostics like set contents. They travel in the pause set export file
+  (product rules, Export and import).
+
 ## SCHEDULE-007 schedule break amendment
 
 Accepted: `user-confirmed`: accepted by the maintainer on 2026-10-30

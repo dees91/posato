@@ -4,7 +4,10 @@
   (2026-09-29 and 2026-09-30). The ADR 0006 amendment they need passed an
   independent security review after fixes and was accepted by the
   maintainer on 2026-09-30 (`user-confirmed`).
-- **Owner:** `SCHEDULE-003` decides; `SCHEDULE-004` delivers.
+- **Owner:** `SCHEDULE-003` decides; `SCHEDULE-004` delivers. Release 1.6
+  adds [website windows](#website-windows-targets-013), decided by
+  `TARGETS-013` under the owner's delegation of 2026-10-31,
+  pending the owner's confirmation.
 - **Authorities:** [product scope](pause-sets.md),
   [`DESIGN.md`](../../DESIGN.md#release-13-pause-sets),
   [ADR 0006](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-003-pause-set-operations-amendment),
@@ -50,7 +53,9 @@ occurrence. Each part uses one set.
   uses is paused at once on every device that runs the part and has
   received the change (`user-confirmed` 2026-09-29).
 - **A running part never releases an item early** (`user-confirmed`
-  2026-09-30). Everything a part has paused on this device stays paused
+  2026-09-30). The one exception for enforcement is a website's window
+  (see [Website windows](#website-windows-targets-013)), which never removes
+  the website from what the part holds. Everything a part has paused on this device stays paused
   until that part ends: after the item is removed from the set, after a
   running schedule is switched to another set (the new set's items are
   added at once), and after the set is deleted on another device. The part
@@ -195,6 +200,204 @@ and changes from a device that has not updated yet still apply.
   database holds none.
 - The optional kinds 128-255 are not used: these operations change what is
   paused.
+
+## Website windows (`TARGETS-013`)
+
+A website in a pause set can have a **window rule**: during a pause that
+uses the set, it opens by itself for a few minutes at fixed clock times and
+is blocked again afterwards, on every device of the workspace. A website
+without a rule behaves exactly as before.
+
+The decisions are `user-confirmed` (2026-10-30, questionnaire); the task
+brief is
+[`targets-013-timed-website.md`](../tasks/specifications/targets-013-timed-website.md).
+The rules below them were decided on 2026-11-01 by the owner's agent under
+the owner's explicit delegation of 2026-10-31, as the owner's exception to
+the `agent-delegated` rule, pending the owner's confirmation in the
+`TARGETS-013` pull request; each was a gate question with a recommendation,
+and the pull request lists them. The normative operation is the
+[ADR 0006 amendment](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment);
+the Mac page is in the
+[ADR 0005 amendment](../decisions/0005-macos-browser-enforcement-and-coexistence.md#targets-013-window-page-amendment),
+the helpers in the
+[ADR 0004](../decisions/0004-macos-helper-ownership-and-lifecycle.md#targets-013-window-plan-amendment)
+and [ADR 0010](../decisions/0010-linux-android-and-folder-workspace.md#targets-013-window-plan-amendment)
+amendments, and the screens in
+[`DESIGN.md`](../../DESIGN.md#release-16-website-windows).
+
+### Decisions (`user-confirmed` 2026-10-30)
+
+- **Per website in a set.** The rule belongs to one website inside one set.
+  The same website in another set can have no rule.
+- **Fixed clock times.** Windows start at clock times aligned to the hour:
+  every 30 minutes, 1 hour, or 2 hours, starting at :00. They are not
+  counted from the pause's start.
+- **Fixed lengths.** A window lasts 5, 10, or 15 minutes.
+- **Opens by itself.** The website opens with no action during its window,
+  and the pause page says when it opens next.
+- **Websites only**, as one exact website and its `www` form (ADR 0005,
+  `TARGETS-006`). Applications, patterns, a daily budget, usage counting,
+  and browsing history are non-goals.
+- **Decide first.** These rules, the screens, and the ADR amendments are
+  accepted before product code.
+
+### Rules
+
+- **When a window is open.** A rule is a period (30, 60, or 120 minutes) and
+  a length (5, 10, or 15 minutes). It is open when the local clock's reading
+  (hour × 60 + minute, as the clock shows it, not minutes elapsed since
+  midnight), modulo the period, is less than the length.
+  Example: 1 hour and 5 minutes opens 10:00-10:05, 11:00-11:05, and so on;
+  every 2 hours opens at 00:00, 02:00, 04:00.
+- **A website and its `www` form are one website.** When a set, or two
+  sets in use, hold both `example.com` and `www.example.com`, the website
+  opens only when every stored entry for it has a rule and is in its window.
+- **Several parts (the most restrictive wins).** A website opens only while
+  every running part that covers it is inside its own window. A covering
+  part whose set has no rule for the website keeps it blocked, including a
+  part that keeps the website only because it paused it before the website
+  left the set. Two parts with different rules open only when both are
+  open, which is the single rule (longest period, shortest length): every 30
+  minutes for 15 and every hour for 5 open together for 5 minutes on the
+  hour.
+- **Paused, then opened.** What "Running pauses" above says about what a
+  part holds is unchanged: retention, the device limits, and the items
+  shown as not paused yet are computed as if no window existed. A window only
+  lets the device leave a held website unblocked while it is open, so it
+  never frees room for other items and never releases anything a part holds
+  for good. When the window ends the website is blocked again because it was
+  never let go.
+- **All websites open.** When every paused website is in its window and no
+  app is paused, the pause stays active; Session keeps it and **End early**
+  still ends it. Blocking returns at the window's end.
+- **Breaks are independent.** A break in a scheduled pause (`SCHEDULE-007`)
+  already releases that part entirely; its windows do not matter during it,
+  and after the break the device follows the windows again.
+- **Each device's own clock.** Windows follow the device's own wall clock and
+  time zone, as schedules do; devices in different time zones may open at
+  different instants. A device that is offline or asleep follows its own
+  clock. On a daylight saving change, a window inside a skipped hour does not
+  occur and no window moves: the next window is the next aligned time that
+  exists on the clock. In a repeated hour a window opens once for each time
+  the clock shows it; an iPhone or iPad skips the second one when it cannot
+  arm it unambiguously, which only blocks more.
+- **A rule set or changed during a pause** applies to running parts as soon
+  as the device receives it, like an added website: a new or edited rule
+  opens the website only inside its window. Clearing a rule, removing the
+  website, or deleting the set closes an open window at once on each device
+  that receives and applies the change. At most 15 minutes in any 30 can
+  open, and only while every covering part has a rule. A closed iPhone, and a
+  Linux or Windows device whose app is not running, apply a cleared rule
+  only when Posato runs there again; until then, or until the pause ends,
+  they keep opening the website on its old rule.
+- **Removing and adding a website again** starts with no rule: removing a
+  website clears its rule on every device, also when an older Posato or an
+  import removed it. `inferred`: a rule set on another device after the
+  removal, before that device saw it, applies once the website is back; it
+  shows in the website's row.
+- **Linking.** When a device with rules links to a workspace, the
+  workspace's rules win, as its set names and default do: the device
+  publishes a rule only for a website the workspace's set has and has never
+  ruled.
+- **A set this device does not have** has no rules, so nothing opens for it.
+- **Where "opens next" shows.** On the Mac pause page (Safari and Chrome),
+  and on Session on every platform: "Opens at 10:30" for a blocked website
+  with a next window in the running pause and "Open until 10:35" while it is
+  open. The iPhone and iPad Safari page stays the system's restricted page,
+  and Linux, Android, and Windows have no pause page; a shield configuration
+  extension is a non-goal.
+- **Older devices.** A device on 1.5 or a 1.6 build without windows stops
+  receiving changes once any device sets or clears a rule, until it updates,
+  and keeps blocking every website without a window. The release notes say
+  "Update Posato on your other devices to keep them in sync."
+- **Export and import (`TARGETS-007`).** The file carries the rules in the
+  same content version, as an optional field on each set beside its list of
+  websites, which stays a list of plain names; the field maps a website to
+  its period and length. An older Posato ignores the field and imports the
+  websites without rules, which only blocks more. A newer Posato drops an
+  invalid entry (a pair outside the fixed choices, a website not in the set,
+  or a duplicate) and imports that website without a rule. The import review
+  shows the rules with the websites. **Replace my pause sets** takes the
+  file's rules. **Add to my pause sets** with **Combine sets with the same
+  name** keeps the rule of a website already in the set here and takes the
+  file's rule for a website new to that set; with **Keep them separate**
+  every imported set takes the file's rules.
+- **Open connections and caches.** Closing a window blocks new loads. On
+  the Mac, Posato also ends the connections it carries for that website. On
+  Windows, Linux, and Android, a connection that is already open, or an
+  address a browser cached during the window, can keep the site working
+  until it closes or expires. Verification uses fresh loads; the limits page
+  names this.
+
+### Per platform
+
+- **Mac.** The helper decides each request and connection from the window
+  plan with its own clock and moves between windows and part ends without
+  the app's request. Closing the window keeps Posato in the menu bar and
+  windows keep working; quitting Posato stops all blocking on the Mac, as it
+  does today. The pause page shows the opening time through a fixed address
+  that holds no website (ADR 0005 amendment).
+- **Linux and Windows.** The helper follows the window plan, checking the
+  clock every second, and keeps doing so after the app's process is terminated, until the
+  pause's end. On Windows a website that shares an address with a blocked
+  website stays unavailable during its window (ADR 0010 amendment).
+- **Android.** The VPN service decides each lookup from the window plan;
+  exact alarms at each boundary refresh it, as for breaks.
+- **iPhone and iPad.** The monitor extension changes the shields at window
+  boundaries while Posato is closed, from the table it already keeps for
+  scheduled parts and the manual session. The transition contract:
+  - **Close before open.** Before any website opens, a registered activity
+    deadline lies at or before that window's close (the nearest boundary of
+    breaks and windows). If that registration fails, nothing opens; the next
+    callback or app start retries. A close time inside a repeated hour that
+    cannot be armed unambiguously counts as a failed registration.
+  - **The clock decides.** Every callback recomputes what is blocked from
+    the real clock, not from the callback's name or the deadline it was
+    armed for, so callbacks are idempotent.
+  - **Never early.** The 60-second early-callback margin of breaks is not
+    used for windows. A callback that arrives before an opening, by any
+    amount, inside or outside 60 seconds, keeps the website blocked and does
+    not consume the opening. It registers an activity only when the armed
+    deadline is no longer that opening; the start callback that follows a
+    registration never registers again, so registration cannot loop. If the
+    system refuses the same-deadline registration or delivers its end again
+    before the opening, the deadline is the opening plus 20 seconds instead,
+    at most once per opening; "that opening" then means the fallback
+    deadline, so the two never alternate: later, never earlier.
+  - **Closing.** A callback before a close applies the clock: within 60
+    seconds before the close it closes early, which only blocks more;
+    earlier than that it keeps the website open and registers the close only
+    when the armed deadline is no longer that close.
+  - **Late, duplicate, stale.** A late callback applies the current state,
+    so a late opening after its window ended stays blocked. A duplicate or
+    stale callback re-arms the nearest boundary not yet passed and changes
+    nothing else.
+  - **One activity.** One activity is armed at the nearest boundary of breaks
+    and windows together. Break deadlines keep their own margin rule; a
+    break's end restores the state from the clock, windows included.
+  - **Manual sessions too.** The window callback evaluates the manual
+    session's windows even when no scheduled pause runs.
+  - **A missed close is a real leak.** If the system never delivers a close
+    callback, the website stays open until the next callback or until
+    Posato opens; nothing inside iOS recovers it sooner. This is stated
+    plainly on the limits page. A second, independent close activity is the
+    named mitigation, taken only if the device probe shows a missed close.
+  - **Timing tolerance.** An opening happens in `[boundary, boundary + 60
+    s]`. A close happens in `[end - 60 s, end + 60 s]`, where the early part
+    is the restrictive direction. An early opening is never allowed.
+  - The 50-domain limit is unchanged: an open window frees no room.
+
+### Verification
+
+During a pause with a 30-minute, 5-minute rule in real time, a fresh browser
+load is blocked before the window, open inside it, and blocked after it on a
+Mac in a Tart guest (app window closed, because quitting Posato stops all
+Mac blocking), the test iPhone and Linux and Windows (app process
+terminated), and Android, while a website without a rule in the same set
+stays blocked. A part that ends while the app's process is terminated is
+proven on Linux. A rule added on one Mac during a running pause opens a
+window on a peer, and clearing it closes the window. The task plan holds the
+measurement rule.
 
 ## Execution
 

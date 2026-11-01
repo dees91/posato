@@ -25,6 +25,109 @@
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
 
+## TARGETS-013 window plan amendment
+
+Accepted under delegation: proposed on 2026-11-01 (`TARGETS-013`), passed an
+independent security review after fixes on 2026-11-01, and decided on
+2026-11-01 by the owner's agent under the owner's explicit delegation of
+2026-10-31, as the owner's exception to the `agent-delegated` rule, pending
+the owner's confirmation in the `TARGETS-013` pull request. The rule and its
+bound are in the
+[ADR 0006 amendment](0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment);
+the segment model and the cap are the same as in the
+[ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#targets-013-window-plan-amendment).
+
+- **Apply carries window plans (Linux and Windows).** The helper's **apply**
+  keeps its session id, end, hosts, and executable paths, and gains a list
+  of `DomainWindowPlan`s: one host of the request and its ordered segments,
+  each with an `until` instant and an optional rule. A plan is ignored, so
+  its host stays blocked for the whole request, when its host is not in the
+  request, another plan names the same host, its segments are not strictly
+  increasing, its last `until` is after the session end, a rule is outside
+  the fixed pairs, or it has more segments than the cap of the ADR 0004 amendment (22, derived from the code's bound on running parts). A plan whose segments
+  have passed is valid. Hosts, paths, and the rest of the request keep
+  today's validation and refusal. The helper never logs hosts or plans; it
+  keeps plans in its state file with the request (root-owned on Linux,
+  readable only by the system on Windows), so a restart of the helper keeps
+  them, and deletes them at clear and at the session end.
+- **Wire compatibility.** An apply with no plans keeps today's five-field
+  form. Plans travel in an optional sixth field with a bounded grammar and a
+  byte limit derived from the host limit and the segment cap; new helpers
+  accept both forms. A helper that was not restarted after an update refuses
+  the six-field form as today; the application then applies the five-field
+  form, which blocks every held host, and retries the plans after the next
+  helper restart.
+- **A refused replacement.** A rule removed or narrowed during a pause
+  reaches the helper in a replacement apply. If that apply is refused, the
+  helper keeps the plans it holds, the application shows the existing
+  attention for a pause that is not fully applied and retries, and the
+  removed rule can keep opening its website until a replacement succeeds or
+  the pause ends.
+- **Evaluation on the existing tick.** Each JVM helper recomputes
+  `blockedNow` from the wall clock on its existing one-second fixed-delay
+  tick (`TICK_MILLIS = 1_000`), which keeps working after sleep, and
+  rewrites its enforcement only when the result changes. `wall(t)` (ADR 0006
+  amendment) is read in the system's current time zone at each evaluation,
+  never from a zone the JVM cached at start, so a time-zone change applies
+  within a second. The application shows Session times in the same system
+  zone; a user session with its own zone setting can differ from it. A
+  one-shot timer may serve only as a fast path. So the closed-app enforcer
+  is:
+  - **Linux:** the root systemd helper. It rewrites the marked
+    `/etc/hosts` block from `blockedNow` (lines are per host, so no shared
+    ownership arises). It keeps working with the application's process
+    terminated, until the request ends, as its end-time clear does today.
+  - **Windows:** the `LocalSystem` service, with the process ownership and
+    end-time clear of the Windows row, and the address rules below. It keeps
+    working with the application's process terminated.
+  - **Android:** the `VpnService` decides each DNS query with `blockedNow`
+    at query time, validating the plans fail-closed as above when it reads
+    the pause state. `GuardService`, the `specialUse` foreground service that
+    runs while a pause exists, schedules exact alarms at each window
+    boundary and segment `until`, as it does for break boundaries, to
+    refresh the state and the notification. During a window the VPN answers
+    a ruled host with a time to live no longer than the window's remaining
+    time (at least 30 seconds), so caches expire near the close. With the
+    user interface closed both keep running; a force-stop ends blocking as
+    it does today.
+- **Hidden window versus terminated process.** On Linux and Windows a
+  terminated application process recomposes nothing: the helper follows the
+  segments of the last apply until it ends, so a part that ends while the
+  application is gone still opens the surviving part's windows. With the
+  window hidden the resident core recomposes at part ends and rule changes
+  as today.
+- **Windows address ownership.** `FilterPlan` keeps the addresses per host
+  instead of one flat set. The filters block the union of the addresses of
+  the hosts blocked now, so an address shared by a ruled host in its window
+  and a blocked host stays blocked while any blocked host needs it. Opening
+  a window removes only addresses no blocked host owns; closing it adds the
+  host's addresses back. The 16,384-address limit is counted and reserved
+  over the addresses of every **held** host, open or not, so an open window
+  frees no room: a refresh adds an address only while the held union stays
+  within the limit, and closing a window always has room for the host's
+  addresses. A ruled host whose addresses cannot all be reserved is treated
+  as having no rule for the rest of the request, so it stays blocked.
+- **Windows stale resolution.** Each resolution is tagged with the plan
+  generation (a counter bumped on every apply and clear) and the boundary
+  epoch (a counter bumped at every window boundary or segment change) it
+  started under. A result is applied only when both are unchanged when it
+  completes, and only to hosts blocked now; otherwise it is discarded and
+  the next refresh resolves again. This replaces the session-id-only check,
+  so a slow lookup can neither re-block an open host nor add addresses for a
+  host whose window opened.
+- **Windows limitation.** A ruled website that shares an address with a
+  website that is blocked now (for example two sites on one content
+  delivery network address) stays unavailable during its window on Windows.
+  This is accepted and joins the drafted Windows limits, which `DOCS-007`
+  moves to the limits page with the others; a new Windows filtering
+  mechanism, such as server name or per-connection filtering, is out of
+  scope. Connections already open when a window closes stay open, as when a
+  pause starts (`PLATFORM-002`).
+- **Linux and Android caches.** A window that closes blocks new lookups;
+  addresses a browser or system resolver cached during the window can keep
+  the site reachable until they expire, and open connections stay open.
+  This is named on the limits page.
+
 ## Context
 
 [ADR 0002](0002-synchronization-trust-and-workspace-modes.md) reserves a

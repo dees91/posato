@@ -110,6 +110,24 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   the phone app, and Posato cannot be paused. Posato needs usage access,
   display over other apps, notifications, exact alarms, and to be excluded
   from battery optimization; without them, blocking or schedules may not run.
+- A website that opens briefly during a pause (release 1.6) follows each
+  device's own clock and time zone, so devices in different time zones open
+  it at different moments. When its window ends, new page loads are
+  blocked, but a connection that is already open, or an address the browser
+  or system remembered, can keep it working for a while on Linux, Android,
+  and Windows; on macOS, Posato also closes the connections it carries for
+  it. On iPhone and iPad the system decides when Posato's background
+  extension runs: a window can open up to about a minute late, and if the
+  system never runs the extension at the window's end, the website stays
+  open until the extension next runs or you open Posato. Safari on iPhone
+  and iPad shows the system's restricted page, which does not say when the
+  website opens; Session in Posato does. A rule cleared on another device
+  takes effect on an iPhone or iPad only when Posato opens there, and on
+  Linux or Windows only while Posato runs; until then, or until the pause
+  ends, the website keeps opening on its old rule.
+- A device on an earlier version of Posato stops syncing once another device
+  sets or clears a rule for a website to open briefly. Update Posato on every device to keep them
+  in sync.
 - Schedule times follow each device's own clock. A schedule is at least 15
   minutes long, and on iPhone it needs Screen Time access.
 - A device on an earlier version of Posato stops syncing once another device runs
@@ -136,8 +154,9 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On Android, the folder must be a local folder that another app keeps in
   sync, such as Syncthing; most cloud storage apps for Android do not keep a
   local folder in sync. On iPhone, Posato syncs the folder when you open it.
-- An exported `.posato` file holds pause set names, websites, the default
-  set, and schedules, never app choices. Without a code, anyone who gets the
+- An exported `.posato` file holds pause set names, websites and their
+  rules for opening briefly, the default set, and schedules, never app
+  choices. Without a code, anyone who gets the
   file can read it. The nine-character code stops a casual reader, not
   someone who spends a lot of computing power on guessing. An import is a
   one-time copy, not sync, and imported schedules arrive switched off.

@@ -46,7 +46,10 @@ migration identity, synchronization, and older-app compatibility. The
 product choices there are `user-confirmed`; the accepted
 [ADR 0006 amendment](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-003-pause-set-operations-amendment)
 (2026-09-30) defines the operations, and
-[`DESIGN.md`](../../DESIGN.md#release-13-pause-sets) the screens.
+[`DESIGN.md`](../../DESIGN.md#release-13-pause-sets) the screens. Release
+1.6 adds [website windows](pause-sets-decisions.md#website-windows-targets-013)
+(`TARGETS-013`): a website in a set can open briefly at fixed clock times
+during a pause.
 
 The current [1.2 schedule rules](schedules-decisions.md) remain the shipped
 behavior until `SCHEDULE-004` delivers pause sets. Release composition,
