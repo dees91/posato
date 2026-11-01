@@ -1,5 +1,6 @@
 package app.posato.desktop.macos
 
+import app.posato.feature.enforcement.DomainWindowPlan
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -223,6 +224,7 @@ class MacOsBrowserDomainEnforcerTest {
         override fun configureBrowserDomains(
             domains: List<String>,
             sessionEndEpochMilliseconds: Long?,
+            windows: List<DomainWindowPlan>,
         ): BrowserDomainConfigureResponse {
             configureCalls += 1
             return BrowserDomainConfigureResponse(configureResult, configurePort)

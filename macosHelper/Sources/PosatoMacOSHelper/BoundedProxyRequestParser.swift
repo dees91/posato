@@ -2,8 +2,12 @@ import Foundation
 
 enum BoundedProxyRoute: Equatable {
   case blockedHTTP
+  /// A blocked cleartext request for a website with a next opening in the request (TARGETS-013).
+  case blockedHTTPOpens(hour: Int, minute: Int)
   case blockedConnect
   case localBlockedPage
+  /// `GET /blocked/opens/HHMM` on the listener's own authority (ADR 0005 window page amendment).
+  case localOpensPage(hour: Int, minute: Int)
   case tunnel(host: String, port: UInt16, initialData: Data)
   case forward(host: String, port: UInt16, initialData: Data)
   /// A relay to one of the three exact loopback hosts on any port but the listener's own (ADR 0005, MACOS-024),

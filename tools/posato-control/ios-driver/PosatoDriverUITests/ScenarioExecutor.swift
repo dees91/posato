@@ -312,8 +312,11 @@ final class ScenarioExecutor {
   /// when Safari shows its restricted page, `open` when `text` appears, `none` when neither does before the timeout.
   /// The load's start on the device clock is `observedAtEpochMs`. The observation never fails the step.
   private func probeURL(_ step: Step, timeout: TimeInterval) throws {
-    guard let text = step.url, let expected = step.text, var components = URLComponents(string: text) else {
-      throw DriverError(.scenarioInvalid, "probeURL requires a valid url and the text an open page shows")
+    guard let text = step.url, let expected = step.text,
+      var components = URLComponents(string: text)
+    else {
+      throw DriverError(
+        .scenarioInvalid, "probeURL requires a valid url and the text an open page shows")
     }
     let safari = XCUIApplication(bundleIdentifier: Self.safariBundle)
     if safari.state != .notRunning {
@@ -321,14 +324,21 @@ final class ScenarioExecutor {
       _ = safari.wait(for: .notRunning, timeout: timeout)
     }
     let started = Date()
-    components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "probe", value: String(Self.epochMs(started)))]
+    components.queryItems =
+      (components.queryItems ?? []) + [
+        URLQueryItem(name: "probe", value: String(Self.epochMs(started)))
+      ]
     guard let url = components.url else {
       throw DriverError(.scenarioInvalid, "probeURL could not add its query")
     }
     stepObservedAt = Self.epochMs(started)
     XCUIDevice.shared.system.open(url)
-    let blocked = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", Self.restrictedTitle)).firstMatch
-    let open = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", expected)).firstMatch
+    let blocked = safari.descendants(matching: .any).matching(
+      NSPredicate(format: "label == %@", Self.restrictedTitle)
+    ).firstMatch
+    let open = safari.descendants(matching: .any).matching(
+      NSPredicate(format: "label == %@", expected)
+    ).firstMatch
     var seen = "none"
     _ = poll(timeout: timeout) {
       if blocked.exists {

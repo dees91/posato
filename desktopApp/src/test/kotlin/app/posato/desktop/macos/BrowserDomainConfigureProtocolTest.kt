@@ -42,7 +42,8 @@ class BrowserDomainConfigureProtocolTest {
 
     @Test
     fun `given plans that do not fit the frame when encoded then they are left out and every website stays blocked`() {
-        val domains = (0 until 1_000).map { index -> "w$index-${"a".repeat(200)}.example" }
+        val labels = List(4) { "a".repeat(60) }.joinToString(".")
+        val domains = (0 until 1_000).map { index -> "w$index.$labels.ex" }
         val segments = (1..22).map { index -> WindowSegment(1_793_527_800_000L + index * 60_000L, 30, 5) }
         val payload = BrowserDomainConfigurePayload(
             domains = domains,
@@ -131,6 +132,6 @@ class BrowserDomainConfigureProtocolTest {
     }
 }
 
-private const val WINDOW_PAYLOAD_VECTOR: String =
-    "0002" + "0b6578616d706c652e636f6d" + "0b6578616d706c652e6f7267" + "01" + "000001a196c42780" +
-        "01" + "0001" + "0b6578616d706c652e636f6d" + "02" + "000001a1969660c0" + "00" + "00" + "000001a196c42780" + "1e" + "05"
+private const val WINDOW_PAYLOAD_VECTOR: String = "0002" + "0b6578616d706c652e636f6d" + "0b6578616d706c652e6f7267" +
+    "01" + "000001a196c42780" + "01" + "0001" + "0b6578616d706c652e636f6d" + "02" +
+    "000001a1969660c0" + "00" + "00" + "000001a196c42780" + "1e" + "05"

@@ -32,7 +32,14 @@ final class BrowserDomainSession: @unchecked Sendable {
           return
         }
         session.presentationQueue.async { session.presentBlockedPage() }
-      }
+      },
+      windows: payload.windows.isEmpty
+        ? nil
+        : HostWindowPolicy(
+          held: selected,
+          plans: payload.windows,
+          endEpochMilliseconds: payload.sessionEndEpochMilliseconds
+        )
     )
     let port = try proxy.start()
     self.proxy = proxy
@@ -81,12 +88,19 @@ final class BrowserDomainSession: @unchecked Sendable {
   private func presentBlockedPage() {
     presentationLock.lock()
     let activePort = port
+    let activeProxy = proxy
     presentationLock.unlock()
-    guard activePort != 0 else {
+    guard activePort != 0, let activeProxy else {
       return
     }
+    // Membership is what is blocked now, so a blocked resource inside an open website never replaces its tab.
+    let blocked = activeProxy.blockedHosts()
     autoreleasepool {
-      _ = presentation.presentBlockedPage(port: activePort, selectedHosts: Set(payload.domains))
+      _ = presentation.presentBlockedPage(
+        port: activePort,
+        selectedHosts: blocked,
+        opensAt: { host in activeProxy.openingTime(for: host) }
+      )
     }
   }
 

@@ -9,6 +9,7 @@ import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.feature.enforcement.ApplicationEnforcementLink
 import app.posato.feature.enforcement.BrowserEnforcementLink
+import app.posato.feature.enforcement.DomainWindowPlan
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.targets.data.LocalApplicationMappingId
 
@@ -19,15 +20,17 @@ internal class MacOsBrowserEnforcementLink(
     override fun start(
         domains: List<String>,
         sessionEndEpochMillis: Long,
+        windows: List<DomainWindowPlan>,
     ): Boolean {
-        return enforcer.start(domains, sessionEndEpochMillis) is BrowserDomainEnforcementResult.Active
+        return enforcer.start(domains, sessionEndEpochMillis, windows = windows) is BrowserDomainEnforcementResult.Active
     }
 
     override fun startWithGrant(
         domains: List<String>,
         sessionEndEpochMillis: Long,
+        windows: List<DomainWindowPlan>,
     ): EnforcementOutcome {
-        return when (val result = enforcer.start(domains, sessionEndEpochMillis, grantOnly = true)) {
+        return when (val result = enforcer.start(domains, sessionEndEpochMillis, grantOnly = true, windows = windows)) {
             is BrowserDomainEnforcementResult.Active -> EnforcementOutcome.APPLIED
             is BrowserDomainEnforcementResult.Failed -> result.result.grantOnlyOutcome()
         }

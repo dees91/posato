@@ -86,14 +86,18 @@ struct BrowserPresentationAdapter {
       else {
         return .skipped
       }
-      guard shouldReplace(urlString: currentURL, selectedHosts: selectedHosts) else {
+      guard let host = blockedHost(urlString: currentURL, selectedHosts: selectedHosts) else {
         return .skipped
       }
-      let destination = "http://127.0.0.1:\(port)/blocked"
+      // Only the adapter chooses the window form, after reducing the tab to its host; the time is the only variable.
+      let path =
+        opensAt(host).map { String(format: "/blocked/opens/%02d%02d", $0.hour, $0.minute) }
+        ?? "/blocked"
+      let destination = "http://127.0.0.1:\(port)\(path)"
       let written = try runner.run(
         browser.writeScript(windowID: parts[0], tabReference: parts[1], url: destination)
       )
-      guard isBlockedPage(urlString: written, port: port) else {
+      guard isBlockedPage(urlString: written, port: port, path: path) else {
         return .skipped
       }
       lastPresented[browser] = instant
@@ -122,21 +126,23 @@ struct BrowserPresentationAdapter {
     return active[0]
   }
 
-  private func shouldReplace(urlString: String, selectedHosts: Set<String>) -> Bool {
+  /// The tab's canonical host when it is blocked now, or nil.
+  private func blockedHost(urlString: String, selectedHosts: Set<String>) -> String? {
     guard let components = URLComponents(string: urlString),
-      let host = components.host
+      let host = components.host,
+      ExactHostPolicy.matches(host: host, selectedHosts: selectedHosts)
     else {
-      return false
+      return nil
     }
-    return ExactHostPolicy.matches(host: host, selectedHosts: selectedHosts)
+    return ExactHostPolicy.normalizedHost(host)
   }
 
-  private func isBlockedPage(urlString: String, port: UInt16) -> Bool {
+  private func isBlockedPage(urlString: String, port: UInt16, path: String) -> Bool {
     guard let components = URLComponents(string: urlString),
       components.scheme?.lowercased() == "http",
       components.host == "127.0.0.1",
       components.port == Int(port) || (components.port == nil && port == 80),
-      components.path == "/blocked",
+      components.path == path,
       components.query == nil,
       components.fragment == nil
     else {
