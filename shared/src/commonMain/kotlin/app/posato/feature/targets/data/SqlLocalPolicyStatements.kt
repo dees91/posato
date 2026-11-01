@@ -17,6 +17,7 @@ import app.posato.feature.targets.domain.SequencedPolicyIntent
 import app.posato.feature.targets.domain.StoredPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import app.posato.feature.targets.domain.WebsiteWindow
 
 internal suspend fun PosatoDatabase.advanceRevisionOrThrow(expectedRevision: Long) {
     val changed = localExactDomainPolicyQueries.advanceRevision(
@@ -60,9 +61,6 @@ internal suspend fun PosatoDatabase.writeBaseRows(base: Map<PauseSetId, List<Exa
 /** Records [write]'s intents; a set removal first drops that set's queued changes, which it makes moot. */
 internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
     write.intents.forEach { intent ->
-        if (intent is StoredPolicyIntent.SetWindow) {
-            return@forEach
-        }
         if (intent is StoredPolicyIntent.RemoveSet) {
             syncLocalPolicyQueries.deleteIntentsOfSet(intent.setId.value.copyBytes())
         }
@@ -72,9 +70,18 @@ internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
             is StoredPolicyIntent.PutSet -> Triple(INTENT_SET_PUT, null, intent.name)
             is StoredPolicyIntent.RemoveSet -> Triple(INTENT_SET_REMOVE, null, null)
             is StoredPolicyIntent.ChooseDefault -> Triple(INTENT_SET_DEFAULT, null, null)
-            is StoredPolicyIntent.SetWindow -> Triple(INTENT_SET_DEFAULT, null, null)
+            is StoredPolicyIntent.SetWindow -> Triple(INTENT_SET_WINDOW, intent.domain.canonicalValue, null)
         }
-        syncLocalPolicyQueries.insertIntent(write.workspaceId, kind, intent.setIdOf().value.copyBytes(), domain, name)
+        val window = (intent as? StoredPolicyIntent.SetWindow)?.window
+        syncLocalPolicyQueries.insertIntent(
+            write.workspaceId,
+            kind,
+            intent.setIdOf().value.copyBytes(),
+            domain,
+            name,
+            window?.periodMinutes?.toLong(),
+            window?.lengthMinutes?.toLong(),
+        )
     }
 }
 
@@ -94,6 +101,8 @@ internal suspend fun PosatoDatabase.readIntentsOrThrow(): List<SequencedPolicyIn
             INTENT_SET_REMOVE -> StoredPolicyIntent.RemoveSet(setId)
 
             INTENT_SET_DEFAULT -> StoredPolicyIntent.ChooseDefault(setId)
+
+            INTENT_SET_WINDOW -> StoredPolicyIntent.SetWindow(restoreDomain(row.canonical_domain), setId, restoreWindow(row.window_period, row.window_length))
 
             else -> fail(LocalPolicyFailure.CORRUPTION)
         }
@@ -153,3 +162,16 @@ private const val INTENT_DOMAIN_ABSENT = "domain_absent"
 private const val INTENT_SET_PUT = "set_put"
 private const val INTENT_SET_REMOVE = "set_remove"
 private const val INTENT_SET_DEFAULT = "set_default"
+private const val INTENT_SET_WINDOW = "set_window"
+
+/** A queued rule: both codes from the fixed choices, or neither for a clearing. */
+private fun restoreWindow(
+    period: Long?,
+    length: Long?,
+): WebsiteWindow? {
+    return when {
+        period == null && length == null -> null
+        period == null || length == null -> fail(LocalPolicyFailure.CORRUPTION)
+        else -> WebsiteWindow.of(period.toInt(), length.toInt()) ?: fail(LocalPolicyFailure.CORRUPTION)
+    }
+}

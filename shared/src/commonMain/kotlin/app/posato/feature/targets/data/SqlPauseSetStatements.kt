@@ -9,14 +9,24 @@ import app.posato.feature.targets.domain.ExactDomainPolicyLimits
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.StoredPolicyIntent
+import app.posato.feature.targets.domain.WebsiteWindow
 
 internal suspend fun PosatoDatabase.writeSetRows(sets: PauseSets) {
     localExactDomainPolicyQueries.deleteSets()
     localExactDomainPolicyQueries.deleteAllSetDomains()
+    localExactDomainPolicyQueries.deleteAllSetWindows()
     sets.sets.forEach { set ->
         localExactDomainPolicyQueries.insertSet(set.id.value.copyBytes(), set.name, if (set.refused) 1L else 0L)
         set.domains.forEach { domain ->
             localExactDomainPolicyQueries.insertSetDomain(set.id.value.copyBytes(), domain.canonicalValue)
+        }
+        set.windows.forEach { (domain, window) ->
+            localExactDomainPolicyQueries.insertSetWindow(
+                set.id.value.copyBytes(),
+                domain.canonicalValue,
+                window.periodMinutes.toLong(),
+                window.lengthMinutes.toLong(),
+            )
         }
     }
     localExactDomainPolicyQueries.deleteDefault()
@@ -27,17 +37,26 @@ internal suspend fun PosatoDatabase.readSetsOrThrow(): PauseSets {
     val setRows = localExactDomainPolicyQueries.selectSets(MAX_STORED_SETS + 1).awaitAsList()
     val domainRows = localExactDomainPolicyQueries.selectSetDomains(MAX_STORED_SET_DOMAINS + 1).awaitAsList()
     val defaults = localExactDomainPolicyQueries.selectDefault().awaitAsList()
-    if (setRows.size > MAX_STORED_SETS || domainRows.size > MAX_STORED_SET_DOMAINS || defaults.size > 1) {
+    val windowRows = localExactDomainPolicyQueries.selectSetWindows(MAX_STORED_SET_DOMAINS + 1).awaitAsList()
+    if (setRows.size > MAX_STORED_SETS || domainRows.size > MAX_STORED_SET_DOMAINS || defaults.size > 1 || windowRows.size > MAX_STORED_SET_DOMAINS) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
+    val windowsBySet = windowRows.groupBy(
+        keySelector = { row -> restoreSetId(row.set_id) },
+        valueTransform = { row ->
+            restoreDomain(row.canonical_domain) to
+                (WebsiteWindow.of(row.period_minutes.toInt(), row.length_minutes.toInt()) ?: fail(LocalPolicyFailure.CORRUPTION))
+        },
+    )
     val domainsBySet = domainRows.groupBy(
         keySelector = { row -> restoreSetId(row.set_id) },
         valueTransform = { row -> restoreDomain(row.canonical_domain) },
     )
     val sets = setRows.map { row ->
-        LocalPauseSet(restoreSetId(row.set_id), row.name, domainsBySet[restoreSetId(row.set_id)].orEmpty(), row.refused == 1L)
+        val setId = restoreSetId(row.set_id)
+        LocalPauseSet(setId, row.name, domainsBySet[setId].orEmpty(), row.refused == 1L, windowsBySet[setId].orEmpty().toMap())
     }
-    if (domainsBySet.keys.any { setId -> sets.none { set -> set.id == setId } }) {
+    if ((domainsBySet.keys + windowsBySet.keys).any { setId -> sets.none { set -> set.id == setId } }) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
     return PauseSets.of(sets, defaults.singleOrNull()?.let(::restoreSetId)) ?: fail(LocalPolicyFailure.CORRUPTION)

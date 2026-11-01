@@ -29,6 +29,8 @@ internal data class SynchronizedPauseSet(
     val domains: List<ExactDomain>,
     /** The window rule of each present domain that has one (kind 22). */
     val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
+    /** Present domains with any kind 22 since their latest removal, a none winner included: the workspace has ruled them. */
+    val ruledDomains: Set<ExactDomain> = emptySet(),
 ) {
     override fun toString(): String {
         return "SynchronizedPauseSet(redacted)"
@@ -255,6 +257,9 @@ private class ProjectionAccumulator(
     private val sets = PauseSetLiveness(applicable)
     private val setDomains = sets.liveIds.associateWith { linkedSetOf<ExactDomain>() }
     private val domainHolders = mutableMapOf<ExactDomain, Int>()
+
+    // Operations arrive in total order, so each (set, domain) keeps the latest kind 22 since its latest removal.
+    private val windows = mutableMapOf<Pair<PauseSetId, ExactDomain>, WebsiteWindow?>()
     private val appliedSetRemoves = mutableSetOf<PauseSetId>()
     private var chosenDefault: PauseSetId? = null
     private var pauseSetsEnabled = false
@@ -291,6 +296,8 @@ private class ProjectionAccumulator(
             }
 
             is SyncOperationPayload.DomainAbsent -> {
+                // A removal clears the website's rule whatever authored it, so adding it again starts with none.
+                windows.remove((payload.setId ?: PauseSetId.FIRST) to payload.domain)
                 applyDomainAbsent(payload.setId ?: PauseSetId.FIRST, payload.domain)
             }
 
@@ -330,7 +337,8 @@ private class ProjectionAccumulator(
             }
 
             is SyncOperationPayload.SetDomainWindow -> {
-                SyncAuditOutcome.NO_OP
+                windows[payload.setId to payload.domain] = payload.window
+                outcome(payload.setId in sets.liveIds)
             }
         }
     }
@@ -362,7 +370,9 @@ private class ProjectionAccumulator(
             SyncAuditEntry(operation.operationId, checkNotNull(audit[operation.operationId]))
         }
         val pauseSets = sets.liveIds.sortedBy(PauseSetId::value).map { setId ->
-            SynchronizedPauseSet(setId, sets.nameOf(setId), setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue))
+            val domains = setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue)
+            val rules = domains.mapNotNull { domain -> windows[setId to domain]?.let { window -> domain to window } }.toMap()
+            SynchronizedPauseSet(setId, sets.nameOf(setId), domains, rules)
         }
         return SyncProjection(
             applicationPolicyName,

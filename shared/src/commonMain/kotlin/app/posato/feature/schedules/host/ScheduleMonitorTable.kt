@@ -8,6 +8,7 @@ import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleOccurrences
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.ui.SessionTargetsState
+import app.posato.feature.session.ui.windowRules
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.choiceSet
 
@@ -124,8 +125,12 @@ internal object ScheduleMonitorTables {
         val plans = input.snapshot.schedules.map { it.plan }
         val runningSets = input.running.mapNotNull { occurrence -> plans.firstOrNull { it.id == occurrence.key.schedule }?.setId }
         val sets = (input.snapshot.runnable.filter { it.enabled }.map { it.setId } + runningSets).distinct().map { setId ->
-            val selection = input.targets(setId).scheduleSelection()
-            MonitorSet(setId.hexId(), selection.domains, selection.mappingIds)
+            val targets = input.targets(setId)
+            val selection = targets.scheduleSelection()
+            val windows = targets.windowRules().filterKeys { domain -> domain in selection.domains }.map { (domain, window) ->
+                MonitorWindow(domain, window.periodMinutes, window.lengthMinutes)
+            }.sortedBy(MonitorWindow::domain)
+            MonitorSet(setId.hexId(), selection.domains, selection.mappingIds, windows)
         }
         val breaks = input.running.mapNotNull { occurrence ->
             val taken = facts.breaks[occurrence.key] ?: return@mapNotNull null

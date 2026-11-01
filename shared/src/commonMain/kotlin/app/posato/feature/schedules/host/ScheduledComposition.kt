@@ -3,7 +3,9 @@ package app.posato.feature.schedules.host
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.RunningPartItems
+import app.posato.feature.enforcement.WindowPart
 import app.posato.feature.enforcement.planPause
+import app.posato.feature.enforcement.windowPlans
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.ScheduleOccurrence
@@ -11,6 +13,8 @@ import app.posato.feature.schedules.domain.toBytes
 import app.posato.feature.session.data.PART_OCCURRENCE
 import app.posato.feature.session.data.RetainedItems
 import app.posato.feature.session.data.RetainedPart
+import app.posato.feature.session.ui.windowRules
+import app.posato.feature.targets.domain.WebsiteWindow
 
 /**
  * The request for the running occurrences, how many of their added items wait for room, and what parts on a break
@@ -33,9 +37,12 @@ internal suspend fun composeScheduledRequest(
     ports: ScheduleHostPorts,
     onBreak: Set<OccurrenceKey> = emptySet(),
 ): ScheduledComposition {
+    val rules = mutableMapOf<String, Map<String, WebsiteWindow>>()
     val parts = running.map { occurrence ->
         val setId = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan?.setId
-        val selection = ports.targets(setId).scheduleSelection()
+        val targets = ports.targets(setId)
+        val selection = targets.scheduleSelection()
+        rules[occurrence.partId()] = targets.windowRules()
         val retained = ports.retention?.read(occurrence.retainedPart()) ?: RetainedItems()
         RunningPartItems(
             partId = occurrence.partId(),
@@ -60,12 +67,18 @@ internal suspend fun composeScheduledRequest(
     }
     val first = running.minBy(ScheduleOccurrence::startEpochMillis)
     val date = first.key.date
+    // Each applied part covers what it holds until its own end, with its set's rule for what the set holds now.
+    val covering = parts.filter { it.partId !in broken }.map { part ->
+        val held = plan.held[part.partId]?.domains.orEmpty()
+        WindowPart(part.endEpochMillis, held, rules[part.partId].orEmpty().filterKeys { domain -> domain in part.current.domains })
+    }
     val request = EnforcementRequest(
         domains = applied.domains.sorted(),
         mappingIds = applied.appIds.sorted(),
         sessionId = "schedule-${first.key.schedule.hex}-${date.year}-${date.month}-${date.day}",
         sessionStartEpochMillis = first.startEpochMillis,
         sessionEndEpochMillis = plan.endEpochMillis,
+        windows = windowPlans(applied.domains, covering),
     )
     val reserved = PauseItems(plan.items.domains - applied.domains, plan.items.appIds - applied.appIds)
     return ScheduledComposition(request, plan.deferred.values.sum(), reserved)

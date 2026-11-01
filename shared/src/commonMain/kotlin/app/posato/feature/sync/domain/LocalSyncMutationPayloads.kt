@@ -37,7 +37,7 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
         }
 
         is LocalSyncMutation.SetDomainWindow -> {
-            null
+            SyncOperationPayload.SetDomainWindow(setId, domain, window)
         }
 
         is LocalSyncMutation.PutSchedule -> {

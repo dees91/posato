@@ -314,13 +314,17 @@ private fun EnforcementRequest?.items(): PauseItems {
     return this?.let { request -> PauseItems(request.domains.toSet(), request.mappingIds.toSet()) } ?: PauseItems()
 }
 
+/** The same items and the same window plans, so an edited rule is never hidden behind unchanged websites. */
 private fun EnforcementRequest.sameTargets(other: EnforcementRequest): Boolean {
-    return domains.toSet() == other.domains.toSet() && mappingIds.toSet() == other.mappingIds.toSet()
+    return domains.toSet() == other.domains.toSet() &&
+        mappingIds.toSet() == other.mappingIds.toSet() &&
+        windows.toSet() == other.windows.toSet()
 }
 
 /**
  * Both claims' items until the later end, named by this request, so the helper's held session stays the one
- * this request's owner reconciles. Items are sorted so the same union always compares equal.
+ * this request's owner reconciles. Items are sorted so the same union always compares equal. A website opens
+ * only while every claim that holds it is in its window, and stays blocked after its last claim ends.
  */
 private fun EnforcementRequest.unionWith(other: EnforcementRequest): EnforcementRequest {
     return EnforcementRequest(
@@ -330,6 +334,7 @@ private fun EnforcementRequest.unionWith(other: EnforcementRequest): Enforcement
         sessionStartEpochMillis,
         maxOf(sessionEndEpochMillis, other.sessionEndEpochMillis),
         grantOnly,
+        unionWindows(other),
     )
 }
 
@@ -338,5 +343,5 @@ private fun EnforcementRequest.sameEffect(other: EnforcementRequest): Boolean {
 }
 
 private fun EnforcementRequest.withEnd(end: Long): EnforcementRequest {
-    return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, end, grantOnly)
+    return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, end, grantOnly, windows)
 }

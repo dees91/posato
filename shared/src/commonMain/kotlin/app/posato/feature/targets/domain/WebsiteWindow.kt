@@ -10,7 +10,7 @@ internal class WebsiteWindow private constructor(
 ) {
     /** Whether the window is open at a wall-clock reading of [wallMinute] (0-1439). */
     fun isOpenAt(wallMinute: Int): Boolean {
-        return false
+        return wallMinute % periodMinutes < lengthMinutes
     }
 
     /**
@@ -18,7 +18,7 @@ internal class WebsiteWindow private constructor(
      * shorter than the shortest period, so it is the longer period with the shorter length.
      */
     fun intersect(other: WebsiteWindow): WebsiteWindow {
-        return this
+        return WebsiteWindow(maxOf(periodMinutes, other.periodMinutes), minOf(lengthMinutes, other.lengthMinutes))
     }
 
     override fun equals(other: Any?): Boolean {

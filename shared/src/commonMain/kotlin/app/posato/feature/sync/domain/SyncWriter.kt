@@ -334,6 +334,7 @@ internal class SyncWriter internal constructor(
                 return@withLock LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN)
             }
             val payload = mutation.toPayload()
+                ?.takeIf { authored -> authored.isAuthorableIn(projection()) }
                 ?: return@withLock LocalMutationResult.Failure(LocalMutationFailure.INVALID_MUTATION)
             if (authoringIncarnation?.let { incarnation -> incarnation.nextSequence == null } == true) {
                 freeze()
@@ -711,4 +712,9 @@ private fun SyncOperationPayload.clampedTo(clock: HybridLogicalClock): SyncOpera
     } else {
         this
     }
+}
+
+/** A window rule, or its clearing, is authored only for a website present in a live set of the writer's projection. */
+private fun SyncOperationPayload.isAuthorableIn(projection: SyncProjection): Boolean {
+    return this !is SyncOperationPayload.SetDomainWindow || domain in projection.pauseSetDomains(setId)
 }

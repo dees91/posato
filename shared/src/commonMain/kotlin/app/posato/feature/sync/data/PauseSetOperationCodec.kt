@@ -6,6 +6,7 @@ import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 
 private const val SET_PUT_TAG = 12
 private const val SET_REMOVE_TAG = 13
@@ -15,6 +16,7 @@ private const val SET_DEFAULT_TAG = 16
 private const val SCHEDULE_SET_PUT_TAG = 17
 private const val SESSION_SET_START_TAG = 18
 private const val PAUSE_SETS_ENABLED_TAG = 19
+internal const val SET_DOMAIN_WINDOW_TAG = 22
 
 internal val PAUSE_SET_TAGS: IntRange = SET_PUT_TAG..PAUSE_SETS_ENABLED_TAG
 
@@ -24,7 +26,8 @@ internal fun SyncOperationPayload.isPauseSetKind(): Boolean {
         is SyncOperationPayload.PauseSetPut,
         is SyncOperationPayload.PauseSetRemove,
         is SyncOperationPayload.PauseSetDefault,
-        SyncOperationPayload.PauseSetsEnabled -> true
+        SyncOperationPayload.PauseSetsEnabled,
+        is SyncOperationPayload.SetDomainWindow -> true
 
         is SyncOperationPayload.DomainPresent -> setId != null
 
@@ -55,6 +58,13 @@ internal fun CanonicalWriter.writePauseSetPayload(payload: SyncOperationPayload)
 
         SyncOperationPayload.PauseSetsEnabled -> {
             writeByte(PAUSE_SETS_ENABLED_TAG)
+            true
+        }
+
+        is SyncOperationPayload.SetDomainWindow -> {
+            writeSetDomain(SET_DOMAIN_WINDOW_TAG, payload.setId, payload.domain.canonicalValue)
+            writeByte(payload.window?.periodMinutes ?: 0)
+            writeByte(payload.window?.lengthMinutes ?: 0)
             true
         }
 
@@ -96,7 +106,23 @@ internal fun CanonicalReader.readPauseSetPayload(tag: Int): SyncOperationPayload
         SCHEDULE_SET_PUT_TAG -> readTrailingSet(readSchedulePut()) { put, setId -> put.copy(setId = setId) }
         SESSION_SET_START_TAG -> readTrailingSet(readSessionStart()) { start, setId -> start.copy(setId = setId) }
         PAUSE_SETS_ENABLED_TAG -> SyncOperationPayload.PauseSetsEnabled
+        SET_DOMAIN_WINDOW_TAG -> readSetDomainWindow()
         else -> null
+    }
+}
+
+/** Kind 22: a rule from the fixed choices, or the none pair 0 and 0; any other pair is refused. */
+private fun CanonicalReader.readSetDomainWindow(): SyncOperationPayload.SetDomainWindow? {
+    val setId = readPauseSetId()
+    val domain = readCanonicalDomain()
+    val period = readByte()
+    val length = readByte()
+    if (setId == null || domain == null || period == null || length == null) {
+        return null
+    }
+    return when {
+        period == 0 && length == 0 -> SyncOperationPayload.SetDomainWindow(setId, domain, null)
+        else -> WebsiteWindow.of(period, length)?.let { window -> SyncOperationPayload.SetDomainWindow(setId, domain, window) }
     }
 }
 

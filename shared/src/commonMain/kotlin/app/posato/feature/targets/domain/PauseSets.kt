@@ -54,7 +54,10 @@ internal class PauseSets private constructor(
         if (sets.none { set -> set.id == setId }) {
             return null
         }
-        return of(sets.map { set -> if (set.id == setId) set.copy(domains = domains) else set }, defaultSetId)
+        return of(
+            sets.map { set -> if (set.id == setId) set.copy(domains = domains, windows = set.windows.filterKeys { it in domains }) else set },
+            defaultSetId,
+        )
     }
 
     override fun equals(other: Any?): Boolean {
@@ -77,6 +80,7 @@ internal class PauseSets private constructor(
             val valid = sets.distinctBy(LocalPauseSet::id).size == sets.size &&
                 sets.count { set -> !set.refused } <= SyncFormatLimits.MAX_PAUSE_SETS &&
                 sets.all { set -> set.domains.distinct().size == set.domains.size } &&
+                sets.all { set -> set.domains.containsAll(set.windows.keys) } &&
                 sets.all { set -> set.name == null || ScheduleWireRules.isValidName(set.name) } &&
                 sets.flatMapTo(mutableSetOf(), LocalPauseSet::domains).size <= ExactDomainPolicyLimits.MAX_DOMAIN_COUNT
             return if (valid) PauseSets(sets.sortedBy { set -> set.id.value }, defaultSetId) else null

@@ -198,7 +198,7 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
         }
 
         is SyncOperationPayload.SetDomainWindow -> {
-            return false
+            return writePauseSetPayload(payload)
         }
     }
 
@@ -222,7 +222,7 @@ private fun CanonicalReader.readPayload(): SyncOperationPayload? {
         SESSION_START_TAG -> readSessionStart()
         SESSION_END_TAG -> readUuidIdentifier()?.let(::SessionId)?.let(SyncOperationPayload::SessionEnd)
         in SCHEDULE_TAGS, in SCHEDULE_BREAK_TAGS, in SyncFormatLimits.OPTIONAL_KINDS -> tag?.let { kind -> readSchedulePayload(kind) }
-        in PAUSE_SET_TAGS -> tag?.let { kind -> readPauseSetPayload(kind) }
+        in PAUSE_SET_TAGS, SET_DOMAIN_WINDOW_TAG -> tag?.let { kind -> readPauseSetPayload(kind) }
         else -> null
     }
 }

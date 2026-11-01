@@ -12,7 +12,11 @@ internal const val MAX_WINDOW_SEGMENTS: Int = 2 * ScheduleLimits.MAX_SCHEDULES +
 
 /** The segment's rule, or null when it keeps the website blocked. */
 internal fun WindowSegment.rule(): WebsiteWindow? {
-    return null
+    return WebsiteWindow.of(periodMinutes, lengthMinutes)
+}
+
+private fun WindowSegment.hasValidCodes(): Boolean {
+    return (periodMinutes == 0 && lengthMinutes == 0) || rule() != null
 }
 
 /** A segment that holds [rule] until [untilEpochMillis]; null blocks. */
@@ -29,7 +33,11 @@ internal fun windowSegment(
  * code either a rule from the fixed choices or 0 and 0. A plan that has merely aged is still valid.
  */
 internal fun DomainWindowPlan.isValid(requestEndEpochMillis: Long): Boolean {
-    return false
+    val ends = segments.map(WindowSegment::untilEpochMillis)
+    return segments.size in 1..MAX_WINDOW_SEGMENTS &&
+        ends.zipWithNext().all { (earlier, later) -> earlier < later } &&
+        ends.last() <= requestEndEpochMillis &&
+        segments.all(WindowSegment::hasValidCodes)
 }
 
 /** The device's wall clock as windows read it: hour * 60 + minute in the current zone, never minutes since midnight. */
@@ -46,17 +54,58 @@ internal object WindowClock {
         epochMillis: Long,
         zone: ScheduleZone,
     ): Boolean {
-        return false
+        return rule.isOpenAt(wallMinute(epochMillis, zone))
     }
 
-    /** The first instant after [epochMillis] at which [rule]'s openness differs from its openness at [epochMillis]. */
+    /**
+     * The first instant after [epochMillis] at which [rule]'s openness differs from its openness at [epochMillis].
+     * The reading changes only at whole minutes, so without a clock change in between the answer is the next
+     * aligned start or end; across a daylight saving change the minutes are read one by one, so a skipped window
+     * never occurs and a repeated one opens again.
+     */
     fun nextChange(
         rule: WebsiteWindow,
         epochMillis: Long,
         zone: ScheduleZone,
     ): Long {
-        return epochMillis + 1
+        val minuteStart = epochMillis - epochMillis.mod(MINUTE_MILLIS)
+        val open = isOpen(rule, epochMillis, zone)
+        val phase = wallMinute(epochMillis, zone) % rule.periodMinutes
+        val minutes = if (open) rule.lengthMinutes - phase else rule.periodMinutes - phase
+        val candidate = minuteStart + minutes * MINUTE_MILLIS
+        if (offsetMinutes(minuteStart, zone) == offsetMinutes(candidate, zone) && isOpen(rule, candidate, zone) != open) {
+            return candidate
+        }
+        var probe = minuteStart + MINUTE_MILLIS
+        repeat(MAX_SCAN_MINUTES) {
+            if (isOpen(rule, probe, zone) != open) {
+                return probe
+            }
+            probe += MINUTE_MILLIS
+        }
+        return probe
     }
+
+    private fun offsetMinutes(
+        epochMillis: Long,
+        zone: ScheduleZone,
+    ): Long {
+        val local = zone.localAt(epochMillis)
+        return local.date.epochDay * MINUTES_PER_DAY + local.minuteOfDay - epochMillis.floorDiv(MINUTE_MILLIS)
+    }
+}
+
+private const val MINUTE_MILLIS: Long = 60_000L
+private const val MINUTES_PER_DAY: Long = 1_440L
+
+/** Two days of minutes: further than any clock change can push the next change of a rule. */
+private const val MAX_SCAN_MINUTES: Int = 2 * 1_440
+
+/** More steps than any valid plan has boundaries: 22 segments, each changing at most every five minutes for a day. */
+private const val MAX_STATUS_STEPS: Int = 1_024
+
+private fun DomainWindowPlan.segmentAt(epochMillis: Long): WindowSegment? {
+    return segments.firstOrNull { segment -> segment.untilEpochMillis > epochMillis }
 }
 
 /** Whether the plan leaves its website open at [epochMillis]: inside a ruled segment and inside that rule's window. */
@@ -64,7 +113,8 @@ internal fun DomainWindowPlan.isOpenAt(
     epochMillis: Long,
     zone: ScheduleZone,
 ): Boolean {
-    return false
+    val rule = segmentAt(epochMillis)?.rule() ?: return false
+    return WindowClock.isOpen(rule, epochMillis, zone)
 }
 
 /** The next instant after [epochMillis] at which the plan's openness can change; null when no segment is left. */
@@ -72,7 +122,9 @@ internal fun DomainWindowPlan.nextBoundary(
     epochMillis: Long,
     zone: ScheduleZone,
 ): Long? {
-    return null
+    val segment = segmentAt(epochMillis) ?: return null
+    val rule = segment.rule() ?: return segment.untilEpochMillis
+    return minOf(segment.untilEpochMillis, WindowClock.nextChange(rule, epochMillis, zone))
 }
 
 /** What Session says about one website with a window in the running pause. */
@@ -93,7 +145,18 @@ internal fun DomainWindowPlan.status(
     epochMillis: Long,
     zone: ScheduleZone,
 ): WindowStatus? {
-    return null
+    val open = isOpenAt(epochMillis, zone)
+    var boundary = nextBoundary(epochMillis, zone)
+    var steps = 0
+    while (boundary != null && isOpenAt(boundary, zone) == open && steps < MAX_STATUS_STEPS) {
+        boundary = nextBoundary(boundary, zone)
+        steps += 1
+    }
+    return when {
+        boundary == null || steps == MAX_STATUS_STEPS -> null
+        open -> WindowStatus.OpenUntil(boundary)
+        else -> WindowStatus.OpensAt(boundary)
+    }
 }
 
 /**
@@ -104,7 +167,16 @@ internal fun EnforcementRequest.blockedNow(
     epochMillis: Long,
     zone: ScheduleZone,
 ): List<String> {
-    return domains
+    val open = validPlans().filterTo(mutableSetOf()) { plan -> plan.isOpenAt(epochMillis, zone) }.map(DomainWindowPlan::domain)
+    return domains.filter { domain -> domain !in open }
+}
+
+/** The plans a host follows: one valid plan per held website. A website with a malformed or duplicate plan stays blocked. */
+internal fun EnforcementRequest.validPlans(): List<DomainWindowPlan> {
+    val held = domains.toSet()
+    return windows.groupBy(DomainWindowPlan::domain)
+        .filter { (domain, plans) -> domain in held && plans.size == 1 && plans.single().isValid(sessionEndEpochMillis) }
+        .map { (_, plans) -> plans.single() }
 }
 
 /** The next instant after [epochMillis] at which any held website's window opens, closes, or its segment ends. */
@@ -112,7 +184,7 @@ internal fun EnforcementRequest.nextWindowBoundary(
     epochMillis: Long,
     zone: ScheduleZone,
 ): Long? {
-    return null
+    return validPlans().mapNotNull { plan -> plan.nextBoundary(epochMillis, zone) }.minOrNull()
 }
 
 /**
@@ -138,7 +210,45 @@ internal fun windowPlans(
     domains: Collection<String>,
     parts: List<WindowPart>,
 ): List<DomainWindowPlan> {
-    return emptyList()
+    return domains.distinct().sorted().mapNotNull { domain ->
+        val website = setOfNotNull(domain, wwwCounterpart(domain))
+        val coverages = parts.mapNotNull { part ->
+            val entries = website intersect part.held
+            if (entries.isEmpty()) {
+                null
+            } else {
+                val rules = entries.map { entry -> part.rules[entry] }
+                val rule = if (rules.any { it == null }) null else rules.filterNotNull().reduce(WebsiteWindow::intersect)
+                listOf(windowSegment(part.endEpochMillis, rule))
+            }
+        }
+        combinedPlan(domain, coverages)
+    }
+}
+
+/**
+ * One plan from several coverages, each a list of segments through its own end: cut at every end, in each cut
+ * the intersection of the coverages still running, blocked when any of them blocks. Equal neighbours merge,
+ * blocked segments after the last opening are dropped (a website after its plan is blocked), and a plan that
+ * never opens is no plan.
+ */
+private fun combinedPlan(
+    domain: String,
+    coverages: List<List<WindowSegment>>,
+): DomainWindowPlan? {
+    val cuts = coverages.flatMap { coverage -> coverage.map(WindowSegment::untilEpochMillis) }.distinct().sorted()
+    val segments = cuts.map { cut ->
+        val running = coverages.mapNotNull { coverage -> coverage.firstOrNull { segment -> segment.untilEpochMillis >= cut } }
+        val rules = running.map(WindowSegment::rule)
+        val rule = if (rules.isEmpty() || rules.any { it == null }) null else rules.filterNotNull().reduce(WebsiteWindow::intersect)
+        windowSegment(cut, rule)
+    }
+    val merged = segments.fold(mutableListOf<WindowSegment>()) { kept, segment ->
+        if (kept.isNotEmpty() && kept.last().rule() == segment.rule()) kept[kept.lastIndex] = segment else kept += segment
+        kept
+    }
+    val trimmed = merged.dropLastWhile { segment -> segment.rule() == null }
+    return trimmed.takeIf { it.isNotEmpty() }?.let { DomainWindowPlan(domain, it) }
 }
 
 /**
@@ -146,5 +256,15 @@ internal fun windowPlans(
  * request that still holds the website is open for it.
  */
 internal fun EnforcementRequest.unionWindows(other: EnforcementRequest): List<DomainWindowPlan> {
-    return emptyList()
+    val requests = listOf(this, other)
+    return (domains + other.domains).distinct().sorted().mapNotNull { domain ->
+        combinedPlan(domain, requests.filter { request -> domain in request.domains }.map { request -> request.coverageOf(domain) })
+    }
+}
+
+/** A request's hold on [domain] as segments through its end: its valid plan, then blocked until the end. */
+private fun EnforcementRequest.coverageOf(domain: String): List<WindowSegment> {
+    val planned = validPlans().firstOrNull { plan -> plan.domain == domain }?.segments.orEmpty()
+    val tail = windowSegment(sessionEndEpochMillis, null).takeIf { planned.lastOrNull()?.untilEpochMillis != sessionEndEpochMillis }
+    return planned + listOfNotNull(tail)
 }

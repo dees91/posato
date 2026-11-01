@@ -14,6 +14,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.domain.WebsiteWindow
 import app.posato.feature.targets.ui.PauseSetRow
 import app.posato.feature.targets.ui.applicationCountOf
 import app.posato.feature.targets.ui.displayNameOf
@@ -50,6 +51,11 @@ private suspend fun LocalApplicationMappings.loadOrFailure(set: ApplicationChoic
     } catch (_: Exception) {
         LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.STORAGE)
     }
+}
+
+/** The window rules of this state's set, by canonical website; a set this device does not hold has none. */
+internal fun SessionTargetsState.windowRules(): Map<String, WebsiteWindow> {
+    return sets?.sets?.firstOrNull { set -> set.id == setId }?.windows.orEmpty().mapKeys { (domain, _) -> domain.canonicalValue }
 }
 
 internal fun SessionTargetsState.toEnforcedSet(): EnforcedSet {

@@ -2,7 +2,8 @@ CREATE TABLE sync_policy_intent (
   sequence INTEGER NOT NULL PRIMARY KEY,
   workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
   kind TEXT NOT NULL CHECK (
-    typeof(kind) = 'text' AND kind IN ('domain_present', 'domain_absent', 'set_put', 'set_remove', 'set_default')
+    typeof(kind) = 'text' AND
+    kind IN ('domain_present', 'domain_absent', 'set_put', 'set_remove', 'set_default', 'set_window')
   ),
   set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
   canonical_domain TEXT CHECK (
@@ -14,10 +15,21 @@ CREATE TABLE sync_policy_intent (
   set_name TEXT CHECK (
     set_name IS NULL OR (typeof(set_name) = 'text' AND length(CAST(set_name AS BLOB)) BETWEEN 1 AND 80)
   ),
+  window_period INTEGER CHECK (window_period IS NULL OR (typeof(window_period) = 'integer' AND window_period IN (30, 60, 120))),
+  window_length INTEGER CHECK (window_length IS NULL OR (typeof(window_length) = 'integer' AND window_length IN (5, 10, 15))),
   CHECK (
-    (kind IN ('domain_present', 'domain_absent') AND canonical_domain IS NOT NULL AND set_name IS NULL) OR
-    (kind = 'set_put' AND set_name IS NOT NULL AND canonical_domain IS NULL) OR
-    (kind IN ('set_remove', 'set_default') AND set_name IS NULL AND canonical_domain IS NULL)
+    (
+      kind IN ('domain_present', 'domain_absent') AND canonical_domain IS NOT NULL AND set_name IS NULL AND
+      window_period IS NULL AND window_length IS NULL
+    ) OR (
+      kind = 'set_put' AND set_name IS NOT NULL AND canonical_domain IS NULL AND window_period IS NULL AND window_length IS NULL
+    ) OR (
+      kind IN ('set_remove', 'set_default') AND set_name IS NULL AND canonical_domain IS NULL AND
+      window_period IS NULL AND window_length IS NULL
+    ) OR (
+      kind = 'set_window' AND canonical_domain IS NOT NULL AND set_name IS NULL AND
+      (window_period IS NULL) = (window_length IS NULL)
+    )
   )
 );
 
@@ -43,13 +55,13 @@ CREATE TABLE sync_policy_base_application (
 );
 
 selectIntents:
-SELECT sequence, workspace_id, kind, set_id, canonical_domain, set_name
+SELECT sequence, workspace_id, kind, set_id, canonical_domain, set_name, window_period, window_length
 FROM sync_policy_intent
 ORDER BY sequence;
 
 insertIntent:
-INSERT INTO sync_policy_intent(workspace_id, kind, set_id, canonical_domain, set_name)
-VALUES (:workspaceId, :kind, :setId, :canonicalDomain, :setName);
+INSERT INTO sync_policy_intent(workspace_id, kind, set_id, canonical_domain, set_name, window_period, window_length)
+VALUES (:workspaceId, :kind, :setId, :canonicalDomain, :setName, :windowPeriod, :windowLength);
 
 deleteIntent:
 DELETE FROM sync_policy_intent
