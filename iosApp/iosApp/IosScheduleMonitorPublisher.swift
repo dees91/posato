@@ -151,26 +151,31 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
                 let table = files.readTable() ?? file
                 let running = ScheduleMonitorRule.running(in: table, at: time, calendar: self.calendar())
                 let releasing = breaks ? self.releasing(table, files: files, at: time) : []
-                // Close before open: every window boundary ahead is registered before any website opens.
-                let covered = breaks
-                    ? ScheduleMonitorEvents.windowTopUp(
+                // Close before open: the boundaries of the composition being applied, a part composed for the first time
+                // included, are registered before any website opens.
+                var armed: [DeviceActivityName]?
+                let topUp = { (pending: [String: WebsiteWindowRule]) in
+                    ScheduleMonitorEvents.windowTopUp(
                         file: table, over: files.breaksOver(), files: files, center: self.center(), calling: nil, callback: .evaluation,
-                        at: time, calendar: self.calendar()
-                    ).covered
-                    : nil
+                        at: time, calendar: self.calendar(), pending: pending
+                    )
+                }
                 let applied = ScheduleMonitorEvents.applyComposed(
                     running: running, file: table, files: files, store: store, sessionStore: self.sessionStore(), releasing: releasing,
-                    covered: covered, at: time, calendar: self.calendar()
+                    arm: breaks
+                        ? { pending in
+                            let outcome = topUp(pending)
+                            armed = outcome.stale
+                            return outcome.covered
+                        }
+                        : nil,
+                    at: time, calendar: self.calendar()
                 )
                 if !applied {
                     store.clearSchedule()
                 }
                 if breaks {
-                    // A part composed for the first time records what it holds; its window boundaries follow.
-                    stale = ScheduleMonitorEvents.windowTopUp(
-                        file: table, over: files.breaksOver(), files: files, center: self.center(), calling: nil, callback: .evaluation,
-                        at: time, calendar: self.calendar()
-                    ).stale
+                    stale = armed ?? topUp([:]).stale
                 }
                 return applied
             }

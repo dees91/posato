@@ -67,8 +67,13 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   `none`) and `observedAtEpochMs`. Each boundary is its own Device Activity
   named `app.posato.window.<epoch second>`; `monitor -t device` lists them
   after the app's last evaluation. A Safari load that starts within a second
-  of a shield change can hang until the step's limit and report `none`; label
-  that gap instead of counting it. On iOS `flow set --window` still refuses;
+  of a shield change can hang and report `none`, which is a missing
+  observation, not a pass: give each `probeURL` a short `timeoutSeconds`
+  (8) and `retries: 1`, keep every sample on its own `sleepUntil` instant,
+  and probe the unruled control on its own instants away from the boundary
+  and the b+20 s fallback (for example b-75, -52, -22, +10, +37, +67,
+  +97 s), never right after a window probe at b-3 s. A probe still `none`
+  after its retry makes the run insufficient; rerun it. On iOS `flow set --window` still refuses;
   set the rule with a scenario: `swipeLeft` on the website row,
   **Open briefly…**, `targets_window_period_30`, `targets_window_length_5`,
   `action_save_short`.

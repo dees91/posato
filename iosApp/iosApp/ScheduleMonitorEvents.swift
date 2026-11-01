@@ -35,19 +35,20 @@ enum ScheduleMonitorEvents {
             let releasing = ScheduleBreakWindows.releasing(
                 file, over: over, armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
             )
-            // Close before open: every window boundary is registered before any website of the part opens.
-            let covered = center.map { center in
-                windowTopUp(file: file, over: over, files: files, center: center, calling: nil, callback: .evaluation, at: time, calendar: calendar)
-                    .covered
+            // Close before open: the boundaries of the composition being applied are registered before any website of
+            // the part opens, even on a first start that has no record of what the part holds yet.
+            let arm = center.map { center in
+                { (pending: [String: WebsiteWindowRule]) in
+                    windowTopUp(
+                        file: file, over: over, files: files, center: center, calling: nil, callback: .evaluation, at: time, calendar: calendar,
+                        pending: pending
+                    ).covered
+                }
             }
             let applied = applyComposed(
                 running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
-                covered: covered, at: time, calendar: calendar
+                arm: arm, at: time, calendar: calendar
             )
-            if let center {
-                // The part records what it holds while composing; its window boundaries follow.
-                _ = windowTopUp(file: file, over: over, files: files, center: center, calling: nil, callback: .evaluation, at: time, calendar: calendar)
-            }
             return applied ? (file, running) : nil
         }
         guard let (file, running) = composed else { return }
@@ -77,6 +78,8 @@ enum ScheduleMonitorEvents {
     /// manual session's store leaves of the device's limits; applies the union and records what each now holds.
     /// Parts in `releasing` are on a break: they stay running and keep their records, but only what they hold
     /// counts toward the limits, so their return always fits. Returns false when there is nothing to pause.
+    /// `arm` receives the window rules of this composition, registers their boundaries ahead (close before open), and
+    /// answers which boundaries are covered; without it no website opens.
     @discardableResult
     static func applyComposed(
         running: [ScheduleMonitorOccurrence],
@@ -85,7 +88,7 @@ enum ScheduleMonitorEvents {
         store: ScheduleShieldStore,
         sessionStore: ScheduleShieldStore?,
         releasing: Set<String> = [],
-        covered: ((Date) -> Bool)? = nil,
+        arm: (([String: WebsiteWindowRule]) -> (Date) -> Bool)? = nil,
         at time: Date = Date(),
         calendar: Calendar = ScheduleMonitor.calendar
     ) -> Bool {
@@ -120,6 +123,7 @@ enum ScheduleMonitorEvents {
         guard !plan.domains.isEmpty || !applications.isEmpty else { return false }
         // Held, then effective: windows narrow only what the store blocks now, never what the parts hold.
         let rules = ScheduledWindows.rules(held: plan.heldDomains, composing: composing, file: file)
+        let covered = arm?(rules)
         let open = ScheduledWindows.open(rules, at: time, covered: covered, lead: WindowEvaluation.closingLead, calendar: calendar)
         store.applySchedule(domains: PosatoWebDomains.domains(from: Array(plan.domains.subtracting(open))), applications: applications)
         for occurrence in composing {
@@ -182,14 +186,18 @@ enum ScheduleMonitorEvents {
                 let releasing = ScheduleBreakWindows.releasing(
                     table, over: over, armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
                 )
-                let covered = center.map { center in
-                    windowTopUp(file: table, over: over, files: files, center: center, calling: nil, callback: .evaluation, at: time, calendar: calendar)
-                        .covered
+                let arm = center.map { center in
+                    { (pending: [String: WebsiteWindowRule]) in
+                        windowTopUp(
+                            file: table, over: over, files: files, center: center, calling: nil, callback: .evaluation, at: time,
+                            calendar: calendar, pending: pending
+                        ).covered
+                    }
                 }
                 // The remaining occurrences pause nothing, such as when their set is empty: nothing stays paused.
                 if !applyComposed(
                     running: remaining, file: table, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
-                    covered: covered, at: time, calendar: calendar
+                    arm: arm, at: time, calendar: calendar
                 ) {
                     store.clearSchedule()
                 }
@@ -276,7 +284,7 @@ enum ScheduleMonitorEvents {
             let fires = WindowActivities.covering(center: center, calling: nil, callback: .evaluation, calendar: calendar)
             applyComposed(
                 running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
-                covered: { WindowActivities.covers(fires, $0) }, at: time, calendar: calendar
+                arm: { _ in { WindowActivities.covers(fires, $0) } }, at: time, calendar: calendar
             )
         }
     }
@@ -312,30 +320,43 @@ enum ScheduleMonitorEvents {
             let releasing = ScheduleBreakWindows.releasing(
                 file, over: over, armed: ScheduleBreakActivity.armed(center: center, calendar: calendar), at: time
             )
-            applyComposed(
-                running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
-                covered: topUp.covered, at: time, calendar: calendar
-            )
-            // A part that started just now records what it holds while composing; its boundaries follow.
-            return windowTopUp(
-                file: file, over: over, files: files, center: center, calling: activity, callback: callback, at: time, calendar: calendar, log: log
-            ).stale
+            // The composition's own boundaries are registered before it decides what opens, so a part that has just
+            // started, with no record of what it holds yet, opens in the window it started in.
+            var stale = topUp.stale
+            withoutActuallyEscaping(log) { log in
+                applyComposed(
+                    running: running, file: file, files: files, store: store, sessionStore: sessionStore, releasing: releasing,
+                    arm: { pending in
+                        let armed = windowTopUp(
+                            file: file, over: over, files: files, center: center, calling: activity, callback: callback, at: time,
+                            calendar: calendar, log: log, pending: pending
+                        )
+                        stale = armed.stale
+                        return armed.covered
+                    },
+                    at: time, calendar: calendar
+                )
+            }
+            return stale
         }
     }
 
-    /// The window boundaries wanted at `time`: the manual session's and the running scheduled parts'.
+    /// The window boundaries wanted at `time`: the manual session's, the running scheduled parts', and those of the
+    /// `pending` rules a composition is about to apply.
     static func windowBoundaries(
         file: ScheduleMonitorFile?,
         over: Set<String>,
         files: ScheduleMonitorFileStore,
         center: ScheduleActivityCenter?,
         at time: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        pending: [String: WebsiteWindowRule] = [:]
     ) -> [Date] {
         let armed = center.flatMap { ScheduleBreakActivity.armed(center: $0, calendar: calendar) }
         let scheduled = ScheduledWindows.rulesNow(file: file, files: files, over: over, armed: armed, at: time, calendar: calendar)
         let all = WindowEvaluation.manualBoundaries(files.readManualWindows(), after: time, calendar: calendar)
             + ScheduledWindows.boundaries(scheduled, after: time, calendar: calendar)
+            + ScheduledWindows.boundaries(pending, after: time, calendar: calendar)
         return Array(Set(all)).sorted()
     }
 
@@ -360,9 +381,10 @@ enum ScheduleMonitorEvents {
         callback: MonitorBoundary.Callback,
         at time: Date,
         calendar: Calendar,
-        log: (String) -> Void = { _ in }
+        log: (String) -> Void = { _ in },
+        pending: [String: WebsiteWindowRule] = [:]
     ) -> WindowTopUp {
-        let wanted = windowBoundaries(file: file, over: over, files: files, center: center, at: time, calendar: calendar)
+        let wanted = windowBoundaries(file: file, over: over, files: files, center: center, at: time, calendar: calendar, pending: pending)
         let outcome = WindowActivities.topUp(wanted: wanted, center: center, calling: calling, callback: callback, at: time, calendar: calendar, log: log)
         return WindowTopUp(fires: outcome.fires, stale: outcome.stale)
     }
