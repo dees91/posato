@@ -67,6 +67,7 @@ import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
@@ -79,6 +80,7 @@ internal interface AndroidApplicationGraph :
     val appleSync: AppleSync
     val pauseSetPreparation: PauseSetPreparation
     val scheduledPauses: ScheduledPauses
+    val scheduleHost: ScheduleHost
     val sessionOwner: SessionTransitionOwner
     val localTargetPolicyStore: LocalTargetPolicyStore
     val applicationMappings: LocalApplicationMappings
@@ -251,8 +253,13 @@ public class AndroidApplicationRuntime internal constructor(
         }
     }
 
+    /** When a running break next starts or ends, or null; the guard sets an exact alarm for it. */
+    public val nextBreakChange: Flow<Long?>
+        get() = graph.scheduleHost.nextBreakChange
+
     /** Wakes the folder workspace and the schedules, such as from an alarm while the app is in the background. */
     public suspend fun wake() {
+        graph.scheduledPauses.refresh()
         graph.appleSync.onForeground()
     }
 }

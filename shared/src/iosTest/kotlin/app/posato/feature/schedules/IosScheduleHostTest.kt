@@ -49,6 +49,14 @@ private class ComposingMonitor(
     override fun applySchedule(handler: (IosEnforcementOutcome) -> Unit) {
         store.apply(IosEnforcementRequest(listOf("example.com"), emptyList()), handler)
     }
+
+    override fun armBreak(deadlineEpochSeconds: Long): Boolean {
+        return true
+    }
+
+    override fun coveredBreaks(): List<String> {
+        return emptyList()
+    }
 }
 
 class IosScheduleHostTest {

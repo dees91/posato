@@ -388,8 +388,11 @@ keeps the ADR 0009 rule. It requests grant-authorized Apply only for:
   launch, or adopting a session from another device;
 - once the `SCHEDULE-001` amendment is accepted: a due occurrence of an
   enabled schedule under the recorded automatic-start consent. At most one
-  attempt runs per trigger (launch, wake, clock change, minute tick) per
-  occurrence, and a failed attempt waits for the next trigger.
+  attempt runs per trigger (launch, wake, clock change, minute tick, the end
+  of a break) per occurrence, and a failed attempt waits for the next
+  trigger. The break-end trigger is `user-confirmed` (2026-10-30,
+  `SCHEDULE-007`): it adds a time at which the same condition is evaluated,
+  not a new condition, privilege, or prompt.
 
 The menu, a login launch, and synchronization never request any Apply by
 themselves, and there are no other automatic retries.
@@ -437,7 +440,7 @@ state and the person can turn it off.
 | Grant theft | The record has no secret and is root-only. Its entries are bound to the account's generated UID and this Mac's platform UUID. Copying or editing it needs root. | `R-02`: an administrator or root can create a grant. |
 | Stale grants after removal, reinstallation, or account deletion | The revocation rules above, the generated UID binding, and deletion when a rule goes missing or changes. | Trash without Remove followed by a reinstall keeps the grant. Status shows it, and the switch or Remove clears it. |
 | Rule tampering | Only root changes the authorization database. A missing or mismatched right deletes the grants. | `R-02`. |
-| Silent apply | The application rule in "Who may request it", protected by the JVM hardening. A check in the daemon cannot see whether a person acted. Automatic Apply restores only a pause already active in this Mac's record, under the scheduled-start gate (MACOS-029 amendment). | `T-07`: code with Accessibility access, as in the row above. A linked device can make this Mac apply a manual pause again, not only a schedule. |
+| Silent apply | The application rule in "Who may request it", protected by the JVM hardening. A check in the daemon cannot see whether a person acted. Automatic Apply restores only a pause already active in this Mac's record, under the scheduled-start gate (MACOS-029 amendment). | `T-07`: code with Accessibility access, as in the row above. A linked device can make this Mac apply a manual pause again, not only a schedule. A break adds its end as an Apply trigger. A grant revoked during a break keeps this Mac released until the occurrence ends, which **Quit Posato** and **End early** already allow (`SCHEDULE-007`, `user-confirmed` 2026-10-30). |
 | Version skew | The new operations are sent only when Status reports the capability flag; otherwise the application uses the prompted path. An older helper never requests a grant. | After a downgrade, Remove leaves the standing right in place. It authorizes nothing by itself. |
 | Lost reply | Grant, Revoke, and Prepare are idempotent. Status settles them, and the switch shows only what Status confirms. | None. |
 

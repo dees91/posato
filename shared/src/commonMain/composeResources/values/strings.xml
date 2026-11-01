@@ -531,6 +531,17 @@ For what matters.</string>
     <string name="action_reload_short">Reload</string>
     <string name="action_finish_setup">Finish setup</string>
     <string name="action_end_early">End early</string>
+    <string name="action_take_a_break">Take a break</string>
+    <string name="action_end_break">End break</string>
+    <string name="session_break_title">Take a break?</string>
+    <string name="session_break_body">Restrictions pause on this device now, and on your other devices once they sync. They return on their own. You can take one break in this scheduled pause.</string>
+    <string name="session_break_together">%1$s and %2$s pause together.</string>
+    <string name="session_on_break_until">On a break until %1$s</string>
+    <string name="session_break_started">%1$s started and is restricting.</string>
+    <string name="session_break_taken">A break was already taken in this scheduled pause.</string>
+    <string name="session_break_manual">Breaks are only for scheduled pauses. End early ends this session.</string>
+    <string name="session_break_cannot_arm">Can’t take a break on this iPhone right now.</string>
+    <string name="presence_on_break">Scheduled pause: %1$s, on a break until %2$s</string>
     <string name="action_end_pause">End pause</string>
     <string name="action_keep_pausing">Keep pausing</string>
     <string name="action_keep_this_pause">Keep this pause</string>

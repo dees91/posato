@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"open-session","action":"tap","query":{"id":"session_title","role":"button"}},
+    {"name":"break-offered","action":"waitFor","state":"enabled","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"end-early-beside","action":"waitFor","state":"exists","query":{"id":"action_end_early","role":"button"}},
+    {"name":"running-shot","action":"screenshot"},
+    {"name":"request-break","action":"tap","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"lengths-open","action":"waitFor","state":"exists","query":{"text":"Take a break?"}},
+    {"name":"lengths-shot","action":"screenshot"},
+    {"name":"cancel-keeps-pause","action":"tap","query":{"id":"action_cancel_break","role":"button"}},
+    {"name":"still-offered","action":"waitFor","state":"enabled","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"request-again","action":"tap","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"lengths-again","action":"waitFor","state":"exists","query":{"text":"Take a break?"}},
+    {"name":"choose-five","action":"tap","query":{"id":"action_break_5","role":"button"}},
+    {"name":"on-break","action":"waitFor","state":"exists","query":{"textContains":"On a break until"}},
+    {"name":"end-break-offered","action":"waitFor","state":"exists","query":{"id":"action_end_break","role":"button"}},
+    {"name":"on-break-shot","action":"screenshot"},
+    {"name":"on-break-tree","action":"snapshot"}
+  ]
+}

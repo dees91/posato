@@ -14,9 +14,13 @@ enum ScheduleMonitor {
     static let tailActivity = DeviceActivityName("app.posato.schedule.tail")
     /// A one-shot end at the 24-hour cap, for an occurrence whose wall-clock end is later (a fall-back night).
     static let capActivity = DeviceActivityName("app.posato.schedule.cap")
-    /// Version 2 lists the pause sets, each schedule's set and what each running occurrence holds; a
-    /// version-1 table from 1.2 is read as the first set until the app writes version 2.
-    static let fileVersion = 2
+    /// One one-shot activity for every break on this device, registered for the nearest pending break deadline.
+    static let breakActivity = DeviceActivityName("app.posato.schedule.break")
+    /// Version 3 adds the breaks of running occurrences to version 2. Version 2 lists the pause sets, each
+    /// schedule's set and what each running occurrence holds, and is read as "no break"; a version-1 table
+    /// from 1.2 is read as the first set until the app writes a newer one.
+    static let fileVersion = 3
+    static let setsFileVersion = 2
     static let legacyFileVersion = 1
     /// The first pause set's identifier: sixteen zero bytes as lowercase hex.
     static let firstSetId = String(repeating: "0", count: 32)
@@ -46,7 +50,7 @@ enum ScheduleMonitor {
 
     /// The schedule an activity starts, or nil for the tail and foreign activities.
     static func scheduleId(of activity: DeviceActivityName) -> String? {
-        guard isScheduleActivity(activity), activity != tailActivity, activity != capActivity else { return nil }
+        guard isScheduleActivity(activity), activity != tailActivity, activity != capActivity, activity != breakActivity else { return nil }
         return String(activity.rawValue.dropFirst(activityPrefix.count))
     }
 }
@@ -89,6 +93,27 @@ struct ScheduleMonitorFile: Codable, Equatable {
         var manualSessionEnd: Int64?
     }
 
+    /// A running occurrence's break: from `startEpoch` until `endEpoch`, unless End break or this device ended it.
+    struct Break: Codable, Equatable {
+        let id: String
+        let date: String
+        let startEpoch: Int64
+        let endEpoch: Int64
+        let over: Bool
+
+        var key: String {
+            "\(id):\(date)"
+        }
+
+        var start: Date {
+            Date(timeIntervalSince1970: TimeInterval(startEpoch))
+        }
+
+        var end: Date {
+            Date(timeIntervalSince1970: TimeInterval(endEpoch))
+        }
+    }
+
     let version: Int
     let schedules: [Schedule]
     let running: [Running]
@@ -98,6 +123,8 @@ struct ScheduleMonitorFile: Codable, Equatable {
     let applicationTokens: [Data]
     let notices: Notices
     var sets: [PauseSet]?
+    /// Version 3 only; a version-2 table has no break.
+    var breaks: [Break]?
 }
 
 extension ScheduleMonitorFile {
@@ -247,7 +274,8 @@ enum ScheduleMonitorRule {
 /// records: atomic writes, protection after first unlock, no backup.
 struct ScheduleMonitorFileStore {
     private static let directoryName = "ScheduleMonitor"
-    private static let tableFileName = "table-v2.json"
+    private static let tableFileName = "table-v3.json"
+    private static let setsTableFileName = "table-v2.json"
     private static let legacyTableFileName = "table-v1.json"
     /// Fits the largest supported configuration, about 0.4 MiB: 1,024 websites of 253 characters shared by ten
     /// sets, 64 apps with tokens of up to 1 KiB, and ten plans with every stoppable date listed.
@@ -274,30 +302,41 @@ struct ScheduleMonitorFileStore {
         )
     }
 
-    /// Writes the version-2 table, then deletes the version-1 table in the same step. A crash between the
-    /// two leaves both, and the version-2 table wins. A table that cannot be written removes both, so neither
-    /// the app nor the monitor keeps applying plans the app no longer has.
+    /// Writes the version-3 table, then deletes older tables in the same step. A crash between the two leaves
+    /// both, and the newest wins. A table that cannot be written removes every table, so neither the app nor
+    /// the monitor keeps applying plans the app no longer has.
     func writeTable(_ file: ScheduleMonitorFile) throws {
         do {
             let data = try JSONEncoder().encode(file)
             guard data.count <= Self.maximumTableBytes else { throw CocoaError(.fileWriteOutOfSpace) }
             try write(data, fileName: Self.tableFileName)
         } catch {
-            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.tableFileName))
-            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.legacyTableFileName))
+            for name in [Self.tableFileName, Self.setsTableFileName, Self.legacyTableFileName] {
+                try? fileManager.removeItem(at: directoryURL.appendingPathComponent(name))
+            }
             throw error
         }
-        try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.legacyTableFileName))
+        for name in [Self.setsTableFileName, Self.legacyTableFileName] {
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(name))
+        }
     }
 
-    /// The version-2 table, or, while none was written, a valid version-1 table. Nil when absent, too large,
-    /// unreadable, or written by another version; once a version-2 table exists, an unreadable one never
-    /// falls back to version 1.
+    /// The newest table present: version 3, else a version-2 table read as "no break", else a valid version-1
+    /// table. Nil when absent, too large, unreadable, or written by another version; a newer table that cannot
+    /// be read never falls back to an older one.
     func readTable() -> ScheduleMonitorFile? {
-        if fileManager.fileExists(atPath: directoryURL.appendingPathComponent(Self.tableFileName).path) {
-            return decode(Self.tableFileName, version: ScheduleMonitor.fileVersion)
+        for (name, version) in [
+            (Self.tableFileName, ScheduleMonitor.fileVersion),
+            (Self.setsTableFileName, ScheduleMonitor.setsFileVersion),
+        ] where fileManager.fileExists(atPath: directoryURL.appendingPathComponent(name).path) {
+            return decode(name, version: version)
         }
         return decode(Self.legacyTableFileName, version: ScheduleMonitor.legacyFileVersion)
+    }
+
+    /// Writes a 1.5 table as 1.5 did, so tests can start from what an App Store update leaves behind.
+    func writeSetsTable(_ file: ScheduleMonitorFile) throws {
+        try write(JSONEncoder().encode(file), fileName: Self.setsTableFileName)
     }
 
     /// Writes a 1.2 table as 1.2 did, so tests can start from what an App Store update leaves behind.
@@ -369,6 +408,73 @@ struct ScheduleMonitorFileStore {
             else { continue }
             try? fileManager.removeItem(at: directoryURL.appendingPathComponent(name))
         }
+    }
+
+    /// Runs `body` while holding the App Group lock, or nil without running it when the lock cannot be opened:
+    /// a break is never taken or released without the lock.
+    func withComposeLockIfAvailable<T>(_ body: () -> T) -> T? {
+        try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let descriptor = open(directoryURL.appendingPathComponent("compose.lock").path, O_CREAT | O_RDWR, 0o600)
+        guard descriptor >= 0 else { return nil }
+        defer { close(descriptor) }
+        flock(descriptor, LOCK_EX)
+        defer { flock(descriptor, LOCK_UN) }
+        return body()
+    }
+
+    /// A small record per occurrence whose break this device saw end, written by the app or the extension, so a
+    /// clock set back afterwards never releases that break again.
+    func recordBreakOver(scheduleId: String, date: String) throws {
+        let record = BreakOverRecord(version: Self.breakOverRecordVersion, id: scheduleId, date: date)
+        try write(JSONEncoder().encode(record), fileName: "breakover-\(scheduleId)-\(date)-v1.json")
+    }
+
+    /// Occurrences whose break is over on this device, as `<id>:<date>`.
+    func breaksOver() -> Set<String> {
+        Set(breakOverNames().compactMap { breakOverRecord($0) }.map { "\($0.id):\($0.date)" })
+    }
+
+    func removeBreakOver(except keep: Set<String>) {
+        for name in breakOverNames() {
+            guard let record = breakOverRecord(name), !keep.contains("\(record.id):\(record.date)") else { continue }
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(name))
+        }
+    }
+
+    /// What running parts on a break hold now: it is not applied, but it counts toward the device's limits.
+    func heldDuringBreak(at time: Date) -> (domains: Set<String>, tokens: Set<Data>) {
+        guard let file = readTable() else { return ([], []) }
+        let over = breaksOver()
+        var domains = Set<String>()
+        var tokens = Set<Data>()
+        for window in file.breaks ?? [] where !window.over && !over.contains(window.key) && window.start <= time && time < window.end {
+            guard let record = held(scheduleId: window.id, date: window.date) else { continue }
+            domains.formUnion(record.domains)
+            tokens.formUnion(record.tokens)
+        }
+        return (domains, tokens)
+    }
+
+    private struct BreakOverRecord: Codable {
+        let version: Int
+        let id: String
+        let date: String
+    }
+
+    private static let breakOverRecordVersion = 1
+
+    private func breakOverNames() -> [String] {
+        ((try? fileManager.contentsOfDirectory(atPath: directoryURL.path)) ?? [])
+            .filter { $0.hasPrefix("breakover-") && $0.hasSuffix("-v1.json") }
+            .sorted()
+    }
+
+    private func breakOverRecord(_ name: String) -> BreakOverRecord? {
+        guard let data = read(name, limit: Self.maximumRecordBytes),
+              let record = try? JSONDecoder().decode(BreakOverRecord.self, from: data),
+              record.version == Self.breakOverRecordVersion
+        else { return nil }
+        return record
     }
 
     /// Runs `body` while holding the App Group lock the app and the extension share, so one composes and
@@ -606,5 +712,99 @@ protocol ScheduleCapRegistrar {
 struct DeviceActivityCapRegistrar: ScheduleCapRegistrar {
     func register(cap: DeviceActivitySchedule) {
         try? DeviceActivityCenter().startMonitoring(ScheduleMonitor.capActivity, during: cap)
+    }
+}
+
+/// Narrow seam over Device Activity monitoring, shared by the app and the monitor extension.
+protocol ScheduleActivityCenter {
+    var monitoredActivities: [DeviceActivityName] { get }
+    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule?
+    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws
+    func stopMonitoringSchedules(_ activities: [DeviceActivityName])
+}
+
+extension DeviceActivityCenter: ScheduleActivityCenter {
+    var monitoredActivities: [DeviceActivityName] {
+        activities
+    }
+
+    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule? {
+        schedule(for: activity)
+    }
+
+    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
+        try startMonitoring(activity, during: schedule)
+    }
+
+    func stopMonitoringSchedules(_ activities: [DeviceActivityName]) {
+        stopMonitoring(activities)
+    }
+}
+
+/// The one break activity's interval. Device Activity needs at least 15 minutes, so the interval ends at the
+/// deadline and starts the minimum before it, usually in the past; the other shape starts at the deadline.
+enum ScheduleBreakActivity {
+    enum Shape {
+        case endsAtDeadline
+        case startsAtDeadline
+    }
+
+    static let shape: Shape = .endsAtDeadline
+
+    static func schedule(deadline: Date, calendar: Calendar) -> DeviceActivitySchedule {
+        switch shape {
+        case .endsAtDeadline:
+            return ScheduleMonitorRule.capSchedule(endingAt: deadline, calendar: calendar)
+        case .startsAtDeadline:
+            let fields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
+            return DeviceActivitySchedule(
+                intervalStart: calendar.dateComponents(fields, from: deadline),
+                intervalEnd: calendar.dateComponents(fields, from: deadline.addingTimeInterval(SuspendedExpiryActivity.minimumInterval)),
+                repeats: false
+            )
+        }
+    }
+
+    /// The deadline a registered break activity stands for.
+    static func deadline(of schedule: DeviceActivitySchedule, calendar: Calendar) -> Date? {
+        var components = shape == .endsAtDeadline ? schedule.intervalEnd : schedule.intervalStart
+        components.calendar = calendar
+        components.timeZone = calendar.timeZone
+        return calendar.date(from: components)
+    }
+
+    /// The deadline the break activity is registered for now, read from Device Activity, never from the table.
+    static func armed(center: ScheduleActivityCenter?, calendar: Calendar) -> Date? {
+        guard let schedule = center?.monitoredSchedule(for: ScheduleMonitor.breakActivity) else { return nil }
+        return deadline(of: schedule, calendar: calendar)
+    }
+}
+
+/// Which break windows release their part now, and which deadline the break activity must stand for.
+enum ScheduleBreakWindows {
+    /// Windows not over in the table or in this device's break-over records.
+    static func open(_ file: ScheduleMonitorFile, over: Set<String>) -> [ScheduleMonitorFile.Break] {
+        (file.breaks ?? []).filter { !$0.over && !over.contains($0.key) }
+    }
+
+    /// The nearest deadline of an open window that has not passed at `time`.
+    static func nearestDeadline(_ file: ScheduleMonitorFile, over: Set<String>, at time: Date) -> Date? {
+        open(file, over: over).map(\.end).filter { $0 > time }.min()
+    }
+
+    /// A window is covered when the break activity is registered for a deadline inside it: that deadline's
+    /// callback re-applies every window that ended and chains to the next.
+    static func covered(_ window: ScheduleMonitorFile.Break, armed: Date?) -> Bool {
+        guard let armed else { return false }
+        return armed >= window.start && armed <= window.end
+    }
+
+    /// Running parts a break releases at `time`: covered, open, and before its actual end. A deadline callback
+    /// up to a minute early records the windows it ends as over before composing, so only that callback
+    /// shortens a break; an ordinary evaluation in the last minute keeps it released.
+    static func releasing(_ file: ScheduleMonitorFile, over: Set<String>, armed: Date?, at time: Date) -> Set<String> {
+        Set(open(file, over: over).filter { window in
+            covered(window, armed: armed) && window.start <= time && time < window.end
+        }.map(\.key))
     }
 }

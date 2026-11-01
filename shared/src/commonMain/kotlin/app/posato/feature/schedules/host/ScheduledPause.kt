@@ -26,6 +26,7 @@ internal data class ScheduledPart(
     val name: String,
     val setId: PauseSetId?,
     val endEpochMillis: Long,
+    val key: OccurrenceKey? = null,
 ) {
     override fun toString(): String {
         return "ScheduledPart(redacted)"
@@ -46,6 +47,14 @@ internal data class ScheduledPause(
     val setupUnannounced: Set<OccurrenceKey> = emptySet(),
     val parts: List<ScheduledPart> = emptyList(),
     val notPausedYet: Int = 0,
+    /** Running occurrences whose break releases them now; their lifetime is unchanged. */
+    val onBreak: Set<OccurrenceKey> = emptySet(),
+    /** When the running break ends, or null while none runs. */
+    val breakEndEpochMillis: Long? = null,
+    /** Whether any running occurrence already used its break, so no break can be taken now. */
+    val breakUsed: Boolean = false,
+    /** Whether this device just could not register a break's return, so it cannot take one right now. */
+    val breakArmFailed: Boolean = false,
 ) {
     val restricts: Boolean
         get() {
@@ -54,6 +63,39 @@ internal data class ScheduledPause(
 
     override fun toString(): String {
         return "ScheduledPause(redacted)"
+    }
+}
+
+/** What a press of Take a break did. */
+internal enum class BreakStart {
+    STARTED,
+
+    /** No scheduled pause runs, a running occurrence already used its break, or the length is not offered. */
+    UNAVAILABLE,
+
+    /** The break could not be recorded; nothing was released. */
+    FAILED,
+
+    /** This device could not register the break's return, so nothing was recorded or released. */
+    CANNOT_ARM,
+}
+
+/** The break actions of a running scheduled pause. */
+internal interface ScheduledBreaks {
+    /** Takes one break of [minutes] in every running occurrence (overlap option A). */
+    suspend fun start(minutes: Int): BreakStart
+
+    /** Ends the running break: restrictions return at once. */
+    suspend fun end(): Boolean
+}
+
+internal object NoScheduledBreaks : ScheduledBreaks {
+    override suspend fun start(minutes: Int): BreakStart {
+        return BreakStart.UNAVAILABLE
+    }
+
+    override suspend fun end(): Boolean {
+        return false
     }
 }
 
@@ -73,6 +115,10 @@ internal interface ScheduledPauses {
     )
 
     suspend fun endEarly(): Boolean
+
+    /** Take a break and End break; a device without a host offers neither. */
+    val breaks: ScheduledBreaks
+        get() = NoScheduledBreaks
 
     /** Runs the host where this process hosts schedules; a device without a host returns at once. */
     suspend fun run() = Unit

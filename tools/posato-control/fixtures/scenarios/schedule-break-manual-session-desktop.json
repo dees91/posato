@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"open-session","action":"tap","query":{"id":"session_title","role":"button"}},
+    {"name":"manual-reason","action":"waitFor","state":"exists","query":{"text":"Breaks are only for scheduled pauses. End early ends this session."}},
+    {"name":"break-unavailable","action":"waitFor","state":"disabled","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"manual-shot","action":"screenshot"},
+    {"name":"manual-tree","action":"snapshot"}
+  ]
+}

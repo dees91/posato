@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.posato.feature.schedules.data.LocalScheduleStore
-import app.posato.feature.schedules.data.OccurrenceStop
+import app.posato.feature.schedules.data.OccurrenceFact
 import app.posato.feature.schedules.data.ScheduleResult
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.data.ScheduleStoreFailure
@@ -99,7 +99,7 @@ internal class SchedulesHolder(
         val now = clock.currentEpochMillis()
         val key = snapshot.nextKey(row, now, zone) ?: return
         scope.launch {
-            refresh(store.stop(setOf(key), OccurrenceStop.SKIP, zone.localAt(now).date, workspaceId = null))
+            refresh(store.recordFact(setOf(key), OccurrenceFact.Skip, zone.localAt(now).date, workspaceId = null))
         }
     }
 

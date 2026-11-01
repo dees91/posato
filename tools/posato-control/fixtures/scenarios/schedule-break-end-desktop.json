@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"open-session","action":"tap","query":{"id":"session_title","role":"button"}},
+    {"name":"on-break","action":"waitFor","state":"exists","query":{"textContains":"On a break until"}},
+    {"name":"end-break","action":"tap","query":{"id":"action_end_break","role":"button"}},
+    {"name":"break-line-gone","action":"waitFor","state":"absent","query":{"textContains":"On a break until"}},
+    {"name":"limit-reason","action":"waitFor","state":"exists","query":{"text":"A break was already taken in this scheduled pause."}},
+    {"name":"break-unavailable","action":"waitFor","state":"disabled","query":{"id":"action_take_a_break","role":"button"}},
+    {"name":"ended-shot","action":"screenshot"},
+    {"name":"ended-tree","action":"snapshot"}
+  ]
+}

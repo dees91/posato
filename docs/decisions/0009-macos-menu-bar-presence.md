@@ -37,12 +37,17 @@ ADR 0004 automatic scheduled Apply amendment.
   - at every launch, including a login launch;
   - on wake;
   - on clock and time-zone changes;
-  - every minute.
+  - every minute;
+  - at the end of a break in a running occurrence (`SCHEDULE-007`,
+    `user-confirmed` 2026-10-30).
 
   An occurrence found inside its interval applies for the remaining time, up
   to its original end.
-- The menu shows "Scheduled pause: <name>, until <time>" while one runs. It
-  offers **End early…**, which opens the window's confirmation as today.
+- The menu shows "Scheduled pause: <name>, until <time>" while one runs, or
+  "Scheduled pause: <name>, on a break until <time>" while a break runs
+  (`SCHEDULE-007`, `user-confirmed` 2026-10-30). It offers **End early…**,
+  which opens the window's confirmation as today, and offers no break
+  action.
 - Quit during a running or upcoming scheduled pause keeps the ADR 0009
   confirmation and names the schedule. Quitting stops new Mac starts until
   Posato runs again.

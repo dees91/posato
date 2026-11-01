@@ -14,6 +14,7 @@ import app.posato.control.cli.DevicesListCommand
 import app.posato.control.cli.DevicesShutdownCommand
 import app.posato.control.cli.DoctorCommand
 import app.posato.control.cli.FindCommand
+import app.posato.control.cli.FlowBreakCommand
 import app.posato.control.cli.FlowCommand
 import app.posato.control.cli.FlowExportCommand
 import app.posato.control.cli.FlowFolderCommand
@@ -27,6 +28,7 @@ import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
 import app.posato.control.cli.MenuCommand
+import app.posato.control.cli.MonitorCommand
 import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PrEvidenceCommand
@@ -147,6 +149,7 @@ private fun flowCommand(): FlowCommand {
         FlowScheduleAddCommand(),
         FlowSetCommand(),
         FlowSessionCommand(),
+        FlowBreakCommand(),
         FlowICloudCommand(),
         FlowFolderCommand(),
         FlowExportCommand(),
@@ -179,6 +182,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ArtifactsCommand(),
     PrEvidenceCommand(),
     ObserveCommand(),
+    MonitorCommand(),
     MenuCommand(),
     CloseWindowCommand(),
     ResizeWindowCommand(),

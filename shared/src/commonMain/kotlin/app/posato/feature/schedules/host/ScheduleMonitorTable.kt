@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.host
 
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.domain.ScheduleBreakRules
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.schedules.domain.ScheduleOccurrence
@@ -44,6 +45,15 @@ internal data class MonitorRunning(
     val endEpochMillis: Long,
 )
 
+/** A running occurrence's break; over once End break or this device ended it, or when it starts beyond the bound. */
+internal data class MonitorBreak(
+    val id: String,
+    val date: ScheduleDate,
+    val startEpochMillis: Long,
+    val endEpochMillis: Long,
+    val over: Boolean,
+)
+
 /** A set a listed schedule or a running occurrence uses: its websites and this device's app choices. */
 internal data class MonitorSet(
     val id: String,
@@ -60,6 +70,7 @@ internal data class ScheduleMonitorTable(
     val schedules: List<MonitorSchedule>,
     val running: List<MonitorRunning>,
     val sets: List<MonitorSet>,
+    val breaks: List<MonitorBreak> = emptyList(),
 ) {
     override fun toString(): String {
         return "ScheduleMonitorTable(redacted)"
@@ -104,7 +115,18 @@ internal object ScheduleMonitorTables {
             val selection = input.targets(setId).scheduleSelection()
             MonitorSet(setId.hexId(), selection.domains, selection.mappingIds)
         }
-        return ScheduleMonitorTable(schedules, running, sets)
+        val breaks = input.running.mapNotNull { occurrence ->
+            val taken = facts.breaks[occurrence.key] ?: return@mapNotNull null
+            val beyondBound = taken.startEpochMillis > input.nowEpochMillis + ScheduleBreakRules.FUTURE_START_BOUND_MILLIS
+            MonitorBreak(
+                id = occurrence.key.schedule.hex,
+                date = occurrence.key.date,
+                startEpochMillis = taken.startEpochMillis,
+                endEpochMillis = taken.endEpochMillis,
+                over = occurrence.key in facts.breakEnds || occurrence.key in facts.breaksOver || beyondBound,
+            )
+        }
+        return ScheduleMonitorTable(schedules, running, sets, breaks)
     }
 }
 

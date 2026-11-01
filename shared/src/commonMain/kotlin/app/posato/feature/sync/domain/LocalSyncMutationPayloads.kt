@@ -46,14 +46,37 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
             SyncOperationPayload.ScheduleRemove(scheduleId).takeIf { scheduleId.value.isUuidV4() }
         }
 
+        is LocalSyncMutation.SkipOccurrence,
+        is LocalSyncMutation.EndOccurrence,
+        is LocalSyncMutation.BreakOccurrence,
+        is LocalSyncMutation.EndOccurrenceBreak -> {
+            toOccurrencePayload()
+        }
+    }
+}
+
+/** Kinds 10, 11, 20 and 21: one fact about one occurrence, authored only for a date the writer may name. */
+private fun LocalSyncMutation.toOccurrencePayload(): SyncOperationPayload? {
+    return when (this) {
         is LocalSyncMutation.SkipOccurrence -> {
-            SyncOperationPayload.ScheduleSkip(occurrence)
-                .takeIf { occurrence.isAuthorable(authorLocalDate) }
+            SyncOperationPayload.ScheduleSkip(occurrence).takeIf { occurrence.isAuthorable(authorLocalDate) }
         }
 
         is LocalSyncMutation.EndOccurrence -> {
-            SyncOperationPayload.ScheduleOccurrenceEnd(occurrence)
-                .takeIf { occurrence.isAuthorable(authorLocalDate) }
+            SyncOperationPayload.ScheduleOccurrenceEnd(occurrence).takeIf { occurrence.isAuthorable(authorLocalDate) }
+        }
+
+        is LocalSyncMutation.BreakOccurrence -> {
+            SyncOperationPayload.ScheduleBreak(occurrence, startEpochMillis, minutes)
+                .takeIf { payload -> occurrence.isAuthorable(authorLocalDate) && ScheduleWireRules.isValid(payload) }
+        }
+
+        is LocalSyncMutation.EndOccurrenceBreak -> {
+            SyncOperationPayload.ScheduleBreakEnd(occurrence).takeIf { occurrence.isAuthorable(authorLocalDate) }
+        }
+
+        else -> {
+            null
         }
     }
 }

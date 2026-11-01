@@ -22,6 +22,9 @@ public data class PresenceMenu(
     val primaryAction: PresenceAction,
     val sessionEndEpochMillis: Long?,
     val schedulesEnabled: Boolean = false,
+    /** The running scheduled pause's name and its break's end while a break runs. */
+    val breakName: String? = null,
+    val breakEndEpochMillis: Long? = null,
 )
 
 internal fun presenceMenuOf(
@@ -66,7 +69,8 @@ internal fun presenceMenuOf(
             PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.OPEN_POSATO, end)
         }
     }
-    return menu.copy(schedulesEnabled = schedulesEnabled)
+    val breakEnd = scheduled?.takeIf { it.restricts }?.breakEndEpochMillis
+    return menu.copy(schedulesEnabled = schedulesEnabled, breakName = breakEnd?.let { scheduled.name }, breakEndEpochMillis = breakEnd)
 }
 
 private fun EnforcementState.isResumable(): Boolean {

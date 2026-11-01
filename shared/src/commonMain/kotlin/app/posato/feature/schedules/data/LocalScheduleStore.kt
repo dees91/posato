@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.data
 
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
@@ -41,10 +42,13 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
 
-    /** Skips or ends [keys]: one fact each, and one intent each while linked. */
-    suspend fun stop(
+    /**
+     * Records [fact] for every occurrence of [keys]: one fact each, and one intent each while linked, in one
+     * transaction. One press that breaks several running occurrences records all of them together.
+     */
+    suspend fun recordFact(
         keys: Set<OccurrenceKey>,
-        kind: OccurrenceStop,
+        kind: OccurrenceFact,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
@@ -60,6 +64,8 @@ internal data class SyncedSchedules(
     val removed: Set<ScheduleId> = emptySet(),
     val skips: Set<OccurrenceKey> = emptySet(),
     val ends: Set<OccurrenceKey> = emptySet(),
+    val breaks: Map<OccurrenceKey, ScheduleBreak> = emptyMap(),
+    val breakEnds: Set<OccurrenceKey> = emptySet(),
 ) {
     override fun toString(): String {
         return "SyncedSchedules(redacted)"

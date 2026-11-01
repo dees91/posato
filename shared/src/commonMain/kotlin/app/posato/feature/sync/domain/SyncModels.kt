@@ -265,6 +265,29 @@ internal sealed interface SyncOperationPayload {
         }
     }
 
+    /**
+     * Kind 20: one break in one occurrence. Per occurrence the earliest [startEpochMillis] wins, ties by total
+     * order; the start is never after the operation's own clock, and [minutes] is 5, 10, or 15.
+     */
+    data class ScheduleBreak(
+        val occurrence: ScheduleOccurrenceRef,
+        val startEpochMillis: Long,
+        val minutes: Int,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.ScheduleBreak(redacted)"
+        }
+    }
+
+    /** Kind 21: a grow-only fact that ends one occurrence's break early; it never undoes. */
+    data class ScheduleBreakEnd(
+        val occurrence: ScheduleOccurrenceRef,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.ScheduleBreakEnd(redacted)"
+        }
+    }
+
     /** Kind 12: names a set; the greatest total-order put names it unless the set is removed. */
     data class PauseSetPut(
         val setId: PauseSetId,

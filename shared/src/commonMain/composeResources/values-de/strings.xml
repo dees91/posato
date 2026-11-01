@@ -531,6 +531,17 @@ Für das, was zählt.</string>
     <string name="action_reload_short">Neu laden</string>
     <string name="action_finish_setup">Einrichtung abschließen</string>
     <string name="action_end_early">Vorzeitig beenden</string>
+    <string name="action_take_a_break">Pause machen</string>
+    <string name="action_end_break">Pause beenden</string>
+    <string name="session_break_title">Pause machen?</string>
+    <string name="session_break_body">Die Einschränkungen pausieren jetzt auf diesem Gerät und auf deinen anderen Geräten, sobald sie synchronisiert sind. Sie kehren von selbst zurück. In dieser geplanten Pause kannst du eine Pause machen.</string>
+    <string name="session_break_together">%1$s und %2$s pausieren gemeinsam.</string>
+    <string name="session_on_break_until">In der Pause bis %1$s</string>
+    <string name="session_break_started">%1$s hat begonnen und schränkt ein.</string>
+    <string name="session_break_taken">In dieser geplanten Pause wurde schon eine Pause gemacht.</string>
+    <string name="session_break_manual">Pausen gibt es nur in geplanten Pausen. Vorzeitig beenden beendet diese Sitzung.</string>
+    <string name="session_break_cannot_arm">Auf diesem iPhone ist gerade keine Pause möglich.</string>
+    <string name="presence_on_break">Geplante Pause: %1$s, in der Pause bis %2$s</string>
     <string name="action_end_pause">Pause beenden</string>
     <string name="action_keep_pausing">Weiter pausieren</string>
     <string name="action_keep_this_pause">Diese Pause behalten</string>

@@ -131,8 +131,24 @@ internal class IosScheduleMonitorPublisher(
             endBody = getString(Res.string.notification_pause_over_body),
             manualSessionEndEpochSeconds = manualEnd()?.let { it / MILLIS } ?: 0L,
             sets = table.sets.map { set -> IosMonitorSet(set.id, set.domains, set.mappingIds) },
+            breaks = table.breaks.map {
+                IosMonitorBreak(it.id, it.date.text(), it.startEpochMillis / MILLIS, it.endEpochMillis / MILLIS, it.over)
+            },
         )
         provider.publish(bridged)
+    }
+
+    /** The monitor's return is registered before a break is recorded; false takes no break. */
+    fun armBreak(deadlineEpochMillis: Long): Boolean {
+        return provider.armBreak(deadlineEpochMillis / MILLIS)
+    }
+
+    /** Only breaks whose return the monitor registered release this phone, so only they show on Session. */
+    fun coveredBreaks(onBreak: Set<OccurrenceKey>): Set<OccurrenceKey> {
+        if (onBreak.isEmpty()) {
+            return onBreak
+        }
+        return provider.coveredBreaks().mapNotNull { it.toOccurrenceKey() }.toSet().intersect(onBreak)
     }
 
     fun startedOccurrences(): Set<OccurrenceKey> {

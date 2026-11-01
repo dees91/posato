@@ -7,6 +7,7 @@ import app.posato.feature.schedules.data.ScheduleSyncStore
 import app.posato.feature.schedules.data.SequencedScheduleIntent
 import app.posato.feature.schedules.data.SyncedSchedules
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.schedules.domain.toScheduleId
@@ -105,6 +106,8 @@ internal fun SyncProjection.toSynced(): SyncedSchedules {
         removed = removedScheduleIds.map { it.toScheduleId() }.toSet(),
         skips = scheduleSkips.map(ScheduleOccurrenceRef::toKey).toSet(),
         ends = scheduleEnds.map(ScheduleOccurrenceRef::toKey).toSet(),
+        breaks = scheduleBreaks.entries.associate { (ref, taken) -> ref.toKey() to ScheduleBreak(taken.startEpochMillis, taken.minutes) },
+        breakEnds = scheduleBreakEnds.map(ScheduleOccurrenceRef::toKey).toSet(),
     )
 }
 
@@ -131,15 +134,31 @@ private fun ScheduleIntent.toMutation(): LocalSyncMutation? {
         is ScheduleIntent.Skip -> key.toRef()?.let { ref -> LocalSyncMutation.SkipOccurrence(ref, authorDate) }
 
         is ScheduleIntent.End -> key.toRef()?.let { ref -> LocalSyncMutation.EndOccurrence(ref, authorDate) }
+
+        is ScheduleIntent.Break -> key.toRef()?.let { ref ->
+            LocalSyncMutation.BreakOccurrence(ref, authorDate, taken.startEpochMillis, taken.minutes)
+        }
+
+        is ScheduleIntent.BreakEnd -> key.toRef()?.let { ref -> LocalSyncMutation.EndOccurrenceBreak(ref, authorDate) }
     }
 }
 
 private fun SyncProjection.reflects(intent: ScheduleIntent): Boolean {
     return when (intent) {
         is ScheduleIntent.Put -> schedules.any { it.toPlan() == intent.plan }
+
         is ScheduleIntent.Remove -> removedScheduleIds.any { it.toScheduleId() == intent.scheduleId }
+
         is ScheduleIntent.Skip -> scheduleSkips.any { it.toKey() == intent.key }
+
         is ScheduleIntent.End -> scheduleEnds.any { it.toKey() == intent.key }
+
+        // Only a shared break starting no later holds the occurrence's place; an earlier local one is still published.
+        is ScheduleIntent.Break -> scheduleBreaks.entries.any { (ref, shared) ->
+            ref.toKey() == intent.key && ScheduleBreak(shared.startEpochMillis, shared.minutes).prevailsOver(intent.taken)
+        }
+
+        is ScheduleIntent.BreakEnd -> scheduleBreakEnds.any { it.toKey() == intent.key }
     }
 }
 

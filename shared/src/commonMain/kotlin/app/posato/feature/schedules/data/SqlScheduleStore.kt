@@ -85,17 +85,16 @@ internal class SqlScheduleStore(
         }
     }
 
-    override suspend fun stop(
+    override suspend fun recordFact(
         keys: Set<OccurrenceKey>,
-        kind: OccurrenceStop,
+        kind: OccurrenceFact,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit> {
         return transactor.transact {
             keys.forEach { key ->
-                writeFact(if (kind == OccurrenceStop.SKIP) FACT_SKIP else FACT_END, key)
-                val intent = if (kind == OccurrenceStop.SKIP) ScheduleIntent.Skip(key, authorDate) else ScheduleIntent.End(key, authorDate)
-                workspaceId?.let { writeIntent(it, intent) }
+                writeOccurrenceFact(key, kind)
+                workspaceId?.let { writeIntent(it, kind.intentFor(key, authorDate)) }
             }
         }
     }

@@ -1,10 +1,11 @@
 package app.posato.feature.sync.domain
 
 import app.posato.feature.schedules.domain.MINUTES_PER_DAY
+import app.posato.feature.schedules.domain.ScheduleBreakRules
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleLimits
 
-/** The format-1 invariants of kinds 8, 10 and 11, shared by the writer, the encoder and the decoder. */
+/** The format-1 invariants of kinds 8, 10, 11, 20 and 21, shared by the writer, the encoder and the decoder. */
 internal object ScheduleWireRules {
     private const val FIRST_YEAR = 2000
     private const val LAST_YEAR = 2100
@@ -29,6 +30,13 @@ internal object ScheduleWireRules {
             return false
         }
         return size in 1..ScheduleLimits.MAX_NAME_BYTES && name.none { it in '\u0000'..'\u001F' || it in '\u007F'..'\u009F' }
+    }
+
+    /** A break's own fields; that its start is not after its operation's clock is checked where the clock is known. */
+    fun isValid(taken: SyncOperationPayload.ScheduleBreak): Boolean {
+        return isValidDate(taken.occurrence.date) &&
+            taken.startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
+            taken.minutes in ScheduleBreakRules.MINUTES
     }
 
     fun isValidDate(date: ScheduleDate): Boolean {

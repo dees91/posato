@@ -7,6 +7,157 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SCHEDULE-007 schedule break amendment
+
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-10-30
+(proposed 2026-10-30, `SCHEDULE-007`; security review passed after fixes on
+2026-10-30). `SCHEDULE-007` implements it. The product rules are in
+[schedule rules](../product/schedules-decisions.md#breaks-schedule-007).
+
+- **Supersedes.**
+  - "kinds 1-19 are mandatory, and unknown kinds 20-127 are rejected"
+    (`SCHEDULE-003` amendment) now reads: kinds 1-21 are mandatory, and
+    unknown kinds 22-127 are rejected.
+  - "Replicas with that projection, the same evaluation instant `t`, and
+    the same local terminal-expiry facts" now also requires the same local
+    break-over markers and the same local break facts. The synchronized
+    projection itself (the break winner per occurrence and the break-end
+    set) depends only on the operation set; a device's active break also
+    reads its own local break facts (the press instant) and markers.
+- **New mandatory kinds in format 1.** The payloads are canonical as below:
+  - `20` `schedule-break`: 16-byte schedule identifier (UUIDv4); `u16` year
+    2000-2100, `u8` month 1-12, `u8` valid day (the kind 10 date); `i64`
+    start epoch milliseconds in the format-1 instant range; `u8` minutes,
+    exactly 5, 10, or 15. Total 29 bytes.
+  - **Start consistency rule.** The start must not be after the physical
+    time of the operation's own HLC. This is the first format-1 rule that
+    ties a payload field to the operation header; both the encoder and the
+    decoder enforce it, and a decoder rejects a violation as
+    `invalid-operation`. It is a deterministic consistency rule, not a
+    security bound: a workspace-key holder chooses the HLC. The security
+    bound is the evaluation below.
+  - **Writers.** Writers author kind 20 only for an occurrence that was
+    running on the writer at the press, and reject a date more than 400
+    days after the author's local date, as for kind 10. The authored start
+    is the earlier of the instant the device recorded at the press and the
+    physical time of the HLC value reserved for the operation. The writer
+    applies this clamp after reservation and before preparation, so every
+    break intent is authored and an honest writer never produces an invalid
+    start. A clamped start only moves the window earlier, which releases
+    less. The local fact keeps the press instant.
+  - `21` `schedule-break-end`: same payload as kind 10. Writers author it
+    only for an occurrence whose break they hold and whose break has not
+    ended locally.
+- **Reduction.**
+  - Kinds 20 and 21 are ignored for a removed schedule identifier, like
+    kinds 10 and 11.
+  - **Break used.** An occurrence `(identifier, date)` has used its break
+    when the applicable set, or the replica's local facts, hold any kind 20
+    for it, whatever its start, and whether or not the occurrence is
+    running.
+  - **Winner.** Among kind 20 operations for the same `(identifier, date)`,
+    the one with the earliest start is the break; equal starts fall to the
+    smallest total order. The projection exposes only the winner.
+  - **End.** Kinds 21 build a grow-only set of `(identifier, date)`. Any
+    copy, in any order, ends that occurrence's break; it is never undone.
+    A kind 21 without a kind 20 has no effect, and a later-arriving kind 20
+    for that key is ended on arrival.
+  - These are projection facts only. No operation announces an occurrence,
+    and a break neither starts, extends, ends, nor shortens one.
+- **Evaluation (the clock invariant).** A replica evaluates at its own
+  instant `t` against its own occurrence for the same `(identifier, date)`,
+  as for skip and end. The break of a running occurrence is **active** only
+  when all hold:
+  - the occurrence is active under the existing rules at `t` (not skipped,
+    not ended, not removed, inside its interval, no local natural end);
+  - the break's winner exists and `start <= t < start + minutes`;
+  - no kind 21 exists for the key; and
+  - no local **break-over marker** exists for the key.
+
+  The replica commits the break-over marker for a key, before it applies
+  the restrictions again or exposes the break as over, when an evaluation
+  first observes any of: `t >= start + minutes`; a kind 21 for the key; or a
+  winner whose `start > t + 2 minutes` (future-start skew bound). The marker
+  is local, never synchronized or diagnosed, keyed by `(identifier, date)`
+  without a timestamp, and dropped with the observed natural ends of that
+  date (after about a day). On iPhone and iPad the monitor extension records
+  the marker itself when its break callback re-applies, and the app imports
+  it before it evaluates. Consequences:
+  - **Replay.** A duplicate or re-delivered kind 20 is a no-op; a kind 20
+    whose window has passed when it arrives is never turned into a new
+    local window.
+  - **Past start.** A late receiver releases only `[t, start + minutes)`.
+    If that is empty, it releases nothing.
+  - **Future start.** A start up to 2 minutes after the receiver's `t`
+    releases once the receiver's clock reaches it, for at most `minutes`. A
+    start further ahead never releases on that receiver.
+  - **Clock rollback.** A clock set back into a window whose end this device
+    already observed does not release again. A clock set forward ends the
+    break early, which only restricts more.
+  - **Occurrence end.** An occurrence that ends, by plan, skip, **End
+    early**, edit, or removal, ends its break with it; no fact for it can
+    release anything for another date or a later occurrence.
+  - **Bound.** On one device, the instants at which the evaluation counts
+    the break as active lie within one window of at most `minutes` (at most
+    15), inside that device's own running occurrence. A host that re-applies
+    late (a closed iPhone, whose callbacks the platform does not time) can
+    stay released after that window, never after the occurrence ends.
+  - **Local and synced start.** A device evaluates the winner over its own
+    local fact (the press instant) and the synchronized facts together, so
+    when its authored start was clamped earlier, the earlier start wins
+    there too.
+- **Limits during a break.** While a part is on a break, the items it holds
+  (its retention record, and on iPhone and iPad the held record the monitor
+  wrote) still count toward the host's limits as occupied but are not
+  applied. A part that starts or grows during the break, and a manual
+  session that becomes active during it, admit only what fits beside them,
+  so the returning part always fits.
+- **Local persistence.** A writer stores its local break and break-end
+  intent in the same local transaction as the operation it authors, as for
+  kinds 10 and 11, so a restart before the first sync keeps them. One press
+  that breaks several running occurrences (overlap option A) records every
+  key's intent in one local transaction; the writer then authors one kind 20
+  per key, as **End early** authors one kind 11 per running key. A local
+  break fact is never removed by materialization or by the outcome of its
+  intent. At first link a writer authors kind 20 and kind 21 for its local
+  breaks from yesterday on, as it does for skips and ends, with the start
+  clamped as above.
+- **Codec and store limits.** The date validation of the codec and the
+  writer's 400-day authoring bound stay separate contracts, as for kind 10.
+  Cross-target golden vectors pin every invariant (each length, a start
+  after the HLC physical time, a start outside the instant range, an
+  invalid date, trailing bytes).
+- **Occurrence lifetime.** A break changes only which items a host enforces
+  while it is active. The occurrence key, pin, retention record, notices,
+  observed natural end, and the published running pause are unchanged.
+  The local retention record of a part is kept through its break, so items
+  retained for the part return at the break's end.
+- **Compatibility.** `inferred` from the `observed` 1.2 and 1.3 behavior
+  (`AppleSync.exchangeLegsOrHalt`, `AppleMailboxExchange.acceptPage`): a 1.5
+  device rejects kinds 20 and 21 as `invalid-operation` and stops receiving
+  once any device in the workspace takes a break, until it updates. It
+  still publishes its local changes before it fetches, and it keeps
+  restricting (it never sees a break). A 1.5 installation that opens a 1.6
+  database holding kinds 20 or 21 (a downgrade) fails closed at snapshot
+  validation. Release 1.6 accepts this, as release 1.3 did, and its notes
+  say "Update Posato on your other devices to keep them in sync."
+- **Optional range not used.** Kinds 128-255 must never carry restriction or
+  integrity semantics. A break changes what a mandatory occurrence enforces,
+  and a replica that dropped kind 21 but kept kind 20 would release past an
+  **End break**, so both are mandatory.
+- **Security notes.** Workspace-key holders can already author any operation
+  (`R-01`), including kind 11, which ends an occurrence everywhere. A break
+  releases less than that: one occurrence, one window of at most 15
+  minutes (a host that re-applies late, such as a closed iPhone, can stay
+  released after it), never outside the occurrence's interval on the
+  receiver, and **End break** or
+  **End early** restore or end it on any device. No new capability, key, or
+  identifier crosses a boundary.
+- **Threat model.** Asset `A-01` includes break facts (which occurrence took
+  a break, its start and length, and whether it was ended early); they stay
+  out of diagnostics like skip and end facts, and out of the pause set
+  export file.
+
 ## SCHEDULE-003 pause set operations amendment
 
 Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-30

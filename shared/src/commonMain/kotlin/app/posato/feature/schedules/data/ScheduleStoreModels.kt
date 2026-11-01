@@ -2,6 +2,7 @@ package app.posato.feature.schedules.data
 
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.OccurrencePin
+import app.posato.feature.schedules.domain.ScheduleBreak
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleFacts
 import app.posato.feature.schedules.domain.ScheduleId
@@ -13,10 +14,21 @@ internal data class StoredSchedule(
     val refused: Boolean = false,
 )
 
-/** A skip or an early end: both are one fact per occurrence and stop it on every device. */
-internal enum class OccurrenceStop {
-    SKIP,
-    END,
+/** A fact about one occurrence that every device learns: a skip, an early end, a break, or a break ended early. */
+internal sealed interface OccurrenceFact {
+    /** Stops the occurrence before it starts. */
+    data object Skip : OccurrenceFact
+
+    /** Ends the running occurrence early. */
+    data object End : OccurrenceFact
+
+    /** Releases the running occurrence from [taken]'s start for its length. */
+    data class Break(
+        val taken: ScheduleBreak,
+    ) : OccurrenceFact
+
+    /** Ends the occurrence's break early. */
+    data object BreakEnd : OccurrenceFact
 }
 
 /**
@@ -29,10 +41,15 @@ internal data class ScheduleHostUpdate(
     val released: Set<OccurrenceKey> = emptySet(),
     val expired: Map<OccurrenceKey, Long> = emptyMap(),
     val forgotten: Set<OccurrenceKey> = emptySet(),
+    /** Breaks this device saw end; each is recorded before restrictions return for it. */
+    val breaksOver: Set<OccurrenceKey> = emptySet(),
+    /** Ended-break records for dates before this one are dropped. */
+    val breaksOverBefore: ScheduleDate? = null,
 ) {
     val isEmpty: Boolean
         get() {
-            return pins.isEmpty() && notices.isEmpty() && released.isEmpty() && expired.isEmpty() && forgotten.isEmpty()
+            return pins.isEmpty() && notices.isEmpty() && released.isEmpty() && expired.isEmpty() && forgotten.isEmpty() &&
+                breaksOver.isEmpty()
         }
 
     override fun toString(): String {
@@ -82,6 +99,28 @@ internal sealed interface ScheduleIntent {
     }
 
     data class End(
+        val key: OccurrenceKey,
+        val authorDate: ScheduleDate,
+    ) : ScheduleIntent {
+        override val scheduleId: ScheduleId
+            get() {
+                return key.schedule
+            }
+    }
+
+    /** A break taken here; [taken] keeps the press instant, which the writer may clamp earlier. */
+    data class Break(
+        val key: OccurrenceKey,
+        val authorDate: ScheduleDate,
+        val taken: ScheduleBreak,
+    ) : ScheduleIntent {
+        override val scheduleId: ScheduleId
+            get() {
+                return key.schedule
+            }
+    }
+
+    data class BreakEnd(
         val key: OccurrenceKey,
         val authorDate: ScheduleDate,
     ) : ScheduleIntent {

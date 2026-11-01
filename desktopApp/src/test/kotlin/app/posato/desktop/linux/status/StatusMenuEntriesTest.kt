@@ -66,6 +66,7 @@ class StatusMenuEntriesTest {
         val COPY = PresenceCopy(
             noSession = "No session active",
             activeUntil = "Session active until %1\$s",
+            onBreak = "Scheduled pause: %1\$s, on a break until %2\$s",
             minutesLeft = "%1\$d min left",
             lessThanAMinute = "Less than a minute left",
             notEnforcing = "Restrictions not active on this computer",

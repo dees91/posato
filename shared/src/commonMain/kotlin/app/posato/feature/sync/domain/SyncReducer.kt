@@ -32,6 +32,16 @@ internal data class SynchronizedPauseSet(
     }
 }
 
+/** The winning break of one occurrence. */
+internal data class SynchronizedBreak(
+    val startEpochMillis: Long,
+    val minutes: Int,
+) {
+    override fun toString(): String {
+        return "SynchronizedBreak(redacted)"
+    }
+}
+
 /** The effective schedule for one identifier: its greatest total-order put. */
 internal data class SynchronizedSchedule(
     val scheduleId: ScheduleSyncId,
@@ -76,6 +86,9 @@ internal data class SyncProjection(
     val scheduleSkips: Set<ScheduleOccurrenceRef> = emptySet(),
     val scheduleEnds: Set<ScheduleOccurrenceRef> = emptySet(),
     val refusedSchedules: List<SynchronizedSchedule> = emptyList(),
+    /** Each occurrence's winning break: the earliest start, ties by total order. */
+    val scheduleBreaks: Map<ScheduleOccurrenceRef, SynchronizedBreak> = emptyMap(),
+    val scheduleBreakEnds: Set<ScheduleOccurrenceRef> = emptySet(),
     val pauseSets: List<SynchronizedPauseSet> = emptyList(),
     val removedPauseSetIds: Set<PauseSetId> = emptySet(),
     val refusedPauseSetIds: Set<PauseSetId> = emptySet(),
@@ -255,6 +268,8 @@ private class ProjectionAccumulator(
     private val refusedSchedules = mutableMapOf<ScheduleSyncId, SyncOperationPayload.SchedulePut>()
     private val scheduleSkips = mutableSetOf<ScheduleOccurrenceRef>()
     private val scheduleEnds = mutableSetOf<ScheduleOccurrenceRef>()
+    private val scheduleBreaks = mutableMapOf<ScheduleOccurrenceRef, SynchronizedBreak>()
+    private val scheduleBreakEnds = mutableSetOf<ScheduleOccurrenceRef>()
 
     init {
         applicable
@@ -298,6 +313,8 @@ private class ProjectionAccumulator(
             is SyncOperationPayload.ScheduleRemove,
             is SyncOperationPayload.ScheduleSkip,
             is SyncOperationPayload.ScheduleOccurrenceEnd,
+            is SyncOperationPayload.ScheduleBreak,
+            is SyncOperationPayload.ScheduleBreakEnd,
             is SyncOperationPayload.OptionalExtension -> {
                 applySchedule(payload)
             }
@@ -350,6 +367,8 @@ private class ProjectionAccumulator(
             scheduleSkips = scheduleSkips.toSet(),
             scheduleEnds = scheduleEnds.toSet(),
             refusedSchedules = refusedSchedules.values.sortedBy { put -> put.scheduleId.value }.map(SyncOperationPayload.SchedulePut::toSynchronized),
+            scheduleBreaks = scheduleBreaks.toMap(),
+            scheduleBreakEnds = scheduleBreakEnds.toSet(),
             pauseSets = pauseSets,
             removedPauseSetIds = sets.removedIds,
             refusedPauseSetIds = sets.refusedIds.toSet(),
@@ -411,10 +430,28 @@ private class ProjectionAccumulator(
             outcome(payload.occurrence.scheduleId !in removedScheduleIds && scheduleEnds.add(payload.occurrence))
         }
 
+        is SyncOperationPayload.ScheduleBreak -> {
+            outcome(payload.occurrence.scheduleId !in removedScheduleIds && applyBreak(payload))
+        }
+
+        is SyncOperationPayload.ScheduleBreakEnd -> {
+            outcome(payload.occurrence.scheduleId !in removedScheduleIds && scheduleBreakEnds.add(payload.occurrence))
+        }
+
         // Optional kinds are retained and advance their author's sequence, but never change state.
         else -> {
             SyncAuditOutcome.NO_OP
         }
+    }
+
+    /** Operations arrive in total order, so an equal start keeps the earlier operation's break. */
+    private fun applyBreak(taken: SyncOperationPayload.ScheduleBreak): Boolean {
+        val current = scheduleBreaks[taken.occurrence]
+        if (current != null && current.startEpochMillis <= taken.startEpochMillis) {
+            return false
+        }
+        scheduleBreaks[taken.occurrence] = SynchronizedBreak(taken.startEpochMillis, taken.minutes)
+        return true
     }
 
     /** Operations arrive in total order, so a put for a live identifier is always the newer one. */

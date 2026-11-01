@@ -14,6 +14,7 @@ import app.posato.generated.resources.presence_login_item_supporting
 import app.posato.generated.resources.presence_maintenance
 import app.posato.generated.resources.presence_no_session
 import app.posato.generated.resources.presence_not_enforcing
+import app.posato.generated.resources.presence_on_break
 import app.posato.generated.resources.presence_open
 import app.posato.generated.resources.presence_quit
 import app.posato.generated.resources.presence_quit_confirm
@@ -32,6 +33,7 @@ import org.jetbrains.compose.resources.getString
 public data class PresenceCopy(
     val noSession: String,
     val activeUntil: String,
+    val onBreak: String,
     val minutesLeft: String,
     val lessThanAMinute: String,
     val notEnforcing: String,
@@ -62,6 +64,7 @@ public suspend fun loadPresenceCopy(): PresenceCopy {
     return PresenceCopy(
         noSession = getString(Res.string.presence_no_session),
         activeUntil = getString(Res.string.session_active_until),
+        onBreak = getString(Res.string.presence_on_break),
         minutesLeft = getString(Res.string.session_remaining_minutes),
         lessThanAMinute = getString(Res.string.session_remaining_soon),
         notEnforcing = getString(Res.string.presence_not_enforcing),

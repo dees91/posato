@@ -14,6 +14,12 @@ internal data class ScheduleFacts(
     val skipped: Set<OccurrenceKey> = emptySet(),
     val ended: Set<OccurrenceKey> = emptySet(),
     val expired: Map<OccurrenceKey, Long> = emptyMap(),
+    /** Each occurrence's break: its earliest start among this device's own and the shared facts. */
+    val breaks: Map<OccurrenceKey, ScheduleBreak> = emptyMap(),
+    /** Breaks ended early with End break. */
+    val breakEnds: Set<OccurrenceKey> = emptySet(),
+    /** Breaks this device already saw end, which never release here again. */
+    val breaksOver: Set<OccurrenceKey> = emptySet(),
 ) {
     fun stops(key: OccurrenceKey): Boolean {
         return key in skipped || key in ended

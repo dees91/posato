@@ -9,6 +9,9 @@ import ManagedSettings
 /// from the shared Kotlin framework, and it logs nothing.
 final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
+        if activity == ScheduleMonitor.breakActivity {
+            return handleBreak()
+        }
         guard ScheduleMonitor.isScheduleActivity(activity) else { return }
         ScheduleMonitorEvents.handleIntervalStart(
             activity: activity,
@@ -16,11 +19,25 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
             files: ScheduleMonitorFileStore.live(),
             poster: UserNotificationSchedulePoster(),
-            caps: DeviceActivityCapRegistrar()
+            caps: DeviceActivityCapRegistrar(),
+            center: DeviceActivityCenter()
+        )
+    }
+
+    /// Either callback of the one break activity: an evaluation that re-applies a break that ended.
+    private func handleBreak() {
+        ScheduleMonitorEvents.handleBreakCallback(
+            store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
+            sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
+            files: ScheduleMonitorFileStore.live(),
+            center: DeviceActivityCenter()
         )
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        if activity == ScheduleMonitor.breakActivity {
+            return handleBreak()
+        }
         if ScheduleMonitor.isScheduleActivity(activity) {
             ScheduleMonitorEvents.handleIntervalEnd(
                 activity: activity,
@@ -28,7 +45,8 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
                 sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
                 files: ScheduleMonitorFileStore.live(),
                 poster: UserNotificationSchedulePoster(),
-                caps: DeviceActivityCapRegistrar()
+                caps: DeviceActivityCapRegistrar(),
+                center: DeviceActivityCenter()
             )
             return
         }

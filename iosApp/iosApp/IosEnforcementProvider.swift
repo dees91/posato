@@ -252,7 +252,11 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
             currentDomains: Set(domains), currentTokens: encoded(tokens),
             heldDomains: pausedHosts, heldTokens: encoded(pausedTokens)
         )
-        let plan = PausePlanner.plan([part], occupiedDomains: Set(schedule.shieldedHosts), occupiedTokens: encoded(schedule.shieldedTokens))
+        // What scheduled parts on a break hold is not applied now but returns at the break's end, so it stays occupied.
+        let onBreak: (domains: Set<String>, tokens: Set<Data>) = composeLock?.heldDuringBreak(at: Date()) ?? (domains: [], tokens: [])
+        let occupiedDomains: Set<String> = Set(schedule.shieldedHosts).union(onBreak.domains)
+        let occupiedTokens: Set<Data> = encoded(schedule.shieldedTokens).union(onBreak.tokens)
+        let plan = PausePlanner.plan([part], occupiedDomains: occupiedDomains, occupiedTokens: occupiedTokens)
         return (plan.domains.sorted(), Set(plan.tokens.compactMap { byData[$0] }))
     }
 

@@ -2,6 +2,7 @@ package app.posato.feature.enforcement
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.concurrent.Volatile
 
 /**
  * One helper, two reasons to restrict: a manual session and the running scheduled occurrences. Each
@@ -21,6 +22,9 @@ internal class PauseClaims(
     private var holder = Holder.NONE
     private var held: EnforcementRequest? = null
     private var clearPending = false
+
+    @Volatile
+    override var reservedForBreak = PauseItems()
 
     /** The view the session owner uses; it sees only its own claim. */
     val manual: EnforcementPort = ManualView()
@@ -121,9 +125,12 @@ internal class PauseClaims(
         return manualRequest.items()
     }
 
-    /** What the running occurrences pause now; the manual session's composition counts it toward the limits. */
+    /**
+     * What the running occurrences pause now, and what those on a break hold to apply again at its end; the manual
+     * session's composition counts both toward the limits.
+     */
     fun scheduleItems(): PauseItems {
-        return scheduleRequest.items()
+        return scheduleRequest.items() + reservedForBreak
     }
 
     /** Whether a failed clear still waits; the host retries it each minute. */

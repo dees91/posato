@@ -52,7 +52,7 @@ class ScheduleExpiryExtensionTest {
                 store.recordHost(expired.update)
                 store.materialize(workspace, SyncedSchedules(live = listOf(extended)))
                 assertEquals(1, ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone).running.size)
-                store.stop(setOf(resumed.running.single().key), OccurrenceStop.END, date, workspace)
+                store.recordFact(setOf(resumed.running.single().key), OccurrenceFact.End, date, workspace)
                 assertTrue(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone).running.isEmpty())
             } finally {
                 driver.close()

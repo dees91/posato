@@ -105,6 +105,7 @@ internal fun SessionOverviewContent(
     onEndSchedule: () -> Unit = {},
     pauseNotice: String? = null,
     onShowItems: ((TargetsCategory) -> Unit)? = null,
+    scheduledBreak: ScheduledBreakActions = ScheduledBreakActions(),
 ) {
     val scheduledRestricts = scheduled?.restricts == true
     val active = state.status is LocalSessionStatus.Active || scheduledRestricts
@@ -113,13 +114,13 @@ internal fun SessionOverviewContent(
     var macSetupExpanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         SessionHero(layout, overviewDescription(active, scheduledRestricts, needsMacSetup, hasItems), active, scheduledRestricts)
-        // While a schedule restricts this Mac, a received session needs no Resume here.
-        if (!scheduledRestricts) {
+        // While a schedule restricts this Mac, a received session needs no Resume here; during a break it does.
+        if (!scheduledRestricts || scheduled.onBreak) {
             EnforcementNotice(state, onRetryEnforcement)
         }
         MacSetupNotice(macSetup, macSetupExpanded, state.enforcement, active)
         if (scheduled != null && scheduledRestricts) {
-            ScheduledPauseRunning(scheduled, onEndSchedule)
+            ScheduledPauseRunning(scheduled, onEndSchedule, scheduledBreak)
         } else if (active) {
             PosatoEndTime(
                 stringResource(Res.string.session_until, state.formattedActiveEnd.orEmpty()),
@@ -133,7 +134,7 @@ internal fun SessionOverviewContent(
             }
         } else {
             SessionEndedCaption(state)
-            scheduled?.let { ScheduledPauseAttention(it, macSetup, macActions, onSetup) }
+            scheduled?.let { ScheduledPauseAttention(it, macSetup, macActions, onSetup, scheduledBreak) }
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
             macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }

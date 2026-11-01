@@ -924,7 +924,8 @@ actions and replaces the availability notice with real readiness.
 - **Skip next session** applies to the next occurrence. Show the skipped
   occurrence and the resulting next run so the action is understandable.
   An active scheduled session identifies its schedule and keeps **End
-  early** in the existing session flow. Neither action disables the plan.
+  early** in the existing session flow. Neither action disables the plan. A running scheduled pause also offers **Take a break**; see
+  [Release 1.6 breaks](#release-16-breaks-in-a-scheduled-pause).
 - Local Mac readiness requires the helper, login launch and explicit consent
   to automatic blocking without a password prompt. A revoked requirement
   shows setup required without deleting the shared plan. Never ask for an
@@ -994,7 +995,10 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
   a pause says it is not paused yet; nothing already paused is released.
 - **Running pause.** The active summary names each part: "Set: Work, until
   17:00" and "Evening (schedule), Set: Leisure, until 22:00". **End early**
-  keeps one meaning and ends every part. Copy near edits of a set in use
+  keeps one meaning and ends every part. A running scheduled pause also
+  offers **Take a break**; see
+  [Release 1.6 breaks](#release-16-breaks-in-a-scheduled-pause). Copy near
+  edits of a set in use
   says "Added items pause now. Removed items stay paused until the pause
   using this set ends."
 - **Sync.** The linking sentence, in Session and in onboarding, becomes
@@ -1040,6 +1044,63 @@ owns the planner rules.
   switched off (`user-confirmed`); **Turn on imported schedules** turns them
   on in one step and warns first which would start a pause right away. They
   can also be turned on later in Schedules.
+
+### Release 1.6 breaks in a scheduled pause
+
+Accepted with `SCHEDULE-007` (`user-confirmed` 2026-10-30); the
+[schedule rules](docs/product/schedules-decisions.md#breaks-schedule-007)
+own the decisions.
+
+- **Where.** On Session, the running scheduled pause shows **Take a break**
+  beside **End early**, as a secondary action of the same weight as **End
+  early** (never the primary style). It appears only while a scheduled
+  occurrence runs. On iOS both sit under the pause summary; on a computer
+  they sit in the summary's action row. The Mac menu offers no break
+  action.
+- **Choosing a length.** **Take a break** opens the confirmation that
+  **End early** uses today (the system alert on iOS, the dialog on a
+  computer), with three choices instead of one confirm: **5 minutes**,
+  **10 minutes**, **15 minutes**, and **Cancel**. Title "Take a break?";
+  body: "Restrictions pause on this device now, and on your other devices
+  once they sync. They return on their own. You can take one break in this
+  scheduled pause." With several running schedules the body starts
+  "Morning and Evening pause together."
+- **While a break runs.** The summary keeps the scheduled pause and adds
+  one line under it: "On a break until 14:35". The pause's own end stays
+  ("Evening (schedule), Set: Leisure, until 22:00"). **End break** replaces
+  **Take a break** and returns restrictions at once, with no confirmation.
+  **End early** stays and keeps its meaning.
+- **Started during a break (overlap option A).** When another scheduled
+  pause starts during the break, the summary adds "<name> started and is
+  restricting." under the break line, and that part's items show as paused.
+- **Unavailable.** **Take a break** stays visible but disabled, with a
+  caption under the actions:
+  - "A break was already taken in this scheduled pause." while any running
+    occurrence has used its break;
+  - "Breaks are only for scheduled pauses. End early ends this session."
+    while a manual session is active in the workspace, here or received;
+  - on iPhone, when the device cannot arm the return: "Can't take a break on
+    this iPhone right now." (fail closed, nothing is released).
+- **Manual session during a break.** On a Mac with automatic-start consent
+  (**Start sessions without the password** on), a session received during a
+  break applies by itself, as `MACOS-029` applies any received session.
+  Without that consent it shows **Resume restrictions** at once, as when a
+  scheduled pause ends while it runs. Elsewhere it shows as a restricting
+  part, like a pause that started during the break. (Decided 2026-11-01 by
+  the owner's agent under the owner's explicit delegation of 2026-10-31,
+  as the owner's exception to the `agent-delegated` rule for PR #220;
+  pending the owner's confirmation in that pull request.)
+- **After the break.** The break line disappears at the break end and the
+  limit caption shows. Nothing announces the break's start or end; Session
+  and the menu show the truth.
+- **Mac menu.** "Scheduled pause: <name>, on a break until 14:35" while a
+  break runs; otherwise unchanged.
+- **Accessibility.** The break line is part of the summary's accessible
+  label. Disabled **Take a break** exposes its caption as its accessibility
+  hint. Choices in the confirmation have plain labels ("5 minutes").
+
+Reuse the existing summary, action, alert, and caption components; no new
+component, color, or icon.
 
 ### Session
 

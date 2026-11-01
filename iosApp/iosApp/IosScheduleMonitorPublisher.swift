@@ -4,32 +4,6 @@ import Foundation
 import ManagedSettings
 import PosatoShared
 
-/// Narrow seam over Device Activity monitoring for scheduled pauses.
-protocol ScheduleActivityCenter {
-    var monitoredActivities: [DeviceActivityName] { get }
-    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule?
-    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws
-    func stopMonitoringSchedules(_ activities: [DeviceActivityName])
-}
-
-extension DeviceActivityCenter: ScheduleActivityCenter {
-    var monitoredActivities: [DeviceActivityName] {
-        activities
-    }
-
-    func monitoredSchedule(for activity: DeviceActivityName) -> DeviceActivitySchedule? {
-        schedule(for: activity)
-    }
-
-    func startMonitoringSchedule(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
-        try startMonitoring(activity, during: schedule)
-    }
-
-    func stopMonitoringSchedules(_ activities: [DeviceActivityName]) {
-        stopMonitoring(activities)
-    }
-}
-
 /// Writes the schedule table the monitor extension reads, keeps one repeating
 /// activity per enabled plan registered, and announces a running start the
 /// extension has not recorded, such as one an edit began inside its interval.
@@ -95,7 +69,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
                 tokenIndexes: tokenIndex.indexes(for: $0.mappingIds)
             )
         }
-        let file = ScheduleMonitorFile(
+        var file = ScheduleMonitorFile(
             version: ScheduleMonitor.fileVersion,
             schedules: table.schedules.map {
                 ScheduleMonitorFile.Schedule(
@@ -120,24 +94,34 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
                 endBody: table.endBody,
                 manualSessionEnd: table.manualSessionEndEpochSeconds > 0 ? table.manualSessionEndEpochSeconds : nil
             ),
-            sets: sets
+            sets: sets,
+            breaks: table.breaks.map {
+                ScheduleMonitorFile.Break(id: $0.id, date: $0.date, startEpoch: $0.startEpochSeconds, endEpoch: $0.endEpochSeconds, over: $0.over)
+            }
         )
         // The table is written before any registration, so a callback always reads the plans it belongs to.
-        // It is rewritten only when it changed; registrations are reconciled every time.
-        // A table that could not be written is removed and leaves the registrations as they are: no plan
-        // starts with the previous table's items, and applying the schedule reports a platform failure.
-        if let files, files.readTable() != file {
-            do {
-                try files.writeTable(file)
-            } catch {
-                return
+        // It is rewritten only when it changed, under the lock the extension composes with; registrations are
+        // reconciled every time. A table that could not be written is removed and leaves the registrations as
+        // they are: no plan starts with the previous table's items, and applying the schedule reports a platform
+        // failure. Without the lock no break is written, so nothing is released for one.
+        if let files {
+            let write = { (table: ScheduleMonitorFile) -> Bool in
+                guard files.readTable() != table else { return true }
+                return (try? files.writeTable(table)) != nil
             }
+            let written = files.withComposeLockIfAvailable { write(file) }
+            if written == nil {
+                file.breaks = []
+            }
+            guard written ?? write(file) else { return }
         }
         let running = Set(file.running.map { "\($0.id):\($0.date)" })
         files?.removeStarted(except: running)
         // What an occurrence holds is kept while it runs, including one the extension started just before its time.
         let started = ScheduleMonitorRule.running(in: file, at: now(), calendar: calendar(), leading: ScheduleMonitor.earlyCallbackMargin)
-        files?.removeHeld(except: running.union(started.map { "\($0.scheduleId):\($0.date)" }))
+        let kept = running.union(started.map { "\($0.scheduleId):\($0.date)" })
+        files?.removeHeld(except: kept)
+        files?.removeBreakOver(except: kept)
         reconcile(file)
         announceStarts(file)
     }
@@ -150,13 +134,23 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             guard self.authorized() else { return handler(.authorizationRequired) }
             guard let files = self.files, let file = files.readTable() else { return handler(.platformFailure) }
             let store = self.scheduleStore()
-            let running = ScheduleMonitorRule.running(in: file, at: self.now(), calendar: self.calendar())
-            let applied = files.withComposeLock {
-                ScheduleMonitorEvents.applyComposed(running: running, file: file, files: files, store: store, sessionStore: self.sessionStore())
+            let time = self.now()
+            // The clear belongs to the same lock as the composition, so a callback that waited for the lock never
+            // has its return erased by a release decided before it.
+            let compose = { (breaks: Bool) -> Bool in
+                let table = files.readTable() ?? file
+                let running = ScheduleMonitorRule.running(in: table, at: time, calendar: self.calendar())
+                let releasing = breaks ? self.releasing(table, files: files, at: time) : []
+                let applied = ScheduleMonitorEvents.applyComposed(
+                    running: running, file: table, files: files, store: store, sessionStore: self.sessionStore(), releasing: releasing
+                )
+                if !applied {
+                    store.clearSchedule()
+                }
+                return applied
             }
-            if !applied {
-                store.clearSchedule()
-            }
+            // Without the lock nothing is released for a break.
+            let applied = files.withComposeLockIfAvailable { compose(true) } ?? compose(false)
             handler(applied ? .applied : .nothingToEnforce)
         }
     }
@@ -182,6 +176,41 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         }
     }
 
+    /// Registers the break activity for the nearest open deadline, the new one included, before a break is
+    /// recorded. False takes no break: nothing is recorded, authored, or released.
+    func armBreak(deadlineEpochSeconds: Int64) -> Bool {
+        guard isCapable, authorized(), let files else { return false }
+        let deadline = Date(timeIntervalSince1970: TimeInterval(deadlineEpochSeconds))
+        let armed = files.withComposeLockIfAvailable { () -> Bool in
+            let center = center()
+            let pending = files.readTable().flatMap { ScheduleBreakWindows.nearestDeadline($0, over: files.breaksOver(), at: now()) }
+            let wanted = ScheduleBreakActivity.schedule(deadline: min(deadline, pending ?? deadline), calendar: calendar())
+            if let current = center.monitoredSchedule(for: ScheduleMonitor.breakActivity), Self.sameInterval(current, wanted) {
+                return true
+            }
+            do {
+                try center.startMonitoringSchedule(ScheduleMonitor.breakActivity, during: wanted)
+                return true
+            } catch {
+                return false
+            }
+        }
+        return armed ?? false
+    }
+
+    /// The occurrences a break releases on this device now, as `<id>:<date>`: only windows a registered
+    /// deadline covers, so a phone whose arming failed shows no break.
+    func coveredBreaks() -> [String] {
+        guard let files, let file = files.readTable() else { return [] }
+        return releasing(file, files: files, at: now()).sorted()
+    }
+
+    private func releasing(_ file: ScheduleMonitorFile, files: ScheduleMonitorFileStore, at time: Date) -> Set<String> {
+        guard isCapable, authorized() else { return [] }
+        let armed = ScheduleBreakActivity.armed(center: center(), calendar: calendar())
+        return ScheduleBreakWindows.releasing(file, over: files.breaksOver(), armed: armed, at: time)
+    }
+
     func startedOccurrences() -> [String] {
         files?.startedOccurrences() ?? []
     }
@@ -196,15 +225,79 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         if let cap = cap(for: file) {
             wanted[ScheduleMonitor.capActivity] = cap
         }
+        // Kept while any break is open, so it is never stopped as stale; computed from the windows, never from
+        // what is registered.
+        if let deadline = ScheduleBreakWindows.nearestDeadline(file, over: files?.breaksOver() ?? [], at: now()) {
+            wanted[ScheduleMonitor.breakActivity] = ScheduleBreakActivity.schedule(deadline: deadline, calendar: calendar())
+        }
         let stale = center.monitoredActivities.filter { ScheduleMonitor.isScheduleActivity($0) && wanted[$0] == nil }
         if !stale.isEmpty {
             center.stopMonitoringSchedules(stale)
         }
+        var breakRefused = false
         for (activity, schedule) in wanted {
             // Restarting calls the end early, so an unchanged plan is left alone.
             if let current = center.monitoredSchedule(for: activity), Self.sameInterval(current, schedule) { continue }
-            try? center.startMonitoringSchedule(activity, during: schedule)
+            do {
+                try center.startMonitoringSchedule(activity, during: schedule)
+            } catch {
+                breakRefused = breakRefused || activity == ScheduleMonitor.breakActivity
+            }
         }
+        if breakRefused {
+            retireBreaks(center)
+        }
+        writeReadout(center)
+    }
+
+    /// A break deadline that cannot be registered while an earlier registration still covers an open window ends
+    /// every open break on this phone, as a failed chain does in the extension: the windows are recorded as over,
+    /// that registration is stopped, and every running part is composed, all under the compose lock, so no
+    /// registration releases them later. A phone where no registration covers a window has released nothing:
+    /// it records nothing and arms on the next evaluation, as a receiving phone whose first arming failed.
+    private func retireBreaks(_ center: ScheduleActivityCenter) {
+        guard let files else { return }
+        let time = now()
+        files.withComposeLock {
+            guard let table = files.readTable() else { return }
+            let windows = ScheduleBreakWindows.open(table, over: files.breaksOver())
+            let armed = ScheduleBreakActivity.armed(center: center, calendar: calendar())
+            guard windows.contains(where: { ScheduleBreakWindows.covered($0, armed: armed) }) else { return }
+            for window in windows {
+                try? files.recordBreakOver(scheduleId: window.id, date: window.date)
+            }
+            center.stopMonitoringSchedules([ScheduleMonitor.breakActivity])
+            let store = scheduleStore()
+            let running = ScheduleMonitorRule.running(in: table, at: time, calendar: calendar())
+            if !ScheduleMonitorEvents.applyComposed(running: running, file: table, files: files, store: store, sessionStore: sessionStore()) {
+                store.clearSchedule()
+            }
+        }
+    }
+
+    /// What Device Activity monitors for Posato after this evaluation, in the app's own container: no backup,
+    /// never synchronized, read only by the verification driver to prove the activity budget and the break's return.
+    private func writeReadout(_ center: ScheduleActivityCenter) {
+        guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        var directory = support.appendingPathComponent("ScheduleMonitor", isDirectory: true)
+        let names = center.monitoredActivities.map(\.rawValue).sorted()
+        let deadline = ScheduleBreakActivity.armed(center: center, calendar: calendar()).map { Int64($0.timeIntervalSince1970) }
+        let readout = MonitorReadout(version: 1, at: Int64(now().timeIntervalSince1970), count: names.count, activities: names, breakDeadline: deadline)
+        guard let data = try? JSONEncoder().encode(readout),
+              (try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)) != nil
+        else { return }
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? directory.setResourceValues(values)
+        try? data.write(to: directory.appendingPathComponent("monitor-v1.json"), options: .atomic)
+    }
+
+    private struct MonitorReadout: Encodable {
+        let version: Int
+        let at: Int64
+        let count: Int
+        let activities: [String]
+        let breakDeadline: Int64?
     }
 
     static func repeating(_ schedule: ScheduleMonitorFile.Schedule) -> DeviceActivitySchedule {
