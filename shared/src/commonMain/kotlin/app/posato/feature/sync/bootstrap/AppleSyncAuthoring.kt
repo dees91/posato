@@ -176,6 +176,10 @@ private fun isSkipped(
         is StoredPolicyIntent.PutSet -> projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
         is StoredPolicyIntent.RemoveSet -> false
         is StoredPolicyIntent.ChooseDefault -> projection.defaultPauseSetId == intent.setId
-        is StoredPolicyIntent.SetWindow -> true
+        // The writer authors a rule only for a website in a live set; one that can never apply is discarded.
+        is StoredPolicyIntent.SetWindow -> {
+            val set = projection.pauseSets.firstOrNull { live -> live.setId == intent.setId }
+            set == null || intent.domain !in set.domains || set.windows[intent.domain] == intent.window
+        }
     }
 }

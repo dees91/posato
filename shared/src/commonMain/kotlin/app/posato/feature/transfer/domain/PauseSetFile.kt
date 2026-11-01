@@ -82,7 +82,7 @@ internal fun exportFile(
         .sortedBy { set -> if (set.id == PauseSetId.FIRST) 0 else 1 }
     val refs = live.mapIndexed { index, set -> set.id to "s${index + 1}" }.toMap()
     return PauseSetFile(
-        sets = live.map { set -> FileSet(checkNotNull(refs[set.id]), set.name, set.id == PauseSetId.FIRST, set.domains) },
+        sets = live.map { set -> FileSet(checkNotNull(refs[set.id]), set.name, set.id == PauseSetId.FIRST, set.domains, set.windows) },
         defaultSet = sets.resolvedDefault()?.let(refs::get),
         schedules = schedules.filterNot { schedule -> schedule.refused }.mapNotNull { schedule ->
             refs[schedule.plan.setId]?.let { ref ->

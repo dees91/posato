@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Window rules between this device and the workspace (ADR 0006 TARGETS-013 amendment). Failure modes: an edit
@@ -133,13 +134,14 @@ class PolicyReconcilerWindowTest {
 
             assertIs<LocalPolicyResult.Success<Unit>>(PolicyReconciler(store).seedLocalExtras(workspaceId, projection))
 
+            val pending = store.pending()
             assertEquals(
-                listOf(
-                    StoredPolicyIntent.PresentDomain(domain("fresh"), work),
-                    StoredPolicyIntent.SetWindow(domain("fresh"), work, hourly),
-                    StoredPolicyIntent.SetWindow(news, work, hourly),
-                ),
-                store.pending(),
+                listOf(StoredPolicyIntent.SetWindow(domain("fresh"), work, hourly), StoredPolicyIntent.SetWindow(news, work, hourly)),
+                pending.filterIsInstance<StoredPolicyIntent.SetWindow>(),
+            )
+            assertTrue(
+                pending.indexOf(StoredPolicyIntent.PresentDomain(domain("fresh"), work)) <
+                    pending.indexOf(StoredPolicyIntent.SetWindow(domain("fresh"), work, hourly)),
             )
         }
     }

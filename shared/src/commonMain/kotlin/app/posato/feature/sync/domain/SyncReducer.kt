@@ -372,7 +372,8 @@ private class ProjectionAccumulator(
         val pauseSets = sets.liveIds.sortedBy(PauseSetId::value).map { setId ->
             val domains = setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue)
             val rules = domains.mapNotNull { domain -> windows[setId to domain]?.let { window -> domain to window } }.toMap()
-            SynchronizedPauseSet(setId, sets.nameOf(setId), domains, rules)
+            val ruled = domains.filterTo(mutableSetOf()) { domain -> (setId to domain) in windows }
+            SynchronizedPauseSet(setId, sets.nameOf(setId), domains, rules, ruled)
         }
         return SyncProjection(
             applicationPolicyName,
