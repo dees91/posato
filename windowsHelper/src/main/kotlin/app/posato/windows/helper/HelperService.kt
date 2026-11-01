@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The service of ADR 0010 on Windows. It answers one request per connection from the installing user (or the
@@ -28,7 +29,13 @@ internal class HelperService(
     private val lock = Any()
     private val filters = WfpFilters(config.sid)
     private val ender = ProcessEnder(config.sid)
-    private val timer: ScheduledExecutorService = Executors.newScheduledThreadPool(2, daemon("posato-helper-timer"))
+
+    /** The one-second tick has a thread of its own, so a slow lookup never delays a window change or the end. */
+    private val ticker: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemon("posato-helper-tick"))
+
+    /** Refreshes run one at a time on their own thread; an extra one waits for the running one, at most one queued. */
+    private val refresher: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemon("posato-helper-refresh"))
+    private val refreshQueued = AtomicBoolean(false)
     private val resolvers = Executors.newFixedThreadPool(RESOLVER_THREADS, daemon("posato-helper-resolver"))
     private val workers = Executors.newFixedThreadPool(CONNECTION_WORKERS, daemon("posato-helper-connection"))
     private val server = PipeServer(config.sid, workers, ::answer)
@@ -39,15 +46,16 @@ internal class HelperService(
 
     /** Serves until [stop]; false when the pipe name is already taken, so the service should fail and restart. */
     fun serve(): Boolean {
-        timer.scheduleWithFixedDelay(::tick, 0, TICK_MILLIS, TimeUnit.MILLISECONDS)
-        timer.scheduleWithFixedDelay(::refresh, 0, REFRESH_MILLIS, TimeUnit.MILLISECONDS)
+        ticker.scheduleWithFixedDelay(::tick, 0, TICK_MILLIS, TimeUnit.MILLISECONDS)
+        refresher.scheduleWithFixedDelay(::refresh, 0, REFRESH_MILLIS, TimeUnit.MILLISECONDS)
         return server.serve()
     }
 
     /** Stops serving; closing the filtering session removes every filter, and a restart applies the state again. */
     fun stop() {
         server.stop()
-        timer.shutdownNow()
+        ticker.shutdownNow()
+        refresher.shutdownNow()
         resolvers.shutdownNow()
         workers.shutdownNow()
         synchronized(lock) { filters.close() }
@@ -104,8 +112,9 @@ internal class HelperService(
                         save(HelperState(null, applied.sessionId))
                     }
                 } else {
-                    // A host that becomes blocked is resolved again at once instead of at the next minute.
-                    if (plan.evaluate(now())) timer.execute(::refresh)
+                    // A host that becomes blocked is resolved again soon instead of at the next minute.
+                    val before = plan.blockedHosts().toSet()
+                    if (plan.evaluate(now()) && plan.blockedHosts().any { it !in before }) requestRefresh()
                     val wanted = plan.filters()
                     if (wanted != filters.blocked) filters.replace(wanted)
                     ender.endMatching(applied.executables)
@@ -129,6 +138,15 @@ internal class HelperService(
                     val wanted = plan.filters()
                     if (wanted != filters.blocked) filters.replace(wanted)
                 }
+            }
+        }
+    }
+
+    private fun requestRefresh() {
+        if (!refreshQueued.getAndSet(true)) {
+            refresher.execute {
+                refreshQueued.set(false)
+                refresh()
             }
         }
     }

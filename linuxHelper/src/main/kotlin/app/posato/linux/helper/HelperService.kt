@@ -197,8 +197,16 @@ internal data class HelperPaths(
     val config: Path = Paths.get("/etc/posato/helper.conf"),
 )
 
-/** The zone the system uses now: the `zoneinfo` link target, read at each call, or the JVM default when unreadable. */
-internal fun currentSystemZone(localtime: Path = Paths.get("/etc/localtime")): ZoneId {
-    return runCatching { ZoneId.of(Files.readSymbolicLink(localtime).toString().substringAfter("zoneinfo/")) }
-        .getOrElse { ZoneId.systemDefault() }
+/**
+ * The zone the system uses now, read at each call: the `zoneinfo` link target (also under `posix/` or `right/`), else
+ * the name in `/etc/timezone`, else the JVM default, which the JVM read at start.
+ */
+internal fun currentSystemZone(
+    localtime: Path = Paths.get("/etc/localtime"),
+    timezone: Path = Paths.get("/etc/timezone"),
+): ZoneId {
+    val linked = runCatching {
+        ZoneId.of(Files.readSymbolicLink(localtime).toString().substringAfter("zoneinfo/").removePrefix("posix/").removePrefix("right/"))
+    }
+    return linked.recoverCatching { ZoneId.of(Files.readString(timezone).trim()) }.getOrElse { ZoneId.systemDefault() }
 }
