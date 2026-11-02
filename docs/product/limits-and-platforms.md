@@ -119,7 +119,11 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   it. On iPhone and iPad the system decides when Posato's background
   extension runs: a window can open up to about a minute late, and if the
   system never runs the extension at the window's end, the website stays
-  open until the extension next runs or you open Posato. Safari on iPhone
+  open until the extension next runs or you open Posato. The system also
+  limits how many timers Posato may keep, and only an open Posato frees
+  the used ones: while Posato stays closed, the website stops opening
+  after some hours (about four with a window every 30 minutes) and opens
+  again once you open Posato. Safari on iPhone
   and iPad shows the system's restricted page, which does not say when the
   website opens; Session in Posato does. A rule cleared on another device
   takes effect on an iPhone or iPad only when Posato opens there, and on

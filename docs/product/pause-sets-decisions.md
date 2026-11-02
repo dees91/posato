@@ -358,8 +358,14 @@ amendments, and the screens in
     Breaks keep their own activity.
   - **Close before open.** A website opens only while an activity is
     registered for its close. If that registration fails, or the platform's
-    limit of 20 activities leaves no room for it, nothing opens; the next
-    callback or app start retries.
+    limit of 20 activities leaves no room for it, nothing opens. Only the
+    app stops activities that have already fired, so a callback cannot free
+    room: with Posato closed, each boundary keeps its slot, and once fired
+    and pending activities fill the room left by schedules, caps, and
+    breaks, later windows stay closed until Posato opens (about four hours
+    of a 30/5 rule with a few other activities). Opening Posato frees the
+    fired activities and registers the windows ahead. This is an accepted
+    limit, stated on the limits page.
   - **The clock decides.** Every callback recomputes what is blocked from
     the real clock, so callbacks are idempotent.
   - **Never early.** The 60-second early-callback margin of breaks is not
