@@ -80,13 +80,33 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
 - Window enforcement on Linux, Windows, and Android (`TARGETS-013` phase 4):
   each enforcer follows the plans of the last apply on its own clock, so
   terminate Posato (`terminate -t linux|windows`) after the pause starts and
-  the window still opens and closes. Probe inside the guest or phone on its
-  own clock with a script started detached before the boundary: on Linux
-  `getent ahosts` and a `curl` load with a `probe` query (`setsid nohup`
-  from `linux exec`); on Windows `curl.exe` (status `000` is blocked;
-  `Start-Process -WindowStyle Hidden` from `windows exec`); on Android
-  `ping -c 1 -W 2 <name>` for the resolved address (`127.0.0.1` is blocked;
-  `adb shell 'nohup sh script &'`). Linux and Windows evaluate on a
+  the window still opens and closes. The proof is a fresh browser load on
+  the target's own clock, started before the boundary: every probe opens a
+  new browser context (its own HTTP cache, socket pool, and host cache) and
+  loads `http://<site>/?probe=<instant>`; a page titled "Example Domain" is
+  open, a failed navigation (`net::ERR_*`) is blocked. On Linux install
+  Playwright's Chromium in the clone (`python3 -m venv`, `pip install
+  playwright`, `playwright install-deps chromium` with `sudo -n`,
+  `playwright install chromium`) and start the script with `setsid nohup`
+  from `linux exec`; blocked reads `ERR_CONNECTION_REFUSED`. On Android
+  forward Chrome's DevTools socket (`adb forward tcp:9333
+  localabstract:chrome_devtools_remote`) and drive it from the host: per
+  probe `Target.createBrowserContext`, an `about:blank` target, and
+  `Page.navigate`, whose `errorText` names a failed load (blocked reads
+  `ERR_BLOCKED_BY_CLIENT`); read the phone's clock with `Runtime.evaluate
+  Date.now()`. Pass every boundary instant to the script, the opening and
+  the close. Inside `linux exec`, `pkill -f <script>` also matches the shell
+  that runs it. On Windows `pip install playwright` in the clone and drive
+  the installed Edge (Playwright's `msedge` channel), started with
+  `Start-Process python ... -WindowStyle Hidden` from `windows exec` and no
+  output redirection, which would hold the exec open; blocked reads
+  `ERR_QUIC_PROTOCOL_ERROR` or `ERR_NETWORK_ACCESS_DENIED`. Make each
+  probe's context and blank page a few seconds before its instant: a new
+  Edge context in the clone can take seconds, which made probes late.
+  Command-line probes
+  (`getent ahosts` and `curl` on Linux, `curl.exe` on Windows, `ping -c 1
+  -W 2` on Android) only support a browser row: they skip the browser's own
+  resolver and connection reuse. Linux and Windows evaluate on a
   one-second tick, so a probe right at b can still read the old state.
   Android caches DNS answers by TTL: a blocked answer lives 30 s and an open
   one at most the window's rest (at least 30 s). On Windows choose a ruled

@@ -3334,6 +3334,7 @@ first removal attempt that does not finish, not to a paused keychain.
   Windows filters stay per host, so a ruled site that shares an address with
   a blocked one stays blocked in its window.
 - The serial matrix passed on a Tart Mac, the test iPhone, Linux, Android,
-  Windows, and two Macs exchanging a rule through a folder workspace. The
+  Windows, and two Macs exchanging a rule through a folder workspace, with
+  fresh browser loads as the proof; command-line probes only support it. The
   [verify-posato pause-set recipes](../../.agents/skills/verify-posato/features/pause-sets.md)
-  keep the probe method and the driver gaps found on the way.
+  keep the browser probe method and the driver gaps found on the way.
