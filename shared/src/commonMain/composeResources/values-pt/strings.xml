@@ -876,8 +876,8 @@ Só para você.</string>
         <item quantity="many">%1$d de %2$d sites</item>
         <item quantity="other">%1$d de %2$d sites</item>
     </plurals>
-    <string name="targets_open_briefly">Abrir rapidamente…</string>
-    <string name="targets_window_title">Abrir %1$s rapidamente</string>
+    <string name="targets_open_briefly">Abrir por pouco tempo…</string>
+    <string name="targets_window_title">Abrir %1$s por pouco tempo</string>
     <string name="targets_window_every">A cada</string>
     <string name="targets_window_for">Por</string>
     <string name="targets_window_period_30">30 minutos</string>
@@ -900,9 +900,9 @@ Só para você.</string>
     <string name="targets_window_row_120">Abre a cada 2 h por %1$d min</string>
     <string name="targets_window_clear">Não abrir</string>
     <string name="targets_window_in_use">Uma regra nova vale a partir de agora.</string>
-    <string name="session_window_opens_at">Abre às %1$s</string>
+    <string name="session_window_opens_at">Abre: %1$s</string>
     <string name="session_window_open_until">Aberto até %1$s</string>
-    <string name="session_window_row_opens">%1$s, abre às %2$s</string>
+    <string name="session_window_row_opens">%1$s, abre: %2$s</string>
     <string name="session_window_row_open">%1$s, aberto até %2$s</string>
     <plurals name="session_window_more">
         <item quantity="one">e mais %1$d</item>

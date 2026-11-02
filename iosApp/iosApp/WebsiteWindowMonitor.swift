@@ -322,8 +322,8 @@ enum WindowActivities {
     struct Outcome: Equatable {
         /// The boundaries monitored after the top-up.
         let fires: [Date]
-        /// Window activities no plan wants any more or that have fired, never the caller. Only the app stops them,
-        /// and only outside the compose lock: a stop delivers the activity's end, whose callback waits for that lock.
+        /// Window activities no plan wants any more or that have fired, never the caller. The app stops them, the
+        /// extension those that fired long ago, and only outside the compose lock: a stop delivers the activity's end, whose callback waits for that lock.
         let stale: [DeviceActivityName]
     }
 

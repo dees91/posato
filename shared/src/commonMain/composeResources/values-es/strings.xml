@@ -900,10 +900,10 @@ Solo para ti.</string>
     <string name="targets_window_row_120">Se abre cada 2 h por %1$d min</string>
     <string name="targets_window_clear">No abrir</string>
     <string name="targets_window_in_use">Una regla nueva se aplica ahora.</string>
-    <string name="session_window_opens_at">Se abre a las %1$s</string>
-    <string name="session_window_open_until">Abierto hasta las %1$s</string>
-    <string name="session_window_row_opens">%1$s, se abre a las %2$s</string>
-    <string name="session_window_row_open">%1$s, abierto hasta las %2$s</string>
+    <string name="session_window_opens_at">Se abre: %1$s</string>
+    <string name="session_window_open_until">Abierto hasta %1$s</string>
+    <string name="session_window_row_opens">%1$s, se abre: %2$s</string>
+    <string name="session_window_row_open">%1$s, abierto hasta %2$s</string>
     <plurals name="session_window_more">
         <item quantity="one">y %1$d más</item>
         <item quantity="many">y %1$d más</item>

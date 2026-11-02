@@ -353,19 +353,18 @@ amendments, and the screens in
     otherwise one starting at the boundary, so no registration starts in
     the past. A callback reads the clock and registers the boundaries
     ahead that no activity covers; it never restarts or stops the activity
-    it was called for. The device probe of 2026-11-01 showed that
+    it was called for, and it stops other fired window activities only
+    after it released the compose lock. The device probe of 2026-11-01 showed that
     re-registering one activity from its own callback lost the next close.
     Breaks keep their own activity.
   - **Close before open.** A website opens only while an activity is
     registered for its close. If that registration fails, or the platform's
-    limit of 20 activities leaves no room for it, nothing opens. Only the
-    app stops activities that have already fired, so a callback cannot free
-    room: with Posato closed, each boundary keeps its slot, and once fired
-    and pending activities fill the room left by schedules, caps, and
-    breaks, later windows stay closed until Posato opens (about four hours
-    of a 30/5 rule with a few other activities). Opening Posato frees the
-    fired activities and registers the windows ahead. This is an accepted
-    limit, stated on the limits page.
+    limit of 20 activities leaves no room for it, nothing opens; the next
+    callback or app start retries. A callback frees room: once the compose
+    lock is released, it stops window activities whose instant passed more
+    than the fallback delay plus the closing lead ago, never its own, and
+    then registers the boundaries ahead again, so windows keep opening for
+    as long as Posato stays closed.
   - **The clock decides.** Every callback recomputes what is blocked from
     the real clock, so callbacks are idempotent.
   - **Never early.** The 60-second early-callback margin of breaks is not

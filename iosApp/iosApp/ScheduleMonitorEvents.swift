@@ -291,7 +291,7 @@ enum ScheduleMonitorEvents {
 
     /// A window activity's callback (TARGETS-013 G21), or Posato's own evaluation when `activity` is nil: it reads
     /// the clock, registers the boundaries ahead that no activity covers, and both stores follow the clock. It never
-    /// restarts or stops an activity; it returns the stale ones, which only the app stops (`stopStale`).
+    /// restarts or stops an activity; it returns the stale ones, which the caller stops once the lock is released.
     @discardableResult
     static func handleWindowCallback(
         activity: DeviceActivityName?,
@@ -341,6 +341,39 @@ enum ScheduleMonitorEvents {
         }
     }
 
+    /// The monitor extension's entry for a window activity's callback. While Posato stays closed nothing else stops a
+    /// fired window activity, and every one counts against the platform's limit, so after the evaluation released the
+    /// compose lock it stops those whose instant passed more than the fallback delay plus the closing lead ago, never
+    /// its caller, and evaluates once more so the freed room registers the boundaries ahead.
+    static func handleWindowCallbackInExtension(
+        activity: DeviceActivityName,
+        callback: MonitorBoundary.Callback,
+        store: ScheduleShieldStore,
+        sessionStore: ScheduleShieldStore,
+        manualFilter: ManualWebFilterStore?,
+        files: ScheduleMonitorFileStore?,
+        center: ScheduleActivityCenter,
+        now: () -> Date = Date.init,
+        calendar: Calendar = ScheduleMonitor.calendar
+    ) {
+        let stale = handleWindowCallback(
+            activity: activity, callback: callback, store: store, sessionStore: sessionStore, manualFilter: manualFilter,
+            files: files, center: center, now: now, calendar: calendar
+        )
+        let horizon = now().addingTimeInterval(-(WindowEvaluation.fallbackDelay + WindowEvaluation.closingLead))
+        let fired = stale.filter { stopped in
+            guard stopped != activity, let fire = WindowActivities.fireInstant(of: stopped) else { return false }
+            return fire < horizon
+        }
+        guard !fired.isEmpty else { return }
+        stopStale(fired, center: center)
+        // An evaluation, so the caller still covers its own boundary and its fallback logic is not repeated.
+        handleWindowCallback(
+            activity: activity, callback: .evaluation, store: store, sessionStore: sessionStore, manualFilter: manualFilter,
+            files: files, center: center, now: now, calendar: calendar
+        )
+    }
+
     /// The window boundaries wanted at `time`: the manual session's, the running scheduled parts', and those of the
     /// `pending` rules a composition is about to apply.
     static func windowBoundaries(
@@ -362,7 +395,7 @@ enum ScheduleMonitorEvents {
 
     struct WindowTopUp {
         let fires: [Date]
-        /// For the app to stop after it released the compose lock (`stopStale`); a callback never stops one.
+        /// For the caller to stop after it released the compose lock (`stopStale`).
         let stale: [DeviceActivityName]
 
         /// Whether an activity is registered for a close at that instant.
@@ -389,8 +422,8 @@ enum ScheduleMonitorEvents {
         return WindowTopUp(fires: outcome.fires, stale: outcome.stale)
     }
 
-    /// Stops window activities the app's evaluation found stale. Called by the app only, never under the compose
-    /// lock and never from a callback: a stop delivers the activity's end, whose callback waits for that lock.
+    /// Stops window activities an evaluation found stale. Called by the app, and by the extension for activities that
+    /// fired long ago, never under the compose lock: a stop delivers the activity's end, whose callback waits for it.
     static func stopStale(_ stale: [DeviceActivityName], center: ScheduleActivityCenter) {
         guard !stale.isEmpty else { return }
         center.stopMonitoringSchedules(stale)

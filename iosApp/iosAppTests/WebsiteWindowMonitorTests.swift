@@ -153,15 +153,52 @@ final class WebsiteWindowMonitorTests: XCTestCase {
         XCTAssertNotNil(fixture.center.installed[own(at(10, 30, 20))], "the opening's fallback is registered")
     }
 
-    func testAWindowCallbackNeverStopsAnActivityNotEvenOneThatHasFired() throws {
+    private func extensionCallback(_ fixture: Fixture, _ activity: DeviceActivityName, _ callback: MonitorBoundary.Callback, _ time: Date) {
+        ScheduleMonitorEvents.handleWindowCallbackInExtension(
+            activity: activity, callback: callback, store: FakeScheduleShieldStore(), sessionStore: FakeScheduleShieldStore(),
+            manualFilter: fixture.filter, files: fixture.files, center: fixture.center, now: { time }, calendar: calendar
+        )
+    }
+
+    func testTheExtensionStopsOnlyActivitiesFiredLongAgoNeverItsCallerAndNeverUnderTheComposeLock() throws {
         // The opening's fallback, an interval starting at 10:30:20, has fired; the close's callback comes at 10:35.
         let fixture = try session()
-        evaluate(fixture, own(at(10, 30)), .end, at(10, 29))
-        evaluate(fixture, own(at(10, 30, 20)), .start, at(10, 30, 22))
+        fixture.center.lockDirectory = fixture.files.directoryURL
+        extensionCallback(fixture, own(at(10, 30)), .end, at(10, 29))
+        extensionCallback(fixture, own(at(10, 30, 20)), .start, at(10, 30, 22))
         XCTAssertEqual(fixture.filter.blocked, ["control.example"])
-        evaluate(fixture, own(at(10, 35)), .end, at(10, 35, 0.1))
+        XCTAssertFalse(fixture.center.stops.contains(own(at(10, 30, 20))), "the caller is never stopped")
+        extensionCallback(fixture, own(at(10, 35)), .end, at(10, 35, 0.1))
         XCTAssertEqual(fixture.filter.blocked, ["control.example", "ruled.example"])
-        XCTAssertTrue(fixture.center.stops.isEmpty, "a stop delivers an end whose callback waits for the compose lock")
+        XCTAssertTrue(fixture.center.stops.contains(own(at(10, 30))), "the opening fired long enough ago")
+        XCTAssertFalse(fixture.center.stops.contains(own(at(10, 35))), "the caller is never stopped")
+        XCTAssertTrue(fixture.center.stopsUnderLock.isEmpty, "a stop delivers an end whose callback waits for the compose lock")
+    }
+
+    func testWindowsKeepOpeningPastTheActivityLimitThroughExtensionCallbacksAlone() throws {
+        // A ten-hour session with a 30/5 rule and three other activities: 40 boundaries, far more than the 15 slots
+        // left, driven only by the extension's callbacks as the system delivers them while Posato stays closed.
+        let files = try isolatedFiles()
+        try files.writeManualWindows(manualRecord(end: at(20, 0)))
+        let fixture = Fixture(files: files, center: RecordingWindowCenter(), filter: FakeManualFilter())
+        fixture.center.lockDirectory = files.directoryURL
+        for index in 0 ..< 3 {
+            fixture.center.installed[DeviceActivityName("other.\(index)")] = WindowActivities.schedule(fire: at(21, 0), at: at(10, 0), calendar: calendar)
+        }
+        evaluate(fixture, nil, .evaluation, at(10, 5))
+        var time = at(10, 5)
+        var callbacks = 0
+        while time < at(19, 30) {
+            let next = try XCTUnwrap(fires(fixture).first { $0 > time }, "no boundary registered after \(time)")
+            time = next
+            extensionCallback(fixture, own(next), .end, next.addingTimeInterval(0.1))
+            callbacks += 1
+            XCTAssertLessThan(callbacks, 200)
+        }
+        XCTAssertEqual(time, at(19, 30))
+        XCTAssertEqual(fixture.filter.blocked, ["control.example"], "the last opening of the session still opens")
+        XCTAssertGreaterThan(callbacks, WindowActivities.platformLimit)
+        XCTAssertTrue(fixture.center.stopsUnderLock.isEmpty)
     }
 
     func testTheAppStopsWindowActivitiesNoLongerWantedOnlyOutsideTheComposeLock() throws {
