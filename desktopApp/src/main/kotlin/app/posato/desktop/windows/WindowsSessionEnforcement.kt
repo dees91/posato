@@ -1,5 +1,6 @@
 package app.posato.desktop.windows
 
+import app.posato.desktop.linux.HelperApplyLines
 import app.posato.feature.enforcement.EnforcementApplyReport
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementPort
@@ -24,9 +25,14 @@ internal class WindowsSessionEnforcement(
         if (request.domains.isEmpty() && request.mappingIds.isEmpty()) return report(EnforcementOutcome.NOTHING_TO_ENFORCE)
         if (!withContext(Dispatchers.IO) { client.installed() }) return report(EnforcementOutcome.AUTHORIZATION_REQUIRED)
         val executables = mappings.targets(request.mappingIds)
-        val line = "apply\t${request.sessionId.safe()}\t${request.sessionEndEpochMillis}\t${request.domains.joinToString(",")}\t" +
-            executables.joinToString("\u001f")
-        return report(if (send(line) == "ok") EnforcementOutcome.APPLIED else EnforcementOutcome.FAILED)
+        // A service not restarted since an update refuses the plans' sixth field; the five-field form blocks every held
+        // website until the next apply after its restart (ADR 0010 TARGETS-013 amendment).
+        var answer: String? = null
+        for (line in HelperApplyLines.lines(request, request.sessionId.safe(), executables)) {
+            answer = send(line)
+            if (answer != REFUSED) break
+        }
+        return report(if (answer == "ok") EnforcementOutcome.APPLIED else EnforcementOutcome.FAILED)
     }
 
     /** Only a service that is not registered holds nothing; one that does not answer may still hold a pause. */
@@ -75,6 +81,7 @@ internal class WindowsSessionEnforcement(
 
     private companion object {
         const val STATUS_FIELDS = 3
+        const val REFUSED = "error\trequest"
     }
 }
 

@@ -6,8 +6,8 @@ import java.net.InetAddress
 
 /**
  * Which addresses a pause blocks: those that the paused hosts and their `www` names resolve to. Local, private, and
- * multicast addresses are never blocked, so a pause cannot cut the computer off its own network, and a running pause
- * only adds addresses, up to [MAX_ADDRESSES].
+ * multicast addresses are never blocked, so a pause cannot cut the computer off its own network. [BlockPlan] keeps
+ * them per host, up to [MAX_ADDRESSES] over the held hosts.
  */
 internal object FilterPlan {
     const val MAX_ADDRESSES = 16_384
@@ -17,17 +17,9 @@ internal object FilterPlan {
         return hosts.flatMap { host -> if (host.startsWith(WWW)) listOf(host) else listOf(host, WWW + host) }.distinct()
     }
 
-    /** [current] followed by every blockable address of [resolved] that is new, in order, up to the limit. */
-    fun extend(
-        current: Set<InetAddress>,
-        resolved: Collection<InetAddress>,
-    ): Set<InetAddress> {
-        val plan = LinkedHashSet(current)
-        for (address in resolved) {
-            if (plan.size >= MAX_ADDRESSES) break
-            normalize(address).takeIf(::isBlockable)?.let(plan::add)
-        }
-        return plan
+    /** The addresses of [resolved] that a pause may filter, each once, an IPv4-mapped address as its IPv4 address. */
+    fun blockable(resolved: Collection<InetAddress>): Set<InetAddress> {
+        return resolved.mapNotNullTo(LinkedHashSet()) { address -> normalize(address).takeIf(::isBlockable) }
     }
 
     /** An IPv4-mapped IPv6 address reaches the IPv4 address it carries, so it is planned and judged as that address. */

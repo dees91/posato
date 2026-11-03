@@ -6,9 +6,7 @@ internal data class HelperState(
     val expiredSessionId: String?,
 ) {
     fun encode(): String {
-        val apply = applied?.let {
-            "apply\t${it.sessionId}\t${it.endEpochMillis}\t${it.hosts.joinToString(",")}\t${it.executables.joinToString("\u001f")}"
-        }
+        val apply = applied?.line()
         return listOf(apply.orEmpty(), expiredSessionId.orEmpty()).joinToString("\n", postfix = "\n")
     }
 

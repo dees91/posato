@@ -15,6 +15,9 @@ extension BoundedHTTPProxy {
     }
     let upstream = DirectTCPConnection(queue: queue)
     directConnections[ObjectIdentifier(upstream)] = upstream
+    if windows != nil {
+      relayHosts[ObjectIdentifier(upstream)] = (host, client)
+    }
     let resolved = resolveUpstream(host, port)
     scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
     upstream.start(

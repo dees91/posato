@@ -31,7 +31,7 @@ internal fun seedsFor(
     val domains = set.domains
         .filter { domain -> domain !in pendingDomains }
         .map { domain -> StoredPolicyIntent.PresentDomain(domain, set.id) }
-    return listOfNotNull(put) + domains
+    return listOfNotNull(put) + domains + windowSeedsFor(set, projection, pendingForSet)
 }
 
 /**
@@ -55,8 +55,8 @@ internal fun mergeSets(
             pendingForSet.any { intent -> intent is StoredPolicyIntent.RemoveSet } -> null
             status == PauseSetStatus.REMOVED -> null
             status == PauseSetStatus.LIVE -> mergeLive(setId, localSet, base, projection, pendingForSet)
-            status == PauseSetStatus.REFUSED -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = true)
-            else -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = false)
+            status == PauseSetStatus.REFUSED -> localSet?.withPending(pendingForSet, refused = true)
+            else -> localSet?.withPending(pendingForSet, refused = false)
         }
     }
 }
@@ -78,11 +78,15 @@ private fun mergeLive(
         mergeEstablished(localDomains, base.domains[setId].orEmpty().toSet(), projected, presents, removals)
     }
     val pendingName = pending.filterIsInstance<StoredPolicyIntent.PutSet>().lastOrNull()?.name
-    val projectedName = projection.pauseSets.firstOrNull { set -> set.setId == setId }?.name
-    return LocalPauseSet(setId, pendingName ?: projectedName, applyPending(domains, pending), refused = false)
+    val live = projection.pauseSets.firstOrNull { set -> set.setId == setId }
+    val merged = applyPending(domains, pending)
+    // The workspace's rules win; before the first merge a local rule for a website it never ruled waits for its seed.
+    val unpublished = if (base == null) localSet?.windows.orEmpty().filterKeys { domain -> domain !in live?.ruledDomains.orEmpty() } else emptyMap()
+    val windows = applyPendingWindows(live?.windows.orEmpty() + unpublished, pending, merged)
+    return LocalPauseSet(setId, pendingName ?: live?.name, merged, refused = false, windows = windows)
 }
 
-private fun applyPending(
+internal fun applyPending(
     domains: MutableSet<ExactDomain>,
     pending: List<StoredPolicyIntent>,
 ): List<ExactDomain> {

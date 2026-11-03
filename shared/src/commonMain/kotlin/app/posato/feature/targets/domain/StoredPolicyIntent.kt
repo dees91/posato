@@ -30,6 +30,17 @@ internal sealed interface StoredPolicyIntent {
     data class ChooseDefault(
         val setId: PauseSetId,
     ) : StoredPolicyIntent
+
+    /** Sets [domain]'s window rule in [setId], or clears it when [window] is null; ordered after the websites. */
+    data class SetWindow(
+        val domain: ExactDomain,
+        val setId: PauseSetId,
+        val window: WebsiteWindow?,
+    ) : StoredPolicyIntent {
+        override fun toString(): String {
+            return "StoredPolicyIntent.SetWindow(redacted)"
+        }
+    }
 }
 
 internal data class PolicySyncWrite(

@@ -60,6 +60,76 @@ internal class DnsPacket private constructor(
     }
 
     companion object {
+        /**
+         * [reply], a DNS message, with every record's time to live at most [maxSeconds], so a cache keeps a website
+         * opened by its window no longer than the window (TARGETS-013); an EDNS option record carries no time to live
+         * and is kept. Null when the message cannot be read to its end.
+         */
+        fun clampTtl(
+            reply: ByteArray,
+            maxSeconds: Int,
+        ): ByteArray? {
+            if (reply.size < DNS_HEADER) return null
+            val clamped = reply.copyOf()
+            var position = DNS_HEADER
+            repeat(unsigned16(reply, DNS_QUESTIONS)) {
+                position = skipName(reply, position) ?: return null
+                position += QUESTION_TAIL
+            }
+            val records = unsigned16(reply, DNS_ANSWERS) + unsigned16(reply, DNS_AUTHORITIES) + unsigned16(reply, DNS_ADDITIONALS)
+            repeat(records) {
+                position = skipName(reply, position) ?: return null
+                if (position + RECORD_FIXED > reply.size) return null
+                val ttlAt = position + RECORD_TTL
+                if (unsigned16(reply, position) != TYPE_OPT && unsigned32(reply, ttlAt) > maxSeconds) clamped.put32(ttlAt, maxSeconds)
+                position += RECORD_FIXED + unsigned16(reply, position + RECORD_LENGTH)
+            }
+            return clamped.takeIf { position <= reply.size }
+        }
+
+        /** The offset after a name of labels that may end in a compression pointer; null when it runs past the end. */
+        private fun skipName(
+            bytes: ByteArray,
+            start: Int,
+        ): Int? {
+            var position = start
+            var end: Int? = null
+            var readable = true
+            while (end == null && readable && position < bytes.size) {
+                val length = bytes[position].toInt() and BYTE_MASK
+                when {
+                    length == 0 -> end = position + 1
+                    length and POINTER_MARK == POINTER_MARK -> end = position + FIELD_16
+                    length > MAX_LABEL -> readable = false
+                    else -> position += 1 + length
+                }
+            }
+            return end?.takeIf { readable && it <= bytes.size }
+        }
+
+        private fun unsigned32(
+            bytes: ByteArray,
+            offset: Int,
+        ): Long {
+            return (unsigned16(bytes, offset).toLong() shl FIELD_BITS) or unsigned16(bytes, offset + FIELD_16).toLong()
+        }
+
+        private fun ByteArray.put32(
+            offset: Int,
+            value: Int,
+        ) {
+            put16(offset, value ushr FIELD_BITS)
+            put16(offset + FIELD_16, value and FIELD_MASK)
+        }
+
+        private const val DNS_AUTHORITIES = 8
+        private const val DNS_ADDITIONALS = 10
+        private const val RECORD_TTL = 4
+        private const val RECORD_LENGTH = 8
+        private const val RECORD_FIXED = 10
+        private const val TYPE_OPT = 41
+        private const val POINTER_MARK = 0xC0
+
         private const val IPV4_HEADER = 20
         private const val UDP_HEADER = 8
         private const val DNS_HEADER = 12

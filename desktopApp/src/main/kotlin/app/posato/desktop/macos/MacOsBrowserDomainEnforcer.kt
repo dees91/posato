@@ -1,5 +1,7 @@
 package app.posato.desktop.macos
 
+import app.posato.feature.enforcement.DomainWindowPlan
+
 internal sealed interface BrowserDomainEnforcementResult {
     data class Active(
         val port: UShort,
@@ -25,6 +27,7 @@ internal class MacOsBrowserDomainEnforcer(
         domains: List<String>,
         sessionEndEpochMilliseconds: Long? = null,
         grantOnly: Boolean = false,
+        windows: List<DomainWindowPlan> = emptyList(),
     ): BrowserDomainEnforcementResult {
         if (domains.isEmpty() || domains.any { domain -> domain.isBlank() }) {
             return BrowserDomainEnforcementResult.Failed(
@@ -41,7 +44,7 @@ internal class MacOsBrowserDomainEnforcer(
         if (grantOnly && !grantedWithoutPrompt) {
             return BrowserDomainEnforcementResult.Failed(grantUnavailable())
         }
-        val configured = commands.configureBrowserDomains(domains, sessionEndEpochMilliseconds)
+        val configured = commands.configureBrowserDomains(domains, sessionEndEpochMilliseconds, windows)
         if (configured.result.outcome != HelperResult.Outcome.Success || configured.port == 0.toUShort()) {
             return BrowserDomainEnforcementResult.Failed(configured.result)
         }

@@ -3316,6 +3316,28 @@ first removal attempt that does not finish, not to a paused keychain.
   folder-sync recipe in the verify-posato skill records the iCloud delivery
   latency to the iPhone.
 
+## [2026-11-01] feature | A website that opens briefly during a pause
+
+- `TARGETS-013` (idea 46) adds a window rule per pause-set website: every
+  30, 60, or 120 minutes on the device's wall clock it opens for 5, 10, or
+  15 minutes while every running part that covers it has a rule. The rule
+  is a synchronized fact (mandatory kind 22, ADR 0006); the held set,
+  retention, and limits are unchanged, and enforcers follow precomputed
+  per-website segments so a part's end needs no new request (ADR 0004,
+  0005, 0010 amendments, decided under the owner's delegation pending
+  confirmation).
+- Each platform's enforcer evaluates the windows on its own clock with the
+  application terminated or hidden: the Mac helper and proxy, the iPhone
+  monitor extension with one Device Activity per boundary (see
+  [iOS enforcement](topics/ios-enforcement.md)), the Linux and Windows
+  services on their one-second tick, and Android's VPN at query time. On
+  Windows filters stay per host, so a ruled site that shares an address with
+  a blocked one stays blocked in its window.
+- The serial matrix passed on a Tart Mac, the test iPhone, Linux, Android,
+  Windows, and two Macs exchanging a rule through a folder workspace, with
+  fresh browser loads as the proof; command-line probes only support it. The
+  [verify-posato pause-set recipes](../../.agents/skills/verify-posato/features/pause-sets.md)
+  keep the browser probe method and the driver gaps found on the way.
 ## [2026-11-03] process | Proportionate device verification
 
 - The [engineering quality contract](../development/engineering-quality-contract.md#tests-and-runtime-checks)

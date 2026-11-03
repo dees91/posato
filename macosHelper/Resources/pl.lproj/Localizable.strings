@@ -1,5 +1,7 @@
 "pause.site" = "Ta strona jest wstrzymana";
 "pause.site.until" = "Ta strona jest wstrzymana do %@";
+"pause.site.opens" = "Ta strona otworzy się o %@";
+"pause.opens.return" = "Do tego czasu jest wstrzymana. Wróć do Posato, aby zmienić tę sesję.";
 "pause.return" = "Wróć do Posato, aby zmienić tę sesję.";
 "pause.app" = "Ta aplikacja jest wstrzymana";
 "pause.app.until" = "Ta aplikacja jest wstrzymana do %@";

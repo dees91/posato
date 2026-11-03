@@ -15,6 +15,7 @@ private const val SET_DEFAULT_TAG = 16
 private const val SCHEDULE_SET_PUT_TAG = 17
 private const val SESSION_SET_START_TAG = 18
 private const val PAUSE_SETS_ENABLED_TAG = 19
+internal const val SET_DOMAIN_WINDOW_TAG = 22
 
 internal val PAUSE_SET_TAGS: IntRange = SET_PUT_TAG..PAUSE_SETS_ENABLED_TAG
 
@@ -24,7 +25,8 @@ internal fun SyncOperationPayload.isPauseSetKind(): Boolean {
         is SyncOperationPayload.PauseSetPut,
         is SyncOperationPayload.PauseSetRemove,
         is SyncOperationPayload.PauseSetDefault,
-        SyncOperationPayload.PauseSetsEnabled -> true
+        SyncOperationPayload.PauseSetsEnabled,
+        is SyncOperationPayload.SetDomainWindow -> true
 
         is SyncOperationPayload.DomainPresent -> setId != null
 
@@ -55,6 +57,13 @@ internal fun CanonicalWriter.writePauseSetPayload(payload: SyncOperationPayload)
 
         SyncOperationPayload.PauseSetsEnabled -> {
             writeByte(PAUSE_SETS_ENABLED_TAG)
+            true
+        }
+
+        is SyncOperationPayload.SetDomainWindow -> {
+            writeSetDomain(SET_DOMAIN_WINDOW_TAG, payload.setId, payload.domain.canonicalValue)
+            writeByte(payload.window?.periodMinutes ?: 0)
+            writeByte(payload.window?.lengthMinutes ?: 0)
             true
         }
 
@@ -96,6 +105,7 @@ internal fun CanonicalReader.readPauseSetPayload(tag: Int): SyncOperationPayload
         SCHEDULE_SET_PUT_TAG -> readTrailingSet(readSchedulePut()) { put, setId -> put.copy(setId = setId) }
         SESSION_SET_START_TAG -> readTrailingSet(readSessionStart()) { start, setId -> start.copy(setId = setId) }
         PAUSE_SETS_ENABLED_TAG -> SyncOperationPayload.PauseSetsEnabled
+        SET_DOMAIN_WINDOW_TAG -> readSetDomainWindow()
         else -> null
     }
 }
@@ -147,7 +157,7 @@ private fun CanonicalWriter.writeTrailingSet(
     return true
 }
 
-private fun CanonicalReader.readPauseSetId(): PauseSetId? {
+internal fun CanonicalReader.readPauseSetId(): PauseSetId? {
     return readBytes(SyncFormatLimits.IDENTIFIER_BYTES)
         ?.let(SyncIdentifier::fromExactBytes)
         ?.let(PauseSetId::of)

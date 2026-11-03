@@ -35,6 +35,8 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformUsesCupertinoChrome
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
+import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.enforcement.reconciliationId
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.promptInProgress
@@ -87,6 +89,7 @@ internal fun SessionScreen(
     scheduledPauses: ScheduledPauses? = null,
     notPausedYet: StateFlow<Int>? = null,
     onOpenAbout: (() -> Unit)? = null,
+    composedSession: StateFlow<EnforcementRequest?>? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner, zone)
     },
@@ -112,8 +115,12 @@ internal fun SessionScreen(
     val manualNotPaused = notPausedYet?.collectAsState()?.value?.takeIf { state.status is LocalSessionStatus.Active } ?: 0
     val waiting = manualNotPaused + (scheduledView?.takeIf { it.restricts }?.notPausedYet ?: 0)
     CloseSetupDuringScheduledPause(scheduledView?.restricts == true) { viewModel.setSetupVisible(false) }
+    val active = state.status as? LocalSessionStatus.Active
+    val manualRequest = composedSession?.collectAsState()?.value?.takeIf { it.sessionId == active?.record?.sessionId?.reconciliationId() }
+    val scheduledRequest = scheduledPauses?.pause?.collectAsState()?.value?.request
+    val windowRows = rememberSessionWindowRows(manualRequest, scheduledRequest, clock, zone, timeFormat)
     SessionScreen(
-        state = state,
+        state = state.copy(windowRows = windowRows),
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
         scheduledBreak = scheduledBreak.actions(scheduledView != null),

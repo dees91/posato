@@ -14,6 +14,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.os.SystemClock
+import app.posato.feature.enforcement.WebsiteWindowGate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 
 /**
  * The foreground service of ADR 0010 on Android. It keeps Posato running so sessions, schedules, and the folder
@@ -33,6 +35,7 @@ class GuardService : Service() {
     private var queriedUntil = 0L
     private var front: String? = null
     private var frontAt = 0L
+    private var windowWakeAt: Long? = null
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -80,8 +83,23 @@ class GuardService : Service() {
             } else if (pause != null && pause.packages.isNotEmpty()) {
                 blockIfInFront(usage, pause.packages)
             }
+            followWindows(pause)
             delay(WATCH_MILLIS)
         }
+    }
+
+    /**
+     * Keeps an exact alarm at the next window boundary or segment end of the saved pause (TARGETS-013), as for break
+     * boundaries, so the phone wakes there even while it idles; the VPN decides each name at query time.
+     */
+    private fun followWindows(pause: AppliedPause?) {
+        val next = pause?.let {
+            WebsiteWindowGate.nextBoundary(it.domains, it.windows, it.endEpochMillis, System.currentTimeMillis(), ZoneId.systemDefault())
+        }
+        if (next == windowWakeAt) return
+        windowWakeAt = next
+        scheduleExactWake(this, WINDOW_WAKE_REQUEST, next)
+        if (pause != null) DnsVpnService.refresh(this)
     }
 
     /**
@@ -129,6 +147,7 @@ class GuardService : Service() {
         private const val INITIAL_LOOKBACK_MILLIS = 3_600_000L
         private const val WAKE_INTERVAL_MILLIS = 60_000L
         private const val BREAK_WAKE_REQUEST = 1
+        private const val WINDOW_WAKE_REQUEST = 2
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, GuardService::class.java))
@@ -139,10 +158,19 @@ class GuardService : Service() {
             context: Context,
             at: Long?,
         ) {
+            scheduleExactWake(context, BREAK_WAKE_REQUEST, at)
+        }
+
+        /** An exact wall-clock alarm for [request], replacing its previous one; none when [at] is null. */
+        private fun scheduleExactWake(
+            context: Context,
+            request: Int,
+            at: Long?,
+        ) {
             val alarms = context.getSystemService(AlarmManager::class.java)
             val wake = PendingIntent.getBroadcast(
                 context,
-                BREAK_WAKE_REQUEST,
+                request,
                 Intent(context, WakeReceiver::class.java),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )

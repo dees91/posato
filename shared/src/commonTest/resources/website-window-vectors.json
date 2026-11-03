@@ -1,0 +1,422 @@
+{
+  "description": "TARGETS-013 website window vectors (ADR 0006 amendment). A website is open when its segment at 'at' has a rule and (hour * 60 + minute) of the local wall clock in 'zone', modulo period, is below length; period and length 0 block. Segments run until 'until' (exclusive); after the last one the website is blocked. Expected values come from an independent minute-by-minute oracle.",
+  "cases": [
+    {
+      "name": "UTC 30/5 at 10:29:59.999",
+      "zone": "UTC",
+      "at": 1793615399999,
+      "plan": [
+        {
+          "until": 1793620800000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793615400000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793615400000
+      }
+    },
+    {
+      "name": "UTC 30/5 at 10:30:00",
+      "zone": "UTC",
+      "at": 1793615400000,
+      "plan": [
+        {
+          "until": 1793620800000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793615700000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793615700000
+      }
+    },
+    {
+      "name": "UTC 30/5 at 10:34:59.999",
+      "zone": "UTC",
+      "at": 1793615699999,
+      "plan": [
+        {
+          "until": 1793620800000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793615700000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793615700000
+      }
+    },
+    {
+      "name": "UTC 30/5 at 10:35:00",
+      "zone": "UTC",
+      "at": 1793615700000,
+      "plan": [
+        {
+          "until": 1793620800000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793617200000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793617200000
+      }
+    },
+    {
+      "name": "UTC blocked then 30/5 at 10:00:00",
+      "zone": "UTC",
+      "at": 1793613600000,
+      "plan": [
+        {
+          "until": 1793614200000,
+          "period": 0,
+          "length": 0
+        },
+        {
+          "until": 1793617200000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793614200000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793615400000
+      }
+    },
+    {
+      "name": "UTC blocked then 30/5 at 10:29:00",
+      "zone": "UTC",
+      "at": 1793615340000,
+      "plan": [
+        {
+          "until": 1793614200000,
+          "period": 0,
+          "length": 0
+        },
+        {
+          "until": 1793617200000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793615400000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793615400000
+      }
+    },
+    {
+      "name": "UTC blocked then 30/5 at 10:31:00",
+      "zone": "UTC",
+      "at": 1793615460000,
+      "plan": [
+        {
+          "until": 1793614200000,
+          "period": 0,
+          "length": 0
+        },
+        {
+          "until": 1793617200000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793615700000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793615700000
+      }
+    },
+    {
+      "name": "UTC blocked then 30/5 at 10:40:00",
+      "zone": "UTC",
+      "at": 1793616000000,
+      "plan": [
+        {
+          "until": 1793614200000,
+          "period": 0,
+          "length": 0
+        },
+        {
+          "until": 1793617200000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793617200000,
+      "status": null
+    },
+    {
+      "name": "UTC blocked then 30/5 at 11:00:00",
+      "zone": "UTC",
+      "at": 1793617200000,
+      "plan": [
+        {
+          "until": 1793614200000,
+          "period": 0,
+          "length": 0
+        },
+        {
+          "until": 1793617200000,
+          "period": 30,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": null,
+      "status": null
+    },
+    {
+      "name": "UTC 60/5 then 30/15 at 10:02:00",
+      "zone": "UTC",
+      "at": 1793613720000,
+      "plan": [
+        {
+          "until": 1793616000000,
+          "period": 60,
+          "length": 5
+        },
+        {
+          "until": 1793619000000,
+          "period": 30,
+          "length": 15
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793613900000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793613900000
+      }
+    },
+    {
+      "name": "UTC 60/5 then 30/15 at 10:10:00",
+      "zone": "UTC",
+      "at": 1793614200000,
+      "plan": [
+        {
+          "until": 1793616000000,
+          "period": 60,
+          "length": 5
+        },
+        {
+          "until": 1793619000000,
+          "period": 30,
+          "length": 15
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793616000000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793616000000
+      }
+    },
+    {
+      "name": "UTC 60/5 then 30/15 at 10:41:00",
+      "zone": "UTC",
+      "at": 1793616060000,
+      "plan": [
+        {
+          "until": 1793616000000,
+          "period": 60,
+          "length": 5
+        },
+        {
+          "until": 1793619000000,
+          "period": 30,
+          "length": 15
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793616300000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793616300000
+      }
+    },
+    {
+      "name": "UTC 60/5 then 30/15 at 11:05:00",
+      "zone": "UTC",
+      "at": 1793617500000,
+      "plan": [
+        {
+          "until": 1793616000000,
+          "period": 60,
+          "length": 5
+        },
+        {
+          "until": 1793619000000,
+          "period": 30,
+          "length": 15
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793618100000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793618100000
+      }
+    },
+    {
+      "name": "Warsaw spring forward 60/5 at 01:59 local",
+      "zone": "Europe/Warsaw",
+      "at": 1774745940000,
+      "plan": [
+        {
+          "until": 1774764000000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1774746000000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1774746000000
+      }
+    },
+    {
+      "name": "Warsaw spring forward 120/15 at 01:59 local",
+      "zone": "Europe/Warsaw",
+      "at": 1774745940000,
+      "plan": [
+        {
+          "until": 1774764000000,
+          "period": 120,
+          "length": 15
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1774749600000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1774749600000
+      }
+    },
+    {
+      "name": "Warsaw fall back 60/5 at first 02:30",
+      "zone": "Europe/Warsaw",
+      "at": 1792888200000,
+      "plan": [
+        {
+          "until": 1792908000000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1792890000000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1792890000000
+      }
+    },
+    {
+      "name": "Warsaw fall back 60/5 at second 02:02",
+      "zone": "Europe/Warsaw",
+      "at": 1792890120000,
+      "plan": [
+        {
+          "until": 1792908000000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1792890300000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1792890300000
+      }
+    },
+    {
+      "name": "New York spring forward 30/10 at 01:55",
+      "zone": "America/New_York",
+      "at": 1772952900000,
+      "plan": [
+        {
+          "until": 1772971200000,
+          "period": 30,
+          "length": 10
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1772953200000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1772953200000
+      }
+    },
+    {
+      "name": "New York fall back 60/5 at first 01:30",
+      "zone": "America/New_York",
+      "at": 1793511000000,
+      "plan": [
+        {
+          "until": 1793534400000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793512800000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793512800000
+      }
+    },
+    {
+      "name": "Kolkata 60/5 at 10:00 local",
+      "zone": "Asia/Kolkata",
+      "at": 1793593800000,
+      "plan": [
+        {
+          "until": 1793606400000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": true,
+      "nextBoundary": 1793594100000,
+      "status": {
+        "kind": "openUntil",
+        "at": 1793594100000
+      }
+    },
+    {
+      "name": "Kolkata 60/5 at 10:05 local",
+      "zone": "Asia/Kolkata",
+      "at": 1793594100000,
+      "plan": [
+        {
+          "until": 1793606400000,
+          "period": 60,
+          "length": 5
+        }
+      ],
+      "open": false,
+      "nextBoundary": 1793597400000,
+      "status": {
+        "kind": "opensAt",
+        "at": 1793597400000
+      }
+    }
+  ]
+}

@@ -36,6 +36,13 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   var establishedLoopbackUpstreams: Set<ObjectIdentifier> = []
   var blockedRequestHandler: (@Sendable () -> Void)?
   var boundPortStorage: UInt16?
+  let windows: HostWindowPolicy?
+  let clock: () -> Date
+  let pageCalendar: () -> Calendar
+  let pageLocale: Locale?
+  /// The website each forwarded relay carries, so a window's close ends it (ADR 0005 window page amendment).
+  var relayHosts: [ObjectIdentifier: (host: String, client: NWConnection)] = [:]
+  var windowTimer: DispatchSourceTimer?
 
   init(
     selectedHosts: Set<String>,
@@ -45,7 +52,11 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     },
     headerTimeout: TimeInterval = BoundedHTTPProxy.defaultHeaderTimeout,
     idleTimeout: TimeInterval = BoundedHTTPProxy.idleConnectionTimeout,
-    blockedRequestHandler: (@Sendable () -> Void)? = nil
+    blockedRequestHandler: (@Sendable () -> Void)? = nil,
+    windows: HostWindowPolicy? = nil,
+    clock: @escaping () -> Date = Date.init,
+    pageCalendar: @escaping () -> Calendar = { Calendar.current },
+    pageLocale: Locale? = nil
   ) {
     self.selectedHosts = selectedHosts
     self.sessionEndEpochMilliseconds = sessionEndEpochMilliseconds
@@ -53,6 +64,10 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     self.headerTimeout = headerTimeout
     self.idleTimeout = idleTimeout
     self.blockedRequestHandler = blockedRequestHandler
+    self.windows = windows
+    self.clock = clock
+    self.pageCalendar = pageCalendar
+    self.pageLocale = pageLocale
   }
 
   var boundPort: UInt16? {
@@ -73,11 +88,16 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     self.listener = listener
     attachHandlers(listener: listener)
     listener.start(queue: queue)
-    return try awaitStartup(listener: listener, timeout: timeout)
+    let port = try awaitStartup(listener: listener, timeout: timeout)
+    queue.sync { armWindowTimer() }
+    return port
   }
 
   func stop() {
     queue.sync {
+      windowTimer?.cancel()
+      windowTimer = nil
+      relayHosts.removeAll()
       listener?.cancel()
       listener = nil
       for connection in connections.values {

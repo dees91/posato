@@ -69,8 +69,18 @@ internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
             is StoredPolicyIntent.PutSet -> Triple(INTENT_SET_PUT, null, intent.name)
             is StoredPolicyIntent.RemoveSet -> Triple(INTENT_SET_REMOVE, null, null)
             is StoredPolicyIntent.ChooseDefault -> Triple(INTENT_SET_DEFAULT, null, null)
+            is StoredPolicyIntent.SetWindow -> Triple(INTENT_SET_WINDOW, intent.domain.canonicalValue, null)
         }
-        syncLocalPolicyQueries.insertIntent(write.workspaceId, kind, intent.setIdOf().value.copyBytes(), domain, name)
+        val window = (intent as? StoredPolicyIntent.SetWindow)?.window
+        syncLocalPolicyQueries.insertIntent(
+            write.workspaceId,
+            kind,
+            intent.setIdOf().value.copyBytes(),
+            domain,
+            name,
+            window?.periodMinutes?.toLong(),
+            window?.lengthMinutes?.toLong(),
+        )
     }
 }
 
@@ -90,6 +100,12 @@ internal suspend fun PosatoDatabase.readIntentsOrThrow(): List<SequencedPolicyIn
             INTENT_SET_REMOVE -> StoredPolicyIntent.RemoveSet(setId)
 
             INTENT_SET_DEFAULT -> StoredPolicyIntent.ChooseDefault(setId)
+
+            INTENT_SET_WINDOW -> StoredPolicyIntent.SetWindow(
+                restoreDomain(row.canonical_domain),
+                setId,
+                restoreWindow(row.window_period, row.window_length),
+            )
 
             else -> fail(LocalPolicyFailure.CORRUPTION)
         }
@@ -149,3 +165,4 @@ private const val INTENT_DOMAIN_ABSENT = "domain_absent"
 private const val INTENT_SET_PUT = "set_put"
 private const val INTENT_SET_REMOVE = "set_remove"
 private const val INTENT_SET_DEFAULT = "set_default"
+private const val INTENT_SET_WINDOW = "set_window"

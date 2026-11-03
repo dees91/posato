@@ -51,6 +51,10 @@ data class Step(
     val values: List<String> = emptyList(),
     /** `tap`: how many times to tap the element, located once, with [seconds] between taps (a drawn wheel's arrow). */
     val repeat: Int = 1,
+    /** `sleepUntil`: the device-clock instant to wait for, in epoch milliseconds. */
+    val atEpochMs: Long? = null,
+    /** `probeURL`: how many fresh loads to retry at once after one shows nothing within the step's timeout. */
+    val retries: Int = 0,
 )
 
 @Serializable
@@ -85,7 +89,10 @@ object Actions {
     const val SWIPE_LEFT = "swipeLeft"
     const val ADJUST_WHEELS = "adjustWheels"
     const val APPEARANCE = "appearance"
-    val iosOnly: Set<String> = setOf(ORIENT, APPEARANCE, LAUNCH_APP, TERMINATE_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS)
+    const val SLEEP_UNTIL = "sleepUntil"
+    const val PROBE_URL = "probeURL"
+    val iosOnly: Set<String> =
+        setOf(ORIENT, APPEARANCE, LAUNCH_APP, TERMINATE_APP, OPEN_URL, PRESS_KEYS, SWIPE_BACK, SWIPE_LEFT, ADJUST_WHEELS, SLEEP_UNTIL, PROBE_URL)
     val all: Set<String> =
         setOf(WAIT_FOR, PRECONDITION, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }

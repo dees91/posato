@@ -12,6 +12,9 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         if activity == ScheduleMonitor.breakActivity {
             return handleBreak()
         }
+        if WindowActivities.isWindowActivity(activity) {
+            return handleWindow(activity, .start)
+        }
         guard ScheduleMonitor.isScheduleActivity(activity) else { return }
         ScheduleMonitorEvents.handleIntervalStart(
             activity: activity,
@@ -34,9 +37,27 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         )
     }
 
+    /// Either callback of a website window's boundary activity (TARGETS-013): both stores follow the clock and the
+    /// boundaries ahead are topped up, and window activities that fired long ago are stopped; the activity itself is
+    /// never restarted or stopped here.
+    private func handleWindow(_ activity: DeviceActivityName, _ callback: MonitorBoundary.Callback) {
+        ScheduleMonitorEvents.handleWindowCallbackInExtension(
+            activity: activity,
+            callback: callback,
+            store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
+            sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
+            manualFilter: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
+            files: ScheduleMonitorFileStore.live(),
+            center: DeviceActivityCenter()
+        )
+    }
+
     override func intervalDidEnd(for activity: DeviceActivityName) {
         if activity == ScheduleMonitor.breakActivity {
             return handleBreak()
+        }
+        if WindowActivities.isWindowActivity(activity) {
+            return handleWindow(activity, .end)
         }
         if ScheduleMonitor.isScheduleActivity(activity) {
             ScheduleMonitorEvents.handleIntervalEnd(

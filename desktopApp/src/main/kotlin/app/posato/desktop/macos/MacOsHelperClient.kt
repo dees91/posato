@@ -3,6 +3,7 @@
 package app.posato.desktop.macos
 
 import app.posato.desktop.update.UpdateCleanupCommands
+import app.posato.feature.enforcement.DomainWindowPlan
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.Closeable
@@ -71,11 +72,12 @@ internal class MacOsHelperClient(
     override fun configureBrowserDomains(
         domains: List<String>,
         sessionEndEpochMilliseconds: Long?,
+        windows: List<DomainWindowPlan>,
     ): BrowserDomainConfigureResponse {
         if (domains.isNotEmpty() && maintenance.isBackstopEngaged) {
             return BrowserDomainConfigureResponse(HelperResult.maintenanceRefusal(), 0.toUShort())
         }
-        val payload = BrowserDomainConfigurePayload(domains, sessionEndEpochMilliseconds).encode()
+        val payload = BrowserDomainConfigurePayload(domains, sessionEndEpochMilliseconds, windows).encode()
         return configureRequest(payload)
     }
 

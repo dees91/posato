@@ -4,12 +4,14 @@ import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.sync.domain.SyncFormatLimits
 
-/** One pause set on this device: its synchronized name (absent for an unnamed first set) and its websites. */
+/** One pause set on this device: its synchronized name (absent for an unnamed first set), its websites, and their rules. */
 internal data class LocalPauseSet(
     val id: PauseSetId,
     val name: String?,
     val domains: List<ExactDomain>,
     val refused: Boolean = false,
+    /** The window rule of each of [domains] that has one; a website has none until one is saved. */
+    val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
 ) {
     override fun toString(): String {
         return "LocalPauseSet(redacted)"
@@ -52,7 +54,21 @@ internal class PauseSets private constructor(
         if (sets.none { set -> set.id == setId }) {
             return null
         }
-        return of(sets.map { set -> if (set.id == setId) set.copy(domains = domains) else set }, defaultSetId)
+        return of(
+            sets.map { set -> if (set.id == setId) set.copy(domains = domains, windows = set.windows.filterKeys { it in domains }) else set },
+            defaultSetId,
+        )
+    }
+
+    /** The same sets with [domain]'s rule in [setId] set, or cleared when [window] is null; null when it is not in that set. */
+    fun withWindow(
+        setId: PauseSetId,
+        domain: ExactDomain,
+        window: WebsiteWindow?,
+    ): PauseSets? {
+        val set = sets.firstOrNull { candidate -> candidate.id == setId }?.takeIf { candidate -> domain in candidate.domains } ?: return null
+        val windows = if (window == null) set.windows - domain else set.windows + (domain to window)
+        return of(sets.map { candidate -> if (candidate.id == setId) set.copy(windows = windows) else candidate }, defaultSetId)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -75,6 +91,7 @@ internal class PauseSets private constructor(
             val valid = sets.distinctBy(LocalPauseSet::id).size == sets.size &&
                 sets.count { set -> !set.refused } <= SyncFormatLimits.MAX_PAUSE_SETS &&
                 sets.all { set -> set.domains.distinct().size == set.domains.size } &&
+                sets.all { set -> set.domains.containsAll(set.windows.keys) } &&
                 sets.all { set -> set.name == null || ScheduleWireRules.isValidName(set.name) } &&
                 sets.flatMapTo(mutableSetOf(), LocalPauseSet::domains).size <= ExactDomainPolicyLimits.MAX_DOMAIN_COUNT
             return if (valid) PauseSets(sets.sortedBy { set -> set.id.value }, defaultSetId) else null

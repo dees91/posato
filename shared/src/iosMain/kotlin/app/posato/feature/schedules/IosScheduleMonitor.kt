@@ -18,12 +18,26 @@ public class IosMonitorSchedule(
     }
 }
 
-/** A set a schedule or a running occurrence uses: its websites and this device's app choice identifiers. */
+/** One website's window rule in a set (TARGETS-013), for the monitor to open it while Posato is closed. */
+public class IosMonitorWindow(
+    public val domain: String,
+    public val periodMinutes: Int,
+    public val lengthMinutes: Int,
+) {
+    override fun toString(): String {
+        return "IosMonitorWindow(redacted)"
+    }
+}
+
+/** A set a schedule or a running occurrence uses: its websites, this device's app choice identifiers, and its rules. */
 public class IosMonitorSet(
     public val id: String,
     public val domains: List<String>,
     public val mappingIds: List<String>,
+    public val windows: List<IosMonitorWindow>,
 ) {
+    public constructor(id: String, domains: List<String>, mappingIds: List<String>) : this(id, domains, mappingIds, emptyList())
+
     override fun toString(): String {
         return "IosMonitorSet(redacted)"
     }

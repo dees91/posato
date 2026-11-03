@@ -33,7 +33,8 @@ extension BoundedProxyRequestParser {
   static func route(
     requestData: Data,
     selectedHosts: Set<String>,
-    listenerPort: UInt16
+    listenerPort: UInt16,
+    opening: @escaping (String) -> (hour: Int, minute: Int)? = { _ in nil }
   ) -> BoundedProxyRoute? {
     guard let parsed = parseHeader(requestData) else {
       return nil
@@ -81,7 +82,8 @@ extension BoundedProxyRequestParser {
         parsed: parsed,
         body: body,
         selectedHosts: selectedHosts,
-        listenerPort: listenerPort
+        listenerPort: listenerPort,
+        opening: opening
       )
     )
   }
@@ -111,6 +113,26 @@ extension BoundedProxyRequestParser {
     let body: Data
     let selectedHosts: Set<String>
     let listenerPort: UInt16
+    let opening: (String) -> (hour: Int, minute: Int)?
+  }
+
+  /// Exactly four ASCII digits forming a local time from 0000 to 2359.
+  static func openingTime(path: String) -> (hour: Int, minute: Int)? {
+    let prefix = "/blocked/opens/"
+    guard path.hasPrefix(prefix) else {
+      return nil
+    }
+    let digits = Array(path.utf8.dropFirst(prefix.utf8.count))
+    guard digits.count == 4, digits.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }) else {
+      return nil
+    }
+    let values = digits.map { Int($0) - 0x30 }
+    let hour = values[0] * 10 + values[1]
+    let minute = values[2] * 10 + values[3]
+    guard hour <= 23, minute <= 59 else {
+      return nil
+    }
+    return (hour, minute)
   }
 
   private static func fixedLengthFraming(
@@ -168,12 +190,17 @@ extension BoundedProxyRequestParser {
       let destination = BoundedProxyAuthority.parseAuthority(input.hostValue, defaultPort: 80),
       BoundedProxyAuthority.isLoopback(destination.host),
       destination.port == input.listenerPort,
-      input.target == "/blocked",
       input.body.isEmpty
     else {
       return nil
     }
-    return .localBlockedPage
+    if input.target == "/blocked" {
+      return .localBlockedPage
+    }
+    guard let time = openingTime(path: input.target) else {
+      return nil
+    }
+    return .localOpensPage(hour: time.hour, minute: time.minute)
   }
 
   private static func absoluteFormRoute(_ input: AbsoluteRouteInput) -> BoundedProxyRoute? {
@@ -194,6 +221,9 @@ extension BoundedProxyRequestParser {
       return nil
     }
     if ExactHostPolicy.matches(host: destination.host, selectedHosts: input.selectedHosts) {
+      if let time = input.opening(destination.host) {
+        return .blockedHTTPOpens(hour: time.hour, minute: time.minute)
+      }
       return .blockedHTTP
     }
     let isOwnListener =

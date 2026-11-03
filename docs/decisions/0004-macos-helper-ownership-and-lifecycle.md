@@ -7,6 +7,93 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## TARGETS-013 window plan amendment
+
+Accepted under delegation: proposed on 2026-11-01 (`TARGETS-013`), passed an
+independent security review after fixes on 2026-11-01, and decided on
+2026-11-01 by the owner's agent under the owner's explicit delegation of
+2026-10-31, as the owner's exception to the `agent-delegated` rule, pending
+the owner's confirmation in the `TARGETS-013` pull request. The rule and its
+bound are in the
+[ADR 0006 amendment](0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment);
+the page in the
+[ADR 0005 amendment](0005-macos-browser-enforcement-and-coexistence.md#targets-013-window-page-amendment).
+
+- **Apply carries window plans.** The Apply request keeps its domains as
+  the full **held** set and gains a list of `DomainWindowPlan`s. A plan
+  names one domain of the request and its ordered **segments** up to the
+  request's end. Each segment has an `until` instant (epoch milliseconds)
+  and an optional rule (period 30, 60, or 120 minutes; length 5, 10, or 15
+  minutes).
+  - The application cuts a segment at every end of a running part that
+    covers the domain. A segment's rule is the intersection
+    `(max period, min length)` of the rules of the covering parts still
+    running in it; a segment in which any covering part has no rule has no
+    rule.
+  - Equal cut instants are merged, so segments are strictly increasing.
+  - In a segment with a rule the domain is open while
+    `wall(t) mod period < length`, where `wall(t)` is the local wall-clock
+    `hour * 60 + minute` in the system's current time zone (ADR 0006
+    amendment), read at each evaluation; otherwise, after the last `until`, and for a domain
+    with no plan, it is blocked until the request ends. This keeps today's
+    behavior that the helper holds the union until the latest end.
+- **Validation fails closed for invalid data only.** The existing frame
+  bounds and the rest of the request are validated exactly as today. Inside
+  the window list, a plan is ignored, so its domain stays blocked for the
+  whole request, when: its domain is not in the request; another plan names
+  the same domain; its segments are not strictly increasing; its last
+  `until` is after the request's end; a rule is outside the fixed pairs; or
+  it has more segments than the cap. A plan whose segments have merely
+  passed is valid. The helper records only a target-free failure category,
+  never the domain. The cap is derived from the code's bound on concurrently
+  running parts: `ScheduleOccurrences.active` evaluates at most two dates
+  (yesterday and today) per enabled schedule, schedules are capped at
+  `ScheduleLimits.MAX_SCHEDULES = 10` (in `SchedulePlan.kt`), and one manual
+  session can run, so at most 21 parts can cover a domain (a safe over-bound:
+  two occurrences of one schedule do not run at once) and a plan has at most
+  21 cuts; the cap is 22 segments, so a valid request never overflows.
+- **Evaluation in the helper.** The proxy decides each new request and
+  `CONNECT` with `blockedNow` at that instant, from the wall clock. The
+  helper also arms a wall-clock deadline (`DispatchWallTime`, which keeps
+  counting through sleep) at the nearest window boundary or segment `until`,
+  and evaluates again on every fire, on wake, and on a clock or time-zone
+  change, to end the tunnels of every domain that changed from open to
+  blocked (ADR 0005 amendment) and to refresh the presentation decision. A
+  monotonic deadline alone is not used, because it stops during sleep. A part's end inside a held request
+  therefore changes the domain's state with no new request. The proxy
+  settings, ownership lease, and daemon state are unchanged by a window; no
+  Apply, clear, or authorization happens at a boundary, so the
+  `MACOS-025` clear-and-apply gap does not recur at boundaries.
+- **Hidden window versus terminated process.** These are two states.
+  - With the window closed, Posato keeps running in the menu bar
+    (ADR 0009). The resident evaluator recomposes at part ends, at window
+    boundaries (to refresh Session), and on rule changes, as today; a rule
+    change during a running part is applied through the existing union
+    request path, under the automatic Apply of the `MACOS-029` and
+    `SCHEDULE-001` amendments when the request must be replaced. If that
+    replacement fails, the helper keeps the plans it holds, the Mac shows
+    the existing attention for a pause that is not fully applied, and the
+    application retries as for any failed Apply; a removed rule can keep
+    opening its website on this Mac until a replacement succeeds or the
+    pause ends.
+  - With the process terminated (quit, Cmd-Q, crash, or kill), blocking
+    stops on this Mac as it does today ("Quitting Posato ends the helper",
+    `observed`, ADR 0009 "Blocking stops on quit"). Windows do not change
+    that limit. The **closed-app enforcer on the Mac is the session helper of
+    a running, windowless Posato**; Mac verification of windows with the app
+    closed uses the hidden-window state.
+  - `inferred`: because the helper follows segments by itself, a part that
+    ends while the evaluator is busy or late still opens a surviving part's
+    window on time.
+- **Evaluation triggers.** The SCHEDULE-001 list (launch, wake, clock and
+  time-zone change, every minute, break end) gains a window boundary of any
+  held domain, used only to refresh Session; enforcement does not depend on
+  it, and the menu is unchanged.
+- **Privacy.** The helper holds window plans only while enforcement needs
+  them, beside the selected-domain set, and discards them at clear, restore,
+  and session end. Plans never reach the root daemon, logs, diagnostics,
+  process arguments, or outcomes.
+
 ## MACOS-029 automatic re-apply amendment
 
 `user-confirmed`: accepted by the maintainer on 2026-10-26

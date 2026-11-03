@@ -7,6 +7,64 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## TARGETS-013 window page amendment
+
+Accepted: proposed on 2026-11-01 (`TARGETS-013`), passed an independent
+security review after fixes on 2026-11-01, decided on 2026-11-01 by the
+owner's agent under the owner's delegation of 2026-10-31, and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221). The window rule
+is in the
+[ADR 0006 amendment](0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment),
+the helper's evaluation in the
+[ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#targets-013-window-plan-amendment).
+
+A blocked website with a window rule shows when it opens next, without the
+page ever holding a host.
+
+- **Fixed path form.** The listener's one internal exception (Fixed
+  presentation) also accepts `GET /blocked/opens/HHMM`, where `HHMM` is
+  exactly four ASCII digits forming a local time from `0000` to `2359`,
+  with the same bounds as `GET /blocked`: bodyless, origin-form, no query or
+  fragment, exact `Host: 127.0.0.1:<current-listener-port>`, on the IPv4
+  loopback-bound listener. Any other path under `/blocked/`, a fifth digit,
+  a sign, a separator, an out-of-range time, a query, or a fragment is
+  rejected like any other origin-form request.
+- **Membership is what is blocked now.** The adapter checks the tab's
+  canonical host against the domains blocked at that instant
+  (`blockedNow`), not the whole held set, so a blocked resource or
+  preconnect inside a website that is open in its window never replaces that
+  website's tab. The listener decides each request the same way.
+- **Who chooses it.** Only the Safari or Chrome adapter chooses the form,
+  after it has reduced the tab's URL to the canonical host and checked
+  membership. It writes `/blocked/opens/HHMM` when that host's
+  window plan (ADR 0004 amendment) has a next opening inside the held
+  request, and `/blocked` otherwise. The time is computed in the helper from
+  the plan and the local clock at that moment; the adapter's verification
+  accepts exactly the destination it wrote.
+- **Cleartext HTTP.** A blocked cleartext request receives the same page
+  directly, with the next opening computed from the request's host. The
+  served page still holds no host.
+- **CONNECT stays generic.** A blocked HTTPS `CONNECT` is rejected exactly as
+  today, with one host-free in-memory signal. No time, host, or plan detail
+  enters the rejection response or the signal.
+- **Page content.** The page holds the opening time only, rendered in the
+  helper's locale, and no host, query, fragment, or plan detail; the headline
+  and copy are in [`DESIGN.md`](../../DESIGN.md#macos-browser-pause-page).
+  The page renders the time it was given and never re-derives a target, so
+  a later reload shows the same, possibly passed, time; it is presentation
+  only.
+- **Privacy.** Browser history can now hold `/blocked/opens/1030`, a time
+  with no host, beside the attempted URL that the browser already records.
+  Posato stores nothing new. The base text "contains no selected or
+  attempted target, query, fragment" holds unchanged.
+- **Every open-to-blocked change ends tunnels.** Whenever a domain changes
+  from open to blocked (a window's close, a segment `until`, an Apply that
+  removes or narrows its rule, or an evaluation after wake), the helper ends
+  the `CONNECT` tunnels and cleartext relays it is carrying for that domain
+  (it already holds their authority in memory for their lifetime), so a
+  long-lived connection does not keep the site open past its window. A new
+  request is then denied as usual. No authority is kept after the
+  connection ends.
+
 ## MACOS-024 loopback amendment
 
 `user-confirmed`: proposed and accepted by the maintainer on 2026-09-30

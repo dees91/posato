@@ -137,7 +137,8 @@ internal fun webDomainsOf(hosts: Set<String>): Set<String> {
     return hosts.flatMapTo(mutableSetOf()) { host -> listOfNotNull(host, wwwCounterpart(host)) }
 }
 
-private fun wwwCounterpart(host: String): String? {
+/** A host's `www` form, or the bare host of a `www` form; null for a host of one label or `www.` alone. */
+internal fun wwwCounterpart(host: String): String? {
     val labels = host.split('.')
     return when {
         labels.size < MIN_HOST_LABELS -> null

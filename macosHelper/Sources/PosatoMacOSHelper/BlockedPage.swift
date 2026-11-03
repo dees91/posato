@@ -19,10 +19,13 @@ enum BlockedPage {
   ) -> Data {
     let title = escapedText(
       headline(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds, locale: locale))
-    let language = PauseCopy.language(locale: locale)
     let returnText = escapedText(
       PauseCopy.phrase(
         "pause.return", locale: locale, fallback: "Return to Posato to change this session."))
+    return page(title: title, support: returnText, language: PauseCopy.language(locale: locale))
+  }
+
+  private static func page(title: String, support: String, language: String) -> Data {
     let body = """
       <!doctype html>
       <html lang="\(language)">
@@ -39,12 +42,60 @@ enum BlockedPage {
         <main \(PauseCopy.pageMarker)>
           <div class="identity"><span class="mark" aria-hidden="true"></span>posato</div>
           <h1>\(title)</h1>
-          <p>\(returnText)</p>
+          <p>\(support)</p>
         </main>
       </body>
       </html>
       """
     return Data(body.utf8)
+  }
+
+  /// The window variant (TARGETS-013): the opening time is the only variable, and the page holds no host.
+  static func opensHTML(
+    hour: Int,
+    minute: Int,
+    locale: Locale = PauseCopy.locale(),
+    calendar: Calendar = .current
+  ) -> Data {
+    let time = clock((hour, minute), locale, calendar)
+    let template = PauseCopy.phrase(
+      "pause.site.opens", locale: locale, fallback: "This site opens at %@")
+    let title = escapedText(String(format: template, locale: locale, time))
+    let support = escapedText(
+      PauseCopy.phrase(
+        "pause.opens.return", locale: locale,
+        fallback: "It is paused until then. Return to Posato to change this session."))
+    return page(title: title, support: support, language: PauseCopy.language(locale: locale))
+  }
+
+  static func opensResponse(hour: Int, minute: Int, locale: Locale, calendar: Calendar) -> Data {
+    return response(
+      status: "200 OK",
+      contentType: "text/html; charset=utf-8",
+      body: opensHTML(hour: hour, minute: minute, locale: locale, calendar: calendar)
+    )
+  }
+
+  /// A wall-clock time of day in the locale's short style, with no date.
+  private static func clock(_ time: (Int, Int), _ locale: Locale, _ calendar: Calendar) -> String {
+    let (hour, minute) = time
+    var components = DateComponents()
+    components.calendar = calendar
+    components.timeZone = calendar.timeZone
+    components.year = 2001
+    components.month = 1
+    components.day = 1
+    components.hour = hour
+    components.minute = minute
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.timeZone = calendar.timeZone
+    formatter.dateStyle = .none
+    formatter.timeStyle = .short
+    guard let date = calendar.date(from: components) else {
+      return String(format: "%02d:%02d", hour, minute)
+    }
+    return formatter.string(from: date)
   }
 
   private static func shortTime(_ epochMilliseconds: UInt64, locale: Locale) -> String {

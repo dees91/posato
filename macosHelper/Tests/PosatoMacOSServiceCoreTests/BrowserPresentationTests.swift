@@ -98,7 +98,7 @@ import Testing
   #expect(runner.writeSource == nil)
 }
 
-private final class StubAppleEventRunner: AppleEventRunning {
+final class StubAppleEventRunner: AppleEventRunning {
   var readResult: String
   var writeResult = ""
   var readError: Error?

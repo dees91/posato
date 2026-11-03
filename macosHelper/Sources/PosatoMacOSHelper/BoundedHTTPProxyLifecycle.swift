@@ -21,6 +21,7 @@ extension BoundedHTTPProxy {
     upstream.cancel()
     connections.removeValue(forKey: ObjectIdentifier(client))
     directConnections.removeValue(forKey: ObjectIdentifier(upstream))
+    relayHosts.removeValue(forKey: ObjectIdentifier(upstream))
     loopbackUpstreams.remove(ObjectIdentifier(upstream))
     establishedLoopbackUpstreams.remove(ObjectIdentifier(upstream))
   }

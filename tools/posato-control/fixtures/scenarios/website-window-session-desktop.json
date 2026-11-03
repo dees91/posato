@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"open-session","action":"tap","query":{"id":"session_title","role":"button"}},
+    {"name":"running","action":"waitFor","state":"exists","query":{"id":"action_end_session_early","role":"button"}},
+    {"name":"window-row","action":"waitFor","state":"exists","query":{"textContains":"window.example, ope"}},
+    {"name":"unruled-has-no-row","action":"waitFor","state":"absent","query":{"textContains":"blocked.example, ope"}},
+    {"name":"session-shot","action":"screenshot"},
+    {"name":"session-tree","action":"snapshot"}
+  ]
+}

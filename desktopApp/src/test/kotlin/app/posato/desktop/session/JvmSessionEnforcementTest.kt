@@ -2,6 +2,7 @@ package app.posato.desktop.session
 
 import app.posato.feature.enforcement.ApplicationEnforcementLink
 import app.posato.feature.enforcement.BrowserEnforcementLink
+import app.posato.feature.enforcement.DomainWindowPlan
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.JvmSessionEnforcement
@@ -198,6 +199,7 @@ class JvmSessionEnforcementTest {
             override fun start(
                 domains: List<String>,
                 sessionEndEpochMillis: Long,
+                windows: List<DomainWindowPlan>,
             ): Boolean {
                 calls.addLast("browserStart")
                 return browserStart

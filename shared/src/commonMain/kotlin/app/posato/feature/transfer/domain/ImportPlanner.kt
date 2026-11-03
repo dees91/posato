@@ -188,11 +188,14 @@ private fun addSets(
             if (merged.size > result[index].domains.size) {
                 combined += displayNameOf(result[index].name)
             }
-            result[index] = result[index].copy(domains = merged)
+            // A website already in the set keeps its rule here, or its lack of one; a website new to it takes the file's.
+            val here = result[index]
+            val windows = here.windows + fileSet.windows.filterKeys { domain -> domain !in here.domains }
+            result[index] = here.copy(domains = merged, windows = windows)
             mapping[fileSet.ref] = match
         } else {
             val id = checkNotNull(ids.sets[fileSet.ref])
-            result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains)
+            result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains, windows = fileSet.windows)
             mapping[fileSet.ref] = id
         }
     }
@@ -209,13 +212,14 @@ private fun replaceSets(
     val result = mutableListOf<LocalPauseSet>()
     val mapping = mutableMapOf<String, PauseSetId>()
     if (localFirst != null) {
-        result += LocalPauseSet(PauseSetId.FIRST, fileFirst?.name ?: localFirst.name, fileFirst?.domains.orEmpty())
+        result +=
+            LocalPauseSet(PauseSetId.FIRST, fileFirst?.name ?: localFirst.name, fileFirst?.domains.orEmpty(), windows = fileFirst?.windows.orEmpty())
         fileFirst?.let { set -> mapping[set.ref] = PauseSetId.FIRST }
     }
     val taken = result.mapTo(mutableSetOf()) { set -> nameKey(displayNameOf(set.name)) }
     file.sets.filter { set -> set !== fileFirst }.forEach { fileSet ->
         val id = checkNotNull(ids.sets[fileSet.ref])
-        result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains)
+        result += LocalPauseSet(id, uniqueName(fileSet.name ?: SetNameText.unnamed, taken), fileSet.domains, windows = fileSet.windows)
         mapping[fileSet.ref] = id
     }
     val removed = current.sets.sets.filter { set -> set.id != PauseSetId.FIRST || localFirst == null }

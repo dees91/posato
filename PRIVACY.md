@@ -13,7 +13,9 @@ the blocking on each device, and macOS update requests are described below.
 To work, Posato stores on each device:
 
 - your pause sets: their names, which set is the default, which website
-  domains each contains, and which apps you chose for each on that device,
+  domains each contains, for each website whether it opens briefly during a
+  pause and how often and for how long, and which apps you chose for each on
+  that device,
   stored as system-provided selections that Posato cannot read as app names
   on iPhone; on Mac, Linux, and Android, Posato stores which apps they are;
 - your sessions: when they start and end, which pause set each used, and
@@ -25,6 +27,9 @@ To work, Posato stores on each device:
 - settings such as whether sync is on, which folder you chose for folder
   sync, and whether the macOS helper is enabled;
 - when sync is on, when this device last finished syncing.
+
+Posato does not record when a website opened briefly, whether you visited
+it, or for how long.
 
 This data stays in Posato's private storage on the device until you change or
 remove it. On Mac, iPhone, and Linux, this data, except app choices on iPhone,
@@ -38,7 +43,8 @@ in your home folder's application data until you remove it.
 
 When sync is on, through iCloud or a folder, Posato also keeps the history of synchronized changes
 in its private storage on each linked device: every pause set created,
-renamed, or deleted, every website added to or removed from a set, which set
+renamed, or deleted, every website added to or removed from a set, every
+rule set or cleared for a website to open briefly during a pause, which set
 is the default and which set each session and schedule used, and when each
 change was made, including when past sessions started, when they were scheduled to end, and whether they
 were ended early, and when each break in a scheduled pause started, how long
@@ -55,7 +61,8 @@ blocked, how often you open apps, usage scores, or any other activity record.
 
 iCloud sync is optional and off until you choose **Sync with iCloud**.
 
-- Your pause sets (their names, their websites, and which is the default),
+- Your pause sets (their names, their websites, each website's rule for
+  opening briefly during a pause, and which is the default),
   in changes from before Posato 1.3 the shared app group name, session start
   and end, and your schedules, including skipped and ended scheduled pauses
   and breaks taken in them, are encrypted on
@@ -91,7 +98,8 @@ sync for that workspace.
 - Posato writes a `Posato` folder inside the folder you choose. It holds one
   file with random workspace identifiers and, for each change, a separate
   file encrypted on your device with the same encryption as iCloud sync: your
-  pause sets (their names, their websites, and which is the default), session
+  pause sets (their names, their websites, each website's rule for opening
+  briefly during a pause, and which is the default), session
   start and end, and your schedules, including skipped and ended scheduled pauses
   and breaks taken in them. App choices are never synchronized; each device keeps its own.
 - These files accumulate in the folder until you choose **Remove workspace**,
@@ -134,8 +142,8 @@ On iPhone, Posato uses Apple's Screen Time framework to block the websites and
 apps you choose. Your app choices are opaque system selections that stay on the
 device; Posato does not receive app names or usage from Screen Time. So that
 a schedule can start while Posato is closed, Posato keeps a copy of your
-schedules, the breaks taken in them, and each pause set's websites and app
-choices in storage shared only with its own Screen Time extension on the same iPhone. It never leaves
+schedules, the breaks taken in them, and each pause set's websites, their
+rules for opening briefly, and app choices in storage shared only with its own Screen Time extension on the same iPhone. It never leaves
 the device, is excluded from device backups, and is deleted when Posato's data
 or the workspace is removed.
 
@@ -146,7 +154,9 @@ traffic through a local proxy on your Mac while a session is active. The helper
 examines each request only long enough to allow or block it and does not store
 or send it. To show its pause page in the current Safari or Chrome tab, Posato
 may use Automation permission; it reads only the current tab's address at that
-moment and keeps no record. Posato does not decrypt HTTPS traffic.
+moment and keeps no record. For a website that opens briefly during a
+pause, the pause page's address carries only the time it opens next, never
+the website. Posato does not decrypt HTTPS traffic.
 
 If you choose to start sessions on a Mac without an administrator password,
 the helper keeps a record of that permission in a system file that only the
@@ -205,8 +215,9 @@ the pause ends, so a restart keeps it.
 ## Export and import
 
 You can export your pause sets to a file and import it on another device.
-The file holds your pause sets' names and websites, which set is the
-default, and your schedules. It never holds app choices, sessions, history,
+The file holds your pause sets' names and websites, the rule for each
+website that opens briefly during a pause, which set is the default, and
+your schedules. It never holds app choices, sessions, history,
 device names, or sync keys. Posato writes the file only where you save or
 share it, and it sends nothing anywhere itself.
 

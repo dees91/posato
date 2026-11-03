@@ -130,7 +130,14 @@ internal class IosScheduleMonitorPublisher(
             endTitle = getString(Res.string.notification_pause_over_title),
             endBody = getString(Res.string.notification_pause_over_body),
             manualSessionEndEpochSeconds = manualEnd()?.let { it / MILLIS } ?: 0L,
-            sets = table.sets.map { set -> IosMonitorSet(set.id, set.domains, set.mappingIds) },
+            sets = table.sets.map { set ->
+                IosMonitorSet(
+                    set.id,
+                    set.domains,
+                    set.mappingIds,
+                    set.windows.map { window -> IosMonitorWindow(window.domain, window.periodMinutes, window.lengthMinutes) },
+                )
+            },
             breaks = table.breaks.map {
                 IosMonitorBreak(it.id, it.date.text(), it.startEpochMillis / MILLIS, it.endEpochMillis / MILLIS, it.over)
             },

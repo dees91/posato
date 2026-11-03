@@ -4,6 +4,7 @@ import app.posato.feature.schedules.data.StoredSchedule
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.domain.WebsiteWindow
 
 /**
  * What an export file holds: pause sets with their websites, the default set, and schedules. Sets are
@@ -25,6 +26,8 @@ internal data class FileSet(
     val name: String?,
     val first: Boolean,
     val domains: List<ExactDomain>,
+    /** Each ruled website's window rule; the websites stay plain names, so an older Posato ignores this. */
+    val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
 ) {
     override fun toString(): String {
         return "FileSet(redacted)"
@@ -79,7 +82,7 @@ internal fun exportFile(
         .sortedBy { set -> if (set.id == PauseSetId.FIRST) 0 else 1 }
     val refs = live.mapIndexed { index, set -> set.id to "s${index + 1}" }.toMap()
     return PauseSetFile(
-        sets = live.map { set -> FileSet(checkNotNull(refs[set.id]), set.name, set.id == PauseSetId.FIRST, set.domains) },
+        sets = live.map { set -> FileSet(checkNotNull(refs[set.id]), set.name, set.id == PauseSetId.FIRST, set.domains, set.windows) },
         defaultSet = sets.resolvedDefault()?.let(refs::get),
         schedules = schedules.filterNot { schedule -> schedule.refused }.mapNotNull { schedule ->
             refs[schedule.plan.setId]?.let { ref ->

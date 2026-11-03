@@ -2,6 +2,7 @@ package app.posato.feature.sync.domain
 
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.WebsiteWindow
 
 internal enum class SyncAuditOutcome {
     AUTHOR_REGISTERED,
@@ -21,11 +22,18 @@ internal enum class PauseSetStatus {
     UNKNOWN,
 }
 
-/** A live set: its synchronized name, absent for the first set until someone names it, and its domains. */
+/** A live set: its synchronized name, absent for the first set until someone names it, its domains, and their rules. */
 internal data class SynchronizedPauseSet(
     val setId: PauseSetId,
     val name: String?,
     val domains: List<ExactDomain>,
+    /** The window rule of each present domain that has one (kind 22). */
+    val windows: Map<ExactDomain, WebsiteWindow> = emptyMap(),
+    /**
+     * Domains with any kind 22 in the workspace, a none winner and one before a removal included: the workspace
+     * has ruled them, so first link publishes no local rule for them.
+     */
+    val ruledDomains: Set<ExactDomain> = emptySet(),
 ) {
     override fun toString(): String {
         return "SynchronizedPauseSet(redacted)"
@@ -252,6 +260,12 @@ private class ProjectionAccumulator(
     private val sets = PauseSetLiveness(applicable)
     private val setDomains = sets.liveIds.associateWith { linkedSetOf<ExactDomain>() }
     private val domainHolders = mutableMapOf<ExactDomain, Int>()
+
+    // Operations arrive in total order, so each (set, domain) keeps the latest kind 22 since its latest removal.
+    private val windows = mutableMapOf<Pair<PauseSetId, ExactDomain>, WebsiteWindow?>()
+
+    // Every key with a kind 22, kept through removals: a removal clears the rule, not the workspace's authorship.
+    private val ruledKeys = mutableSetOf<Pair<PauseSetId, ExactDomain>>()
     private val appliedSetRemoves = mutableSetOf<PauseSetId>()
     private var chosenDefault: PauseSetId? = null
     private var pauseSetsEnabled = false
@@ -288,6 +302,8 @@ private class ProjectionAccumulator(
             }
 
             is SyncOperationPayload.DomainAbsent -> {
+                // A removal clears the website's rule whatever authored it, so adding it again starts with none.
+                windows.remove((payload.setId ?: PauseSetId.FIRST) to payload.domain)
                 applyDomainAbsent(payload.setId ?: PauseSetId.FIRST, payload.domain)
             }
 
@@ -325,6 +341,12 @@ private class ProjectionAccumulator(
             SyncOperationPayload.PauseSetsEnabled -> {
                 applyPauseSet(operation)
             }
+
+            is SyncOperationPayload.SetDomainWindow -> {
+                windows[payload.setId to payload.domain] = payload.window
+                ruledKeys += payload.setId to payload.domain
+                outcome(payload.setId in sets.liveIds)
+            }
         }
     }
 
@@ -355,7 +377,10 @@ private class ProjectionAccumulator(
             SyncAuditEntry(operation.operationId, checkNotNull(audit[operation.operationId]))
         }
         val pauseSets = sets.liveIds.sortedBy(PauseSetId::value).map { setId ->
-            SynchronizedPauseSet(setId, sets.nameOf(setId), setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue))
+            val domains = setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue)
+            val rules = domains.mapNotNull { domain -> windows[setId to domain]?.let { window -> domain to window } }.toMap()
+            val ruled = ruledKeys.filter { (ruledSet, _) -> ruledSet == setId }.mapTo(mutableSetOf()) { (_, domain) -> domain }
+            SynchronizedPauseSet(setId, sets.nameOf(setId), domains, rules, ruled)
         }
         return SyncProjection(
             applicationPolicyName,

@@ -1,6 +1,7 @@
 package app.posato.feature.session.ui
 
 import androidx.compose.runtime.Immutable
+import app.posato.feature.enforcement.DomainWindowPlan
 import app.posato.feature.enforcement.EnforcedSet
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
@@ -55,6 +56,8 @@ internal data class SessionUiState(
     val setId: PauseSetId? = null,
     val setName: String? = null,
     val pauseSets: PersistentList<PauseSetRow> = persistentListOf(),
+    /** The paused websites a window opens in the running pause, soonest first (TARGETS-013). */
+    val windowRows: List<SessionWindowRow> = emptyList(),
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -128,6 +131,8 @@ internal data class SessionTargetsState(
     val sets: PauseSets? = null,
     /** How many apps each set has chosen on this device; null where the choices could not be read. */
     val applicationCounts: Map<PauseSetId, Int?> = emptyMap(),
+    /** When a composed pause may leave some of its websites unblocked (TARGETS-013); empty for a set's own items. */
+    val windows: List<DomainWindowPlan> = emptyList(),
 ) {
     override fun toString(): String {
         return "SessionTargetsState(redacted)"

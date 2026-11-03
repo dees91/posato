@@ -5,9 +5,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 public interface BrowserEnforcementLink {
+    /** Applies [domains], all held; [windows] says when some of them may be left open (TARGETS-013). */
     public fun start(
         domains: List<String>,
         sessionEndEpochMillis: Long,
+        windows: List<DomainWindowPlan>,
     ): Boolean
 
     /**
@@ -18,6 +20,7 @@ public interface BrowserEnforcementLink {
     public fun startWithGrant(
         domains: List<String>,
         sessionEndEpochMillis: Long,
+        windows: List<DomainWindowPlan>,
     ): EnforcementOutcome {
         return EnforcementOutcome.AUTHORIZATION_REQUIRED
     }
@@ -114,8 +117,8 @@ public class JvmSessionEnforcement(
     private suspend fun applyBoth(request: EnforcementRequest): EnforcementApplyReport {
         if (request.domains.isNotEmpty()) {
             val browsers = if (request.grantOnly) {
-                browser.startWithGrant(request.domains, request.sessionEndEpochMillis)
-            } else if (browser.start(request.domains, request.sessionEndEpochMillis)) {
+                browser.startWithGrant(request.domains, request.sessionEndEpochMillis, request.windows)
+            } else if (browser.start(request.domains, request.sessionEndEpochMillis, request.windows)) {
                 EnforcementOutcome.APPLIED
             } else {
                 EnforcementOutcome.FAILED

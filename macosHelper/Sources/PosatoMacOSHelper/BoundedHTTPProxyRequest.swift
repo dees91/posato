@@ -84,8 +84,9 @@ extension BoundedHTTPProxy {
     guard let port = boundPort,
       let route = BoundedProxyRequestParser.route(
         requestData: request,
-        selectedHosts: selectedHosts,
-        listenerPort: port
+        selectedHosts: blockedHosts(),
+        listenerPort: port,
+        opening: { [weak self] host in self?.openingTime(for: host) }
       )
     else {
       finish(connection)
@@ -119,6 +120,13 @@ extension BoundedHTTPProxy {
     case .blockedHTTP:
       sendAndFinish(
         BlockedPage.httpResponse(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds),
+        on: connection
+      )
+    case .blockedHTTPOpens(let hour, let minute), .localOpensPage(let hour, let minute):
+      sendAndFinish(
+        BlockedPage.opensResponse(
+          hour: hour, minute: minute, locale: pageLocale ?? PauseCopy.locale(),
+          calendar: pageCalendar()),
         on: connection
       )
     case .blockedConnect:

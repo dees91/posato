@@ -26,6 +26,17 @@ CREATE TABLE local_pause_set_domain (
   ),
   PRIMARY KEY (set_id, canonical_domain)
 );
+CREATE TABLE local_pause_set_window (
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT NOT NULL CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  ),
+  period_minutes INTEGER NOT NULL CHECK (typeof(period_minutes) = 'integer' AND period_minutes IN (30, 60, 120)),
+  length_minutes INTEGER NOT NULL CHECK (typeof(length_minutes) = 'integer' AND length_minutes IN (5, 10, 15)),
+  PRIMARY KEY (set_id, canonical_domain)
+);
+
 CREATE TABLE local_pause_set_upgrade (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
 );
@@ -53,6 +64,19 @@ SELECT set_id, canonical_domain
 FROM local_pause_set_domain
 ORDER BY set_id, canonical_domain
 LIMIT :maximum_row_count;
+
+selectSetWindows:
+SELECT set_id, canonical_domain, period_minutes, length_minutes
+FROM local_pause_set_window
+ORDER BY set_id, canonical_domain
+LIMIT :maximum_row_count;
+
+deleteAllSetWindows:
+DELETE FROM local_pause_set_window;
+
+insertSetWindow:
+INSERT INTO local_pause_set_window(set_id, canonical_domain, period_minutes, length_minutes)
+VALUES (:set_id, :canonical_domain, :period_minutes, :length_minutes);
 
 selectDefault:
 SELECT set_id

@@ -861,4 +861,36 @@ Just for you.</string>
         <item quantity="one">%1$d of %2$d websites</item>
         <item quantity="other">%1$d of %2$d websites</item>
     </plurals>
+    <string name="targets_open_briefly">Open briefly…</string>
+    <string name="targets_window_title">Open %1$s briefly</string>
+    <string name="targets_window_every">Every</string>
+    <string name="targets_window_for">For</string>
+    <string name="targets_window_period_30">30 minutes</string>
+    <string name="targets_window_period_60">1 hour</string>
+    <string name="targets_window_period_120">2 hours</string>
+    <string name="targets_window_period_30_a11y">Every 30 minutes</string>
+    <string name="targets_window_period_60_a11y">Every 1 hour</string>
+    <string name="targets_window_period_120_a11y">Every 2 hours</string>
+    <string name="targets_window_length_5">5 minutes</string>
+    <string name="targets_window_length_10">10 minutes</string>
+    <string name="targets_window_length_15">15 minutes</string>
+    <string name="targets_window_length_5_a11y">For 5 minutes</string>
+    <string name="targets_window_length_10_a11y">For 10 minutes</string>
+    <string name="targets_window_length_15_a11y">For 15 minutes</string>
+    <string name="targets_window_caption_30">During a pause it opens at :00 and every 30 minutes, for %1$d minutes.</string>
+    <string name="targets_window_caption_60">During a pause it opens at :00 and every hour, for %1$d minutes.</string>
+    <string name="targets_window_caption_120">During a pause it opens at :00 and every 2 hours, for %1$d minutes.</string>
+    <string name="targets_window_row_30">Opens every 30 min for %1$d min</string>
+    <string name="targets_window_row_60">Opens every hour for %1$d min</string>
+    <string name="targets_window_row_120">Opens every 2 hours for %1$d min</string>
+    <string name="targets_window_clear">Don't open</string>
+    <string name="targets_window_in_use">A new rule takes effect now.</string>
+    <string name="session_window_opens_at">Opens at %1$s</string>
+    <string name="session_window_open_until">Open until %1$s</string>
+    <string name="session_window_row_opens">%1$s, opens at %2$s</string>
+    <string name="session_window_row_open">%1$s, open until %2$s</string>
+    <plurals name="session_window_more">
+        <item quantity="one">and %1$d more</item>
+        <item quantity="other">and %1$d more</item>
+    </plurals>
 </resources>

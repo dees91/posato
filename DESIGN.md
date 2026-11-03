@@ -705,6 +705,18 @@ from accessibility; the page has one main landmark and one level-one heading.
 All styling and mark geometry are inline, with no scripts, network assets, or
 attempted/selected target in the page, as required by ADR 0005.
 
+**Window variant** (`TARGETS-013`, release 1.6; see
+[website windows](#release-16-website-windows)). For a website with a window
+rule and a next opening in the running pause, the page is served from the
+fixed path `/blocked/opens/HHMM` and reads **This site opens at {local
+time}** as the headline, with the supporting text "It is paused until then.
+Return to Posato to change this session." The layout, tokens, mark, and
+accessibility rules are the same; the page still holds no website, and the
+time is the only variable. A website with no next opening in the pause gets
+the generic page above. Unlike the generic page, whose end is read at each
+load, the opening time is fixed in the address: reloading later shows the
+same time.
+
 ### posato.app website
 
 The public site at `posato.app` has a product page, the limits, the privacy
@@ -1101,6 +1113,58 @@ own the decisions.
 
 Reuse the existing summary, action, alert, and caption components; no new
 component, color, or icon.
+
+### Release 1.6 website windows
+
+Proposed with `TARGETS-013`, decided on 2026-11-01 by the owner's agent under
+the owner's delegation of 2026-10-31, and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221). The product decisions (fixed choices, clock
+alignment, opening by itself) are `user-confirmed` 2026-10-30; the
+[pause set rules](docs/product/pause-sets-decisions.md#website-windows-targets-013)
+own the behavior.
+
+- **Setting the rule.** In a set's Websites tab, each website row's menu
+  gains **Open briefly…** (on iOS also under the row's left swipe). It opens
+  a sheet (the system sheet on iOS, a dialog on a computer) titled "Open
+  <website> briefly" with two choice groups and no free entry:
+  - **Every**: **30 minutes**, **1 hour**, **2 hours**;
+  - **For**: **5 minutes**, **10 minutes**, **15 minutes**.
+  The caption under them reads "During a pause it opens at :00 and every 30
+  minutes, for 5 minutes." and follows the choices. **Save** and **Cancel**;
+  a website with a rule also offers **Don't open** (a plain, not
+  destructive, action) that clears it. Off is the default: a website has no
+  rule until one is saved.
+- **The row.** A website with a rule shows a second caption line, "Opens
+  every hour for 5 min", under the existing `www` caption. Rows without a
+  rule are unchanged.
+- **During a running pause.** The existing copy near edits of a set in use
+  gains "A new rule takes effect now." for the sheet. Clearing a rule needs
+  no confirmation.
+- **Session.** While a pause runs, the active summary lists, under the
+  running parts, one row per paused website with a rule that a window will
+  open in this pause: the website, then "Opens at 10:30" while it is
+  blocked, or "Open until 10:35" while it is open. The time is the next
+  opening in the effective plan, so a website that another running part
+  keeps blocked until 10:10 shows its first opening after that part ends; a
+  website with no window left in the pause shows no row. With more than three such websites the summary shows the
+  three soonest and "and 2 more", which opens the list. On iOS the rows sit
+  in the summary group; on a computer, under the summary. Rows change at
+  each boundary with no animation.
+- **All open.** When every paused website is open and no app is paused, the
+  summary keeps the running pause and its **End early**, and every row says
+  "Open until".
+- **Export and import.** The export dialog's count is unchanged. The
+  import review shows each website's rule caption beside the website, so a
+  file that adds rules says so before **Import**.
+- **Mac pause page.** The window variant above.
+- **Mac menu.** Unchanged; it names the running pause, not windows.
+- **Accessibility.** Each Session row is one accessible element read in
+  full ("example.com, opens at 10:30"). The sheet's choice groups are radio
+  groups with plain labels ("Every 1 hour", "For 5 minutes"); the caption is
+  the sheet's accessibility hint. The row's rule caption is part of the
+  row's accessible label.
+
+Reuse the existing row, menu, sheet, choice group, summary, and caption
+components; no new component, color, or icon.
 
 ### Session
 

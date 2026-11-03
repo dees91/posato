@@ -1,4 +1,5 @@
 import CryptoKit
+import DeviceActivity
 import FamilyControls
 import Foundation
 import ManagedSettings
@@ -105,6 +106,11 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
     private let storedMappings: () throws -> [StoredApplicationMapping]
     private let scheduleStore: () -> ScheduleShieldStore?
     private let composeLock: ScheduleMonitorFileStore?
+    private let center: () -> ScheduleActivityCenter
+    private let now: () -> Date
+    private let calendar: () -> Calendar
+    /// Window activities the last write found stale, stopped once the compose lock is released.
+    private var pendingStale: [DeviceActivityName] = []
 
     private static var defaultCapable: Bool {
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
@@ -126,7 +132,10 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
             try ApplicationMappingSets.liveMigrated().loadAllSets()
         },
         scheduleStore: @escaping () -> ScheduleShieldStore? = { nil },
-        composeLock: ScheduleMonitorFileStore? = nil
+        composeLock: ScheduleMonitorFileStore? = nil,
+        center: @escaping () -> ScheduleActivityCenter = { DeviceActivityCenter() },
+        now: @escaping () -> Date = Date.init,
+        calendar: @escaping () -> Calendar = { ScheduleMonitor.calendar }
     ) {
         self.storeFactory = storeFactory
         self.authorization = authorization
@@ -134,6 +143,9 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         self.storedMappings = storedMappings
         self.scheduleStore = scheduleStore
         self.composeLock = composeLock
+        self.center = center
+        self.now = now
+        self.calendar = calendar
     }
 
     func apply(
@@ -151,7 +163,20 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
                 handler(.unavailable)
                 return
             }
-            self.storeFactory().clearAll()
+            if let files = self.composeLock {
+                let stale = files.withComposeLock { () -> [DeviceActivityName] in
+                    files.removeManualWindows()
+                    self.storeFactory().clearAll()
+                    // The session's boundaries are no longer wanted; the schedule's stay.
+                    return ScheduleMonitorEvents.windowTopUp(
+                        file: files.readTable(), over: files.breaksOver(), files: files, center: self.center(), calling: nil,
+                        callback: .evaluation, at: self.now(), calendar: self.calendar()
+                    ).stale
+                }
+                ScheduleMonitorEvents.stopStale(stale, center: self.center())
+            } else {
+                self.storeFactory().clearAll()
+            }
             handler(.cleared)
         }
     }
@@ -203,22 +228,65 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
             return .platformFailure
         }
         let store = storeFactory()
-        if let lock = composeLock {
-            return lock.withComposeLock { write(domains: request.domains, tokens: tokens, to: store) }
+        let windows = request.windows.map { plan in
+            WebsiteWindowPlan(
+                domain: plan.domain,
+                segments: plan.segments.map {
+                    WebsiteWindowPlan.Segment(until: $0.untilEpochMillis, period: Int($0.periodMinutes), length: Int($0.lengthMinutes))
+                }
+            )
         }
-        return write(domains: request.domains, tokens: tokens, to: store)
+        if let lock = composeLock {
+            let outcome = lock.withComposeLock {
+                write(domains: request.domains, tokens: tokens, windows: windows, endEpochMillis: request.sessionEndEpochMillis, to: store, files: lock)
+            }
+            ScheduleMonitorEvents.stopStale(pendingStale, center: center())
+            pendingStale = []
+            return outcome
+        }
+        return write(domains: request.domains, tokens: tokens, windows: [], endEpochMillis: 0, to: store, files: nil)
     }
 
-    private func write(domains: [String], tokens: Set<ApplicationToken>, to store: IosEnforcementSettingsStore) -> IosEnforcementOutcome {
+    /// Writes the session's share. With window plans, the record goes to the App Group first, the one boundary
+    /// activity is armed, and the web filter blocks what is held except what is open now; without plans, or when
+    /// the record cannot be written, every held website is blocked and no record is left behind.
+    private func write(
+        domains: [String],
+        tokens: Set<ApplicationToken>,
+        windows: [WebsiteWindowPlan],
+        endEpochMillis: Int64,
+        to store: IosEnforcementSettingsStore,
+        files: ScheduleMonitorFileStore?
+    ) -> IosEnforcementOutcome {
         let share = withinShare(domains: domains, tokens: tokens, store: store)
+        var blocked = share.domains
+        if let files {
+            let plans = windows.filter { share.domains.contains($0.domain) }
+            let record = ManualWindowRecord(version: ManualWindowRecord.currentVersion, endEpochMillis: endEpochMillis, held: share.domains, plans: plans)
+            if plans.isEmpty || (try? files.writeManualWindows(record)) == nil {
+                files.removeManualWindows()
+            } else {
+                let time = now()
+                let calendar = calendar()
+                // Close before open: every boundary ahead is registered before a website opens.
+                let topUp = ScheduleMonitorEvents.windowTopUp(
+                    file: files.readTable(), over: files.breaksOver(), files: files, center: center(), calling: nil, callback: .evaluation,
+                    at: time, calendar: calendar
+                )
+                pendingStale = topUp.stale
+                let open = WindowEvaluation.openManual(record, at: time, covered: topUp.covered, lead: WindowEvaluation.closingLead, calendar: calendar)
+                blocked = share.domains.filter { !open.contains($0) }
+            }
+        }
         let expectedFilter: WebContentSettings.FilterPolicy? =
-            share.domains.isEmpty ? nil : .specific(webDomains(from: share.domains))
+            blocked.isEmpty ? nil : .specific(webDomains(from: blocked))
         let expectedApplications: Set<ApplicationToken>? = share.tokens.isEmpty ? nil : share.tokens
         store.blockedWebFilter = expectedFilter
         store.shieldedApplications = expectedApplications
         guard store.blockedWebFilter == expectedFilter,
               store.shieldedApplications == expectedApplications
         else {
+            files?.removeManualWindows()
             store.clearAll()
             return .platformFailure
         }
@@ -247,6 +315,10 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         if case let .specific(current) = store.blockedWebFilter {
             pausedHosts = Set(current.compactMap(\.domain))
         }
+        // A website open in its window is still held: an open window frees no room.
+        if let record = composeLock?.readManualWindows(), now() < record.end {
+            pausedHosts.formUnion(record.held)
+        }
         let part = PausePlanner.Part(
             id: "session", start: .distantPast,
             currentDomains: Set(domains), currentTokens: encoded(tokens),
@@ -254,7 +326,9 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         )
         // What scheduled parts on a break hold is not applied now but returns at the break's end, so it stays occupied.
         let onBreak: (domains: Set<String>, tokens: Set<Data>) = composeLock?.heldDuringBreak(at: Date()) ?? (domains: [], tokens: [])
-        let occupiedDomains: Set<String> = Set(schedule.shieldedHosts).union(onBreak.domains)
+        // A scheduled website open in its window is still held: an open window frees no room.
+        let running = composeLock?.heldByRunning(at: now(), calendar: calendar()) ?? []
+        let occupiedDomains: Set<String> = Set(schedule.shieldedHosts).union(onBreak.domains).union(running)
         let occupiedTokens: Set<Data> = encoded(schedule.shieldedTokens).union(onBreak.tokens)
         let plan = PausePlanner.plan([part], occupiedDomains: occupiedDomains, occupiedTokens: occupiedTokens)
         return (plan.domains.sorted(), Set(plan.tokens.compactMap { byData[$0] }))

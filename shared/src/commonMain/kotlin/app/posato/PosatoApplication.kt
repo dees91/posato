@@ -490,6 +490,7 @@ class PosatoApplication internal constructor(
                 onConsumeWindowRequest = onConsumeWindowRequest,
                 scheduledPauses = scheduledPauses,
                 notPausedYet = sessionComposition.notPausedYet,
+                composedSession = sessionComposition.composed,
                 onOpenAbout = onOpenAbout,
             )
 

@@ -94,6 +94,35 @@ class DnsPacketTest {
         assertContentEquals(upstream, reply.copyOfRange(28, reply.size))
     }
 
+    @Test
+    fun `given an upstream answer with compressed names when clamped then every record keeps at most the window's rest`() {
+        val name = byteArrayOf(7) + "example".toByteArray() + byteArrayOf(3) + "com".toByteArray() + byteArrayOf(0)
+        val header = byteArrayOf(0x12, 0x34, 0x81.toByte(), 0x80.toByte(), 0, 1, 0, 2, 0, 0, 0, 1)
+        val question = name + byteArrayOf(0, 1, 0, 1)
+        // TTL 3600 and 10, both with a pointer to the question's name; one additional record with its own name.
+        val first = byteArrayOf(0xC0.toByte(), 12, 0, 1, 0, 1, 0, 0, 0x0E, 0x10, 0, 4, 93.toByte(), 184.toByte(), 216.toByte(), 34)
+        val second = byteArrayOf(0xC0.toByte(), 12, 0, 1, 0, 1, 0, 0, 0, 10, 0, 4, 93.toByte(), 184.toByte(), 216.toByte(), 35)
+        val additional = byteArrayOf(0) + byteArrayOf(0, 41, 0x10, 0, 0, 0, 0x80.toByte(), 0, 0, 0)
+        val reply = header + question + first + second + additional
+
+        val clamped = DnsPacket.clampTtl(reply, 120)!!
+
+        val firstTtl = header.size + question.size + 6
+        val secondTtl = firstTtl + first.size
+        assertEquals(120, ttl(clamped, firstTtl))
+        assertEquals(10, ttl(clamped, secondTtl))
+        val additionalStart = reply.size - additional.size
+        assertContentEquals(reply.copyOfRange(additionalStart, reply.size), clamped.copyOfRange(additionalStart, clamped.size))
+        assertNull(DnsPacket.clampTtl(reply.copyOf(reply.size - 3), 120))
+    }
+
+    private fun ttl(
+        bytes: ByteArray,
+        offset: Int,
+    ): Int {
+        return (0 until 4).fold(0) { value, index -> (value shl 8) or (bytes[offset + index].toInt() and 0xFF) }
+    }
+
     private fun ipChecksum(header: ByteArray): Int {
         var sum = 0
         for (index in header.indices step 2) sum += ((header[index].toInt() and 0xFF) shl 8) or (header[index + 1].toInt() and 0xFF)

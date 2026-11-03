@@ -754,6 +754,7 @@ internal fun SessionRecord.toEnforcementRequest(
         sessionId = sessionId.reconciliationId(),
         sessionStartEpochMillis = startEpochMillis,
         sessionEndEpochMillis = endEpochMillis,
+        windows = targets.windows,
     )
 }
 

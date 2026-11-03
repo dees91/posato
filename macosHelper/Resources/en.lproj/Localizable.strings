@@ -1,5 +1,7 @@
 "pause.site" = "This site is paused";
 "pause.site.until" = "This site is paused until %@";
+"pause.site.opens" = "This site opens at %@";
+"pause.opens.return" = "It is paused until then. Return to Posato to change this session.";
 "pause.return" = "Return to Posato to change this session.";
 "pause.app" = "This app is paused";
 "pause.app.until" = "This app is paused until %@";

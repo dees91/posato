@@ -7,6 +7,7 @@ import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.ApplicationPolicyNameFailure
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -127,6 +128,8 @@ internal fun createUiState(
         isLoading = policyState.isLoading,
         hasLoaded = policyState.snapshot != null,
         setMissing = policyState.snapshot?.sets?.sets?.none { set -> set.id == setId } == true,
+        windows = policyState.snapshot?.sets?.sets?.firstOrNull { set -> set.id == setId }?.windows.orEmpty()
+            .mapKeys { (domain, _) -> domain.canonicalValue }.toPersistentMap(),
     )
 }
 

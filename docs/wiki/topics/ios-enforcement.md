@@ -259,6 +259,17 @@ blocked during a session and usable again after early end and after natural
 expiry. Suspended expiry through the extension, reboot, and CloudKit
 Production were not exercised on this build.
 
+## Timed website windows (TARGETS-013)
+
+- `observed` on the test iPhone (2026-11-01): one re-armed Device Activity
+  for every window boundary missed a close and opened late with Posato
+  terminated. One named activity per upcoming opening and close
+  (`app.posato.window.<epoch second>`), registered ahead and topped up by
+  the callbacks, opened and closed on time in the product rows, including
+  forced early callbacks 30 s and 90 s before an opening that neither opened
+  the site early nor consumed the opening. The contract and its limits are in
+  the [pause set rules](../../product/pause-sets-decisions.md).
+
 ## Open questions
 
 - ~~Which Family Controls entitlement and distribution paths are available for

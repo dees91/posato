@@ -8,11 +8,42 @@ public enum BrowserDomainConfigureLimits {
   public static let maximumLabelLength = 63
 }
 
+/// One segment of a held website's window plan (TARGETS-013, ADR 0004 amendment): until an instant (exclusive), with
+/// a rule of `period` and `length` minutes, or none when both are 0. The wire carries any byte; the helper decides
+/// validity, so an invalid plan leaves its website blocked instead of failing the request.
+public struct WindowSegmentWire: Equatable, Sendable {
+  public let untilEpochMilliseconds: UInt64
+  public let period: UInt8
+  public let length: UInt8
+
+  public init(untilEpochMilliseconds: UInt64, period: UInt8, length: UInt8) {
+    self.untilEpochMilliseconds = untilEpochMilliseconds
+    self.period = period
+    self.length = length
+  }
+}
+
+/// When a held website may be left open: its ordered segments up to the request's end.
+public struct DomainWindowPlanWire: Equatable, Sendable {
+  public let domain: String
+  public let segments: [WindowSegmentWire]
+
+  public init(domain: String, segments: [WindowSegmentWire]) {
+    self.domain = domain
+    self.segments = segments
+  }
+}
+
 public struct BrowserDomainConfigurePayload: Equatable, Sendable {
+  typealias Plan = DomainWindowPlanWire
+
   public let domains: [String]
   public let sessionEndEpochMilliseconds: UInt64?
+  public let windows: [DomainWindowPlanWire]
 
-  public init(domains: [String], sessionEndEpochMilliseconds: UInt64?) throws {
+  public init(
+    domains: [String], sessionEndEpochMilliseconds: UInt64?, windows: [DomainWindowPlanWire] = []
+  ) throws {
     guard domains.count >= 1,
       domains.count <= BrowserDomainConfigureLimits.maximumDomainCount,
       Set(domains).count == domains.count,
@@ -22,6 +53,7 @@ public struct BrowserDomainConfigurePayload: Equatable, Sendable {
     }
     self.domains = domains
     self.sessionEndEpochMilliseconds = sessionEndEpochMilliseconds
+    self.windows = windows
   }
 
   public func encode() throws -> Data {
@@ -40,6 +72,28 @@ public struct BrowserDomainConfigurePayload: Equatable, Sendable {
       data.appendBigEndian(sessionEndEpochMilliseconds)
     } else {
       data.append(0)
+    }
+    // The window section is optional: without it every held website has no plan.
+    if !windows.isEmpty {
+      guard windows.count <= domains.count else {
+        throw WireProtocolFailure.invalidFrame
+      }
+      data.append(1)
+      data.appendBigEndian(UInt16(windows.count))
+      for plan in windows {
+        let encoded = Data(plan.domain.utf8)
+        guard encoded.count <= UInt8.max, plan.segments.count <= UInt8.max else {
+          throw WireProtocolFailure.invalidFrame
+        }
+        data.append(UInt8(encoded.count))
+        data.append(encoded)
+        data.append(UInt8(plan.segments.count))
+        for segment in plan.segments {
+          data.appendBigEndian(segment.untilEpochMilliseconds)
+          data.append(segment.period)
+          data.append(segment.length)
+        }
+      }
     }
     guard data.count <= WireLimits.maximumFrameBytes - 68 else {
       throw WireProtocolFailure.oversizedFrame
@@ -74,13 +128,47 @@ public struct BrowserDomainConfigurePayload: Equatable, Sendable {
     default:
       throw WireProtocolFailure.invalidFrame
     }
+    let windows = cursor.remainingBytes == 0 ? [] : try decodeWindows(&cursor, limit: count)
     guard cursor.remainingBytes == 0 else {
       throw WireProtocolFailure.invalidFrame
     }
     return try BrowserDomainConfigurePayload(
       domains: domains,
-      sessionEndEpochMilliseconds: sessionEndEpochMilliseconds
+      sessionEndEpochMilliseconds: sessionEndEpochMilliseconds,
+      windows: windows
     )
+  }
+
+  /// The framing is checked here; whether a plan is valid is the helper's decision (ADR 0004 amendment).
+  private static func decodeWindows(_ cursor: inout WireDataCursor, limit: Int) throws -> [Plan] {
+    guard try cursor.readUInt8() == 1 else {
+      throw WireProtocolFailure.invalidFrame
+    }
+    let count = Int(try cursor.readUInt16())
+    guard count >= 1, count <= limit else {
+      throw WireProtocolFailure.invalidFrame
+    }
+    var plans: [DomainWindowPlanWire] = []
+    plans.reserveCapacity(count)
+    for _ in 0..<count {
+      let domainData = try cursor.readBoundedData(
+        maximumBytes: BrowserDomainConfigureLimits.maximumDomainLength)
+      guard let domain = String(data: domainData, encoding: .utf8) else {
+        throw WireProtocolFailure.invalidFrame
+      }
+      let segmentCount = Int(try cursor.readUInt8())
+      var segments: [WindowSegmentWire] = []
+      segments.reserveCapacity(segmentCount)
+      for _ in 0..<segmentCount {
+        let until = try cursor.readUInt64()
+        let period = try cursor.readUInt8()
+        let length = try cursor.readUInt8()
+        segments.append(
+          WindowSegmentWire(untilEpochMilliseconds: until, period: period, length: length))
+      }
+      plans.append(DomainWindowPlanWire(domain: domain, segments: segments))
+    }
+    return plans
   }
 
   private static func isCanonicalExactDomain(_ domain: String) -> Bool {

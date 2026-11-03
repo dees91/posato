@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
+import java.time.ZoneId
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -24,9 +25,13 @@ internal class HelperService(
     private val paths: HelperPaths,
     private val person: Person,
     private val now: () -> Long = System::currentTimeMillis,
+    private val zone: () -> ZoneId = { currentSystemZone() },
 ) {
     private val lock = Any()
     private var state = readState()
+
+    /** The hosts the block holds since this process last wrote it; null until then, so a restart writes it once. */
+    private var written: List<String>? = null
 
     fun serve() {
         Files.createDirectories(paths.socket.parent)
@@ -65,7 +70,7 @@ internal class HelperService(
         return synchronized(lock) {
             when (request) {
                 is HelperRequest.Apply -> {
-                    writeHosts(request.hosts)
+                    writeHosts(request.blockedAt(now(), zone()))
                     save(HelperState(request, state.expiredSessionId.takeUnless { it == request.sessionId }))
                     endChosenProcesses()
                     "ok"
@@ -106,8 +111,12 @@ internal class HelperService(
         }
     }
 
-    /** A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. */
-    private fun tick() {
+    /**
+     * A failed pass, such as a full disk, is retried on the next tick; the scheduled task must never end. Each tick
+     * also follows the window plans of the last apply on the wall clock, so a window opens or closes, and a part's end
+     * changes the segment, with the application gone (ADR 0010 TARGETS-013 amendment).
+     */
+    internal fun tick() {
         runCatching {
             synchronized(lock) {
                 val applied = state.applied ?: return@runCatching
@@ -115,6 +124,8 @@ internal class HelperService(
                     writeHosts(emptyList())
                     save(HelperState(null, applied.sessionId))
                 } else {
+                    val blocked = applied.blockedAt(now(), zone())
+                    if (blocked != written) writeHosts(blocked)
                     endChosenProcesses()
                 }
             }
@@ -136,6 +147,7 @@ internal class HelperService(
         val existing = if (Files.exists(paths.hosts)) Files.readString(paths.hosts) else ""
         val rewritten = HostsBlock.rewrite(existing, hosts)
         if (rewritten != existing) writeAtomically(paths.hosts, rewritten, "rw-r--r--")
+        written = hosts
     }
 
     private fun save(next: HelperState) {
@@ -184,3 +196,17 @@ internal data class HelperPaths(
     val hosts: Path = Paths.get("/etc/hosts"),
     val config: Path = Paths.get("/etc/posato/helper.conf"),
 )
+
+/**
+ * The zone the system uses now, read at each call: the `zoneinfo` link target (also under `posix/` or `right/`), else
+ * the name in `/etc/timezone`, else the JVM default, which the JVM read at start.
+ */
+internal fun currentSystemZone(
+    localtime: Path = Paths.get("/etc/localtime"),
+    timezone: Path = Paths.get("/etc/timezone"),
+): ZoneId {
+    val linked = runCatching {
+        ZoneId.of(Files.readSymbolicLink(localtime).toString().substringAfter("zoneinfo/").removePrefix("posix/").removePrefix("right/"))
+    }
+    return linked.recoverCatching { ZoneId.of(Files.readString(timezone).trim()) }.getOrElse { ZoneId.systemDefault() }
+}

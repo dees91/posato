@@ -98,7 +98,8 @@ internal class SyncTargetPolicyStore(
 
 /**
  * The intents one edit of the pause sets authors, in the order other devices must apply them: a set's name
- * before its websites, the default after the set it names exists, and a removal last. A removed set's
+ * before its websites, rules after the websites they name, the default after the set it names exists, and a
+ * removal last. A removed set's
  * websites author nothing, because its removal takes them with it.
  */
 internal fun pauseSetIntents(
@@ -115,7 +116,16 @@ internal fun pauseSetIntents(
         (held - set.domains.toSet()).map { domain -> StoredPolicyIntent.RemoveDomain(domain, set.id) } +
             (set.domains - held.toSet()).map { domain -> StoredPolicyIntent.PresentDomain(domain, set.id) }
     }
+    // A removed website needs no rule change: its removal clears the rule on every device.
+    val windows = after.sets.flatMap { set ->
+        val held = previous[set.id]
+        set.domains.mapNotNull { domain ->
+            val rule = set.windows[domain]
+            val had = held?.windows?.get(domain)?.takeIf { domain in held.domains }
+            StoredPolicyIntent.SetWindow(domain, set.id, rule).takeIf { rule != had }
+        }
+    }
     val default = after.defaultSetId?.takeIf { id -> id != before.defaultSetId }?.let { id -> listOf(StoredPolicyIntent.ChooseDefault(id)) }
     val removals = before.sets.filter { set -> set.id !in kept }.map { set -> StoredPolicyIntent.RemoveSet(set.id) }
-    return names + websites + default.orEmpty() + removals
+    return names + websites + windows + default.orEmpty() + removals
 }

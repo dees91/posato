@@ -19,6 +19,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.time.ZoneId
 import java.util.concurrent.Executors
 
 /**
@@ -110,10 +111,13 @@ class DnsVpnService : VpnService() {
             while (!Thread.currentThread().isInterrupted) {
                 val length = input.read(buffer)
                 val question = if (length > 0) DnsPacket.parse(buffer.copyOf(length))?.takeIf { it.destinationPort == DNS_PORT } else null
-                when {
-                    question == null -> Unit
-                    blocked(question.name) -> synchronized(output) { output.write(question.blockedReply()) }
-                    else -> forwarders.execute { forward(question, output) }
+                val answer = question?.let { asked ->
+                    DnsPolicy.answer(asked.name, PauseState(this).applied(), System.currentTimeMillis(), ZoneId.systemDefault())
+                }
+                when (answer) {
+                    null -> Unit
+                    DnsAnswer.Blocked -> synchronized(output) { output.write(question.blockedReply()) }
+                    is DnsAnswer.Forward -> forwarders.execute { forward(question, answer.maxTtlSeconds, output) }
                 }
             }
         } catch (_: IOException) {
@@ -121,14 +125,14 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private fun blocked(name: String): Boolean {
-        val domains = PauseState(this).applied()?.domains.orEmpty()
-        return name in domains || (name.startsWith(WWW) && name.removePrefix(WWW) in domains)
-    }
-
-    /** Forwards over a socket bound to the network underneath, read for each question so a network change is followed. */
+    /**
+     * Forwards over a socket bound to the network underneath, read for each question so a network change is followed.
+     * A website open in its window gets its answer with every time to live at most [maxTtlSeconds]; an answer that
+     * cannot be read for that is dropped, and the asker retries.
+     */
     private fun forward(
         question: DnsPacket,
+        maxTtlSeconds: Int?,
         output: FileOutputStream,
     ) {
         val current = underlying ?: return
@@ -142,7 +146,9 @@ class DnsVpnService : VpnService() {
                 socket.send(DatagramPacket(query, query.size, InetSocketAddress(server, DNS_PORT)))
                 val answer = DatagramPacket(ByteArray(MAX_PACKET), MAX_PACKET)
                 socket.receive(answer)
-                synchronized(output) { output.write(question.wrapReply(answer.data.copyOf(answer.length))) }
+                val reply = answer.data.copyOf(answer.length)
+                val kept = if (maxTtlSeconds == null) reply else DnsPacket.clampTtl(reply, maxTtlSeconds) ?: return
+                synchronized(output) { output.write(question.wrapReply(kept)) }
             }
         } catch (_: IOException) {
             return
@@ -168,7 +174,6 @@ class DnsVpnService : VpnService() {
         private const val FORWARDERS = 4
         private const val FORWARD_TIMEOUT_MILLIS = 5_000
         private const val IPV4_BYTES = 4
-        private const val WWW = "www."
 
         /** Whether the tunnel is up in this process; after a reboot it is not until the service starts it again. */
         @Volatile

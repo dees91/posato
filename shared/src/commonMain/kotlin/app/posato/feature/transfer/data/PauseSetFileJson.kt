@@ -64,6 +64,9 @@ internal object PauseSetFileJson {
                                 put("name", set.name?.let(::JsonPrimitive) ?: JsonNull)
                                 put("first", set.first)
                                 put("domains", JsonArray(set.domains.map { domain -> JsonPrimitive(domain.canonicalValue) }))
+                                if (set.windows.isNotEmpty()) {
+                                    put("windows", windowsJson(set))
+                                }
                             },
                         )
                     }
@@ -177,7 +180,7 @@ internal object PauseSetFileJson {
         val first = (set["first"] as? JsonPrimitive)?.takeUnless(JsonPrimitive::isString)?.content?.toBooleanStrictOrNull() ?: return null
         val name = readSetName(set["name"], first) ?: return null
         val domains = readDomains(set["domains"]) ?: return null
-        return FileSet(ref, name.value, first, domains)
+        return FileSet(ref, name.value, first, domains, readWindows(set["windows"], domains))
     }
 
     /** A set's name: absent only for the first set, which may stay unnamed. */
