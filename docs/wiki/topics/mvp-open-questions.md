@@ -1299,7 +1299,9 @@ below. This queue retains idea provenance without expanding the original MVP.
 47. **A calm history of pauses.** `user-confirmed` (2026-10-20): a chart
     like GitHub's contribution graph of days kept as planned, chosen in a
     calm form without streaks, scores, or shame (the `DESIGN.md` brand
-    rule). Owner: `HISTORY-001`, release 1.6.
+    rule). Owner: `HISTORY-001`, release 1.6. Decided in
+    [the history decision](../../product/history-decisions.md); delivery is
+    the `HISTORY-002` backlog row.
 48. **A simpler way to join a folder workspace.** `user-confirmed`
     (2026-10-21): the expanded Folder sync row becomes two steps that can be
     done in either order, choose the shared folder and scan the QR code or

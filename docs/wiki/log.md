@@ -3348,3 +3348,17 @@ first removal attempt that does not finish, not to a paused keychain.
 - The [review rules](../development/review-rules.md) grade a finding about the
   verification method as `Recommended` unless it names a product defect the
   recorded evidence would pass.
+
+## [2026-11-03] decision | A calm history of scheduled pauses
+
+- [The history decision](../product/history-decisions.md) records idea 47:
+  a day ran as planned when none of its scheduled pauses was ended early;
+  skipped ones and days without a plan stay neutral, and nothing counts
+  totals or streaks.
+- `observed`: skip and End early facts leave with their schedule and a
+  natural end is forgotten after a day, so each device writes its own small
+  day record (ended early at once, ran as planned once the day is over); it
+  is never synchronized.
+- The owner accepted it on 2026-11-03 (PR #219): the `DESIGN.md` section is
+  added pending delivery, the `PRIVACY.md` text ships with the `HISTORY-002`
+  backlog row.
