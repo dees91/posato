@@ -3338,3 +3338,13 @@ first removal attempt that does not finish, not to a paused keychain.
   fresh browser loads as the proof; command-line probes only support it. The
   [verify-posato pause-set recipes](../../.agents/skills/verify-posato/features/pause-sets.md)
   keep the browser probe method and the driver gaps found on the way.
+## [2026-11-03] process | Proportionate device verification
+
+- The [engineering quality contract](../development/engineering-quality-contract.md#tests-and-runtime-checks)
+  now asks for one representative real-time device run per affected target;
+  timing precision and limits are proved by injected-clock tests written
+  failing first. `SCHEDULE-007` and `TARGETS-013` spent most of their time on
+  real-time matrices and on review rounds about the measurement method.
+- The [review rules](../development/review-rules.md) grade a finding about the
+  verification method as `Recommended` unless it names a product defect the
+  recorded evidence would pass.

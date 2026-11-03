@@ -14,6 +14,10 @@ follow the process in [`AGENTS.md`](../../AGENTS.md#code-review) and the
   Prefer E2E proof and request isolated tests only for a named important
   failure that existing stronger coverage misses. Do not request tests for
   static UI rendering, copy, theme mapping, or framework wiring.
+- Hold device verification to the contract's proportionate rule: one
+  representative real-time run per affected target. A finding that asks for
+  more rows, finer sampling, or another oracle is `Recommended`, unless it
+  names a concrete product defect the recorded evidence would pass.
 - Flag credentials, personal paths, wholesale PoC reuse, and violations of the
   accepted product, architecture, security, privacy, or process boundaries.
   `.research/blocker` must remain read-only evidence and an optional checkout.
