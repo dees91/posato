@@ -7,6 +7,10 @@ section and the `PRIVACY.md` text, and plans the delivery row `HISTORY-002`.
 Nothing here is product code; the [schedule rules](schedules-decisions.md)
 own occurrences, skips, End early, and breaks.
 
+The owner answered the first questions on 2026-10-30 and accepted the rest
+of this page, the visual form, the local day record, and the privacy text, on
+2026-11-03 in PR #219.
+
 ## Decisions
 
 ### What a day records
@@ -17,23 +21,23 @@ own occurrences, skips, End early, and breaks.
   do not count, and a day without a plan is neutral rather than empty". A
   day with only skipped occurrences is neutral too: it shows as a day
   without a scheduled pause, never as a gap or a failure.
-- `agent-delegated` (2026-11-03): a day is **ended early** when at least one
+- `user-confirmed` (2026-11-03): a day is **ended early** when at least one
   of its occurrences was ended early, on this device or on another device
   whose End early has reached this one, whenever it arrives. These are the
   only two recorded outcomes; a neutral day records nothing.
-- `agent-delegated`: an occurrence belongs to the local date it starts on,
+- `user-confirmed` (2026-11-03): an occurrence belongs to the local date it starts on,
   as the schedule weekdays do. Friday 22:00 to Saturday 06:00 is Friday.
-- `agent-delegated`: editing, turning off, or deleting a schedule is a change
+- `user-confirmed` (2026-11-03): editing, turning off, or deleting a schedule is a change
   of plan, not an outcome. An occurrence that a plan change stopped does not
   count, so a day whose only occurrence was stopped that way stays neutral.
-- `agent-delegated`: the history follows the plan and the person's choices,
+- `user-confirmed` (2026-11-03): the history follows the plan and the person's choices,
   not proof of enforcement. "Ran as planned" means that nobody ended the
   pause early; it does not claim that every website and app was blocked the
   whole time, which Session reports as before. A device that was switched
   off during an occurrence still records the day by its plan and facts.
 - Never recorded (`user-confirmed`, the brief and `PRIVACY.md`): websites
   visited or opened in a window, and blocked attempts.
-- Not recorded either (`agent-delegated`): apps opened, manual sessions,
+- Not recorded either (`user-confirmed` (2026-11-03)): apps opened, manual sessions,
   durations, times of day, or any count. Manual sessions stay out because
   the owner's definition of a kept day names only scheduled occurrences.
 
@@ -45,17 +49,17 @@ own occurrences, skips, End early, and breaks.
   device observed is forgotten after about a day (`ScheduleHostPolicy`,
   `forgotten`). The schedule table holds only the current plan, so a past
   day cannot be read back after an edit.
-- `agent-delegated`: each device therefore keeps one small local row per
+- `user-confirmed` (2026-11-03): each device therefore keeps one small local row per
   day, written from the existing schedule and occurrence facts. The row is
   never synchronized, so the `user-confirmed` boundary holds: no new
   synchronized record and no ADR 0006 amendment.
-- `agent-delegated`: **ended early** is written at once, for the
+- `user-confirmed` (2026-11-03): **ended early** is written at once, for the
   occurrence's start date, when End early is authored on this device or
   received from another, even for a day already written. That keeps the fact
   even when its schedule is deleted later the same day, and it lets an End
   early that arrives late still count. A day's outcome can change only from
   ran as planned to ended early, never back.
-- `agent-delegated`: **ran as planned** is written when the day is final:
+- `user-confirmed` (2026-11-03): **ran as planned** is written when the day is final:
   its local date has passed and every occurrence that started on it has
   ended or been skipped, so Friday 22:00 to Saturday 06:00 is final on
   Saturday at 06:00. Today is never final, because an edit or a new schedule
@@ -64,15 +68,15 @@ own occurrences, skips, End early, and breaks.
   sync applies changes, and once a minute while a desktop application runs.
   After that, an edit or deletion never rewrites the day; only a late End
   early does, as above.
-- `agent-delegated`: when Posato did not run for a while, the first check
+- `user-confirmed` (2026-11-03): when Posato did not run for a while, the first check
   catches up at most 7 days back, using the plan and facts as they are then.
   Older days stay neutral. If a plan changed on another device while this
   one was off, those caught-up days follow the changed plan; this limit is
   stated, not hidden. Catching up follows the device's current time zone,
   as schedules do.
-- `agent-delegated`: the history keeps the last 53 weeks and deletes older
+- `user-confirmed` (2026-11-03): the history keeps the last 53 weeks and deletes older
   rows during the check.
-- `agent-delegated`: **Clear history** deletes the rows but keeps the last
+- `user-confirmed` (2026-11-03): **Clear history** deletes the rows but keeps the last
   final date, so the next check does not catch the cleared days up again.
   Only days that become final after the clear, and End early facts for them,
   are written.
@@ -82,7 +86,7 @@ own occurrences, skips, End early, and breaks.
 - `user-confirmed` (2026-10-30): on each device only. Devices can show
   different histories, for example when one was off for more than a week or
   sits in another time zone.
-- `agent-delegated`: the history is not part of an export file, which
+- `user-confirmed` (2026-11-03): the history is not part of an export file, which
   already never holds history. Turning sync off or **Remove workspace** does
   not delete it: like the device's own schedules, it is local data, not the
   synchronized change history. **Clear history** deletes it, and so does
@@ -96,20 +100,20 @@ own occurrences, skips, End early, and breaks.
 - `user-confirmed` (2026-10-30): in **Schedules**, below the list, with no
   new tab or screen. It is visible by default and can be hidden and
   cleared.
-- `agent-delegated`: the section is a disclosure row titled **History**,
+- `user-confirmed` (2026-11-03): the section is a disclosure row titled **History**,
   open by default. Collapsing it hides the calendar, and Posato remembers
   that on the device; the collapsed **History** row stays, so hiding means
   collapsing, not removing the row. Hiding changes only what is shown; the days are still
   written, so opening it again shows them. **Clear history** at the end of the
   open section deletes the recorded days after a confirmation.
-- `agent-delegated`: the section shows whenever there is a schedule or a
+- `user-confirmed` (2026-11-03): the section shows whenever there is a schedule or a
   recorded day. With neither, it is absent, as the empty state already
   explains recurring pauses. After the last schedule is deleted, the
   recorded days and **Clear history** therefore stay reachable.
 
 ### The visual form
 
-`agent-delegated` (2026-11-03), the brief's open item:
+`user-confirmed` (2026-11-03), the brief's open item:
 
 - **Grid.** Seven rows, the device's first weekday at the top (Monday in
   the sketch), and one column per week, the current week at
@@ -136,11 +140,11 @@ a weekly percentage (a score), a current or longest run (a streak), a red or
 amber mark for an ended day (shame), and a separate History tab (the owner
 chose Schedules).
 
-## Proposed `DESIGN.md` section
+## `DESIGN.md` section
 
-Proposed, not accepted. Once the owner accepts it, it is added to
-`DESIGN.md` under "Current Screens and Interactions" as "Calm history of
-scheduled pauses", pending delivery by `HISTORY-002`:
+Accepted on 2026-11-03 and added to `DESIGN.md` under "Current Screens
+and Interactions" as "Calm history of scheduled pauses", pending delivery by
+`HISTORY-002`:
 
 > - **Where.** Schedules, below the list, as a disclosure row **History**,
 >   open by default and remembered on the device when collapsed. Shown
@@ -205,9 +209,9 @@ Schedules
    Clear history
 ```
 
-## Proposed `PRIVACY.md` text
+## `PRIVACY.md` text
 
-Applied by `HISTORY-002`, when the history ships, because `PRIVACY.md`
+Accepted on 2026-11-03; applied by `HISTORY-002`, when the history ships, because `PRIVACY.md`
 describes the shipped product:
 
 - In "Data Posato keeps on your devices", after the schedules item:

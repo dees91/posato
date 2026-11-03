@@ -1,7 +1,7 @@
 # Execution: `HISTORY-001`
 
 - **Brief:** [Decide a calm history of pauses](../specifications/history-001-calm-history.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Reviewer:** independent agent (completed-change review)
@@ -35,7 +35,7 @@
   therefore writes one local day row from those facts (ended early at once,
   ran as planned once the day is over), never synchronized. It keeps the owner's
   boundary (no new synchronized record, no ADR 0006 amendment) and is marked
-  `agent-delegated` for the owner's acceptance.
+  `user-confirmed` since the owner accepted it on 2026-11-03.
 - `HISTORY-002` is in the roadmap backlog (revision 38).
 
 ## Completed-change review
@@ -57,9 +57,10 @@
   non-interactive accessibility element; Windows follows the 1.6 Windows
   privacy text. Optional items folded: weekday and month abbreviations by
   locale, the log entry typed as a proposal.
-- **Open for the owner:** the `agent-delegated` items on a `docs/product`
-  page need the owner's confirmation before merge (`review-rules.md`); they
-  are relabelled `user-confirmed` on acceptance.
+- **Owner acceptance:** 2026-11-03, PR #219 questionnaire: the local day
+  record, the visual form, and the privacy text, as recommended; the
+  `agent-delegated` items are relabelled `user-confirmed` and the `DESIGN.md`
+  section is added pending delivery.
 
 ## Verification
 
@@ -67,14 +68,14 @@
 | --- | --- | --- |
 | `./gradlew verifyEnglishText` | pass | no accented letters outside translations |
 | Relative links in the changed documents | pass | every target exists |
+| `./gradlew quality` on `ed278207` | pass | BUILD SUCCESSFUL in 6m 23s |
 | Contrast of the day shapes (WCAG relative luminance) | pass | `primary` 6.74:1 and 8.22:1, `onSurfaceVariant` 4.96:1 and 7.77:1 on the light and dark surfaces; `outline` 2.05:1 is used only for the background dot |
 
 ## Blockers and accepted risks
 
-- The owner's acceptance of the `agent-delegated` items, the `DESIGN.md`
-  section, and the `PRIVACY.md` text in PR #219.
+- None. `PRIVACY.md` changes only when `HISTORY-002` ships the history.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending the review and the owner's acceptance
+- **Status:** `done`
+- **Outcome:** met: `AC-01` to `AC-03`, accepted by the owner on 2026-11-03

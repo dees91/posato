@@ -1166,6 +1166,53 @@ own the behavior.
 Reuse the existing row, menu, sheet, choice group, summary, and caption
 components; no new component, color, or icon.
 
+### Calm history of scheduled pauses
+
+Accepted with `HISTORY-001` (`user-confirmed` 2026-11-03), pending delivery
+by `HISTORY-002`; the
+[history decision](docs/product/history-decisions.md) owns what a day
+records and when it is written.
+
+- **Where.** Schedules, below the list, as a disclosure row **History**,
+  open by default and remembered on the device when collapsed. Shown
+  while there is a schedule or a recorded day.
+- **Grid.** Seven weekday rows from the device's first weekday and one
+  column per week, the current week at the right, as many weeks as fit
+  (up to 53), without horizontal scroll. Short weekday names on the rows
+  and short month names above the column where a month starts, as the
+  device's locale abbreviates them.
+- **Days.** Ran as planned: a filled rounded square in `primary`. Ended
+  early: an empty square with a thin `onSurfaceVariant` ring. No scheduled
+  pause, a day still to come, or before the history began: a small
+  `outline` dot. Shape carries the state, so color is never the only cue.
+  Today always stays a dot; a day takes its shape after it is over and
+  its scheduled pauses have ended.
+- **Copy.** Caption: "Days your scheduled pauses ran as planned on this
+  device." Legend: "Ran as planned", "Ended early", "No scheduled pause".
+  Before any day is recorded: "Days show here after your scheduled pauses
+  end."
+- **Clear.** A quiet text action **Clear history** at the end of the open
+  section; confirmation title "Clear history?", body "Posato removes the
+  days recorded on this device. Your schedules don't change.", actions
+  **Clear** (destructive) and **Cancel**.
+- **Never.** No counts, percentages, streaks, best runs, comparisons,
+  progress, celebrations, animation, or notifications; no warning color or
+  mark for an ended day.
+- **Accessibility.** Each week column is one element, labelled with its
+  week and its recorded days, for example "Week of 26 October: ran as
+  planned Monday and Tuesday, ended early Thursday"; a week with no
+  recorded day reads "Week of 26 October: no scheduled pause". The filled
+  square and the ring meet the 3:1 non-text contrast on the surface in both
+  appearances (`primary` 6.7:1 and 8.2:1, `onSurfaceVariant` 5.0:1 and
+  7.8:1); the dot is background, and the week label carries its meaning.
+  Under Increase Contrast the ring and the dot use `onSurface`. The grid
+  has no action: a week column is a non-interactive accessibility
+  element, so the 44-point target rule does not apply to it.
+
+Reuse the disclosure row, caption, text action, and confirmation
+components; the day square is the only new drawing, built from existing
+tokens.
+
 ### Session
 
 - Inactive: NO SESSION ACTIVE (sentence case on iOS: No session active), Room

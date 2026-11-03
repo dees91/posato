@@ -285,7 +285,7 @@
   independent review with a back-translation into English. `DOCS-007` and
   `RELEASE-010` also depend on it. This amends the composed release 1.6.
   Revision 38 adds the `HISTORY-002` backlog row from the `HISTORY-001`
-  decision (pending the maintainer's acceptance in PR #219): deliver the calm
+  decision (`user-confirmed`, 2026-11-03, PR #219): deliver the calm
   history of scheduled pauses that
   [the history decision](../product/history-decisions.md) plans. It changes
   no release.
