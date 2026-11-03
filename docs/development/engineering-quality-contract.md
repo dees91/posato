@@ -154,6 +154,14 @@ Raw screenshots, logs, database evidence, and identifiers remain under ignored
 `build/verification/`; tracked records contain only portable commands and
 categorical results.
 
+`user-confirmed` (2026-11-03): device verification is proportionate. Each
+affected target gets one representative real-time run of the changed flow,
+with Posato terminated where enforcement must survive that. Timing precision,
+boundary instants, interleavings, and limits are proved by tests with an
+injected clock and fakes, written failing first. A real-time matrix across
+several rows of one target needs a named failure that only it can expose,
+recorded in the brief or plan.
+
 New important behavior needs regression-capable proof at the strongest useful
 boundary. A business-logic bug fix demonstrates failure before the repair and
 success after it unless the selected record path explains the concrete
@@ -201,6 +209,10 @@ approval without those three elements does not complete the review tier.
 | Required | A correctness, maintainability, architecture, scope, or verification defect. | Blocks completion. |
 | Recommended | Valuable but unnecessary for this task's accepted outcome. | Advisory. |
 | Optional | Preference, information, or low-value polish. | Advisory. |
+
+A finding about the verification method itself (more rows, finer sampling,
+another oracle) is Recommended unless it shows that the recorded evidence
+would pass a concrete product defect; that defect makes it Required.
 
 Only a recorded maintainer decision may override a Critical or Required
 finding. Recommended and Optional findings do not silently become work.

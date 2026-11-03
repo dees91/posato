@@ -3315,3 +3315,14 @@ first removal attempt that does not finish, not to a paused keychain.
   such a file in place instead of deleting it everywhere, and the
   folder-sync recipe in the verify-posato skill records the iCloud delivery
   latency to the iPhone.
+
+## [2026-11-03] process | Proportionate device verification
+
+- The [engineering quality contract](../development/engineering-quality-contract.md#tests-and-runtime-checks)
+  now asks for one representative real-time device run per affected target;
+  timing precision and limits are proved by injected-clock tests written
+  failing first. `SCHEDULE-007` and `TARGETS-013` spent most of their time on
+  real-time matrices and on review rounds about the measurement method.
+- The [review rules](../development/review-rules.md) grade a finding about the
+  verification method as `Recommended` unless it names a product defect the
+  recorded evidence would pass.
