@@ -58,7 +58,12 @@ of this page, the visual form, the local day record, and the privacy text, on
   received from another, even for a day already written. That keeps the fact
   even when its schedule is deleted later the same day, and it lets an End
   early that arrives late still count. A day's outcome can change only from
-  ran as planned to ended early, never back.
+  ran as planned to ended early, never back. It is written only for a date
+  that ran as planned could also reach: a date that already has a row, or a
+  date after the last final date and within the 7-day catch-up bound below.
+  An End early for an older date, before the history began, or for a day
+  removed by **Clear history** is ignored, so the history never shows an
+  ended-early ring in weeks whose kept days it could not record.
 - `user-confirmed` (2026-11-03): **ran as planned** is written when the day is final:
   its local date has passed and every occurrence that started on it has
   ended or been skipped, so Friday 22:00 to Saturday 06:00 is final on
@@ -257,6 +262,8 @@ describes the shipped product:
   retention; Clear history, and no catch-up of the cleared days afterwards;
   the hidden section still writes rows; End early followed by the same-day
   deletion of its schedule; an End early received after the day was written;
+  an End early received for a day older than the catch-up bound, before the
+  history began, or cleared, which writes nothing;
   today never final, even after its only occurrence ended; a time-zone change
   between two occurrences; a clock rollback after a day was written.
 - **Tooling.** `posato-control` reads the history section through the
