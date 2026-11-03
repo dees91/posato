@@ -9,11 +9,9 @@
 
 ## TARGETS-013 set domain window amendment
 
-Accepted under delegation: proposed on 2026-11-01 (`TARGETS-013`), passed an
-independent security review after fixes on 2026-11-01, and decided on
-2026-11-01 by the owner's agent under the owner's explicit delegation of
-2026-10-31, as the owner's exception to the `agent-delegated` rule, pending
-the owner's confirmation in the `TARGETS-013` pull request. `TARGETS-013`
+Accepted: proposed on 2026-11-01 (`TARGETS-013`), passed an independent
+security review after fixes on 2026-11-01, decided on 2026-11-01 by the
+owner's agent under the owner's delegation of 2026-10-31, and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221). `TARGETS-013`
 implements it. The product rules are in
 [pause set rules](../product/pause-sets-decisions.md#website-windows-targets-013).
 

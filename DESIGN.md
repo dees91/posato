@@ -1116,10 +1116,8 @@ component, color, or icon.
 
 ### Release 1.6 website windows
 
-Proposed with `TARGETS-013` and decided on 2026-11-01 by the owner's agent
-under the owner's explicit delegation of 2026-10-31, as the owner's
-exception to the `agent-delegated` rule, pending the owner's confirmation in
-the `TARGETS-013` pull request. The product decisions (fixed choices, clock
+Proposed with `TARGETS-013`, decided on 2026-11-01 by the owner's agent under
+the owner's delegation of 2026-10-31, and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221). The product decisions (fixed choices, clock
 alignment, opening by itself) are `user-confirmed` 2026-10-30; the
 [pause set rules](docs/product/pause-sets-decisions.md#website-windows-targets-013)
 own the behavior.

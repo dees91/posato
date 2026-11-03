@@ -9,11 +9,9 @@
 
 ## TARGETS-013 window page amendment
 
-Accepted under delegation: proposed on 2026-11-01 (`TARGETS-013`), passed an
-independent security review after fixes on 2026-11-01, and decided on
-2026-11-01 by the owner's agent under the owner's explicit delegation of
-2026-10-31, as the owner's exception to the `agent-delegated` rule, pending
-the owner's confirmation in the `TARGETS-013` pull request. The window rule
+Accepted: proposed on 2026-11-01 (`TARGETS-013`), passed an independent
+security review after fixes on 2026-11-01, decided on 2026-11-01 by the
+owner's agent under the owner's delegation of 2026-10-31, and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221). The window rule
 is in the
 [ADR 0006 amendment](0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment),
 the helper's evaluation in the

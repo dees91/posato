@@ -6,8 +6,7 @@
   maintainer on 2026-09-30 (`user-confirmed`).
 - **Owner:** `SCHEDULE-003` decides; `SCHEDULE-004` delivers. Release 1.6
   adds [website windows](#website-windows-targets-013), decided by
-  `TARGETS-013` under the owner's delegation of 2026-10-31,
-  pending the owner's confirmation.
+  `TARGETS-013` and `user-confirmed` by the owner on 2026-11-03.
 - **Authorities:** [product scope](pause-sets.md),
   [`DESIGN.md`](../../DESIGN.md#release-13-pause-sets),
   [ADR 0006](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-003-pause-set-operations-amendment),
@@ -212,9 +211,7 @@ The decisions are `user-confirmed` (2026-10-30, questionnaire); the task
 brief is
 [`targets-013-timed-website.md`](../tasks/specifications/targets-013-timed-website.md).
 The rules below them were decided on 2026-11-01 by the owner's agent under
-the owner's explicit delegation of 2026-10-31, as the owner's exception to
-the `agent-delegated` rule, pending the owner's confirmation in the
-`TARGETS-013` pull request; each was a gate question with a recommendation,
+the owner's delegation of 2026-10-31 and `user-confirmed` by the owner on 2026-11-03 in the `TARGETS-013` pull request (#221); each was a gate question with a recommendation,
 and the pull request lists them. The normative operation is the
 [ADR 0006 amendment](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#targets-013-set-domain-window-amendment);
 the Mac page is in the
