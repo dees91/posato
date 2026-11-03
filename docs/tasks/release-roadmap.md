@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 37 (2026-10-28: `I18N-002` adds German, French, Spanish, and Portuguese to 1.6)
+- **Revision:** 38 (2026-11-03: `HISTORY-001` adds the `HISTORY-002` backlog row)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-28
+- **Last amended:** 2026-11-03
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -284,6 +284,11 @@
   integration group `PR-I18N-DE-FR-ES-PT`. The copy is accepted from an
   independent review with a back-translation into English. `DOCS-007` and
   `RELEASE-010` also depend on it. This amends the composed release 1.6.
+  Revision 38 adds the `HISTORY-002` backlog row from the `HISTORY-001`
+  decision (pending the maintainer's acceptance in PR #219): deliver the calm
+  history of scheduled pauses that
+  [the history decision](../product/history-decisions.md) plans. It changes
+  no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -701,6 +706,7 @@ The idea numbers refer to the wiki idea queue.
 | `PLATFORM-004` | Give the desktop helpers one least-privilege rule on the Mac, Linux, and Windows: state it in ADR 0010, then narrow each platform's mechanism to it (on Windows, for example, a restricted service SID where Windows Filtering Platform allows it) and verify each in its Tart guest. High-risk. | Platform coverage | Idea 57; `PLATFORM-002` review | A release that changes a desktop helper |
 | `SESSION-011` | Clear the expired session that the Linux and Windows helpers keep reporting after a pause ends while Posato is closed: the shared session code acknowledges an expiry only while its local record is still active, so the next launch never acknowledges it. One shared fix, verified on Linux and Windows. | Sessions and enforcement | Idea 58; `PLATFORM-002` review | Any planning checkpoint; no effect on enforcement |
 | `REDIRECT-001` | Decide whether Posato offers host redirect rules beside blocking. First settle the model: always-on rules in a separate setting, or redirects inside sessions and pause sets, with the UX of each compared so that blocking and redirecting stay clear. Then analyze the technical approach on macOS (proxy and browser presentation; for always-on rules also failure, sleep, VPN and proxy coexistence, and privacy outside sessions) and the feasibility on Linux, Windows, Android, and iOS. Settle host versus path rules, loop protection, and whether rules sync. End with a product decision, the proposed ADR 0004 and ADR 0005 revisions if needed, and a delivery plan. Preliminary. | Product discovery | Idea 59 | A product decision that redirects are in scope |
+| `HISTORY-002` | Deliver the calm history of scheduled pauses decided in `HISTORY-001`: a local, unsynchronized day record written when a day becomes final, a **History** disclosure below the Schedules list on every platform with ran-as-planned and ended-early days and no totals, **Clear history**, the `PRIVACY.md` text, and the `posato-control` read, as [the history decision](../product/history-decisions.md) plans. | Schedules | `HISTORY-001` (idea 47) | A release composition that takes it |
 
 ## Coverage matrix
 

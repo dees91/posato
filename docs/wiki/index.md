@@ -54,6 +54,9 @@ provenance rather than a parallel public brand.
   release 1.3 pause set scope for manual sessions and schedules, and
   [../product/pause-sets-decisions.md](../product/pause-sets-decisions.md)
   the `SCHEDULE-003` rules, operations, and `SCHEDULE-004` plan.
+- [../product/history-decisions.md](../product/history-decisions.md)
+  records the `HISTORY-001` decision for a calm, device-local history of
+  scheduled pauses and the `HISTORY-002` delivery plan.
 
 - [../product/schedules-and-mac-setup.md](../product/schedules-and-mac-setup.md)
   records the accepted release 1.2 schedules and Mac setup scope, with the
