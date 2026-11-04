@@ -61,7 +61,7 @@ ją wcześniej. Wpisy sprzed Posato 1.3
 zapisują też zmiany wspólnej nazwy grupy aplikacji, której Posato wtedy
 używało. Zmiana albo usunięcie strony lub zestawu nie wymazuje z tej historii
 wcześniejszych wpisów. Historia zostaje, aż na tym urządzeniu dokończy się
-**Usuń obszar roboczy** albo aż dane Posato zostaną z niego usunięte, i może
+**Usuń przestrzeń** albo aż dane Posato zostaną z niego usunięte, i może
 trafić do kopii zapasowych urządzenia tak jak dane powyżej.
 
 Posato nie zbiera historii przeglądania, odwiedzanych stron, tego, które
@@ -82,7 +82,7 @@ Synchronizacja z iCloud jest opcjonalna i wyłączona, dopóki nie wybierzesz
   nich dostępu.
 - Każda zmiana i rejestracja każdego urządzenia są zapisane jako osobny
   zaszyfrowany rekord, a te rekordy gromadzą się w Twojej bazie iCloud, dopóki
-  nie wybierzesz **Usuń obszar roboczy**; Posato nie czyści ich automatycznie.
+  nie wybierzesz **Usuń przestrzeń**; Posato nie czyści ich automatycznie.
 - Klucz szyfrowania jest dzielony między urządzeniami przez pęk kluczy iCloud.
 - Wybór aplikacji nigdy nie jest synchronizowany; każde urządzenie trzyma
   własny.
@@ -90,7 +90,7 @@ Synchronizacja z iCloud jest opcjonalna i wyłączona, dopóki nie wybierzesz
   jego świadczenia, takie jak powiązanie z kontem, czas, rozmiary rekordów i
   ich liczby, zgodnie z własną polityką prywatności Apple.
 
-**Usuń obszar roboczy** usuwa zsynchronizowane rekordy Posato z Twojej bazy
+**Usuń przestrzeń** usuwa zsynchronizowane rekordy Posato z Twojej bazy
 iCloud, historię zsynchronizowanych zmian na urządzeniu, na którym je
 usuwasz, oraz klucz obszaru roboczego z pęku kluczy iCloud, więc inne
 urządzenia też tracą dostęp do obszaru roboczego; ich własne kopie zestawów,
@@ -142,7 +142,7 @@ roboczego.
   pliku w historii plików, może odzyskać klucz obszaru roboczego, nawet po
   wygaśnięciu kodu, więc udostępniaj je tylko własnym urządzeniom.
 
-**Usuń obszar roboczy** usuwa folder Posato z wybranego folderu, jeśli to
+**Usuń przestrzeń** usuwa folder Posato z wybranego folderu, jeśli to
 urządzenie nadal może do niego sięgnąć, oraz plik klucza obszaru roboczego i
 historię zsynchronizowanych zmian na urządzeniu, na którym go usuwasz. Inne
 urządzenia trzymają własne kopie zestawów, sesji, historii zmian i pliku
