@@ -1,12 +1,11 @@
 package app.posato.provisioning.store
 
-import app.posato.provisioning.asc.AppInfoClient
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 
 private const val MAX_SUBTITLE = 30
 
-/** The en-US App Store subtitle: its input check, made before any request, and its update. */
+/** The App Store subtitle input check, made before any request; [StoreAppInfo] writes it. */
 object StoreSubtitle {
     fun input(value: String): String {
         val text = value.trim()
@@ -19,39 +18,5 @@ object StoreSubtitle {
             throw ProvisioningException(ErrorCode.RELEASE_INPUT_INVALID, problem, "Correct the input; nothing was sent to App Store Connect.")
         }
         return text
-    }
-
-    /**
-     * Writes [subtitle] into the App Information that is still editable and returns the outcome. A new App Store
-     * version brings its own copy, so the live one is never changed; without an editable copy the run stops.
-     */
-    fun update(
-        appInfo: AppInfoClient,
-        appId: String,
-        subtitle: String,
-        locale: String = STORE_LOCALE,
-    ): String {
-        val info = appInfo.appInfos(appId).firstOrNull { resource -> resource.currentState in EDITABLE_VERSION_STATES }
-            ?: throw ProvisioningException(
-                ErrorCode.VERSION_NOT_EDITABLE,
-                "The app has no editable App Information, so the subtitle cannot change now.",
-                "Earlier steps of this run may already be written; a rerun is safe. The subtitle changes with an App Store version " +
-                    "that is still being prepared; `store status` shows the versions.",
-            )
-        val localization = appInfo.localizations(info.id).firstOrNull { resource -> resource.attributes.locale == locale }
-        if (localization == null && locale == STORE_LOCALE) {
-            throw ProvisioningException(
-                ErrorCode.LOCALIZATION_MISSING,
-                "The App Information has no $STORE_LOCALE localization.",
-                "Add the $STORE_LOCALE localization in App Store Connect.",
-            )
-        }
-        if (localization == null) {
-            appInfo.createLocalization(info.id, locale, subtitle)
-            return "updated"
-        }
-        if (localization.attributes.subtitle?.trim() == subtitle) return UNCHANGED
-        appInfo.updateLocalization(localization.id, mapOf("subtitle" to subtitle))
-        return "updated"
     }
 }

@@ -20,6 +20,7 @@ private val VERSION_PATTERN = Regex("[0-9]+\\.[0-9]+\\.[0-9]+")
 private val LOCALE_PATTERN = Regex("[a-z]{2}(-[A-Z][A-Za-z0-9]{1,7})?")
 private const val MAX_WHATS_NEW = 4000
 private const val MAX_DESCRIPTION = 4000
+private const val MAX_KEYWORDS = 100
 private const val MAX_SCREENSHOTS_PER_SET = 10
 private const val BYTE_MASK = 0xFF
 private const val HEX_RADIX = 16
@@ -81,6 +82,9 @@ object ReleaseInputs {
     fun whatsNew(file: Path): String = text(file, "What's New", MAX_WHATS_NEW)
 
     fun description(file: Path): String = text(file, "description", MAX_DESCRIPTION)
+
+    /** Comma-separated keywords; App Store Connect counts at most 100 characters, separators included. */
+    fun keywords(file: Path): String = text(file, "keywords", MAX_KEYWORDS)
 
     /** Both sets, each in file-name order, which is the order App Store Connect shows them in. */
     fun screenshots(root: Path): Map<ScreenshotSlot, List<ScreenshotFile>> {

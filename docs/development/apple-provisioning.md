@@ -52,8 +52,8 @@ every known value redacted.
 | `devices register [--tart-vm <name>]...` | Registers this Mac, every **wired** iPhone, and each named running Tart VM the account does not already hold. VMs are named `Posato Verification VM`. |
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
-| `store status [--version X.Y.Z]` | Read-only. Lists the iOS App Store versions with state and release type, the builds with marketing version and processing state, and the next free build number; with `--version`, also that version's attached build, en-US What's New, and screenshot sets with delivery states. |
-| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--screenshots <dir>] [--subtitle <text>] [--locale <code>] [--rename-from X.Y.Z]` | Brings one App Store version to the release state, changing only what differs. `--locale` selects the localization by App Store Connect's locale shortcode, such as `pl` for Polish, and defaults to `en-US`; a localization the version does not have yet is created. With `--rename-from`, a missing version is made by renaming the app's one unreleased version. `--subtitle` sets that locale's subtitle (at most 30 characters) in the App Information that the version still being prepared brings; the live one is never changed. See [iOS App Store release](#ios-app-store-release). |
+| `store status [--version X.Y.Z] [--locale <code>]...` | Read-only. Lists the iOS App Store versions with state and release type, the builds with marketing version and processing state, and the next free build number; with `--version`, also that version's attached build, en-US What's New, and screenshot sets with delivery states, and under `localizations` each localization it holds and each `--locale` it should hold, with the required fields it still lacks (`missing`: name, description, keywords, support URL, privacy policy URL, What's New on an update, and either screenshot set). `localizationsComplete` is true when none lacks anything. |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--keywords <file>] [--support-url <url>] [--marketing-url <url>] [--privacy-url <url>] [--screenshots <dir>] [--subtitle <text>] [--locale <code>] [--rename-from X.Y.Z]` | Brings one App Store version to the release state, changing only what differs. `--locale` selects the localization by App Store Connect's locale shortcode, such as `pl` for Polish, and defaults to `en-US`; a localization the version does not have yet is created empty. `--keywords` (at most 100 characters, checked before any request), `--support-url`, and `--marketing-url` are written with What's New and the description in one request. With `--rename-from`, a missing version is made by renaming the app's one unreleased version. `--subtitle` (at most 30 characters) and `--privacy-url` are set in the App Information that the version still being prepared brings; the live one is never changed, and a locale it lacks is created with the name Posato. URLs must be absolute HTTPS URLs. See [iOS App Store release](#ios-app-store-release). |
 | `store submit --version X.Y.Z` | Submits the version to App Review once it has a build and every screenshot is `COMPLETE`. Does nothing when it is already waiting for or in review. |
 | `store withdraw --version X.Y.Z` | Withdraws a version waiting for or in review by canceling its review submission, then waits until the version is editable again. Does nothing when it is already editable. See [Replacing a version in review](#replacing-a-version-in-review). |
 
@@ -252,26 +252,65 @@ paths; keep every output outside the checkout or under the ignored `build/`.
    ```
 
    Wait until `store status` lists the build as `VALID`.
-6. **Prepare the version.** Put the accepted What's New text from
-   [`docs/store/en-US/listing.md`](../store/en-US/listing.md) in a plain-text
-   file, then:
+6. **Prepare the version.** Each store locale has a directory under
+   [`docs/store/`](../store/) with the accepted `whats-new-<version>.txt`,
+   `description.txt`, `keywords.txt`, and `screenshots/`. Run one command per
+   locale, en-US first:
 
    ```shell
    posato-provisioning store prepare --version <version> --build <build> \
-     --whats-new <whats-new.txt> --release after-approval \
-     --description <description.txt> \
+     --whats-new docs/store/en-US/whats-new-<version>.txt --release after-approval \
+     --description docs/store/en-US/description.txt \
+     --keywords docs/store/en-US/keywords.txt \
      --screenshots docs/store/en-US/screenshots
    ```
 
-   It refuses a build that is missing or not `VALID` before writing anything,
+   The other locales add the localized links, and a locale's first release
+   also the subtitle from its `listing.md`, because a new localization starts
+   empty instead of copying en-US:
+
+   | Directory | `--locale` | Site path `<lang>` |
+   | --- | --- | --- |
+   | `pl-PL` | `pl` | `pl` |
+   | `de-DE` | `de-DE` | `de` |
+   | `fr-FR` | `fr-FR` | `fr` |
+   | `es-ES` | `es-ES` | `es` |
+   | `pt-BR` | `pt-BR` | `pt` |
+
+   ```shell
+   posato-provisioning store prepare --version <version> --build <build> \
+     --locale <locale> --release after-approval \
+     --whats-new docs/store/<dir>/whats-new-<version>.txt \
+     --description docs/store/<dir>/description.txt \
+     --keywords docs/store/<dir>/keywords.txt \
+     --subtitle "<subtitle from docs/store/<dir>/listing.md>" \
+     --support-url https://posato.app/<lang>/support/ \
+     --marketing-url https://posato.app/<lang>/ \
+     --privacy-url https://posato.app/<lang>/privacy/ \
+     --screenshots docs/store/<dir>/screenshots
+   ```
+
+   Then check every locale before submitting:
+
+   ```shell
+   posato-provisioning store status --version <version> --locale en-US \
+     --locale pl --locale de-DE --locale fr-FR --locale es-ES --locale pt-BR
+   ```
+
+   `selected.localizationsComplete` must be true; otherwise each entry's
+   `missing` names what that locale still lacks.
+
+   `store prepare` refuses a build that is missing or not `VALID` before writing anything,
    and it refuses an existing version whose state is not
    `PREPARE_FOR_SUBMISSION`, `DEVELOPER_REJECTED`, `REJECTED`,
    `METADATA_REJECTED`, or `INVALID_BINARY` (`VERSION_NOT_EDITABLE`). It creates the iOS App Store version when absent, and App Store Connect
-   copies the description, keywords, review details, and screenshots from the
-   previous version. The command then sets the release type, the en-US What's
-   New text, the build, and, with `--description`, the en-US description.
-   What's New and the description travel in one request, and a matching text
-   is left alone. `--screenshots` replaces `iphone-6.9/*.png` in the
+   copies the description, keywords, review details, and screenshots of every
+   localization from the previous version. The command then sets the release
+   type, the build, and that locale's What's New and, when given, its
+   description, keywords, support URL, and marketing URL, in one request that
+   leaves a matching text alone. `--subtitle` and `--privacy-url` go to the
+   App Information localization, which is created with the name Posato when
+   the locale has none. `--screenshots` replaces `iphone-6.9/*.png` in the
    `APP_IPHONE_67` set and `ipad-13/*.png` in the `APP_IPAD_PRO_3GEN_129` set,
    in file-name order. A set that already holds the same files with the same
    MD5 checksums is left alone. Otherwise every screenshot in it is deleted,
