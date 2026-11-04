@@ -46,7 +46,7 @@
   update feed notes, and the GitHub release notes below, in every shipped
   language where the surface is translated.
 - **Media**: new captures `mac-break`, `android-window-dialog`,
-  `windows-websites`, `windows-active-45`; new still `step-break.png`;
+  `windows-active-45`; new still `step-break.png`;
   re-rendered hero, GIF, walkthrough cards, and social preview; poster and
   other stills unchanged.
 

@@ -52,8 +52,8 @@ Outputs:
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card naming and
   outlining the five platforms; upload it under the repository's social
   preview setting by hand.
-- `public/windows-websites.png` and `public/windows-active-45.png`: plain
-  1024 x 697 Windows captures for the site, not rendered by Remotion.
+- `public/windows-active-45.png`: a plain 1024 x 697 Windows capture for the
+  site, not rendered by Remotion.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
   faststart, 566,500 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.

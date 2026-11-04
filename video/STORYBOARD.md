@@ -114,10 +114,9 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `android-join` | Android: joining a folder workspace, the folder chosen and the pairing code step open (still and site) |
 | `mac-break` | Session during Deep work on a break: "On a break until", the schedule's own end, End break and End early (still) |
 | `android-window-dialog` | Android: Open example.com briefly, every 1 hour for 10 minutes, over Focus (still) |
-| `windows-websites` | Windows: Focus, Websites, example.com with "Opens every hour for 10 min" (site) |
 | `windows-active-45` | Windows: Session active, Set: Focus, example.com open until its window closes (site install section) |
 
-The README stills pair the Mac with a phone (`user-confirmed` 2026-10-22): websites with Android, the 45-minute setup and schedules with the iPhone, folder pairing with Android, iCloud sync on both, export on the Mac with import on the iPhone, and since 1.6 a break on the Mac with a website that opens briefly on Android (`StepBreak`). Linux and Windows appear in the hero's device row and the social preview's outlines; the Windows captures are plain, uncomposed screenshots for the site.
+The README stills pair the Mac with a phone (`user-confirmed` 2026-10-22): websites with Android, the 45-minute setup and schedules with the iPhone, folder pairing with Android, iCloud sync on both, export on the Mac with import on the iPhone, and since 1.6 a break on the Mac with a website that opens briefly on Android (`StepBreak`). Linux and Windows appear in the hero's device row and the social preview's outlines; the Windows capture is a plain, uncomposed screenshot for the site.
 
 ## Updating
 

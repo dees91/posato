@@ -14,7 +14,6 @@
 # under Choose apps, so no application is chosen.
 #
 #   video/capture/windows-captures.sh fixture     # Focus with both domains and the window rule, Evening
-#   video/capture/windows-captures.sh websites    # Focus, Websites, the rule's caption under example.com
 #   video/capture/windows-captures.sh session     # a 45-minute pause with Focus, restrictions active, then ended early
 #   video/capture/windows-captures.sh collect DIR # crop the title bar and the taskbar and write each capture of THEME to DIR
 #
@@ -23,7 +22,7 @@ set -euo pipefail
 
 PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
 RUNS="${RUNS_DIR:-build/verification/runs}"
-NAMES=(windows-websites windows-active-45)
+NAMES=(windows-active-45)
 pc() { "${PC}" "$1" -t windows "${@:2}"; }
 flow() { "${PC}" flow "$1" -t windows "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["result"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
@@ -52,15 +51,6 @@ fixture() {
   pc tap --text "Back to pause sets" --role button | ok
   flow set --name Focus --window example.com=60/10 | ok
   flow set --name Evening --website example.net | ok
-}
-
-websites() {
-  pc tap --text "Pause sets" --role button | ok
-  pc tap --text-contains "Focus, Default" --role button | ok
-  pc tap --text-contains "Websites," --role button | ok
-  pc wait --for exists --text-contains "Opens every hour for 10 min" --timeout-seconds 20 | ok
-  shot windows-websites
-  pc tap --text "Back to pause sets" --role button | ok
 }
 
 session() {
@@ -102,12 +92,11 @@ EOF
 }
 
 case "${1:-}" in
-  websites|session) theme ;;
+  session) theme ;;
 esac
 case "${1:-}" in
   fixture) fixture ;;
-  websites) websites ;;
   session) session ;;
   collect) collect "${2:-}" ;;
-  *) echo "usage: $0 fixture|websites|session|collect DIR" >&2; exit 2 ;;
+  *) echo "usage: $0 fixture|session|collect DIR" >&2; exit 2 ;;
 esac
