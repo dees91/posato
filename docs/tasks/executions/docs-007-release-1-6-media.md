@@ -52,8 +52,9 @@
 
 - Upload the regenerated `.github/assets/social-preview.png` in the
   repository settings by hand.
-- Polish: the site and store use "obszar roboczy" for workspace, the app
-  "przestrzeń"; the button label now matches the app.
+- Polish: the site and store translate workspace as "work area", the app as
+  "space" (`sync_remove_workspace` in `values-pl`); the button label now
+  matches the app.
 - `RELEASE-010`: the MSI signing line and, if unsigned, the SmartScreen line
   and limit.
 - Driver gaps seen while capturing: on Android `flow set` fails at Save
