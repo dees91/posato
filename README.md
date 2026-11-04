@@ -229,7 +229,9 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   can bypass it. Paused apps are ended, so save your work first. A system
   service, set up by the installer, ends the pause on time even when Posato
   is closed. Closing the window keeps Posato running with an icon in the
-  notification area; quitting it stops new scheduled starts.
+  notification area; quitting it stops new scheduled starts. Posato pauses
+  only the Windows account that installed it, and Microsoft Store apps
+  cannot be paused.
 - **Sync:** delivery is best effort. If every copy of your workspace key is
   lost, synchronized data cannot be recovered.
 

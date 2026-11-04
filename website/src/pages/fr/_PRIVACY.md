@@ -1,6 +1,6 @@
 # Politique de confidentialité de Posato
 
-En vigueur à compter du 22 octobre 2026.
+En vigueur à compter du 4 novembre 2026.
 
 Posato n’envoie pas à son développeur vos ensembles de pause, votre liste de
 sites, vos choix d’apps, vos sessions, vos programmations ni les données de

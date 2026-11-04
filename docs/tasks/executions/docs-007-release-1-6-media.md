@@ -29,7 +29,8 @@ For `RELEASE-010` to paste into the release. The update feed notes, which
 the release commit signs, are
 [`1.6.0-appcast-notes.txt`](../../releases/1.6.0-appcast-notes.txt). If
 `RELEASE-010` ships the MSI packages unsigned, add the SmartScreen line under
-Installing and the matching limit before publishing.
+Installing and the matching limit before publishing, and use the unsigned
+variant of the verification line below; otherwise name the signing identity.
 
 > Posato 1.6 comes to Windows, lets you take a break in a scheduled pause, and opens a website briefly during a pause when you choose.
 >
@@ -57,5 +58,5 @@ Installing and the matching limit before publishing.
 >
 > ## Requirements and verification
 >
-> - macOS 13 or later on Apple silicon or Intel; iOS 18 or later from the [App Store](https://apps.apple.com/app/posato/id6812237585); Ubuntu 24.04 or later; Android 13 or later; Windows 11.
-> - Both DMGs are signed with Developer ID and notarized by Apple. The APK is release-signed. `SHA256SUMS` lists the checksums of every file below; `appcast.xml` (Apple silicon) and `appcast-intel.xml` (Intel) are the signed update feeds that Posato for Mac reads.
+> - macOS 13 or later on Apple silicon or Intel; iOS 18 or later from the [App Store](https://apps.apple.com/app/posato/id6812237585); Ubuntu 24.04 or later; Android 13 or later; Windows 11 on x64 or Arm.
+> - Both DMGs are signed with Developer ID and notarized by Apple. The APK is release-signed. The MSI packages are signed with `<identity>` (or: are not signed yet, so Windows SmartScreen asks before running them). `SHA256SUMS` lists the checksums of every file below; `appcast.xml` (Apple silicon) and `appcast-intel.xml` (Intel) are the signed update feeds that Posato for Mac reads.

@@ -1,6 +1,6 @@
 # Posato Privacy Policy
 
-Effective October 22, 2026.
+Effective November 4, 2026.
 
 Posato does not send your pause sets, website list, app choices, sessions,
 schedules, or workspace data to its developer. There is no Posato account, no
@@ -202,10 +202,10 @@ the system can send it requests. While a pause runs, the service:
   checking which program each running process is, without reading or keeping
   what you do in it.
 
-The service keeps your account name and its security identifier in a
-configuration file, and the pause it enforces, with its websites and program
-locations, in a file that only the system and administrators can open, so a
-restart keeps the pause. After the pause ends, that file keeps only the
+In files that only the system and administrators can open, the service
+keeps your account name and its security identifier, and the pause it
+enforces, with its websites and program locations, so a restart keeps the
+pause. After the pause ends, that file keeps only the
 session's identifier until Posato reads it. Uninstalling Posato removes the
 service, its rules, and both files. Posato reads the Start menu's shortcuts
 so that you can choose programs to pause; the list stays on the computer.

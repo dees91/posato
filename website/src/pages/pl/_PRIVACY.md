@@ -1,6 +1,6 @@
 # Polityka prywatności Posato
 
-Obowiązuje od 22 października 2026.
+Obowiązuje od 4 listopada 2026.
 
 Posato nie wysyła zestawów, listy stron, wyboru aplikacji, sesji,
 harmonogramów ani danych obszaru roboczego do swojego twórcy. Nie ma konta

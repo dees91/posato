@@ -34,6 +34,11 @@ Windows install steps and real Windows screenshots.
 - **Merge.** `user-confirmed` (2026-11-04): the pull request goes to
   `babysit-pr` and merges when reviewed, before `RELEASE-010`; until then the
   Windows download links lead to the latest release, which has no MSI yet.
+  The owner chose this knowing that `posato.app` then shows the whole 1.6
+  copy before the release, as in 1.5: the 1.6 features, the 1.6.0 file
+  names, and the Availability text. `PRIVACY.md` takes the merge date as its
+  effective date in every language, because the changed policy goes live
+  with the merge.
 - **Limits.** The draft Windows limits in the `PLATFORM-002` record and its
   pending Windows details are `user-confirmed` (2026-11-04): the details
   enter ADR 0010, the limits move to the limits page unchanged in meaning,
