@@ -8,7 +8,8 @@ the 1.2 description, What's New, and screenshots on 2026-09-27 for
 description, What's New, and screenshots on 2026-10-02 for `RELEASE-005`.
 `DOCS-005` prepared the 1.4 description, What's New, and screenshots on
 2026-10-10 for `RELEASE-006`. `DOCS-006` prepared the 1.5 description and
-What's New on 2026-10-21 for `RELEASE-007`.
+What's New on 2026-10-21 for `RELEASE-007`. `DOCS-007` prepared the 1.6 description and
+What's New on 2026-11-04 for `RELEASE-010`.
 
 ## Name
 
@@ -29,7 +30,8 @@ The description is [description.txt](description.txt), the exact text
 schedules, schedule sync, the one-time Mac setup, and the advice to update
 every device; 1.3 adds pause sets and Intel Macs; 1.4 adds the longer quick
 choices; 1.5 adds folder sync, joining by QR code, export and import, and
-Posato on Linux. It does not name Android, because App Review guideline 2.3.10 does not
+Posato on Linux; 1.6 adds breaks, websites that open briefly, the shipped
+languages, and Posato on Windows. It does not name Android, because App Review guideline 2.3.10 does not
 allow other mobile platforms in the metadata. Earlier text is in Git history.
 
 ## Keywords
@@ -126,6 +128,11 @@ captures stay in ignored `build/verification/`.
 `posato-provisioning store prepare --screenshots docs/store/en-US/screenshots`
 uploads both sets in file-name order; see the
 [iOS App Store release](../../development/apple-provisioning.md#ios-app-store-release).
+
+## What's New in 1.6.0
+
+[whats-new-1.6.0.txt](whats-new-1.6.0.txt) is the text for
+`store prepare --whats-new`. It names only what changed on iPhone and iPad.
 
 ## What's New in 1.5.0
 

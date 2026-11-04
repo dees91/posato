@@ -1,0 +1,5 @@
+- Take a break during a scheduled pause: 5, 10, or 15 minutes, once per scheduled pause. Restrictions return on their own, and End break brings them back at once.
+- Let a website open briefly during a pause: choose Open briefly in its menu, then every 30 minutes, hour, or 2 hours, for 5, 10, or 15 minutes. Session shows when it opens next.
+- Posato now follows your iPhone's language in Polish, German, French, Spanish, and Portuguese, as well as English.
+- Folder sync now also links Posato on Windows computers.
+- Update Posato on your other devices to keep them in sync.
