@@ -6,7 +6,7 @@ Posato sendet deine Pausensets, deine Website-Liste, deine App-Auswahl,
 Sitzungen, Zeitpläne oder Daten des Arbeitsbereichs nicht an seinen
 Entwickler. Es gibt keinen Posato-Account, keine Analyse, keine Werbung und
 keinen Server, der von Posato betrieben wird. Diese Erklärung gilt für Posato
-für Mac, iPhone, Linux und Android. Die optionale Synchronisierung über iCloud
+für Mac, iPhone, Linux, Android und Windows. Die optionale Synchronisierung über iCloud
 oder einen Ordner, das Blockieren auf jedem Gerät und die Update-Anfragen unter
 macOS sind unten beschrieben.
 
@@ -15,40 +15,52 @@ macOS sind unten beschrieben.
 Damit es funktioniert, speichert Posato auf jedem Gerät:
 
 - deine Pausensets: ihre Namen, welches Set der Standard ist, welche
-  Website-Domains jedes enthält und welche Apps du für jedes auf diesem Gerät
-  ausgewählt hast, auf dem iPhone gespeichert als vom System bereitgestellte
-  Auswahl, die Posato nicht als App-Namen lesen kann; auf Mac, Linux und
-  Android speichert Posato, um welche Apps es sich handelt;
+  Website-Domains jedes enthält, für jede Website, ob sie sich während einer
+  Pause kurz öffnet und wie oft und wie lange, und welche Apps du für jedes
+  auf diesem Gerät ausgewählt hast, auf dem iPhone gespeichert als vom System
+  bereitgestellte Auswahl, die Posato nicht als App-Namen lesen kann; auf Mac,
+  Linux, Android und Windows speichert Posato, um welche Apps es sich handelt;
 - deine Sitzungen: wann sie beginnen und enden, welches Pausenset jede
   verwendet hat und ob sie vorzeitig beendet wurden;
 - deine Zeitpläne: ihre Namen, ihre Pausensets, die Wochentage und Uhrzeiten,
-  an denen sie sich wiederholen, ob jeder eingeschaltet ist und welche
-  geplanten Pausen du übersprungen oder vorzeitig beendet hast;
+  an denen sie sich wiederholen, ob jeder eingeschaltet ist, welche geplanten
+  Pausen du übersprungen oder vorzeitig beendet hast und wann du in einer eine
+  Pause gemacht hast, wie lange und ob du sie vorzeitig beendet hast;
 - Einstellungen, etwa ob die Synchronisierung eingeschaltet ist, welchen
   Ordner du für die Ordner-Synchronisierung gewählt hast und ob das
   Hilfsprogramm unter macOS aktiviert ist;
 - bei eingeschalteter Synchronisierung, wann dieses Gerät zuletzt eine
   Synchronisierung abgeschlossen hat.
 
+Posato zeichnet nicht auf, wann sich eine Website kurz geöffnet hat, ob du sie
+besucht hast oder wie lange.
+
 Diese Daten bleiben im privaten Speicher von Posato auf dem Gerät, bis du sie
-änderst oder entfernst. Auf Mac, iPhone und Linux können diese Daten, mit
-Ausnahme der App-Auswahl auf dem iPhone, je nach deinen Backup-Einstellungen
-auch in Backups deiner Geräte enthalten sein, etwa in iCloud-Backup, Time
-Machine oder einem Backup deines Linux-Benutzerordners. Unter Android schließt
+änderst oder entfernst. Auf Mac, iPhone, Linux und Windows können diese Daten,
+mit Ausnahme der App-Auswahl auf dem iPhone, je nach deinen
+Backup-Einstellungen auch in Backups deiner Geräte enthalten sein, etwa in
+iCloud-Backup, Time Machine, einem Backup deines Linux-Benutzerordners oder
+einem Backup deines Windows-Benutzerordners. Unter Android schließt
 Posato seine Daten von Android-Backups und Geräteübertragungen aus. Auf dem
 Mac löscht das Bewegen von Posato in den Papierkorb diese Daten nicht; sie
 bleiben im Ordner für App-Daten von Posato, bis du sie entfernst. Unter Linux
 löscht auch das Entfernen des Pakets sie nicht; sie bleiben im Ordner von
 Posato innerhalb der App-Daten in deinem Benutzerordner, bis du sie entfernst.
+Unter Windows löscht das Deinstallieren von Posato sie nicht; sie bleiben im
+Ordner `Posato` der lokalen App-Daten deines Benutzerkontos, bis du sie
+entfernst.
 
 Bei eingeschalteter Synchronisierung, über iCloud oder einen Ordner, speichert
 Posato außerdem den Verlauf der synchronisierten Änderungen in seinem privaten
 Speicher auf jedem verbundenen Gerät: jedes erstellte, umbenannte oder
 gelöschte Pausenset, jede Website, die einem Set hinzugefügt oder daraus
-entfernt wurde, welches Set der Standard ist und welches Set jede Sitzung und
-jeder Zeitplan verwendet hat, und wann jede Änderung vorgenommen wurde,
-einschließlich wann vergangene Sitzungen begonnen haben, wann sie enden sollten
-und ob sie vorzeitig beendet wurden. Einträge aus der Zeit vor Posato 1.3
+entfernt wurde, jede Regel, die für das kurze Öffnen einer Website während
+einer Pause festgelegt oder entfernt wurde, welches Set der Standard ist und
+welches Set jede Sitzung und jeder Zeitplan verwendet hat, und wann jede
+Änderung vorgenommen wurde, einschließlich wann vergangene Sitzungen begonnen
+haben, wann sie enden sollten und ob sie vorzeitig beendet wurden, und wann
+jede Pause in einer geplanten Pause begonnen hat, wie lange sie gedauert hat
+und ob sie vorzeitig beendet wurde. Einträge aus der Zeit vor Posato 1.3
 erfassen außerdem Änderungen am Namen der geteilten App-Gruppe, die es damals
 verwendet hat. Das Ändern oder Entfernen einer Website oder eines Sets löscht
 deren frühere Einträge nicht aus diesem Verlauf. Der Verlauf bleibt erhalten,
@@ -65,10 +77,12 @@ Nutzungswerte und keine sonstigen Aktivitätsprotokolle.
 Die Synchronisierung mit iCloud ist optional und ausgeschaltet, bis du
 **Mit iCloud synchronisieren** wählst.
 
-- Deine Pausensets (ihre Namen, ihre Websites und welches der Standard ist),
-  in Änderungen aus der Zeit vor Posato 1.3 der Name der geteilten App-Gruppe,
+- Deine Pausensets (ihre Namen, ihre Websites, die Regel jeder Website für
+  das kurze Öffnen während einer Pause und welches der Standard ist), in
+  Änderungen aus der Zeit vor Posato 1.3 der Name der geteilten App-Gruppe,
   Beginn und Ende von Sitzungen sowie deine Zeitpläne, einschließlich
-  übersprungener und beendeter geplanter Pausen, werden auf deinem Gerät
+  übersprungener und beendeter geplanter Pausen und der darin gemachten
+  Pausen, werden auf deinem Gerät
   verschlüsselt, bevor sie in der privaten CloudKit-Datenbank deines eigenen
   iCloud-Accounts gespeichert werden. Der Entwickler von Posato kann sie weder
   lesen noch darauf zugreifen.
@@ -98,7 +112,7 @@ lassen sich synchronisierte Daten nicht wiederherstellen.
 ## Ordner-Synchronisierung
 
 Die Ordner-Synchronisierung ist optional und ausgeschaltet, bis du in Posato
-einen Ordner wählst. Unter Linux und Android ist sie die einzige
+einen Ordner wählst. Unter Linux, Android und Windows ist sie die einzige
 Synchronisierung, und auf Mac und iPhone ersetzt sie für diesen Arbeitsbereich
 die Synchronisierung mit iCloud.
 
@@ -106,9 +120,10 @@ die Synchronisierung mit iCloud.
   enthält eine Datei mit zufälligen Kennungen des Arbeitsbereichs und für jede
   Änderung eine separate Datei, die auf deinem Gerät mit derselben
   Verschlüsselung wie bei der Synchronisierung mit iCloud verschlüsselt wird:
-  deine Pausensets (ihre Namen, ihre Websites und welches der Standard ist),
-  Beginn und Ende von Sitzungen sowie deine Zeitpläne, einschließlich
-  übersprungener und beendeter geplanter Pausen. Die App-Auswahl wird nie
+  deine Pausensets (ihre Namen, ihre Websites, die Regel jeder Website für das
+  kurze Öffnen während einer Pause und welches der Standard ist), Beginn und
+  Ende von Sitzungen sowie deine Zeitpläne, einschließlich übersprungener und
+  beendeter geplanter Pausen und der darin gemachten Pausen. Die App-Auswahl wird nie
   synchronisiert; jedes Gerät behält seine eigene.
 - Diese Dateien sammeln sich im Ordner, bis du **Arbeitsbereich entfernen**
   wählst, wodurch der Ordner von Posato darin gelöscht wird. Posato räumt sie
@@ -123,8 +138,8 @@ die Synchronisierung mit iCloud.
   Arbeitsbereichs in einer Datei im privaten Speicher von Posato auf, die nur
   dein Benutzeraccount lesen kann, nicht im iCloud-Schlüsselbund. Unter Android
   ist die Datei zusätzlich mit einem Schlüssel versiegelt, der den Android
-  Keystore dieses Smartphones nie verlässt. Auf Mac, iPhone und Linux kann die
-  Schlüsseldatei wie die oben genannten Daten in Backups des Geräts enthalten
+  Keystore dieses Smartphones nie verlässt. Auf Mac, iPhone, Linux und Windows
+  kann die Schlüsseldatei wie die oben genannten Daten in Backups des Geräts enthalten
   sein.
 - Um ein Gerät hinzuzufügen, zeigt Posato auf einem Gerät im Arbeitsbereich
   einen einmaligen Kopplungscode an, auch als QR-Code und als `posato://`-Link,
@@ -158,7 +173,8 @@ besteht aus Systemauswahlen, deren Inhalt Posato nicht einsehen kann und die
 auf dem Gerät bleiben;
 Posato erhält von Bildschirmzeit keine App-Namen und keine Nutzungsdaten.
 Damit ein Zeitplan starten kann, während Posato geschlossen ist, bewahrt
-Posato eine Kopie deiner Zeitpläne sowie der Websites und App-Auswahl jedes
+Posato eine Kopie deiner Zeitpläne, der darin gemachten Pausen sowie der
+Websites, ihrer Regeln für das kurze Öffnen und der App-Auswahl jedes
 Pausensets in einem Speicher auf, den es nur mit seiner eigenen
 Bildschirmzeit-Erweiterung auf demselben iPhone teilt. Diese Kopie verlässt
 das Gerät nie, ist von Backups des Geräts ausgeschlossen und wird gelöscht,
@@ -173,7 +189,9 @@ nur so lange, bis es sie erlaubt oder blockiert, und speichert oder sendet sie
 nicht. Um seine Pausenseite im aktuellen Tab von Safari oder Chrome
 anzuzeigen, kann Posato die Berechtigung „Automation“ verwenden; dabei liest es
 nur die Adresse des aktuellen Tabs in diesem Moment und speichert nichts
-davon. Posato entschlüsselt keinen HTTPS-Verkehr.
+davon. Bei einer Website, die sich während einer Pause kurz öffnet, enthält die
+Adresse der Pausenseite nur die Zeit, zu der sie sich als Nächstes öffnet, nie
+die Website. Posato entschlüsselt keinen HTTPS-Verkehr.
 
 Wenn du festlegst, dass Sitzungen auf einem Mac ohne Administratorpasswort
 starten dürfen, speichert das Hilfsprogramm einen Eintrag über diese Erlaubnis
@@ -204,6 +222,31 @@ enthält diese Datei nur noch die Kennung der Sitzung, bis Posato sie liest. Das
 Entfernen des Pakets entfernt den Dienst, stellt `/etc/hosts` wieder her und
 löscht beide Dateien. Nichts, was der Dienst verarbeitet, verlässt deinen
 Computer.
+
+## Blockieren unter Windows
+
+Unter Windows richtet das Installationsprogramm von Posato mit der Erlaubnis
+eines Administrators einen Pausendienst ein, der mit Systemrechten läuft. Nur
+dein Benutzerkonto und das System können ihm Anfragen senden. Während eine
+Pause läuft, macht der Dienst Folgendes:
+
+- Er ermittelt etwa einmal pro Minute die Adressen jeder pausierten Website und
+  ihres `www`-Namens und fügt Regeln der Windows-Filterplattform hinzu, die die
+  Verbindungen deines Benutzerkontos zu ihnen unterbinden; wenn die Pause
+  endet, entfernt er die Regeln wieder.
+- Er beendet die pausierten Programme, die du ausgewählt hast und die unter
+  deinem Benutzerkonto laufen; dabei prüft er, welches Programm jeder
+  laufende Prozess ist, ohne zu lesen oder zu speichern, was du darin tust.
+
+Der Dienst speichert deinen Kontonamen und seine Sicherheits-ID in einer
+Konfigurationsdatei und die Pause, die er durchsetzt, mit ihren Websites und
+Programmpfaden, in einer Datei, die nur das System und Administratoren öffnen
+können, damit die Pause einen Neustart übersteht. Nach dem Ende der Pause
+enthält diese Datei nur noch die Kennung der Sitzung, bis Posato sie liest. Das
+Deinstallieren von Posato entfernt den Dienst, seine Regeln und beide Dateien.
+Posato liest die Verknüpfungen des Startmenüs, damit du Programme zum
+Pausieren auswählen kannst; die Liste bleibt auf dem Computer. Nichts, was der
+Dienst verarbeitet, verlässt deinen Computer.
 
 ## Blockieren unter Android
 
@@ -242,7 +285,8 @@ sie einen Neustart übersteht.
 
 Du kannst deine Pausensets in eine Datei exportieren und sie auf einem anderen
 Gerät importieren. Die Datei enthält die Namen und Websites deiner Pausensets,
-welches Set der Standard ist, und deine Zeitpläne. Sie enthält nie die
+die Regel für jede Website, die sich während einer Pause kurz öffnet, welches
+Set der Standard ist, und deine Zeitpläne. Sie enthält nie die
 App-Auswahl, Sitzungen, Verläufe, Gerätenamen oder Synchronisierungsschlüssel.
 Posato schreibt die Datei nur dorthin, wo du sie sicherst oder teilst, und
 sendet selbst nichts irgendwohin.
@@ -273,7 +317,7 @@ Geräts ausschalten.
 
 ## Updates auf dem Mac
 
-Posato für iPhone, Linux und Android sucht nicht selbst nach Updates. Auf dem
+Posato für iPhone, Linux, Android und Windows sucht nicht selbst nach Updates. Auf dem
 Mac fragt Posato, bevor es automatisch nach Updates sucht. Wenn du zustimmst,
 sucht es einmal am Tag, während die App läuft. Du kannst die automatische
 Suche ausschalten oder selbst „Nach Updates suchen“ wählen. Jedes Update

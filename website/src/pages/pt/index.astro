@@ -18,14 +18,14 @@ const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
 ---
 
-<Base description="O Posato bloqueia os sites e apps que você escolher durante uma pausa com tempo definido no seu Mac, iPhone, computador com Linux ou celular Android, na hora ou por agendamento. Sem conta Posato, sem análises e sem servidor operado pelo Posato.">
+<Base description="O Posato bloqueia os sites e apps que você escolher durante uma pausa com tempo definido no seu Mac, iPhone, computador com Windows ou Linux ou celular Android, na hora ou por agendamento. Sem conta Posato, sem análises e sem servidor operado pelo Posato.">
   <section class="hero">
     <div class="hero-copy">
       <h1>Um pouco de espaço.<br /><span>Para o que importa.</span></h1>
       <div class="hero-details">
       <p class="lead">
         O Posato bloqueia os sites e apps que você escolher durante uma pausa com tempo definido no seu Mac, iPhone,
-        computador com Linux ou celular Android, na hora ou por agendamento, dentro dos <a href="#limits">limites</a> descritos abaixo.
+        computador com Windows ou Linux ou celular Android, na hora ou por agendamento, dentro dos <a href="#limits">limites</a> descritos abaixo.
       </p>
       <p class="muted">Sem conta Posato, sem análises e sem servidor operado pelo Posato.</p>
       <p class="muted">Se o Posato ajuda você, <a href="https://github.com/dees91/posato">dê uma estrela no GitHub</a> para que outras pessoas possam encontrá-lo.</p>
@@ -34,8 +34,9 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Baixar o Posato na App Store" /></a>
         <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Baixar o Posato para Linux" /></a>
         <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Baixar o Posato para Android" /></a>
+        <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Baixar o Posato para Windows" /></a>
       </p>
-      <p class="platforms">macOS 13 ou posterior com Apple Silicon ou Intel, iOS 18 ou posterior, Ubuntu 24.04 ou posterior e Android 13 ou posterior. <a href="#install">Como instalar</a></p>
+      <p class="platforms">macOS 13 ou posterior com Apple Silicon ou Intel, iOS 18 ou posterior, Ubuntu 24.04 ou posterior, Android 13 ou posterior e Windows 11. <a href="#install">Como instalar</a></p>
       </div>
     </div>
     <div class="hero-demo">
@@ -50,7 +51,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         width="1600"
         height="1000"
         poster="/media/hero-poster.jpg"
-        aria-label="Demonstração do Posato: escolher sites, selecionar 45 minutos e iniciar uma pausa em um Mac; uma alteração em um conjunto de pausa chegando a um Mac, um iPhone, um computador com Linux e um celular Android; sincronização opcional pelo iCloud ou por uma pasta que você escolher, criptografada no seu dispositivo"
+        aria-label="Demonstração do Posato: escolher sites, selecionar 45 minutos e iniciar uma pausa em um Mac; uma alteração em um conjunto de pausa chegando a um Mac, um iPhone, um computador com Linux, um celular Android e um computador com Windows; sincronização opcional pelo iCloud ou por uma pasta que você escolher, criptografada no seu dispositivo"
       >
         <source src="/media/hero.mp4" type="video/mp4" media="(min-width: 701px)" />
       </video>
@@ -171,6 +172,22 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
     <p class="muted">As capturas de tela são dos apps reais e mostram escolhas de exemplo.</p>
   </section>
 
+  <section class="step" aria-labelledby="break">
+    <div class="step-copy">
+    <h2 id="break">Faça um intervalo ou deixe um site abrir por pouco tempo</h2>
+    <p class="prose">
+      Durante uma pausa agendada, escolha <strong>Fazer um intervalo</strong> por 5, 10 ou 15 minutos: as restrições
+      param nesse dispositivo e, quando eles sincronizarem, nos seus outros dispositivos, e voltam sozinhas. Cada pausa
+      agendada permite um intervalo, e <strong>Encerrar intervalo</strong> traz as restrições de volta na hora. Para um site
+      que você quer olhar de vez em quando, como o de notícias, escolha <strong>Abrir por pouco tempo…</strong> no menu dele
+      no conjunto de pausa: durante uma pausa, ele abre a cada 30 minutos, a cada hora ou a cada 2 horas, por 5, 10 ou 15
+      minutos, conforme o relógio de cada dispositivo. A tela Sessão mostra quando ele abre da próxima vez. Assim que você
+      faz um intervalo ou define uma regra assim, um dispositivo com uma versão anterior para de sincronizar até ser atualizado.
+    </p>
+    </div>
+    <!-- BREAK_SHOTS -->
+  </section>
+
   <section class="step" aria-labelledby="sync">
     <div class="step-copy">
     <h2 id="sync">Compartilhe a sessão com o iCloud</h2>
@@ -211,7 +228,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
     <div class="step-copy">
     <h2 id="folder">Sincronize por uma pasta</h2>
     <p class="prose">
-      Para conectar qualquer combinação de Mac, iPhone, Linux e Android, mantenha o espaço de trabalho em uma pasta que o Dropbox,
+      Para conectar qualquer combinação de Mac, iPhone, Windows, Linux e Android, mantenha o espaço de trabalho em uma pasta que o Dropbox,
       o OneDrive, o Syncthing, o iCloud Drive ou outro serviço mantém sincronizada. O Posato grava ali apenas arquivos
       criptografados. Um espaço de trabalho usa o iCloud ou uma pasta, nunca os dois. Crie o espaço de trabalho em um
       dispositivo e escolha <strong>Adicionar um dispositivo</strong> nele. No outro dispositivo, siga dois passos em
@@ -313,6 +330,14 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         HTTPS próprio contorna o bloqueio. Um app pausado fica coberto por uma tela de pausa.
       </li>
       <li>
+        <strong>Windows:</strong> os sites são bloqueados pelos endereços a que seus nomes levam, sem página de
+        pausa, então um site que compartilha endereços com outros pode bloqueá-los também, e um navegador com DNS sobre
+        HTTPS próprio, uma VPN ou um proxy pode contornar o bloqueio. Os apps pausados são encerrados, então salve seu
+        trabalho antes de uma sessão começar. Um serviço do sistema, configurado pelo instalador, encerra a pausa na hora
+        certa mesmo com o Posato fechado. Fechar a janela mantém o Posato em execução com um ícone na área de notificação;
+        encerrá-lo impede novos inícios agendados.
+      </li>
+      <li>
         <strong>Sincronização:</strong> a sincronização é feita na base do melhor esforço; uma alteração pode chegar atrasada ou nem chegar. Se todas as cópias da chave do seu espaço de trabalho forem perdidas,
         os dados sincronizados não podem ser recuperados.
       </li>
@@ -339,13 +364,14 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Baixar o Posato na App Store" /></a>
       <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Baixar o Posato para Linux" /></a>
       <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Baixar o Posato para Android" /></a>
+      <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Baixar o Posato para Windows" /></a>
     </p>
     <ul class="install">
       <li>
         <h3>Mac</h3>
         <p>
-          macOS 13 ou posterior. Baixe <code>Posato-1.5.2.dmg</code> para Apple Silicon ou
-          <code>Posato-1.5.2-intel.dmg</code> para um Mac com Intel no <a href={releases}>GitHub Releases</a>,
+          macOS 13 ou posterior. Baixe <code>Posato-1.6.0.dmg</code> para Apple Silicon ou
+          <code>Posato-1.6.0-intel.dmg</code> para um Mac com Intel no <a href={releases}>GitHub Releases</a>,
           assinado e autenticado pela Apple, e mova o Posato para Aplicativos. Ele pode buscar novas versões depois que você
           concordar, e a instalação de uma atualização espera até sua sessão terminar. Para migrar do Posato 1.0,
           encerre o Posato e substitua o aplicativo.
@@ -358,24 +384,33 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <li>
         <h3>Linux</h3>
         <p>
-          Ubuntu 24.04 ou posterior. Baixe <code>posato_1.5.0_arm64.deb</code> para arm64 ou
-          <code>posato_1.5.0_amd64.deb</code> para x86-64 no <a href={releases}>GitHub Releases</a> e
-          instale com <code>sudo apt install ./posato_1.5.0_&lt;arch&gt;.deb</code>. Depois abra o Posato
+          Ubuntu 24.04 ou posterior. Baixe <code>posato_1.6.0_arm64.deb</code> para arm64 ou
+          <code>posato_1.6.0_amd64.deb</code> para x86-64 no <a href={releases}>GitHub Releases</a> e
+          instale com <code>sudo apt install ./posato_1.6.0_&lt;arch&gt;.deb</code>. Depois abra o Posato
           e siga a primeira execução; ele pede sua senha uma vez para instalar o serviço de pausa.
         </p>
       </li>
       <li>
         <h3>Android</h3>
         <p>
-          Android 13 ou posterior. No celular, baixe <code>Posato-1.5.0.apk</code> no
+          Android 13 ou posterior. No celular, baixe <code>Posato-1.6.0.apk</code> no
           <a href={releases}>GitHub Releases</a> e abra o arquivo. Quando o Android perguntar, permita a instalação de apps
           desta fonte, depois instale, abra o Posato e siga a primeira execução, que pede as permissões
           de que o Posato precisa para pausar.
         </p>
       </li>
+      <li>
+        <h3>Windows</h3>
+        <p>
+          Windows 11. Baixe <code>Posato-1.6.0-x64.msi</code>, ou <code>Posato-1.6.0-arm64.msi</code> para
+          um computador com Arm, no <a href={releases}>GitHub Releases</a> e abra o arquivo. Aprove o instalador
+          como administrador uma vez; ele configura o serviço de pausa. Depois abra o Posato pelo menu Iniciar e
+          siga a primeira execução.
+        </p>
+      </li>
     </ul>
     <p class="muted">
-      Para atualizar no Linux ou no Android, instale o pacote mais novo do mesmo jeito. A
+      Para atualizar no Linux, no Android ou no Windows, instale o pacote mais novo do mesmo jeito. A
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matriz de plataformas</a>
       registra o que foi verificado em cada plataforma, inclusive que a versão para Intel foi verificada com o Rosetta, e não em um Mac com Intel.
     </p>

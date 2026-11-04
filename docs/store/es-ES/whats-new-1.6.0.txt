@@ -1,0 +1,5 @@
+- Tómate un descanso durante una pausa programada: 5, 10 o 15 minutos, una vez por pausa programada. Las restricciones vuelven solas, y Terminar descanso las devuelve al momento.
+- Deja que un sitio web se abra un rato durante una pausa: elige Abrir un rato en su menú y luego cada 30 minutos, cada hora o cada 2 horas, durante 5, 10 o 15 minutos. Sesión muestra cuándo se abre la próxima vez.
+- Posato sigue ahora el idioma de tu iPhone en polaco, alemán, francés, español y portugués, además de en inglés.
+- La sincronización por carpeta también vincula ahora Posato en ordenadores con Windows.
+- Actualiza Posato en tus otros dispositivos para que sigan sincronizados.

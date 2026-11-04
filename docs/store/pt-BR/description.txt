@@ -12,13 +12,17 @@ AGENDAMENTOS
 
 Planeje pausas recorrentes por dia da semana e horário, cada uma com o próprio conjunto de pausa, como as manhãs de segunda a sexta ou todas as noites. Um agendamento começa e termina sozinho, mesmo com o Posato fechado. Pule o próximo ou encerre um antes quando os planos mudarem. O Posato pode avisar quando uma pausa termina ou quando uma começa em outro dispositivo.
 
+INTERVALOS E VISITAS RÁPIDAS
+
+Durante uma pausa agendada, faça um intervalo de 5, 10 ou 15 minutos; as restrições voltam sozinhas. Para um site que você quer olhar de vez em quando, como o de notícias, deixe-o abrir por pouco tempo durante uma pausa: a cada 30 minutos, a cada hora ou a cada 2 horas, por 5, 10 ou 15 minutos. A tela Sessão mostra quando ele abre da próxima vez.
+
 SINCRONIZAÇÃO OPCIONAL PELO ICLOUD
 
 Conecte seu iPhone e seu Mac pela Conta Apple para sincronizar os conjuntos de pausa com os sites, as sessões e os agendamentos. A escolha de apps fica em cada dispositivo. As alterações são criptografadas no seu dispositivo antes de chegarem ao seu banco de dados privado do iCloud.
 
 SINCRONIZAÇÃO POR PASTA E OUTROS DISPOSITIVOS
 
-Em vez do iCloud, você pode manter seu espaço de trabalho em uma pasta que o iCloud Drive, o Dropbox, o OneDrive ou outro serviço mantém sincronizada. O Posato grava ali apenas arquivos criptografados e sincroniza a pasta quando você abre o app. A sincronização por pasta também conecta o Posato em computadores com Linux; os downloads estão em posato.app. Adicione um dispositivo escolhendo a mesma pasta e lendo um código QR.
+Em vez do iCloud, você pode manter seu espaço de trabalho em uma pasta que o iCloud Drive, o Dropbox, o OneDrive ou outro serviço mantém sincronizada. O Posato grava ali apenas arquivos criptografados e sincroniza a pasta quando você abre o app. A sincronização por pasta também conecta o Posato em computadores com Windows e Linux; os downloads estão em posato.app. Adicione um dispositivo escolhendo a mesma pasta e lendo um código QR.
 
 A sincronização pode atrasar ou não chegar, e o Posato não consegue despertar um dispositivo em repouso. O app para Mac é um download separado para Macs com Apple Silicon e Intel. Depois de uma configuração única no Mac, pausas e agendamentos começam sem pedir sua senha toda vez.
 
@@ -28,7 +32,7 @@ Salve seus conjuntos de pausa, os sites deles e seus agendamentos em um arquivo,
 
 SEM CONTA POSATO
 
-Sem análises, pontuações de uso, sequências nem servidor operado pelo Posato. Suas escolhas ficam nos seus dispositivos, a menos que você ative a sincronização. O Posato é de código aberto, sob a Apache License 2.0.
+Sem análises, pontuações de uso, sequências nem servidor operado pelo Posato. O Posato segue o idioma do seu iPhone em inglês, polonês, alemão, francês, espanhol e português. Suas escolhas ficam nos seus dispositivos, a menos que você ative a sincronização. O Posato é de código aberto, sob a Apache License 2.0.
 
 ANTES DE COMEÇAR
 

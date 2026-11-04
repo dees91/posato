@@ -1,0 +1,5 @@
+- Faça um intervalo durante uma pausa agendada: 5, 10 ou 15 minutos, uma vez por pausa agendada. As restrições voltam sozinhas, e Encerrar intervalo as traz de volta na hora.
+- Deixe um site abrir por pouco tempo durante uma pausa: escolha Abrir por pouco tempo no menu dele e depois a cada 30 minutos, a cada hora ou a cada 2 horas, por 5, 10 ou 15 minutos. A tela Sessão mostra quando ele abre da próxima vez.
+- O Posato agora segue o idioma do seu iPhone em polonês, alemão, francês, espanhol e português, além do inglês.
+- A sincronização por pasta agora também conecta o Posato em computadores com Windows.
+- Atualize o Posato nos seus outros dispositivos para mantê-los em sincronia.

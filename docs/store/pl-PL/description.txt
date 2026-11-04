@@ -12,13 +12,17 @@ HARMONOGRAMY
 
 Planuj powtarzające się pauzy według dnia tygodnia i godziny, każdą z własnym zestawem pauz, na przykład poranki w tygodniu albo każdy wieczór. Harmonogram zaczyna się i kończy sam, także gdy Posato jest zamknięte. Pomiń najbliższy albo zakończ wcześniej, gdy plany się zmienią. Posato może powiedzieć, gdy pauza się kończy albo gdy jedna zaczyna się na innym urządzeniu.
 
+PRZERWY I KRÓTKIE WIZYTY
+
+W trakcie zaplanowanej pauzy zrób jedną przerwę na 5, 10 albo 15 minut; ograniczenia wracają same. Stronę, do której chcesz od czasu do czasu zajrzeć, na przykład z wiadomościami, możesz otwierać na chwilę w trakcie pauzy: co 30 minut, co godzinę albo co 2 godziny, na 5, 10 albo 15 minut. Sesja pokazuje, kiedy otworzy się następnym razem.
+
 OPCJONALNA SYNCHRONIZACJA Z ICLOUD
 
 Połącz iPhone'a i Maca przez konto Apple, żeby synchronizować zestawy pauz wraz ze stronami, sesjami i harmonogramami. Wybór aplikacji zostaje na każdym urządzeniu. Zmiany są szyfrowane na urządzeniu, zanim trafią do prywatnej bazy iCloud.
 
 SYNCHRONIZACJA PRZEZ FOLDER I INNE URZĄDZENIA
 
-Zamiast iCloud możesz trzymać obszar roboczy w folderze, który synchronizuje iCloud Drive, Dropbox, OneDrive albo inna usługa. Posato zapisuje tam tylko zaszyfrowane pliki i synchronizuje folder, gdy otwierasz aplikację. Synchronizacja przez folder łączy też Posato na komputerach z Linuxem; posato.app ma pliki do pobrania. Dodajesz urządzenie, wybierając ten sam folder i skanując kod QR.
+Zamiast iCloud możesz trzymać obszar roboczy w folderze, który synchronizuje iCloud Drive, Dropbox, OneDrive albo inna usługa. Posato zapisuje tam tylko zaszyfrowane pliki i synchronizuje folder, gdy otwierasz aplikację. Synchronizacja przez folder łączy też Posato na komputerach z Windows i Linuxem; posato.app ma pliki do pobrania. Dodajesz urządzenie, wybierając ten sam folder i skanując kod QR.
 
 Synchronizacja może się opóźnić albo nie dotrzeć, a Posato nie budzi uśpionego urządzenia. Aplikacja na Maca to osobne pobranie na Apple silicon i na Maca z procesorem Intel. Po jednorazowej konfiguracji pauzy i harmonogramy zaczynają się bez pytania o hasło za każdym razem.
 
@@ -28,7 +32,7 @@ Zapisz zestawy pauz, ich strony i harmonogramy do pliku, opcjonalnie chronionego
 
 BEZ KONTA POSATO
 
-Bez analityki, wyników, serii i serwera prowadzonego przez Posato. Twoje wybory zostają na urządzeniach, dopóki nie włączysz synchronizacji. Posato jest open source na licencji Apache License 2.0.
+Bez analityki, wyników, serii i serwera prowadzonego przez Posato. Posato używa języka Twojego iPhone'a: angielskiego, polskiego, niemieckiego, francuskiego, hiszpańskiego albo portugalskiego. Twoje wybory zostają na urządzeniach, dopóki nie włączysz synchronizacji. Posato jest open source na licencji Apache License 2.0.
 
 ZANIM ZACZNIESZ
 

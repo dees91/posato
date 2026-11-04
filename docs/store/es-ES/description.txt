@@ -12,13 +12,17 @@ HORARIOS
 
 Planifica pausas periódicas por día de la semana y hora, cada una con su propio conjunto de pausa, como las mañanas de lunes a viernes o todas las noches. Un horario empieza y termina solo, incluso con Posato cerrado. Omite el próximo o termina uno antes cuando cambien tus planes. Posato puede avisarte cuando termina una pausa o cuando empieza una en otro dispositivo.
 
+DESCANSOS Y VISITAS BREVES
+
+Durante una pausa programada, tómate un descanso de 5, 10 o 15 minutos; las restricciones vuelven solas. Para un sitio web que quieras consultar de vez en cuando, como las noticias, deja que se abra un rato durante una pausa: cada 30 minutos, cada hora o cada 2 horas, durante 5, 10 o 15 minutos. Sesión muestra cuándo se abre la próxima vez.
+
 SINCRONIZACIÓN OPCIONAL CON ICLOUD
 
 Vincula tu iPhone y tu Mac a través de tu Cuenta de Apple para sincronizar los conjuntos de pausa con sus sitios web, sesiones y horarios. Las apps elegidas se quedan en cada dispositivo. Los cambios se cifran en tu dispositivo antes de llegar a tu base de datos privada de iCloud.
 
 SINCRONIZACIÓN POR CARPETA Y OTROS DISPOSITIVOS
 
-En lugar de iCloud, puedes guardar tu espacio de trabajo en una carpeta que iCloud Drive, Dropbox, OneDrive u otro servicio mantenga sincronizada. Posato solo escribe allí archivos cifrados y sincroniza la carpeta cuando abres la app. La sincronización por carpeta también vincula Posato en ordenadores con Linux; las descargas están en posato.app. Añade un dispositivo eligiendo la misma carpeta y escaneando un código QR.
+En lugar de iCloud, puedes guardar tu espacio de trabajo en una carpeta que iCloud Drive, Dropbox, OneDrive u otro servicio mantenga sincronizada. Posato solo escribe allí archivos cifrados y sincroniza la carpeta cuando abres la app. La sincronización por carpeta también vincula Posato en ordenadores con Windows y Linux; las descargas están en posato.app. Añade un dispositivo eligiendo la misma carpeta y escaneando un código QR.
 
 La sincronización puede retrasarse o no llegar, y Posato no puede reactivar un dispositivo en reposo. La app para Mac se descarga por separado, para Mac con Apple silicon e Intel. Tras una configuración única allí, las pausas y los horarios empiezan sin pedirte la contraseña cada vez.
 
@@ -28,7 +32,7 @@ Guarda tus conjuntos de pausa, sus sitios web y tus horarios en un archivo, prot
 
 SIN CUENTA DE POSATO
 
-Sin analítica, puntuaciones de uso, rachas ni servidores gestionados por Posato. Lo que eliges se queda en tus dispositivos, salvo que actives la sincronización. Posato es de código abierto con la Apache License 2.0.
+Sin analítica, puntuaciones de uso, rachas ni servidores gestionados por Posato. Posato sigue el idioma de tu iPhone en inglés, polaco, alemán, francés, español y portugués. Lo que eliges se queda en tus dispositivos, salvo que actives la sincronización. Posato es de código abierto con la Apache License 2.0.
 
 ANTES DE EMPEZAR
 

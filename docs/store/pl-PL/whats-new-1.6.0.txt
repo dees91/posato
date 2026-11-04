@@ -1,0 +1,5 @@
+- Przerwa w trakcie zaplanowanej pauzy: 5, 10 albo 15 minut, raz na zaplanowaną pauzę. Ograniczenia wracają same, a Zakończ przerwę od razu je przywraca.
+- Strona może otwierać się na chwilę w trakcie pauzy: wybierz Otwieraj na chwilę w jej menu, potem co 30 minut, co godzinę albo co 2 godziny, na 5, 10 albo 15 minut. Sesja pokazuje, kiedy otworzy się następnym razem.
+- Posato mówi teraz w języku Twojego iPhone'a po polsku, niemiecku, francusku, hiszpańsku i portugalsku, a także po angielsku.
+- Synchronizacja przez folder łączy teraz też Posato na komputerach z Windows.
+- Zaktualizuj Posato na innych urządzeniach, aby zostały zsynchronizowane.
