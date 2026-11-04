@@ -147,8 +147,16 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   Linux or Windows only while Posato runs; until then, or until the pause
   ends, the website keeps opening on its old rule.
 - A device on an earlier version of Posato stops syncing once another device
-  sets or clears a rule for a website to open briefly. Update Posato on every device to keep them
-  in sync.
+  takes a break in a scheduled pause or sets or clears a rule for a website
+  to open briefly. Update Posato on every device to keep them in sync.
+- A break lasts 5, 10, or 15 minutes, and each scheduled pause allows one.
+  It reaches your other devices only when they sync, so a device that has
+  not synced keeps restricting until the break reaches it or ends. On iPhone
+  and iPad with Posato closed, restrictions can return a few minutes after
+  the break ends, because the system decides when Posato's background
+  extension runs; when the system cannot schedule that return, Posato takes
+  no break. On Android, Linux, and Windows, restrictions return within about
+  a minute of the device next waking if it slept through the break's end.
 - Schedule times follow each device's own clock. A schedule is at least 15
   minutes long, and on iPhone it needs Screen Time access.
 - A device on an earlier version of Posato stops syncing once another device runs
