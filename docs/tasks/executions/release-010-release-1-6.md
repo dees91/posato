@@ -10,32 +10,43 @@
 
 ## Plan
 
-`releasing.md` steps 1 to 9 with the brief's differences:
+Revision 2, after the plan review. `releasing.md` steps 1 to 9 with the
+brief's differences, which hold the details:
 
-1. **R:** `MARKETING_VERSION = 1.6.0`; Android `versionCode` 2 and
-   `versionName` 1.6.0; the SmartScreen lines for the unsigned MSI on the
-   limits page, the README, the site in six languages, and the release
-   notes; the Windows signing backlog row (roadmap revision 39). The
-   appcast notes are on `main` from `DOCS-007`. `quality iosSwiftTest` in a
-   clean clone of R.
-2. **Candidates from a clean clone of R:** arm64 and x86-64 release feeds
-   with build 33; the x86-64 verification candidate (throwaway key,
-   loopback feed); host checks; iOS archive and upload; `store prepare` for
-   six locales; the signed APK; both `.deb` files from the workflow; the
-   x64 MSI from the `Windows package` workflow on R; the arm64 MSI built in
-   a Windows clone from R. Hashes into this record.
-3. **Matrix** (reduced): `primary` fresh DMG (setup, manual pause, a
-   schedule with the window closed, a break, a website that opens briefly,
-   `observe`); `ventura`; the test iPhone with R (core flow, a pause whose
-   items change while it runs, an end while Posato is closed, a break); the
-   Linux clone with the `.deb` (same row checks plus `/etc/hosts`); the
-   Android phone with the APK (same row checks); a Windows clone with the
-   arm64 MSI (install, onboarding, a pause that blocks a website and ends an
-   app, early end, uninstall, SmartScreen not driven); folder sync chain
-   Linux, Android, Windows, Mac; a kept `peer` clone on 1.5.2.
-4. Completed-change review, then merge, tag, GitHub Release with eleven
-   assets, the in-app update on `peer`, `store submit`, public checks,
-   Projects, milestone, closeout after App Review.
+1. **Before R:** two tool pull requests through `babysit-pr`:
+   `posato-provisioning` prepares first-time store localizations, and
+   `posato-control` drives pause-set saves and website windows on Android.
+   Disk: the owner approved cleaning about 20 GiB of other projects' build
+   outputs (50.5 GiB free after it); the Windows golden's lease is renewed
+   to 2026-12-04.
+2. **R:** `MARKETING_VERSION = 1.6.0`; Android `versionCode` 2 and
+   `versionName` 1.6.0; the SmartScreen and Smart App Control lines for the
+   unsigned MSI in six languages; the `PLATFORM-005` row (revision 39); the
+   release notes below. `DOCS-007` already merged the packaging and dated
+   `PRIVACY.md`, so step 6.1 only rebases. `quality iosSwiftTest` in a clean
+   clone of R.
+3. **Candidates** from clean clones of R: both macOS feeds (build 33), the
+   x86-64 verification candidate, host checks, iOS build 9, `store prepare`
+   for six locales with every field, the signed APK, both `.deb` files, the
+   x64 MSI from one recorded dispatch, the arm64 MSI with recorded
+   provenance; MSI properties and runtimes read. Hashes into this record.
+4. **Matrix** in the brief's order, with the row checks and the 1.6
+   feature runs per target, the 1.5.0 in-place upgrades on Linux and
+   Android, and the `peer` update after publication.
+5. Completed-change review, merge, tag, the GitHub Release with ten
+   assets, the `peer` update, `store submit`, public checks, Projects,
+   milestone; closeout after App Review.
+
+## Plan review
+
+- **Verdict:** `changes-required`, then folded (revision 2). No Critical.
+  Required: first-time store fields; ten assets with nine in `SHA256SUMS`;
+  arm64 MSI provenance and MSI properties; a `PauseClaims` scenario that
+  reaches it (iOS does not use it); the Android driver gaps and named 1.6
+  runs per target; disk and VM order; rollback for the MSI and APK.
+  Recommended accepted: Smart App Control limit, CRLF in the workflow files,
+  bundled runtimes, migration evidence, 1.5.0 in-place upgrades on Linux
+  and Android, `SESSION-009` as a no-regression check, the x64 MSI limit.
 
 ## Result
 

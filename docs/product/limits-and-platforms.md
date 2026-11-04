@@ -118,7 +118,9 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   active pause. Microsoft Store apps and shortcuts that start a script or
   a command line cannot be paused. Posato pauses only the Windows account
   that installed it. The installer is not signed yet, so Windows SmartScreen
-  warns before it runs; choose **More info**, then **Run anyway**.
+  warns before it runs; choose **More info**, then **Run anyway**. With Smart
+  App Control on, Windows blocks the unsigned installer, and Posato cannot be
+  installed until the packages are signed.
 - On Windows, schedules start only while Posato is running. Closing its
   window keeps it running with an icon in the notification area, and
   **Open Posato at login** in About Posato starts it in the background when
