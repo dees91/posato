@@ -33,7 +33,9 @@ data class AppInfoResource(
 @Serializable
 data class AppInfoLocalizationAttributes(
     val locale: String? = null,
+    val name: String? = null,
     val subtitle: String? = null,
+    val privacyPolicyUrl: String? = null,
 )
 
 @Serializable
@@ -98,6 +100,9 @@ data class LocalizationAttributes(
     val locale: String? = null,
     val whatsNew: String? = null,
     val description: String? = null,
+    val keywords: String? = null,
+    val supportUrl: String? = null,
+    val marketingUrl: String? = null,
 )
 
 @Serializable

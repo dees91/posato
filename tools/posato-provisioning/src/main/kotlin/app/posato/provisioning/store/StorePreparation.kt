@@ -13,18 +13,9 @@ import kotlinx.serialization.json.put
 
 private const val WHATS_NEW = "whatsNew"
 private const val DESCRIPTION = "description"
-
-/**
- * The version states of a version that is out of release work: live, replaced by a later release, or removed from
- * sale. Any other state, including one this tool does not know, counts as unreleased.
- */
-private val RELEASED_VERSION_STATES = setOf(
-    "READY_FOR_DISTRIBUTION",
-    "READY_FOR_SALE",
-    "REPLACED_WITH_NEW_VERSION",
-    "REMOVED_FROM_SALE",
-    "DEVELOPER_REMOVED_FROM_SALE",
-)
+private const val KEYWORDS = "keywords"
+private const val SUPPORT_URL = "supportUrl"
+private const val MARKETING_URL = "marketingUrl"
 
 class PrepareRequest(
     val version: String,
@@ -36,6 +27,10 @@ class PrepareRequest(
     val renameFrom: String? = null,
     val subtitle: String? = null,
     val locale: String = STORE_LOCALE,
+    val keywords: String? = null,
+    val supportUrl: String? = null,
+    val marketingUrl: String? = null,
+    val privacyPolicyUrl: String? = null,
 )
 
 /** The version a run works on, or `null` when it is to be created, and how the run came to hold it. */
@@ -51,7 +46,9 @@ private class LocatedVersion(
  * untouched, and an existing version outside the editable states (waiting for or in review, pending release, or
  * released) is refused before the first write. A second run with the same inputs is intended to issue only reads.
  * A new version copies its description, keywords, review details, and screenshots from the previous version; this
- * command then overwrites the What's New text and, when asked, the description and the two screenshot sets.
+ * command then overwrites the What's New text and, when asked, the description, keywords, support and marketing URLs,
+ * the App Information subtitle and privacy policy URL, and the two screenshot sets. A locale the version does not have
+ * yet starts empty, so its first run passes every field the listing needs.
  *
  * App Store Connect holds one unreleased version per platform, so a release that replaces a planned one cannot create
  * its own version. With [PrepareRequest.renameFrom], a missing version is instead made by renaming that planned
@@ -80,7 +77,7 @@ class StorePreparation(
         }
         val localization = StoreLookups.localization(store, version.id, request.locale)
         val texts = updateTexts(store, localization, request)
-        val subtitle = request.subtitle?.let { text -> StoreSubtitle.update(services.appInfo, app.id, text, request.locale) }
+        val info = StoreAppInfo.update(services.appInfo, app.id, request.locale, request.subtitle, request.privacyPolicyUrl)
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
@@ -89,14 +86,14 @@ class StorePreparation(
             put("releaseType", releaseType)
             put("build", buildOutcome)
             texts.forEach { (key, outcome) -> put(key, outcome) }
-            subtitle?.let { outcome -> put("subtitle", outcome) }
+            info.forEach { (key, outcome) -> put(key, outcome) }
             put("screenshots", screenshots ?: buildJsonArray { })
         }
     }
 
     /**
-     * Writes What's New and, when requested, the description in one request, sending only the texts that differ.
-     * Returns each requested text's outcome.
+     * Writes What's New and, when requested, the description, keywords, support URL, and marketing URL in one request,
+     * sending only the texts that differ. Returns each requested text's outcome.
      */
     private fun updateTexts(
         store: StoreClient,
@@ -106,8 +103,18 @@ class StorePreparation(
         val wanted = listOfNotNull(
             WHATS_NEW to request.whatsNew,
             request.description?.let { DESCRIPTION to it },
+            request.keywords?.let { KEYWORDS to it },
+            request.supportUrl?.let { SUPPORT_URL to it },
+            request.marketingUrl?.let { MARKETING_URL to it },
         )
-        val current = mapOf(WHATS_NEW to localization.attributes.whatsNew, DESCRIPTION to localization.attributes.description)
+        val attributes = localization.attributes
+        val current = mapOf(
+            WHATS_NEW to attributes.whatsNew,
+            DESCRIPTION to attributes.description,
+            KEYWORDS to attributes.keywords,
+            SUPPORT_URL to attributes.supportUrl,
+            MARKETING_URL to attributes.marketingUrl,
+        )
         val changes = wanted.filter { (key, text) -> current[key]?.trim() != text }.toMap()
         if (changes.isNotEmpty()) store.updateLocalization(localization.id, changes)
         return wanted.associate { (key, _) -> key to if (key in changes) "updated" else UNCHANGED }

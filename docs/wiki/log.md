@@ -3362,3 +3362,14 @@ first removal attempt that does not finish, not to a paused keychain.
 - The owner accepted it on 2026-11-03 (PR #219): the `DESIGN.md` section is
   added pending delivery, the `PRIVACY.md` text ships with the `HISTORY-002`
   backlog row.
+
+## [2026-11-04] tooling | First-time App Store localizations
+
+- `store prepare` now sets a locale's keywords (from `docs/store/<dir>/keywords.txt`),
+  support, marketing, and privacy policy URLs, and creates the App
+  Information localization with the name Posato even without a subtitle,
+  because a new localization starts empty instead of copying en-US.
+- `store status --version <v> --locale <code>...` reports what each locale
+  still lacks before `store submit`; the
+  [iOS App Store release](../development/apple-provisioning.md#ios-app-store-release)
+  lists the commands for all six store locales.

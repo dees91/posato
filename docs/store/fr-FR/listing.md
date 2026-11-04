@@ -33,9 +33,9 @@ does not allow other mobile platforms in the metadata.
 
 ## Keywords
 
-Draft, 85 characters, not uploaded. `store prepare` does not set keywords.
-
-concentration,pause,distractions,sites web,apps,temps d’écran,focus,déconnexion,calme
+[keywords.txt](keywords.txt) holds the comma-separated keywords,
+85 of App Store Connect's 100 characters, for
+`store prepare --locale fr-FR --keywords`. Not uploaded yet.
 
 ## Screenshots
 
