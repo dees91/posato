@@ -52,7 +52,45 @@ brief's differences, which hold the details:
 
 ## Result
 
-- Pending.
+- **R** = `6ddad06aab0087510f72ee7d340046b89826a2cf`; `./gradlew quality
+  iosSwiftTest` passed in a clean clone of R on 2026-11-04 (11 min; Swift
+  suites 28 and 246 tests, 0 failures). Later commits change only `docs/`.
+- **macOS, build 33** (published feeds held 32), G2 Developer ID
+  `AE452250…D651`, from a clean clone of R:
+  - `Posato-1.6.0.dmg` `3681dc66fe4b220654218a89359fff4824c51116ac6aae79176ce0c12505094b`,
+    `appcast.xml` `fd48a0010c1334fd3d41241ec8ee96ea62b63e340968998d304b7c906a4c29e2`;
+  - `Posato-1.6.0-intel.dmg` `b9c85fe1164e4a3803af517805d7eb08e4f930a853ef7689fa519039163f1557`,
+    `appcast-intel.xml` `200c6ce60f67af3260f86306170998505e43d589dbe8575dfc9754cbfdf9bc78`;
+  - host checks of both: every Mach-O of the DMG's architecture, the stable
+    feed per architecture with one `SUPublicEDKey`, minimum macOS 13.0,
+    build 33, no Rosetta switch, Temurin 21.0.12.1 in both, app
+    entitlements `automation.apple-events` and `cs.allow-jit`, strict deep
+    `codesign`, `stapler validate`, `spctl` (Notarized Developer ID).
+- **Intel verification candidate 9601** (never published), throwaway key in
+  Keychain account `posato-test-release-010`, loopback feed:
+  `Posato-1.6.0-9601-intel-test.dmg` `e3b5537fb9dd7957eb1b62f01dcc0cabe65b9d618d7bd0c1e0ffc1aefcfb3d28`.
+- **iOS 1.6.0 (9):** archived and exported from a clean clone of R; both
+  bundles signed by Apple Distribution with Family Controls and the app
+  group, the app with the Production CloudKit container and the keychain
+  group, `get-task-allow` false, privacy manifests in both; validated,
+  uploaded, `VALID`. IPA `065825235358184c97a579f252873e32dce4ebe9c8bd67b5b82700a1c9887f17`.
+- **Android:** `Posato-1.6.0.apk` `da48c2fdd78481b3d02f3d4d123eed838297e6c3fdcfbad5de027ff0c4170afa`,
+  `versionCode` 2, `versionName` 1.6.0, v2 and v3 signatures, certificate
+  SHA-256 `9d9c67…d5b1` equal to 1.5.0's; no password in the clone or
+  Gradle caches.
+- **Linux:** `Linux packages` run 41855088627 on R; both `.commit` files
+  equal R and both `.sha256` check.
+- **Windows:** x64 from `Windows package` run 41855097423 (dispatch on R,
+  `.commit` equal to R after stripping carriage returns, `.sha256` checks):
+  `Posato-1.6.0-x64.msi`. arm64 built by `posato-control build -t windows`
+  with `POSATO_REPO_ROOT` on a clean clone of R (HEAD R, empty
+  `git status`): input `posato.jar` `595c416f…cca03`, `version.txt` 1.6.0,
+  `Posato-1.6.0-arm64.msi` `2ddc34b3f2c1ee0f77689c84802f9982eb2476a52e1d7ecab3caa29acbbc0721`.
+  Both MSIs read in the guest (run `20261104-165559-3904`):
+  `ProductVersion` 1.6.0, `UpgradeCode` `{5BBD64CA-6B87-429A-90A8-0F4FA147E299}`,
+  both unsigned.
+- **Store:** `store prepare` created 1.6.0 with build 9, `after-approval`,
+  en-US What's New and description; the five new locales follow.
 
 ## GitHub release notes for 1.6.0
 
