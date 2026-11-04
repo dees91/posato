@@ -84,7 +84,9 @@ Follow `releasing.md`. Differences for 1.6.0:
 - **Order and space:** `primary`, then `ventura`, then the Linux clone (it
   creates the folder workspace), the phone joins, then the Windows clone
   and `primary` join; those clones go before `peer` is created last with
-  1.5.2. Each clone and clean clone is claimed in `machine-ledger` and
+  1.5.2. A Linux clone and a macOS clone never run together: `primary` from
+  the first step stops before the Linux clone starts, and the Linux clone
+  goes before `primary` joins with a code from the phone or Windows. Each clone and clean clone is claimed in `machine-ledger` and
   released after its check.
 - **Stated limits:** the x64 MSI is smoke-tested only on the Windows Server
   runner, and the x86-64 `.deb` only by the workflow; with Smart App Control

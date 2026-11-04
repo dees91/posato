@@ -39,8 +39,10 @@ brief's differences, which hold the details:
 
 ## Plan review
 
-- **Verdict:** `changes-required`, then folded (revision 2). No Critical.
-  Required: first-time store fields; ten assets with nine in `SHA256SUMS`;
+- **Verdict:** `approved` on revision 2 (`6ddad06a`), after a first pass of
+  `changes-required`. No Critical. Recommended folded after approval: the
+  Linux and macOS clones never run together in the folder chain.
+  First-pass Required: first-time store fields; ten assets with nine in `SHA256SUMS`;
   arm64 MSI provenance and MSI properties; a `PauseClaims` scenario that
   reaches it (iOS does not use it); the Android driver gaps and named 1.6
   runs per target; disk and VM order; rollback for the MSI and APK.
