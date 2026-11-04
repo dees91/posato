@@ -10,7 +10,7 @@ attachment="${video_dir}/../website/public/media/walkthrough.mp4"
 gif="${repo_root}/.github/assets/demo.gif"
 web="${repo_root}/website/public/media/hero.mp4"
 poster="${repo_root}/website/public/media/hero-poster.jpg"
-stills=("${repo_root}/.github/assets/step-websites.png" "${repo_root}/.github/assets/step-duration.png" "${repo_root}/.github/assets/step-schedules.png" "${repo_root}/.github/assets/step-icloud.png" "${repo_root}/.github/assets/step-folder.png" "${repo_root}/.github/assets/step-export.png")
+stills=("${repo_root}/.github/assets/step-websites.png" "${repo_root}/.github/assets/step-duration.png" "${repo_root}/.github/assets/step-schedules.png" "${repo_root}/.github/assets/step-icloud.png" "${repo_root}/.github/assets/step-folder.png" "${repo_root}/.github/assets/step-export.png" "${repo_root}/.github/assets/step-break.png")
 social="${repo_root}/.github/assets/social-preview.png"
 mib=$((1024 * 1024))
 
@@ -77,6 +77,15 @@ for capture in "${video_dir}"/public/mac-*.png; do
 done
 for capture in "${video_dir}"/public/iphone-*.png; do
   test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "${capture}")" = "660" || { echo "iPhone capture is not 660 wide: ${capture}" >&2; exit 1; }
+  (( $(size "${capture}") <= 250 * 1024 )) || { echo "Capture exceeds 250 KiB: ${capture}" >&2; exit 1; }
+done
+for capture in "${video_dir}"/public/android-*.png; do
+  test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "${capture}")" = "660" || { echo "Android capture is not 660 wide: ${capture}" >&2; exit 1; }
+  (( $(size "${capture}") <= 250 * 1024 )) || { echo "Capture exceeds 250 KiB: ${capture}" >&2; exit 1; }
+done
+# Windows captures keep the guest's 1024 x 768 display unscaled, without title bar and taskbar.
+for capture in "${video_dir}"/public/windows-*.png; do
+  test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x "${capture}")" = "1024x697" || { echo "Windows capture is not 1024x697: ${capture}" >&2; exit 1; }
   (( $(size "${capture}") <= 250 * 1024 )) || { echo "Capture exceeds 250 KiB: ${capture}" >&2; exit 1; }
 done
 

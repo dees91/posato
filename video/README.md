@@ -2,14 +2,14 @@
 
 The root README uses the `Hero` composition as a looping GIF and links the
 longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`,
-`StepSchedules`, `StepIcloud`, `StepFolder`, and `StepExport` stills are the README's step screenshots,
+`StepSchedules`, `StepIcloud`, `StepFolder`, `StepExport`, and `StepBreak` stills are the README's step screenshots,
 each pairing the Mac with a phone (iPhone or Android); `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices. The walkthrough and the
 stills place them in the same generic device frames as the site, and the
 walkthrough names each click with a synthetic cursor; the hero crops the Mac
 captures directly and shows its one click, Start, the same way, then shows
-a change to one pause set reaching a Mac, an iPhone, a Linux computer, and an Android phone, drawn as outlines.
+a change to one pause set reaching a Mac, an iPhone, a Linux computer, an Android phone, and a Windows computer, drawn as outlines.
 [STORYBOARD.md](STORYBOARD.md) is the human contract and
 `src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
 enforces the storyboard rules. This is documentation artwork, not a test of
@@ -43,16 +43,19 @@ moves every crop taken from it, and nothing else reports that.
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 2,043,946 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 2,040,331 bytes.
 - `../.github/assets/step-websites.png` (Mac and Android), `step-duration.png`
   (Mac and iPhone), `step-schedules.png` (Mac and iPhone), and
   `step-icloud.png` (Mac and iPhone), `step-folder.png` (Mac and Android),
-  and `step-export.png` (Mac and iPhone): 1920 x 1080 composed stills on a
-  transparent background.
-- `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
-  under the repository's social preview setting by hand.
+  `step-export.png` (Mac and iPhone), and `step-break.png` (Mac and Android):
+  1920 x 1080 composed stills on a transparent background.
+- `../.github/assets/social-preview.png`: 1280 x 640 repository card naming and
+  outlining the five platforms; upload it under the repository's social
+  preview setting by hand.
+- `public/windows-websites.png` and `public/windows-active-45.png`: plain
+  1024 x 697 Windows captures for the site, not rendered by Remotion.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 559,638 bytes, with a JPEG poster for the first paint, phones, and
+  faststart, 566,500 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
@@ -77,11 +80,13 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures come from the product tree of revision `d0b34fa1` (the `main`
-head of Posato 1.5 that `DOCS-006` captured on 2026-10-22), driven through
+The captures come from the product tree of revision `d0b34fa1` (the `main`
+head of Posato 1.5 that `DOCS-006` captured on 2026-10-22), except the 1.6
+captures listed under `DOCS-007` below, driven through
 `posato-control` by the scripts in `capture/` without a hand on any
 device, and reduced with FFmpeg or PIL only: Mac frames to 1272 pixels
-wide, iPhone and Android frames to 660 pixels wide. No label, timer value,
+wide, iPhone and Android frames to 660 pixels wide, Windows frames cropped
+only. No label, timer value,
 service result, or application UI has been reconstructed or retouched.
 Tracked captures are in the light appearance (`user-confirmed`
 2026-10-22); earlier dark captures are in Git history.
@@ -132,6 +137,28 @@ Tracked captures are in the light appearance (`user-confirmed`
   `android-join` shows the two-step join after choosing the phone's
   synthetic `PosatoSync` folder, into which `posato-control relay` copied the
   Mac's workspace: the folder is chosen and the pairing code step is open.
+- `DOCS-007` (2026-11-04) added only the 1.6 captures, from the product
+  tree of revision `0320d00b` (the `main` head that `DOCS-007` captured),
+  through the same scripts; every earlier capture is unchanged.
+  - `mac-break.png`: a disposable Tart VM on macOS 26 in Light Mode after
+    `vm onboard`, with Focus (renamed, the default, `example.com`,
+    `example.net`, and Chess) and Evening (`example.net`); `flow schedule`
+    saved `Deep work` (Focus, weekdays, starting three minutes later and
+    ending at 11:00), and once it started `flow break start --minutes 10`
+    took the break that Session shows.
+  - `android-window-dialog.png`: the Galaxy XCover7 in the light theme after
+    a reset, `install`, and `flow onboard`, with the fixture of
+    `capture/android-captures.sh fixture`; **Open briefly…** on
+    `example.com` with 1 hour and 10 minutes chosen, captured over the saved
+    rule (hence **Don't open**) and cancelled.
+  - `windows-*.png`: the arm64 MSI of the same tree in a disposable clone of
+    the Tart Windows 11 golden, driven by `capture/windows-captures.sh`
+    with Focus (`example.com`, which opens every hour for 10 minutes, and
+    `example.net`) and Evening, and no application, since the golden lists no
+    neutral program. The guest's display is 1024 x 768 at 100 percent and
+    cannot be enlarged, so the captures keep its pixels unscaled, without
+    the title bar and the taskbar. The dark captures of the same steps are
+    in the pull request, not tracked.
 - `capture/linux-captures.sh` drives a disposable Tart Ubuntu 24.04 clone in
   light and dark (`THEME`); its frames are in the pull request, not tracked,
   because the stills pair the Mac with a phone.
