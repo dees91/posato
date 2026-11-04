@@ -1,5 +1,6 @@
 package app.posato.provisioning.store
 
+import app.posato.provisioning.asc.APP_NAME
 import app.posato.provisioning.asc.AppInfoClient
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
@@ -16,8 +17,8 @@ private const val NAME = "name"
 internal object StoreAppInfo {
     /**
      * Writes the given fields for [locale], creating its localization when absent, and returns each written field's
-     * outcome. A created localization also reports its name. A field that already matches is left alone, so a rerun
-     * issues only reads.
+     * outcome. A created localization, or one App Store Connect left without a name, also gets and reports the name.
+     * A field that already matches is left alone, so a rerun issues only reads.
      */
     fun update(
         appInfo: AppInfoClient,
@@ -42,9 +43,10 @@ internal object StoreAppInfo {
             return mapOf(NAME to "updated") + wanted.mapValues { "updated" }
         }
         val current = mapOf(SUBTITLE to localization.attributes.subtitle, PRIVACY_POLICY_URL to localization.attributes.privacyPolicyUrl)
-        val changes = wanted.filter { (key, value) -> current[key]?.trim() != value }
+        val name = if (localization.attributes.name.isNullOrBlank()) mapOf(NAME to APP_NAME) else emptyMap()
+        val changes = name + wanted.filter { (key, value) -> current[key]?.trim() != value }
         if (changes.isNotEmpty()) appInfo.updateLocalization(localization.id, changes)
-        return wanted.mapValues { (key, _) -> if (key in changes) "updated" else UNCHANGED }
+        return name.mapValues { "updated" } + wanted.mapValues { (key, _) -> if (key in changes) "updated" else UNCHANGED }
     }
 
     /** The App Information a new App Store version brings; without one, nothing here can change now. */

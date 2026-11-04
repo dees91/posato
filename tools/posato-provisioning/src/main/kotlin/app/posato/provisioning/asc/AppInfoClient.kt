@@ -6,7 +6,8 @@ import app.posato.provisioning.model.RelationshipRef
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-private const val APP_NAME = "Posato"
+/** The app name, the same in every language. */
+const val APP_NAME = "Posato"
 
 /**
  * The app information operations a release needs: the app's App Information records and their localizations, which

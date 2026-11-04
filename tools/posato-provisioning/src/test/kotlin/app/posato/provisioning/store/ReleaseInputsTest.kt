@@ -100,7 +100,7 @@ class ReleaseInputsTest {
         assertEquals("focus,pause,screen time", ReleaseInputs.keywords(file))
 
         file.writeText("\u0105".repeat(100))
-        assertEquals("\u0105".repeat(100), ReleaseInputs.keywords(file), "The limit counts characters, not UTF-8 bytes.")
+        assertEquals("\u0105".repeat(100), ReleaseInputs.keywords(file), "The local check counts characters, not UTF-8 bytes.")
 
         file.writeText(" ")
         assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { ReleaseInputs.keywords(file) }.code)
