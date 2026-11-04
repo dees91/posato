@@ -5,7 +5,7 @@ import { colors, fonts } from "./theme";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-type Device = (typeof HERO.sync.devices)[number];
+type Device = { readonly label: string; readonly kind: "laptop" | "phone" };
 
 const ease = Easing.bezier(0.65, 0, 0.35, 1);
 const pop = Easing.bezier(0.34, 1.56, 0.64, 1);
@@ -14,7 +14,7 @@ const card = { left: 820, top: 110, width: 680 };
 const row = { top: 792, height: 112 };
 
 /** A generic outline of a computer or a phone; its screen settles to the synced tint once the change reaches it. */
-const DeviceGlyph = ({ device, synced }: { readonly device: Device; readonly synced: number }) => {
+export const DeviceGlyph = ({ device, synced, check = true }: { readonly device: Device; readonly synced: number; readonly check?: boolean }) => {
   const laptop = device.kind === "laptop";
   const width = laptop ? 92 : 44;
   const height = laptop ? 58 : 76;
@@ -26,7 +26,7 @@ const DeviceGlyph = ({ device, synced }: { readonly device: Device; readonly syn
         ))}
       </div>
       {laptop ? <div style={{ position: "absolute", left: -12, right: -12, bottom: -11, height: 5, borderRadius: 3, backgroundColor: colors.text }} /> : null}
-      <div style={{ position: "absolute", right: -13, top: -13, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, color: colors.canvas, display: "grid", placeItems: "center", fontSize: 16, fontWeight: 800, opacity: synced, scale: `${0.4 + 0.6 * synced}` }}>✓</div>
+      {check ? <div style={{ position: "absolute", right: -13, top: -13, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, color: colors.canvas, display: "grid", placeItems: "center", fontSize: 16, fontWeight: 800, opacity: synced, scale: `${0.4 + 0.6 * synced}` }}>✓</div> : null}
     </div>
   );
 };

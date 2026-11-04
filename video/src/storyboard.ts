@@ -66,7 +66,7 @@ export const IPHONE_TARGETS = {
 } as const satisfies Record<string, Point>;
 
 const OPEN_COPY = {
-  eyebrow: "Posato for Mac, iPhone, Linux, and Android",
+  eyebrow: "Posato for Mac, iPhone, Linux, Android, and Windows",
   headline: "A little space.\nFor what matters.",
   support: "Pause the websites and apps you choose, now or on a schedule.",
 } as const;
@@ -74,7 +74,7 @@ const OPEN_COPY = {
 const CLOSE_COPY = {
   eyebrow: "Session active",
   headline: "A little room. Just for you.",
-  footer: "Mac · iPhone · Linux · Android · No account · No analytics",
+  footer: "Mac · iPhone · Linux · Android · Windows · No account · No analytics",
 } as const;
 
 const iphoneAppsScene = (start: number, end: number): StoryScene => ({
@@ -255,7 +255,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
   { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
 
-/** Each README step pairs a Mac with a phone (user-confirmed 2026-10-22); Linux appears in the hero's device row. */
+/** Each README step pairs a Mac with a phone (user-confirmed 2026-10-22); Linux and Windows appear in the hero's device row. */
 export const STILLS = {
   StepWebsites: { desktop: "mac-websites.png", phone: "android-websites.png" },
   StepDuration: { desktop: "mac-duration-45.png", phone: "iphone-duration-45.png" },
@@ -263,17 +263,26 @@ export const STILLS = {
   StepFolder: { desktop: "mac-add-device.png", phone: "android-join.png" },
   StepIcloud: { desktop: "mac-icloud.png", phone: "iphone-icloud.png" },
   StepExport: { desktop: "mac-export.png", phone: "iphone-import.png" },
+  StepBreak: { desktop: "mac-break.png", phone: "android-window-dialog.png" },
 } as const;
 
 export const SOCIAL_PREVIEW = {
   width: 1280,
   height: 640,
   phones: ["iphone-active-45.png", "android-active-45.png"],
+  /** The five platforms as the hero's outlines, each named. */
+  platforms: [
+    { label: "Mac", kind: "laptop" },
+    { label: "iPhone", kind: "phone" },
+    { label: "Linux", kind: "laptop" },
+    { label: "Android", kind: "phone" },
+    { label: "Windows", kind: "laptop" },
+  ],
   copy: {
     eyebrow: OPEN_COPY.eyebrow,
     headline: OPEN_COPY.headline,
     support: OPEN_COPY.support,
-    footer: CLOSE_COPY.footer,
+    footer: "No account · No analytics",
   },
 } as const;
 
@@ -356,6 +365,7 @@ export const HERO = {
       { label: "iPhone", kind: "phone" },
       { label: "Linux", kind: "laptop" },
       { label: "Android", kind: "phone" },
+      { label: "Windows", kind: "laptop" },
     ],
     line: "Sync through iCloud or a folder you choose.",
   },
@@ -365,7 +375,7 @@ export const HERO = {
     headline: "Your cloud.\nYour data.",
     lines: ["Encrypted on your device.", "Stored in your private iCloud", "or in a folder you choose."],
   },
-  close: { start: 630, end: 720, headline: "A little space.\nFor what matters.", platforms: "Mac · iPhone · Linux · Android" },
+  close: { start: 630, end: 720, headline: "A little space.\nFor what matters.", platforms: "Mac · iPhone · Linux · Android · Windows" },
 } as const;
 
 /** The poster frame, shown before the hero loads and under Reduce Motion: restrictions active on the Mac. */

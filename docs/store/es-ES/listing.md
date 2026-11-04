@@ -3,12 +3,13 @@
 Status: draft for I18N-002. Nothing in this directory has been uploaded.
 `store prepare` can write it later with `--locale es-ES`, App Store Connect's
 code for Spanish (Spain). The default remains `en-US`, and this task does not
-call App Store Connect.
+call App Store Connect. `DOCS-007` added the 1.6 description and What's New
+on 2026-11-04 for `RELEASE-010`; nothing was uploaded.
 
 An independent agent reviews the Spanish wording and translates the key
 screens back into English; the maintainer accepts the copy from that report
 in the pull request. This directory translates the current English listing,
-which is the 1.5 description and What's New.
+which is the 1.6 description and What's New.
 
 ## Name
 
@@ -26,7 +27,8 @@ decision to use "Space for what matters."
 
 [description.txt](description.txt) is the text for
 `store prepare --locale es-ES --description`. It follows the English
-description and does not name Android, because App Review guideline 2.3.10
+description, including the 1.6 breaks, websites that open briefly, the
+shipped languages, and Posato on Windows, and does not name Android, because App Review guideline 2.3.10
 does not allow other mobile platforms in the metadata.
 
 ## Keywords
@@ -62,7 +64,13 @@ and `ipad-13` on the iPad. The iPhone is the iPhone
 13-inch (M5) Simulator with iOS 27.0 (2064 × 2752); both are RGB PNGs
 without an alpha channel. Nothing is uploaded.
 
+## What's New in 1.6.0
+
+[whats-new-1.6.0.txt](whats-new-1.6.0.txt) translates the current English
+What's New for `store prepare --locale es-ES --whats-new`. It names only what
+changed on iPhone and iPad.
+
 ## What's New in 1.5.0
 
-[whats-new-1.5.0.txt](whats-new-1.5.0.txt) translates the current English
+[whats-new-1.5.0.txt](whats-new-1.5.0.txt) translates the 1.5 English
 What's New. It names only what changed on iPhone and iPad.

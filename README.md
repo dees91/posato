@@ -9,8 +9,8 @@
 
 <p align="center">
 Posato blocks the websites and apps you choose for a timed pause on your Mac,
-iPhone, Linux computer, or Android phone, now or on a schedule, within the
-<a href="#limits">limits</a> below.
+iPhone, Windows or Linux computer, or Android phone, now or on a schedule,
+within the <a href="#limits">limits</a> below.
 </p>
 
 <p align="center">
@@ -19,6 +19,7 @@ iPhone, Linux computer, or Android phone, now or on a schedule, within the
   <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/iOS-supported-2563eb?logo=apple&amp;logoColor=white" alt="iOS supported"></a>
   <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/Linux-supported-f59e0b?logo=linux&amp;logoColor=white" alt="Linux supported"></a>
   <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/Android-supported-3ddc84?logo=android&amp;logoColor=white" alt="Android supported"></a>
+  <a href="docs/product/limits-and-platforms.md#supported-platforms"><img src="https://img.shields.io/badge/Windows-supported-0078d4" alt="Windows supported"></a>
 </p>
 
 <p align="center">
@@ -29,7 +30,7 @@ iPhone, Linux computer, or Android phone, now or on a schedule, within the
 </p>
 
 <p align="center">
-  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; one pause set change reaching a Mac, an iPhone, a Linux computer, and an Android phone; optional sync through iCloud or a folder you choose, encrypted on your device">
+  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, and start a pause on a Mac; one pause set change reaching a Mac, an iPhone, a Linux computer, an Android phone, and a Windows computer; optional sync through iCloud or a folder you choose, encrypted on your device">
 </p>
 
 Watch the [full 53-second walkthrough](https://posato.app/media/walkthrough.mp4),
@@ -47,6 +48,7 @@ If Posato helps you, star it on GitHub so others can find it.
   <a href="https://apps.apple.com/app/posato/id6812237585"><img src="website/public/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android"></a>
+  <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-windows.svg" width="186" height="56" alt="Download Posato for Windows"></a>
 </p>
 
 - **Mac:** download the signed and notarized DMG from
@@ -67,14 +69,21 @@ If Posato helps you, star it on GitHub so others can find it.
   open it. When Android asks, allow installing apps from this source, then
   install, open Posato, and follow the first run, which asks for the
   permissions Posato needs to pause.
+- **Windows:** download `Posato-<version>-x64.msi`, or
+  `Posato-<version>-arm64.msi` for an Arm computer, from
+  [GitHub Releases](https://github.com/dees91/posato/releases/latest) and
+  open it. Approve the installer as an administrator once; it sets up the
+  pausing service. Then open Posato from the Start menu and follow the first
+  run.
 
-To update on Linux or Android, install the newer package the same way.
+To update on Linux, Android, or Windows, install the newer package the same
+way.
 
 Posato targets **macOS 13 or later on Apple silicon and Intel Macs**,
-**iOS 18 or later**, **Ubuntu 24.04 or later**, and **Android 13 or later**;
-the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
-records what was checked on each of them. Windows is
-[planned for a later release](docs/product/limits-and-platforms.md#planned-platforms).
+**iOS 18 or later**, **Ubuntu 24.04 or later**, **Android 13 or later**, and
+**Windows 11 on x64 and Arm**; the
+[platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
+records what was checked on each of them.
 
 To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).
 Unsigned builds let you explore the apps; blocking and sync require Apple
@@ -109,7 +118,8 @@ for your password each time.
 </p>
 
 Screenshots and the demo show synthetic choices in the real apps on a Mac,
-an iPhone, and an Android phone, and the demo names Linux too; see the
+an iPhone, an Android phone, and a Windows computer, and the demo names
+Linux too; see the
 [capture provenance](video/README.md#capture-provenance).
 
 ### Plan pauses ahead
@@ -124,6 +134,22 @@ starts on another device.
 
 <p align="center">
   <a href=".github/assets/step-schedules.png"><img src=".github/assets/step-schedules.png" width="960" alt="Schedules on a Mac and an iPhone, side by side, with a weekday schedule named Deep work"></a>
+</p>
+
+### Take a break, or let a website in briefly
+
+During a scheduled pause, choose **Take a break** for 5, 10, or 15 minutes:
+restrictions pause on that device and, once they sync, on your others, and
+return on their own. Each scheduled pause allows one break, and **End
+break** brings restrictions back at once. For a website you want to check
+now and then, such as the news, choose **Open briefly…** in its menu in the
+pause set: during a pause it opens every 30 minutes, hour, or 2 hours, for
+5, 10, or 15 minutes, on each device's own clock. Session shows when it
+opens next. Once you take a break or set such a rule, a device on an
+earlier version stops syncing until it updates.
+
+<p align="center">
+  <a href=".github/assets/step-break.png"><img src=".github/assets/step-break.png" width="960" alt="Posato on a Mac during the scheduled pause Deep work, on a break until 10:03 AM with End break and End early, beside an Android phone choosing to open example.com every hour for 10 minutes"></a>
 </p>
 
 ### Share the session with iCloud
@@ -141,7 +167,7 @@ earlier version stop syncing until they update.
 
 ### Sync through a folder
 
-To link any mix of Mac, iPhone, Linux, and Android, keep the workspace in a
+To link any mix of Mac, iPhone, Windows, Linux, and Android, keep the workspace in a
 folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service
 keeps in sync. Posato writes only encrypted files there. A workspace uses
 iCloud or one folder, never both. Create the workspace on one device, then
@@ -197,6 +223,15 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   pause page; another VPN cannot run during a pause, and strict Private DNS
   or a browser with its own DNS over HTTPS bypasses it. A paused app is
   covered by a block screen.
+- **Windows:** websites are blocked by the addresses their names lead to,
+  with no pause page, so a site that shares addresses with others can block
+  them too, and a browser with its own DNS over HTTPS, a VPN, or a proxy
+  can bypass it. Paused apps are ended, so save your work first. A system
+  service, set up by the installer, ends the pause on time even when Posato
+  is closed. Closing the window keeps Posato running with an icon in the
+  notification area; quitting it stops new scheduled starts. Posato pauses
+  only the Windows account that installed it, and Microsoft Store apps
+  cannot be paused.
 - **Sync:** delivery is best effort. If every copy of your workspace key is
   lost, synchronized data cannot be recovered.
 

@@ -1,0 +1,5 @@
+- Faites une pause pendant une pause programmée : 5, 10 ou 15 minutes, une fois par pause programmée. Les restrictions reprennent d’elles-mêmes, et Finir la pause les rétablit aussitôt.
+- Laissez un site s’ouvrir brièvement pendant une pause : choisissez Ouvrir brièvement dans son menu, puis toutes les 30 minutes, toutes les heures ou toutes les 2 heures, pendant 5, 10 ou 15 minutes. L’écran Session indique sa prochaine ouverture.
+- Posato suit désormais la langue de votre iPhone en polonais, allemand, français, espagnol et portugais, en plus de l’anglais.
+- La synchronisation par dossier relie désormais aussi Posato sur les ordinateurs Windows.
+- Mettez à jour Posato sur vos autres appareils pour qu’ils restent synchronisés.

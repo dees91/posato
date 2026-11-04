@@ -1,0 +1,5 @@
+- Mach während einer geplanten Pause eine kurze Pause: 5, 10 oder 15 Minuten, einmal pro geplanter Pause. Die Einschränkungen kehren von selbst zurück, und „Pause beenden“ bringt sie sofort zurück.
+- Lass eine Website während einer Pause kurz öffnen: Wähle „Kurz öffnen…“ in ihrem Menü, dann alle 30 Minuten, jede Stunde oder alle 2 Stunden, für 5, 10 oder 15 Minuten. Unter „Sitzung“ siehst du, wann sie sich als Nächstes öffnet.
+- Posato richtet sich jetzt nach der Sprache deines iPhone und spricht neben Englisch auch Polnisch, Deutsch, Französisch, Spanisch und Portugiesisch.
+- Die Ordner-Synchronisierung verbindet jetzt auch Posato auf Windows-Computern.
+- Aktualisiere Posato auf deinen anderen Geräten, damit sie synchron bleiben.

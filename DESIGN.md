@@ -1099,9 +1099,8 @@ own the decisions.
   Without that consent it shows **Resume restrictions** at once, as when a
   scheduled pause ends while it runs. Elsewhere it shows as a restricting
   part, like a pause that started during the break. (Decided 2026-11-01 by
-  the owner's agent under the owner's explicit delegation of 2026-10-31,
-  as the owner's exception to the `agent-delegated` rule for PR #220;
-  pending the owner's confirmation in that pull request.)
+  the owner's agent under the owner's delegation for PR #220;
+  `user-confirmed` 2026-11-04.)
 - **After the break.** The break line disappears at the break end and the
   limit caption shows. Nothing announces the break's start or end; Session
   and the menu show the truth.

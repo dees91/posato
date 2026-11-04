@@ -8,7 +8,8 @@ does not call App Store Connect.
 An independent agent reviews the Portuguese wording and translates the key
 screens back into English; the maintainer accepts the copy from that report
 in the pull request. This directory translates the current English listing,
-which is the 1.5 description and What's New.
+which is the 1.6 description and What's New. `DOCS-007` added the 1.6
+description and What's New on 2026-11-04 for `RELEASE-010`.
 
 ## Name
 
@@ -27,7 +28,9 @@ decision to use "Space for what matters."
 [description.txt](description.txt) is the text for
 `store prepare --locale pt-BR --description`. It follows the English
 description and does not name Android, because App Review guideline 2.3.10
-does not allow other mobile platforms in the metadata.
+does not allow other mobile platforms in the metadata. For 1.6 it adds
+breaks, websites that open briefly, the shipped languages, and Posato on
+Windows.
 
 ## Keywords
 
@@ -60,6 +63,11 @@ Capture them with the
 `posato-control store capture -t sim --udid <udid> --locale pt-BR --out docs/store/pt-BR/screenshots/iphone-6.9 --prepare`,
 and `ipad-13` on the iPad, on the iPhone 17 Pro Max and iPad Pro 13-inch (M5)
 Simulators of the recipe. Nothing is uploaded.
+
+## What's New in 1.6.0
+
+[whats-new-1.6.0.txt](whats-new-1.6.0.txt) translates the English
+What's New for 1.6.0. It names only what changed on iPhone and iPad.
 
 ## What's New in 1.5.0
 

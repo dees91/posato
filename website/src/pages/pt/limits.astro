@@ -2,7 +2,7 @@
 import Base from "../../layouts/Base.astro";
 ---
 
-<Base title="Limites" description="O que o bloqueio e a sincronização do Posato podem e não podem fazer no Mac, iPhone, Linux e Android.">
+<Base title="Limites" description="O que o bloqueio e a sincronização do Posato podem e não podem fazer no Mac, iPhone, Linux, Android e Windows.">
   <div class="prose">
     <h1>Limites</h1>
     <p>O Posato cria um atrito proposital; não é uma tranca que você não consegue abrir.</p>
@@ -39,10 +39,28 @@ import Base from "../../layouts/Base.astro";
         No Linux, os agendamentos só começam enquanto o Posato está em execução. Fechar a janela o mantém em execução com um ícone na área de status, e <strong>Abrir o Posato ao iniciar sessão</strong> em Sobre o Posato o inicia em segundo plano quando você inicia a sessão. Em um ambiente de trabalho cuja área de status não mostra ícones de apps, como o GNOME sem a extensão AppIndicator, não há ícone; nesse caso, o Posato só fica em segundo plano enquanto uma pausa está em andamento ou um agendamento está ativado, e você o abre de novo pelo menu de aplicativos. Encerrar o Posato impede novos inícios agendados.
       </li>
       <li>
+        No Windows, o bloqueio de sites interrompe as conexões com os endereços para os quais o nome de um site pausado é resolvido. Um site que compartilha endereços com outros sites, como um que fica atrás de uma grande rede de distribuição de conteúdo, pode bloquear esses sites também, e um site que muda para novos endereços pode abrir até o Posato vê-los, em cerca de um minuto. Um navegador com DNS sobre HTTPS próprio pode alcançar endereços que o Posato não viu, e uma conexão já aberta quando a pausa começa continua aberta. Não há página de pausa, e uma VPN ou um proxy contorna o bloqueio.
+      </li>
+      <li>
+        No Windows, o instalador configura um serviço do sistema com a aprovação de um administrador. Durante uma pausa, o serviço encerra os apps pausados que você escolheu, então o trabalho não salvo neles pode ser perdido. Ele remove a pausa no horário de término mesmo com o Posato fechado, e desinstalar o Posato remove uma pausa ativa. Apps da Microsoft Store e atalhos que iniciam um script ou uma linha de comando não podem ser pausados. O Posato pausa apenas a conta do Windows que o instalou.
+      </li>
+      <li>
+        No Windows, os agendamentos só começam enquanto o Posato está em execução. Fechar a janela o mantém em execução com um ícone na área de notificação, e <strong>Abrir o Posato ao iniciar sessão</strong> em Sobre o Posato o inicia em segundo plano quando você inicia a sessão. Encerrar o Posato impede novos inícios agendados.
+      </li>
+      <li>
         No Android, o bloqueio de sites funciona como uma VPN local que só responde a consultas de nomes. Outra VPN não pode rodar ao mesmo tempo, o DNS privado no modo estrito e um navegador com DNS sobre HTTPS próprio contornam o bloqueio, e as consultas por TCP não são filtradas. Não há página de pausa.
       </li>
       <li>
         No Android, um app pausado fica coberto por uma tela de pausa; ele pode ficar visível por até cerca de um segundo antes de a tela aparecer. O inicializador, as Configurações, o app de telefone e o Posato não podem ser pausados. O Posato precisa de acesso ao uso, sobreposição a outros apps, notificações, alarmes exatos e exclusão da otimização de bateria; sem isso, o bloqueio ou os agendamentos podem não funcionar.
+      </li>
+      <li>
+        Um site que abre por pouco tempo durante uma pausa (versão 1.6) segue o relógio e o fuso horário de cada dispositivo, então dispositivos em fusos horários diferentes o abrem em momentos diferentes. Quando a janela dele termina, novos carregamentos de página são bloqueados, mas uma conexão que já está aberta, ou um endereço que o navegador ou o sistema guardou, pode mantê-lo funcionando por um tempo no Linux, no Android e no Windows; no macOS, o Posato também fecha as conexões que leva para ele. No iPhone e no iPad, o sistema decide quando a extensão em segundo plano do Posato é executada: uma janela pode abrir até cerca de um minuto atrasada e, se o sistema nunca executar a extensão no fim da janela, o site continua aberto até a próxima execução da extensão ou até você abrir o Posato. O Safari no iPhone e no iPad mostra a página de restrição do sistema, que não diz quando o site abre; a tela Sessão do Posato diz. Uma regra removida em outro dispositivo só vale em um iPhone ou iPad quando o Posato abre nele, e no Linux ou no Windows só enquanto o Posato está em execução; até lá, ou até a pausa terminar, o site continua abrindo pela regra antiga.
+      </li>
+      <li>
+        Um dispositivo com uma versão anterior do Posato para de sincronizar assim que outro dispositivo faz um intervalo em uma pausa agendada ou define ou remove uma regra para um site abrir por pouco tempo. Atualize o Posato em todos os dispositivos para mantê-los em sincronia.
+      </li>
+      <li>
+        Um intervalo dura 5, 10 ou 15 minutos, e cada pausa agendada permite um. Ele só chega aos seus outros dispositivos quando eles sincronizam, então um dispositivo que não sincronizou continua restringindo até o intervalo chegar a ele ou terminar. No iPhone e no iPad com o Posato fechado, as restrições podem voltar alguns minutos depois do fim do intervalo, porque o sistema decide quando a extensão em segundo plano do Posato é executada; quando o sistema não consegue agendar essa volta, o Posato não faz o intervalo. No Android, no Linux e no Windows, as restrições voltam em cerca de um minuto depois que o dispositivo despertar, se ele estava em repouso quando o intervalo terminou.
       </li>
       <li>Os horários dos agendamentos seguem o relógio de cada dispositivo. Um agendamento dura pelo menos 15 minutos e, no iPhone, precisa de acesso ao Tempo de Uso.</li>
       <li>
@@ -67,14 +85,14 @@ import Base from "../../layouts/Base.astro";
         No Android, a pasta precisa ser uma pasta local que outro app mantém sincronizada, como o Syncthing; a maioria dos apps de armazenamento em nuvem para Android não mantém uma pasta local sincronizada. No iPhone, o Posato sincroniza a pasta quando você o abre.
       </li>
       <li>
-        Um arquivo <code>.posato</code> exportado contém nomes de conjuntos de pausa, sites, o conjunto padrão e agendamentos, nunca a escolha de apps. Sem um código, qualquer pessoa que receber o arquivo pode lê-lo. O código de nove caracteres impede uma leitura casual, mas não alguém que gaste muito poder computacional tentando adivinhá-lo. Uma importação é uma cópia única, não uma sincronização, e os agendamentos importados chegam desativados.
+        Um arquivo <code>.posato</code> exportado contém nomes de conjuntos de pausa, sites e as regras deles para abrir por pouco tempo, o conjunto padrão e agendamentos, nunca a escolha de apps. Sem um código, qualquer pessoa que receber o arquivo pode lê-lo. O código de nove caracteres impede uma leitura casual, mas não alguém que gaste muito poder computacional tentando adivinhá-lo. Uma importação é uma cópia única, não uma sincronização, e os agendamentos importados chegam desativados.
       </li>
       <li>
         Um espaço de trabalho sincroniza pelo iCloud ou por uma pasta, nunca pelos dois, e não há como migrar de um para o outro: remova o espaço de trabalho do iCloud antes de escolher uma pasta.
       </li>
     </ul>
     <p>
-      O Posato é feito para macOS 13 ou posterior em Macs com Apple Silicon e Intel, iOS 18 ou posterior, Ubuntu 24.04 ou posterior e Android 13 ou posterior; consulte a <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matriz de plataformas</a> para ver o que foi verificado em cada um. Consulte a <a href="/pt/privacy/">política de privacidade</a> para saber o que o Posato guarda nos seus dispositivos, no iCloud e em uma pasta de sincronização.
+      O Posato é feito para macOS 13 ou posterior em Macs com Apple Silicon e Intel, iOS 18 ou posterior, Ubuntu 24.04 ou posterior, Android 13 ou posterior e Windows 11 em x64 e Arm; consulte a <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matriz de plataformas</a> para ver o que foi verificado em cada um. Consulte a <a href="/pt/privacy/">política de privacidade</a> para saber o que o Posato guarda nos seus dispositivos, no iCloud e em uma pasta de sincronização.
     </p>
   </div>
 </Base>

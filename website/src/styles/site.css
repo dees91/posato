@@ -676,3 +676,8 @@ main > .prose h2 {
     margin-top: 2.5rem;
   }
 }
+
+.install-shots {
+  max-width: 36rem;
+  margin: 1.5rem 0 1rem;
+}

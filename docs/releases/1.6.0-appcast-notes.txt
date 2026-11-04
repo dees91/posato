@@ -1,0 +1,13 @@
+Posato 1.6
+
+Take a break: during a scheduled pause, choose Take a break on Session for 5, 10, or 15 minutes. Restrictions pause on this Mac and, once they sync, on your other devices, and return on their own. Each scheduled pause allows one break, and End break brings restrictions back at once.
+
+Open a website briefly: in a pause set, choose Open briefly… in a website's menu, then every 30 minutes, hour, or 2 hours, for 5, 10, or 15 minutes. During a pause the website opens at those times on this Mac's clock, and Session shows when it opens next. The pause page says when it opens.
+
+Posato now follows your Mac's language in Polish, German, French, Spanish, and Portuguese, as well as English.
+
+Folder sync now also links the new Posato for Windows.
+
+Update Posato on your other devices to keep them in sync: a device on an earlier version stops syncing once another device takes a break or sets a rule for a website to open briefly.
+
+During a pause, Posato does not install the update; install it after the pause ends.

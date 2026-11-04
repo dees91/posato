@@ -6,8 +6,9 @@ shortcode for Polish. The default remains
 `en-US`, and this task does not call App Store Connect.
 
 The maintainer reviews the Polish wording in the pull request. `DOCS-007`
-adds only the later 1.6 changes, in both languages. This directory translates
-the current English listing, which is the 1.5 description and What's New.
+added the 1.6 description and What's New on 2026-11-04 for `RELEASE-010`.
+This directory translates the current English listing, which is the 1.6
+description and What's New.
 
 ## Name
 
@@ -65,7 +66,12 @@ Simulator with iOS 26.5 (1320 × 2868), the iPad the iPad Pro 13-inch (M5) Simul
 version 1.5.2, the build's `MARKETING_VERSION`; `DOCS-007` recaptures the set
 for 1.6. Nothing is uploaded.
 
+## What's New in 1.6.0
+
+[whats-new-1.6.0.txt](whats-new-1.6.0.txt) translates the current English
+What's New. It names only what changed on iPhone and iPad.
+
 ## What's New in 1.5.0
 
-[whats-new-1.5.0.txt](whats-new-1.5.0.txt) translates the current English
-What's New. It names only what changed on iPhone and iPad.
+[whats-new-1.5.0.txt](whats-new-1.5.0.txt) translated the 1.5.0 English
+What's New. It named only what changed on iPhone and iPad.
