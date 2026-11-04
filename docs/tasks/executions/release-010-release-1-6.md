@@ -79,10 +79,14 @@ brief's differences, which hold the details:
   SHA-256 `9d9c67…d5b1` equal to 1.5.0's; no password in the clone or
   Gradle caches.
 - **Linux:** `Linux packages` run 41855088627 on R; both `.commit` files
-  equal R and both `.sha256` check.
+  equal R and both `.sha256` check: `posato_1.6.0_arm64.deb`
+  `aa5c7a2a5ef1ea0c2cc00759bdee8250a53277fa21386d51e2251c46759b354a`,
+  `posato_1.6.0_amd64.deb`
+  `cf8b0a109e667d5f2e87bebbe15f0188d07d485a98fc816f72c6337814237db9`.
 - **Windows:** x64 from `Windows package` run 41855097423 (dispatch on R,
   `.commit` equal to R after stripping carriage returns, `.sha256` checks):
-  `Posato-1.6.0-x64.msi`. arm64 built by `posato-control build -t windows`
+  `Posato-1.6.0-x64.msi`
+  `cd1d5aea6e651dda02c6632c16c9dba4064421330d04e923972323e33226755d`. arm64 built by `posato-control build -t windows`
   with `POSATO_REPO_ROOT` on a clean clone of R (HEAD R, empty
   `git status`): input `posato.jar` `595c416f…cca03`, `version.txt` 1.6.0,
   `Posato-1.6.0-arm64.msi` `2ddc34b3f2c1ee0f77689c84802f9982eb2476a52e1d7ecab3caa29acbbc0721`.
