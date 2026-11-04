@@ -93,8 +93,13 @@ brief's differences, which hold the details:
   Both MSIs read in the guest (run `20261104-165559-3904`):
   `ProductVersion` 1.6.0, `UpgradeCode` `{5BBD64CA-6B87-429A-90A8-0F4FA147E299}`,
   both unsigned.
-- **Store:** `store prepare` created 1.6.0 with build 9, `after-approval`,
-  en-US What's New and description; the five new locales follow.
+- **Store:** `store prepare` (with `#225`) created 1.6.0 with build 9,
+  `after-approval`, and wrote en-US plus the first `pl`, `de-DE`, `fr-FR`,
+  `es-ES`, and `pt-BR` listings: name, subtitle, description, What's New,
+  keywords, support, marketing, and privacy URLs, and screenshots. Two
+  locales were rerun after a network timeout and a slow screenshot
+  delivery; `store status --version 1.6.0` with all six locales reports
+  `localizationsComplete: true` and `PREPARE_FOR_SUBMISSION`.
 
 ## GitHub release notes for 1.6.0
 
