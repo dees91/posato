@@ -107,3 +107,13 @@ variant of the verification line below; otherwise name the signing identity.
 >
 > - macOS 13 or later on Apple silicon or Intel; iOS 18 or later from the [App Store](https://apps.apple.com/app/posato/id6812237585); Ubuntu 24.04 or later; Android 13 or later; Windows 11 on x64 or Arm.
 > - Both DMGs are signed with Developer ID and notarized by Apple. The APK is release-signed. The MSI packages are signed with `<identity>` (or: are not signed yet, so Windows SmartScreen asks before running them). `SHA256SUMS` lists the checksums of every file below; `appcast.xml` (Apple silicon) and `appcast-intel.xml` (Intel) are the signed update feeds that Posato for Mac reads.
+
+## Checks
+
+| Check | Result |
+| --- | --- |
+| `./gradlew quality` | passed on the branch head |
+| `website/` `npm run build`; phone (390 px) and wide (1440 px) renders | passed: 30 pages, no overflow at 390 px |
+| `video/` `npm run media` (check, renders, `verify`) | passed, with `compare:hero` showing only the five-device row and the close line |
+| Captures (`build/verification/runs/`), 2026-11-04 | Mac VM `20261104-094212-fcbd` to `-095448-966a`; Android `-094056-0b15` to `-094700-e699`; Windows `-095553-0e52` to `-101154-4de2` |
+| Privacy scan of new tracked PNGs | example domains and sample sets only; bars cropped; no metadata |
