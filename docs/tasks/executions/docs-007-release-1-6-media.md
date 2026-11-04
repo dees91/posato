@@ -25,9 +25,11 @@
   `SCHEDULE-007` manual-session rule, media for new things only, and merging
   through `babysit-pr` before `RELEASE-010`, with the whole 1.6 copy on
   `posato.app` before the release.
-- Agent decisions under the delegation: the Windows badge uses a neutral
-  four-pane window glyph drawn for Posato, because Simple Icons has no
-  Windows mark and Microsoft's logos need permission; the break step pairs
+- `user-confirmed` 2026-11-04: the Windows badge shows the flat four-square
+  Windows logo in the text color, like the Linux and Android marks; Simple
+  Icons has no Windows mark, and the owner accepted the small trademark risk
+  over a neutral glyph that read as a spreadsheet icon.
+- Agent decisions under the delegation: the break step pairs
   the Mac (a break) with Android (the **Open briefly** dialog); the Windows
   screenshot sits under the install steps; the translations also received
   the `SCHEDULE-007` and `TARGETS-013` privacy and limits text they had
