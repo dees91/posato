@@ -58,12 +58,14 @@
   - Uninstall removes the `Run` value only when the user's hive is loaded;
     otherwise it stays and is inert.
   - The key file's ACL is owner-only but not protected (Java cannot set it).
-  - ADR 0010's Windows details and limits wait below for confirmation.
+  - ADR 0010's Windows details and limits waited below for confirmation;
+    confirmed 2026-11-04 (`DOCS-007`).
 
 ## Windows details pending confirmation
 
 `agent-delegated`, implemented and verified here; moved out of ADR 0010
-until the maintainer confirms them.
+until the maintainer confirms them. Confirmed on 2026-11-04 (`DOCS-007`):
+the details are in ADR 0010 and the limits on the limits page.
 
 - **Channel.** `\\.\pipe\app.posato.helper` is the first instance, rejects
   remote clients, and grants only the system and the installing user, who

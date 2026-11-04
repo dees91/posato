@@ -5,7 +5,7 @@ Effective October 22, 2026.
 Posato does not send your pause sets, website list, app choices, sessions,
 schedules, or workspace data to its developer. There is no Posato account, no
 analytics, no advertising, and no Posato-operated server. This policy covers
-Posato for Mac, iPhone, Linux, and Android. Optional iCloud or folder sync,
+Posato for Mac, iPhone, Linux, Android, and Windows. Optional iCloud or folder sync,
 the blocking on each device, and macOS update requests are described below.
 
 ## Data Posato keeps on your devices
@@ -17,7 +17,8 @@ To work, Posato stores on each device:
   pause and how often and for how long, and which apps you chose for each on
   that device,
   stored as system-provided selections that Posato cannot read as app names
-  on iPhone; on Mac, Linux, and Android, Posato stores which apps they are;
+  on iPhone; on Mac, Linux, Android, and Windows, Posato stores which apps
+  they are;
 - your sessions: when they start and end, which pause set each used, and
   whether they ended early;
 - your schedules: their names, their pause sets, the weekdays and times they
@@ -32,14 +33,17 @@ Posato does not record when a website opened briefly, whether you visited
 it, or for how long.
 
 This data stays in Posato's private storage on the device until you change or
-remove it. On Mac, iPhone, and Linux, this data, except app choices on iPhone,
+remove it. On Mac, iPhone, Linux, and Windows, this data, except app choices on iPhone,
 can also be included in your device backups, such as iCloud Backup, Time
-Machine, or a backup of your Linux home folder, under your backup settings.
+Machine, a backup of your Linux home folder, or a backup of your Windows user
+folder, under your backup settings.
 On Android, Posato excludes its data from Android backups and device
 transfers. On Mac, moving Posato to the Trash does not delete this data; it
 remains in Posato's application data folder until you remove it. On Linux,
 removing the package does not delete it either; it remains in Posato's folder
-in your home folder's application data until you remove it.
+in your home folder's application data until you remove it. On Windows,
+uninstalling Posato does not delete it; it remains in the `Posato` folder of
+your user account's local application data until you remove it.
 
 When sync is on, through iCloud or a folder, Posato also keeps the history of synchronized changes
 in its private storage on each linked device: every pause set created,
@@ -92,8 +96,8 @@ key is lost, synchronized data cannot be recovered.
 ## Folder sync
 
 Folder sync is optional and off until you choose a folder in Posato. It is
-the only sync on Linux and Android, and on Mac and iPhone it replaces iCloud
-sync for that workspace.
+the only sync on Linux, Android, and Windows, and on Mac and iPhone it
+replaces iCloud sync for that workspace.
 
 - Posato writes a `Posato` folder inside the folder you choose. It holds one
   file with random workspace identifiers and, for each change, a separate
@@ -114,8 +118,8 @@ sync for that workspace.
 - In folder sync, each device keeps the workspace key in a file in Posato's
   private storage that only your user account can read, not in iCloud
   Keychain. On Android, the file is also sealed with a key that never leaves
-  that phone's Android Keystore. On Mac, iPhone, and Linux the key file can be
-  included in device backups like the data above.
+  that phone's Android Keystore. On Mac, iPhone, Linux, and Windows the key
+  file can be included in device backups like the data above.
 - To add a device, Posato on a device in the workspace shows a one-time
   pairing code, also as a QR code and as a `posato://` link that contains only
   that code. It places the workspace key in the folder, encrypted with a key
@@ -185,6 +189,28 @@ Posato reads it. Removing the package removes the service, restores
 `/etc/hosts`, and deletes both files. Nothing the service handles leaves your
 computer.
 
+## Blocking on Windows
+
+On Windows, the Posato installer sets up a pausing service that runs with
+system permissions, with administrator approval. Only your user account and
+the system can send it requests. While a pause runs, the service:
+
+- looks up the addresses of each paused website and its `www` name about
+  once a minute and adds Windows Filtering Platform rules that stop your user
+  account's connections to them, then removes the rules when the pause ends;
+- ends the paused programs you chose that run under your user account,
+  checking which program each running process is, without reading or keeping
+  what you do in it.
+
+The service keeps your account name and its security identifier in a
+configuration file, and the pause it enforces, with its websites and program
+locations, in a file that only the system and administrators can open, so a
+restart keeps the pause. After the pause ends, that file keeps only the
+session's identifier until Posato reads it. Uninstalling Posato removes the
+service, its rules, and both files. Posato reads the Start menu's shortcuts
+so that you can choose programs to pause; the list stays on the computer.
+Nothing the service handles leaves your computer.
+
 ## Blocking on Android
 
 On Android, Posato needs several permissions, each given in Android's own
@@ -244,7 +270,7 @@ them off in About Posato or in your device's settings.
 
 ## Updates on Mac
 
-Posato for iPhone, Linux, and Android does not check for updates itself. On
+Posato for iPhone, Linux, Android, and Windows does not check for updates itself. On
 Mac, Posato asks before checking for updates automatically. If you agree, it
 checks once a day while the app is running. You can turn automatic checks
 off or choose Check for updates yourself. Each update requires your action

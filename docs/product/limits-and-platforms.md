@@ -11,12 +11,13 @@ verbatim from the root README as accepted in `RELEASE-001`; `RELEASE-002` and
 `RELEASE-003` and `RELEASE-004` updated Availability for the 1.0, 1.1, and 1.2 releases, and `DOCS-004` and `DOCS-005` for 1.3 and 1.4; the README keeps a
 summary and links here. `DOCS-006` added the Linux, Android, and folder sync
 limits accepted with [ADR 0010](../decisions/0010-linux-android-and-folder-workspace.md)
-for 1.5. The Planned platforms section records the maintainer's 2026-09-16
-direction for later releases.
+for 1.5, and `DOCS-007` the Windows limits drafted in `PLATFORM-002` and
+confirmed by the maintainer on 2026-11-04, for 1.6. The Planned platforms
+section records the maintainer's 2026-09-16 direction for later releases.
 
 ## Availability
 
-Posato 1.5.2 for Mac is available from GitHub Releases, as `Posato-1.5.2.dmg` for Apple silicon and `Posato-1.5.2-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato for Linux and Android is new in 1.5 and available from GitHub Releases: `posato_1.5.0_arm64.deb` and `posato_1.5.0_amd64.deb` for Ubuntu, and `Posato-1.5.0.apk` for Android.
+Posato 1.6 for Mac is available from GitHub Releases, as `Posato-1.6.0.dmg` for Apple silicon and `Posato-1.6.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato for Linux, Android, and Windows is available from GitHub Releases: `posato_1.6.0_arm64.deb` and `posato_1.6.0_amd64.deb` for Ubuntu, `Posato-1.6.0.apk` for Android, and, new in 1.6, `Posato-1.6.0-x64.msi` and `Posato-1.6.0-arm64.msi` for Windows 11.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
@@ -24,6 +25,7 @@ Posato 1.5.2 for Mac is available from GitHub Releases, as `Posato-1.5.2.dmg` fo
 | iOS | App Store | [App Store](https://apps.apple.com/app/posato/id6812237585) |
 | Linux | `.deb` package for arm64 and x86-64 | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 | Android | Signed APK, installed from outside Google Play | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
+| Windows | MSI package for x64 and arm64 | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 
 Posato for Mac is a signed and notarized download from GitHub Releases.
 Versions with the updater can check for new releases after you agree, or
@@ -33,9 +35,9 @@ Posato 1.0 to the first version with updates, download the new DMG, quit
 Posato, replace the application, and open it again. Manual downloads remain
 available if an in-app update cannot complete.
 
-Posato for Linux and Android does not check for updates. To update, download
-the new package from GitHub Releases and install it over the old one, the
-same way as the first time.
+Posato for Linux, Android, and Windows does not check for updates. To
+update, download the new package from GitHub Releases and install it over
+the old one, the same way as the first time.
 
 The release verdict is recorded in the
 [1.1 release record](../tasks/executions/release-003-release-1-1.md).
@@ -101,6 +103,25 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   in the background only while a pause runs or a schedule is on, and you
   open it again from the applications menu. Quitting Posato stops new
   scheduled starts.
+- On Windows, website blocking stops connections to the addresses that a
+  paused website's name resolves to. A site that shares addresses with
+  other sites, such as one behind a large content network, can block
+  those sites too, and a site that moves to new addresses can open until
+  Posato sees them, within about a minute. A browser with its own DNS over
+  HTTPS can reach addresses Posato has not seen, and a connection already
+  open when the pause starts stays open. There is no pause page, and a VPN
+  or a proxy bypasses it.
+- On Windows, the installer sets up a system service with administrator
+  approval. While a pause runs, the service ends the paused apps you
+  chose, so unsaved work in them can be lost. It clears the pause at its
+  end time even when Posato is closed, and uninstalling Posato clears an
+  active pause. Microsoft Store apps and shortcuts that start a script or
+  a command line cannot be paused. Posato pauses only the Windows account
+  that installed it.
+- On Windows, schedules start only while Posato is running. Closing its
+  window keeps it running with an icon in the notification area, and
+  **Open Posato at login** in About Posato starts it in the background when
+  you log in. Quitting Posato stops new scheduled starts.
 - On Android, website blocking runs as a local VPN that only answers name
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
@@ -174,6 +195,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - From Posato 1.5 for Linux: Ubuntu 24.04 or later on arm64 and x86-64, as a
   `.deb` package.
 - From Posato 1.5 for Android: Android 13 or later.
+- From Posato 1.6 for Windows: Windows 11 on x64 and arm64, as an MSI
+  package.
 
 Apple's last security update for macOS 13 Ventura was 13.7.8, released on
 20 August 2025. Posato keeps supporting Intel Macs on macOS 13 while its
@@ -207,11 +230,9 @@ device that was offline during a session.
 
 ## Planned platforms
 
-| Platform | Status |
-| --- | --- |
-| Windows desktop | Planned for a later release |
-
-No dates are committed. Intel Macs on macOS 13 or later are supported from
-Posato 1.3, and Linux and Android from Posato 1.5 (see Supported platforms). The current release covers only the
-platforms above; the [MVP scope](mvp-scope.md#platform-order-and-support-baseline)
-records that these platforms follow later and do not gate it.
+No other platform is planned yet. Intel Macs on macOS 13 or later are
+supported from Posato 1.3, Linux and Android from Posato 1.5, and Windows
+from Posato 1.6 (see Supported platforms); the
+[MVP scope](mvp-scope.md#platform-order-and-support-baseline) records that
+platforms after the Mac and iPhone followed later and did not gate the
+first release.

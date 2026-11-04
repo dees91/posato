@@ -19,9 +19,10 @@
   2026-10-28 the maintainer also accepted, for `PLATFORM-002`, a service
   without a restricted service SID, with least privilege to become one rule
   for every desktop helper (`PLATFORM-004`). The remaining Windows mechanism
-  details and limits are `agent-delegated` and wait in the
-  [`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
-  until the maintainer confirms them.
+  details and limits, drafted in the
+  [`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md),
+  are `user-confirmed` on 2026-11-04 (`DOCS-007`) and stated under
+  [Windows](#windows) and on the limits page.
 - **Owners:** `PLATFORM-001` decides; `SYNC-018`, `LINUX-001`, and
   `ANDROID-001` deliver.
 
@@ -199,6 +200,25 @@ system or of another user, and clears by itself at the session end. Windows
 uses the folder workspace and the resident core shared with the Mac and
 Linux. The service never reads traffic and never logs hosts.
 
+Details confirmed on 2026-11-04 (`user-confirmed`, `DOCS-007`):
+
+- **Channel.** `\\.\pipe\app.posato.helper` is the first instance,
+  rejects remote clients, and grants only the system and the installing
+  user, who is recorded by SID; each caller is identified again by
+  impersonation, and a request not sent within five seconds is cut off. The
+  client sends nothing unless the Service Control Manager reports the
+  pipe's server process as the `LocalSystem` service from the installed
+  image.
+- **Websites.** Each host and its `www` name are resolved and blocked at the
+  outbound connect layers for the installing user only, in one dynamic WFP
+  session with its own sublayer; names are resolved again every minute and
+  addresses only added until the end. Loopback, unspecified, link-local,
+  multicast, and private addresses are never filtered. Filters vanish with
+  the session; a restart applies the saved pause again.
+- **Applications and state.** Start menu shortcuts to a local `.exe` only,
+  no launchers or interpreters; state in a SYSTEM-owned
+  `%ProgramData%\Posato`, kept by a major upgrade, removed on uninstall.
+
 Android has no root and no accessibility service. A blocked application can
 be visible for up to one polling interval before the block screen covers it.
 
@@ -342,10 +362,12 @@ limits read on their own; the limits are unchanged.
   there is no move between them: remove the iCloud workspace before choosing
   a folder.
 
-The Windows limits are drafted in the
+The Windows limits drafted in the
 [`PLATFORM-002` execution record](../tasks/executions/platform-002-windows.md)
-and enter this list once the maintainer confirms them; `DOCS-007` then moves
-them to the limits page and `RELEASE-010` publishes them with release 1.6.
+are `user-confirmed` on 2026-11-04; `DOCS-007` moved them to the
+[limits page](../product/limits-and-platforms.md#limits) unchanged, with a
+Windows schedules bullet in the Linux one's form, and `RELEASE-010`
+publishes them with release 1.6.
 
 ## Consequences
 
