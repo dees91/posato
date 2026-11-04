@@ -1,8 +1,8 @@
-Choisissez les sites et les apps dont vous voulez vous éloigner, regroupez-les dans des ensembles de pause, puis lancez une pause sur votre iPhone ou planifiez-la à l’avance. Prenez le temps de lire, de travailler ou d’être ailleurs.
+Choisissez les sites et les apps dont vous voulez vous éloigner, regroupez-les dans des ensembles de pause, puis lancez une pause sur votre iPhone ou planifiez vos pauses à l’avance avec une programmation. Prenez le temps de lire, de travailler ou d’être ailleurs.
 
 UNE PAUSE À VOTRE FAÇON
 
-Choisissez un ensemble de pause et une durée : de 25 minutes à 8 heures, Jusqu’à la fin de la journée, ou la durée de votre choix sur le minuteur. Posato utilise les contrôles Temps d’écran d’Apple pour mettre cet ensemble en pause pendant la session. Vous pouvez décider de l’arrêter plus tôt ou supprimer Posato à tout moment. La pause vous laisse un instant de réflexion avant d’ouvrir quelque chose par habitude.
+Choisissez un ensemble de pause et une durée : un choix rapide de 25 minutes à 8 heures, Jusqu’à la fin de la journée, ou la durée de votre choix sur le minuteur. Posato utilise les contrôles Temps d’écran d’Apple pour mettre cet ensemble en pause pendant la session. Vous pouvez décider de l’arrêter plus tôt ou supprimer Posato à tout moment. La pause vous laisse un instant de réflexion avant d’ouvrir quelque chose par habitude.
 
 ENSEMBLES DE PAUSE
 
@@ -14,7 +14,7 @@ Planifiez des pauses récurrentes par jour et par heure, chacune avec son ensemb
 
 PAUSES COURTES ET VISITES BRÈVES
 
-Pendant une pause programmée, faites une seule pause de 5, 10 ou 15 minutes ; les restrictions reprennent d’elles-mêmes. Laissez un site à consulter de temps en temps, comme l’actualité, s’ouvrir brièvement pendant une pause : toutes les 30 minutes, toutes les heures ou toutes les 2 heures, pendant 5, 10 ou 15 minutes. L’écran Session indique sa prochaine ouverture.
+Pendant une pause programmée, faites une seule pause de 5, 10 ou 15 minutes ; les restrictions reprennent d’elles-mêmes. Laissez un site à consulter de temps en temps, comme l’actualité, s’ouvrir brièvement pendant une pause : toutes les 30 minutes, toutes les heures ou toutes les 2 heures, pendant 5, 10 ou 15 minutes. Session indique sa prochaine ouverture.
 
 SYNCHRONISATION ICLOUD FACULTATIVE
 

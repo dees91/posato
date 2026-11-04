@@ -228,10 +228,10 @@ serviço:
   usuário, verificando qual programa é cada processo em execução, sem ler nem
   guardar o que você faz nele.
 
-O serviço guarda o nome da sua conta e o identificador de segurança dela em um
-arquivo de configuração, e a pausa que ele aplica, com os sites e os locais
-dos programas, em um arquivo que só o sistema e os administradores podem
-abrir, para que uma reinicialização mantenha a pausa. Depois que a pausa
+Em arquivos que só o sistema e os administradores podem abrir, o serviço
+guarda o nome da sua conta e o identificador de segurança dela, e a pausa que
+ele aplica, com os sites e os locais dos programas, para que uma
+reinicialização mantenha a pausa. Depois que a pausa
 termina, esse arquivo guarda apenas o identificador da sessão até o Posato
 lê-lo. Desinstalar o Posato remove o serviço, as regras dele e os dois
 arquivos. O Posato lê os atalhos do menu Iniciar para que você possa escolher

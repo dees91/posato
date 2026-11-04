@@ -243,10 +243,10 @@ lui envoyer des requêtes. Pendant une pause, le service :
   votre compte utilisateur, en vérifiant de quel programme il s’agit pour
   chaque processus en cours, sans lire ni conserver ce que vous y faites.
 
-Le service conserve le nom de votre compte et son identificateur de sécurité
-dans un fichier de configuration, et la pause qu’il applique, avec ses sites
-et les emplacements des programmes, dans un fichier que seuls le système et
-les administrateurs peuvent ouvrir, afin qu’un redémarrage conserve la pause.
+Dans des fichiers que seuls le système et les administrateurs peuvent ouvrir,
+le service conserve le nom de votre compte et son identificateur de sécurité,
+ainsi que la pause qu’il applique, avec ses sites et les emplacements des
+programmes, afin qu’un redémarrage conserve la pause.
 Après la fin de la pause, ce fichier ne conserve que l’identifiant de la
 session jusqu’à ce que Posato le lise. Désinstaller Posato supprime le
 service, ses règles et les deux fichiers. Posato lit les raccourcis du menu

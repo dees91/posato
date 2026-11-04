@@ -238,10 +238,10 @@ Pause läuft, macht der Dienst Folgendes:
   deinem Benutzerkonto laufen; dabei prüft er, welches Programm jeder
   laufende Prozess ist, ohne zu lesen oder zu speichern, was du darin tust.
 
-Der Dienst speichert deinen Kontonamen und seine Sicherheits-ID in einer
-Konfigurationsdatei und die Pause, die er durchsetzt, mit ihren Websites und
-Programmpfaden, in einer Datei, die nur das System und Administratoren öffnen
-können, damit die Pause einen Neustart übersteht. Nach dem Ende der Pause
+In Dateien, die nur das System und Administratoren öffnen können, speichert
+der Dienst deinen Kontonamen und seine Sicherheits-ID sowie die Pause, die er
+durchsetzt, mit ihren Websites und Programmpfaden, damit die Pause einen
+Neustart übersteht. Nach dem Ende der Pause
 enthält diese Datei nur noch die Kennung der Sitzung, bis Posato sie liest. Das
 Deinstallieren von Posato entfernt den Dienst, seine Regeln und beide Dateien.
 Posato liest die Verknüpfungen des Startmenüs, damit du Programme zum

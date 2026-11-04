@@ -215,10 +215,9 @@ wysyłać tylko Twoje konto użytkownika i system. W trakcie pauzy usługa:
   użytkownika, sprawdzając, którym programem jest każdy działający proces,
   bez czytania ani przechowywania tego, co w nim robisz.
 
-Usługa trzyma nazwę Twojego konta i jego identyfikator zabezpieczeń w pliku
-konfiguracji, a wymuszaną pauzę, wraz ze stronami i położeniem programów, w
-pliku, który mogą otworzyć tylko system i administratorzy, aby restart
-utrzymał pauzę. Po zakończeniu pauzy ten plik trzyma tylko identyfikator
+W plikach, które mogą otworzyć tylko system i administratorzy, usługa trzyma
+nazwę Twojego konta i jego identyfikator zabezpieczeń oraz wymuszaną pauzę,
+wraz ze stronami i położeniem programów, aby restart utrzymał pauzę. Po zakończeniu pauzy ten plik trzyma tylko identyfikator
 sesji, dopóki Posato go nie odczyta. Odinstalowanie Posato usuwa usługę, jej
 reguły i oba pliki. Posato czyta skróty z menu Start, aby dało się wybrać
 programy do pauzy; lista zostaje na komputerze. Nic, czym zajmuje się usługa,

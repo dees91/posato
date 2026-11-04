@@ -177,11 +177,11 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
     <h2 id="break">Mach eine Pause, oder lass eine Website kurz durch</h2>
     <p class="prose">
       Wähle während einer geplanten Pause <strong>Pause machen</strong> für 5, 10 oder 15 Minuten: Die Einschränkungen
-      pausieren auf diesem Gerät und, sobald sie synchronisiert sind, auf deinen anderen, und kehren von selbst zurück. In jeder geplanten
-      Pause ist eine Pause möglich, und <strong>Pause beenden</strong> bringt die Einschränkungen sofort zurück. Für eine Website,
+      pausieren auf diesem Gerät und, sobald sie synchronisiert sind, auf deinen anderen, und kehren von selbst zurück. Jede geplante
+      Pause erlaubt eine solche Pause, und <strong>Pause beenden</strong> bringt die Einschränkungen sofort zurück. Für eine Website,
       die du ab und zu ansehen möchtest, etwa Nachrichten, wähle <strong>Kurz öffnen…</strong> in ihrem Menü im
       Pausenset: Während einer Pause öffnet sie sich alle 30 Minuten, jede Stunde oder alle 2 Stunden für 5, 10 oder 15 Minuten,
-      nach der Uhr des jeweiligen Geräts. Unter „Sitzung“ siehst du, wann sie sich als Nächstes öffnet. Sobald du eine Pause machst oder eine solche
+      nach der Uhr des jeweiligen Geräts. Unter „Sitzung“ siehst du, wann sie sich als Nächstes öffnet. Sobald du in einer geplanten Pause eine Pause machst oder eine solche
       Regel festlegst, synchronisiert ein Gerät mit einer älteren Version nicht mehr, bis es aktualisiert ist.
     </p>
     </div>
@@ -334,7 +334,8 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         DNS über HTTPS, ein VPN oder ein Proxy kann es umgehen. Pausierte Apps werden beendet, sichere also deine Arbeit, bevor eine
         Sitzung beginnt. Ein Systemdienst, den das Installationsprogramm einrichtet, beendet die Pause pünktlich, auch wenn Posato
         geschlossen ist. Wenn du das Fenster schließt, läuft Posato mit einem Symbol im Infobereich weiter; wenn du es beendest,
-        starten keine geplanten Pausen mehr.
+        starten keine geplanten Pausen mehr. Posato pausiert nur das Windows-Konto, mit dem es installiert wurde, und
+        Apps aus dem Microsoft Store lassen sich nicht pausieren.
       </li>
       <li>
         <strong>Synchronisierung:</strong> Die Synchronisierung erfolgt nach bestem Bemühen; eine Änderung kann verspätet oder gar nicht ankommen. Gehen alle Kopien des Schlüssels für deinen Arbeitsbereich verloren,

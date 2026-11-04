@@ -238,10 +238,10 @@ hay una pausa en curso, el servicio:
   de usuario, comprobando qué programa es cada proceso en ejecución, sin leer
   ni guardar lo que haces en él.
 
-El servicio guarda el nombre de tu cuenta y su identificador de seguridad en
-un archivo de configuración, y la pausa que aplica, con sus sitios web y las
-ubicaciones de los programas, en un archivo que solo el sistema y los
-administradores pueden abrir, para que la pausa se mantenga tras un reinicio.
+En archivos que solo el sistema y los administradores pueden abrir, el
+servicio guarda el nombre de tu cuenta y su identificador de seguridad, y la
+pausa que aplica, con sus sitios web y las ubicaciones de los programas, para
+que la pausa se mantenga tras un reinicio.
 Cuando termina la pausa, ese archivo solo conserva el identificador de la
 sesión hasta que Posato lo lee. Desinstalar Posato elimina el servicio, sus
 reglas y ambos archivos. Posato lee los accesos directos del menú Inicio para
