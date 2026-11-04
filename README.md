@@ -149,7 +149,7 @@ opens next. Once you take a break or set such a rule, a device on an
 earlier version stops syncing until it updates.
 
 <p align="center">
-  <a href=".github/assets/step-break.png"><img src=".github/assets/step-break.png" width="960" alt="STEP_BREAK_ALT"></a>
+  <a href=".github/assets/step-break.png"><img src=".github/assets/step-break.png" width="960" alt="Posato on a Mac during the scheduled pause Deep work, on a break until 10:03 AM with End break and End early, beside an Android phone choosing to open example.com every hour for 10 minutes"></a>
 </p>
 
 ### Share the session with iCloud

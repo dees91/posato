@@ -13,6 +13,9 @@ import macIcloud from "../../../../video/public/mac-icloud.png";
 import macDuration from "../../../../video/public/mac-duration-45.png";
 import macSchedules from "../../../../video/public/mac-schedules.png";
 import macWebsites from "../../../../video/public/mac-websites.png";
+import macBreak from "../../../../video/public/mac-break.png";
+import androidWindow from "../../../../video/public/android-window-dialog.png";
+import windowsActive from "../../../../video/public/windows-active-45.png";
 
 const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
@@ -185,7 +188,28 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       zaktualizujesz.
     </p>
     </div>
-    <!-- BREAK_SHOTS -->
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macBreak}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Posato na Macu podczas zaplanowanej pauzy Deep work, na przerwie do 10:03, z przyciskami Zakończ przerwę i Zakończ wcześniej"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={androidWindow}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Telefon z Androidem ustawiający otwieranie example.com co godzinę na 10 minut"
+          />
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="step" aria-labelledby="sync">
@@ -410,6 +434,18 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         </p>
       </li>
     </ul>
+    <div class="shots install-shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={windowsActive}
+            widths={[480, 720, 1024]}
+            sizes="(max-width: 600px) 90vw, 36rem"
+            alt="Posato na Windows z trwającą pauzą: ograniczenia aktywne do 9:54 z zestawem Focus, a example.com otwarte na chwilę do 9:10"
+          />
+        </div>
+      </div>
+    </div>
     <p class="muted">
       Aby zaktualizować na Linuxie, Androidzie albo Windows, zainstaluj nowszy pakiet w ten sam sposób.
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">Macierz platform</a>

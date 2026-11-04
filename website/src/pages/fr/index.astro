@@ -13,6 +13,9 @@ import macIcloud from "../../../../video/public/mac-icloud.png";
 import macDuration from "../../../../video/public/mac-duration-45.png";
 import macSchedules from "../../../../video/public/mac-schedules.png";
 import macWebsites from "../../../../video/public/mac-websites.png";
+import macBreak from "../../../../video/public/mac-break.png";
+import androidWindow from "../../../../video/public/android-window-dialog.png";
+import windowsActive from "../../../../video/public/windows-active-45.png";
 
 const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
@@ -185,7 +188,28 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       une pause ou définissez une telle règle, un appareil doté d’une version antérieure cesse de se synchroniser jusqu’à sa mise à jour.
     </p>
     </div>
-    <!-- BREAK_SHOTS -->
+    <div class="shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={macBreak}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Posato sur un Mac pendant la pause programmée Deep work, en pause jusqu’à 10 h 03, avec Finir la pause et Arrêter plus tôt"
+          />
+        </div>
+      </div>
+      <div class="device device-phone shot-phone">
+        <div class="device-screen">
+          <Image
+            src={androidWindow}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="Un téléphone Android qui choisit d’ouvrir example.com toutes les heures pendant 10 minutes"
+          />
+        </div>
+      </div>
+    </div>
   </section>
   <section class="step" aria-labelledby="sync">
     <div class="step-copy">
@@ -409,6 +433,18 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         </p>
       </li>
     </ul>
+    <div class="shots install-shots">
+      <div class="device device-desktop shot-desktop">
+        <div class="device-screen">
+          <Image
+            src={windowsActive}
+            widths={[480, 720, 1024]}
+            sizes="(max-width: 600px) 90vw, 36rem"
+            alt="Posato sur Windows pendant une pause : restrictions actives jusqu’à 9 h 54 avec l’ensemble Focus, et example.com ouvert brièvement jusqu’à 9 h 10"
+          />
+        </div>
+      </div>
+    </div>
     <p class="muted">
       Pour mettre à jour sur Linux, Android ou Windows, installez le paquet plus récent de la même façon. La
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matrice des plateformes</a>

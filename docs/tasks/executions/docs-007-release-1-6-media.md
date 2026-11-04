@@ -1,7 +1,7 @@
 # Execution: `DOCS-007`
 
 - **Brief:** [Prepare the public packaging for Posato 1.6](../specifications/docs-007-release-1-6-media.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Reviewer:** independent agent (completed-change review)
@@ -19,9 +19,55 @@
 3. Independent review with back-translation, `qualityLint`, the site build,
    and `npm run media`.
 
+## Decisions
+
+- `user-confirmed` 2026-11-04: Windows details and limits, the
+  `SCHEDULE-007` manual-session rule, media for new things only, and merging
+  through `babysit-pr` before `RELEASE-010`, with the whole 1.6 copy on
+  `posato.app` before the release.
+- Agent decisions under the delegation: the Windows badge uses a neutral
+  four-pane window glyph drawn for Posato, because Simple Icons has no
+  Windows mark and Microsoft's logos need permission; the break step pairs
+  the Mac (a break) with Android (the **Open briefly** dialog); the Windows
+  screenshot sits under the install steps; the translations also received
+  the `SCHEDULE-007` and `TARGETS-013` privacy and limits text they had
+  missed; `PRIVACY.md` is dated 4 November 2026 in every language.
+
 ## Result
 
-- Pending.
+- **Windows** on the limits page, in ADR 0010 (confirmed details), the
+  README, the site in six languages with a download button, MSI install
+  steps, and a screenshot, `PRIVACY.md` and its translations, the store
+  description, and the hero and social preview with five platforms.
+- **1.6 features**: a step about a break and a website that opens briefly,
+  the break limits, the earlier-version sync limit, store text, What's New,
+  update feed notes, and the GitHub release notes below, in every shipped
+  language where the surface is translated.
+- **Media**: new captures `mac-break`, `android-window-dialog`,
+  `windows-websites`, `windows-active-45`; new still `step-break.png`;
+  re-rendered hero, GIF, walkthrough cards, and social preview; poster and
+  other stills unchanged.
+
+## Open for the maintainer
+
+- Upload the regenerated `.github/assets/social-preview.png` in the
+  repository settings by hand.
+- Polish: the site and store use "obszar roboczy" for workspace, the app
+  "przestrzeń"; the button label now matches the app.
+- `RELEASE-010`: the MSI signing line and, if unsigned, the SmartScreen line
+  and limit.
+- Driver gaps seen while capturing: on Android `flow set` fails at Save
+  (`action_save_short`) and `flow set --window` finds no `targets_open_briefly`
+  id; on the Mac `flow set --rename-from` refuses `--website`.
+
+## Review
+
+- Independent agent, 2026-11-04: no Critical; Required fixed (the policy's
+  effective date; the whole-site early publication recorded as the owner's
+  choice). Recommended fixed: German pause and break wording, the signing
+  line, the Windows privacy paragraph; Optional folded: the Windows account
+  clause, Windows 11 on x64 and Arm, French quick choices. Back-translation
+  of German, French, Spanish, and Portuguese matched the English.
 
 ## GitHub release notes for 1.6.0
 
