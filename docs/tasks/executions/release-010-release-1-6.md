@@ -138,7 +138,7 @@ the date is each id's prefix. Every line ran on the release builds, except
 | Linux | website window with Posato terminated | pass | `20261104-205304-2c5b` |
 | Linux | break (rerun after unattended-upgrade killed the first) | pass | `20261104-212227-5989`, `-212749-50dc` |
 | Linux | upgrade from 1.5.0 keeping a set, a site, and a schedule | pass | `20261104-221250-2563`, `-221316-f254` |
-| Linux | received pause ends while terminated | LINUX_ROW_PENDING | LINUX_RUNS_PENDING |
+| Linux | a pause received from Windows ends while Posato is terminated: `/etc/hosts` restored byte for byte, two relaunches show it ended with no notice or loop | pass; the known `SESSION-011` residue; the first relaunch briefly showed "Sync needs attention" with an unchanged folder, cleared by **Sync now** | `r010-selfclear-*` (2026-11-05) |
 | Android, signed APK | upgrade from 1.5.0 keeping sets and a schedule | pass | `20261104-224513-4a26`, `-224536-46a2` |
 | Android | onboarding; pause (127.0.0.1, app covered) | pass | `20261104-224546-8769`, `-225114-d75f` |
 | Android | `PauseClaims` | pass | `20261104-225437-2392` to `-231020-9d58` |
