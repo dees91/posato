@@ -6,11 +6,12 @@ import app.posato.provisioning.model.RelationshipRef
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-private const val APP_NAME = "Posato"
+/** The app name, the same in every language. */
+const val APP_NAME = "Posato"
 
 /**
  * The app information operations a release needs: the app's App Information records and their localizations, which
- * hold the subtitle. App Store Connect gives each App Store version being prepared its own editable copy.
+ * hold the name, subtitle, and privacy policy URL. App Store Connect gives each App Store version being prepared its own editable copy.
  */
 class AppInfoClient(
     executor: AscRequestExecutor
@@ -32,12 +33,13 @@ class AppInfoClient(
     )
 
     /**
-     * Adds one App Information localization. The name stays Posato in every language; the subtitle is the localized line.
+     * Adds one App Information localization with the name Posato, which stays the same in every language, and the
+     * given [attributes], such as `subtitle` and `privacyPolicyUrl`.
      */
     fun createLocalization(
         appInfoId: String,
         locale: String,
-        subtitle: String,
+        attributes: Map<String, String>,
     ): AppInfoLocalizationResource = documents.write(
         HttpMethod.POST,
         "appInfoLocalizations",
@@ -46,7 +48,7 @@ class AppInfoClient(
             attributes = buildJsonObject {
                 put("locale", locale)
                 put("name", APP_NAME)
-                put("subtitle", subtitle)
+                attributes.forEach { (key, value) -> put(key, value) }
             },
             relationships = mapOf("appInfo" to RelationshipRef(appInfoId, "appInfos")),
         ),

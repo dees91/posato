@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 38 (2026-11-03: `HISTORY-001` adds the `HISTORY-002` backlog row)
+- **Revision:** 40 (2026-11-05: `RELEASE-010` adds the `SESSION-012` backlog row)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-11-03
+- **Last amended:** 2026-11-05
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -289,6 +289,14 @@
   history of scheduled pauses that
   [the history decision](../product/history-decisions.md) plans. It changes
   no release.
+  Revision 39 adds the `PLATFORM-005` backlog row from `RELEASE-010`
+  (`user-confirmed`, 2026-11-04): Posato 1.6.0 ships unsigned Windows
+  packages, with the SmartScreen steps in the install text, and a later row
+  signs them.
+  Revision 40 adds the `SESSION-012` backlog row from `RELEASE-010`
+  (`user-confirmed`, 2026-11-05): Posato 1.6.0 ships with two desktop
+  defects that its verification found and that 1.5 already had, and a later
+  row fixes them.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -707,6 +715,8 @@ The idea numbers refer to the wiki idea queue.
 | `SESSION-011` | Clear the expired session that the Linux and Windows helpers keep reporting after a pause ends while Posato is closed: the shared session code acknowledges an expiry only while its local record is still active, so the next launch never acknowledges it. One shared fix, verified on Linux and Windows. | Sessions and enforcement | Idea 58; `PLATFORM-002` review | Any planning checkpoint; no effect on enforcement |
 | `REDIRECT-001` | Decide whether Posato offers host redirect rules beside blocking. First settle the model: always-on rules in a separate setting, or redirects inside sessions and pause sets, with the UX of each compared so that blocking and redirecting stay clear. Then analyze the technical approach on macOS (proxy and browser presentation; for always-on rules also failure, sleep, VPN and proxy coexistence, and privacy outside sessions) and the feasibility on Linux, Windows, Android, and iOS. Settle host versus path rules, loop protection, and whether rules sync. End with a product decision, the proposed ADR 0004 and ADR 0005 revisions if needed, and a delivery plan. Preliminary. | Product discovery | Idea 59 | A product decision that redirects are in scope |
 | `HISTORY-002` | Deliver the calm history of scheduled pauses decided in `HISTORY-001`: a local, unsynchronized day record written when a day becomes final, a **History** disclosure below the Schedules list on every platform with ran-as-planned and ended-early days and no totals, **Clear history**, the `PRIVACY.md` text, and the `posato-control` read, as [the history decision](../product/history-decisions.md) plans. | Schedules | `HISTORY-001` (idea 47) | A release composition that takes it |
+| `PLATFORM-005` | Sign the Windows MSI packages and their launchers with an Authenticode identity, such as Azure Trusted Signing or a code-signing certificate, through the existing `POSATO_WINDOWS_SIGNING` step of `package-msi.ps1` for both architectures, then remove the SmartScreen steps and the Smart App Control limit from the install text, the limits, and the release notes in every language. | Release readiness | `RELEASE-010` | A signing identity the maintainer obtains |
+| `SESSION-012` | Fix two desktop defects that `RELEASE-010` found and 1.5 already had, both from SQLite refusing a write at once while another connection commits (Android serializes its database work and is not affected): a pause received through the folder sometimes shows "Restrictions need attention" and is not enforced until **Retry** (the session intent and expiry reads also write, and `readDesiredLocked` turns a retryable halt into `APPLY_FAILED`); and **End early** on a scheduled pause can leave a running manual pause, because the manual and scheduled ends write in parallel and the end failure is silently replaced. Failing tests first, then the fix in shared code, verified by repeated received pauses on Windows, Linux, and the Mac, and repeated early ends. | Sessions and enforcement | `RELEASE-010` | The next release composition |
 
 ## Coverage matrix
 

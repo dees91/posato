@@ -36,7 +36,9 @@ allow other mobile platforms in the metadata. Earlier text is in Git history.
 
 ## Keywords
 
-focus,pause,distractions,websites,apps,screen time,concentration,break,intention,quiet
+[keywords.txt](keywords.txt) holds the comma-separated keywords,
+86 of App Store Connect's 100 characters, for
+`store prepare --keywords`.
 
 ## Screenshots
 

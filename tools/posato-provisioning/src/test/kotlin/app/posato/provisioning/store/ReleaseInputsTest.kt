@@ -94,6 +94,35 @@ class ReleaseInputsTest {
     }
 
     @Test
+    fun `trims the keywords and refuses an empty file or one over App Store Connect's 100 characters`() {
+        val file = Files.createTempFile("keywords", ".txt")
+        file.writeText("\nfocus,pause,screen time\n")
+        assertEquals("focus,pause,screen time", ReleaseInputs.keywords(file))
+
+        file.writeText("\u0105".repeat(100))
+        assertEquals("\u0105".repeat(100), ReleaseInputs.keywords(file), "The local check counts characters, not UTF-8 bytes.")
+
+        file.writeText(" ")
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { ReleaseInputs.keywords(file) }.code)
+
+        file.writeText("a".repeat(101))
+        val overlong = assertFailsWith<ProvisioningException> { ReleaseInputs.keywords(file) }
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, overlong.code)
+        assertTrue(overlong.message.orEmpty().contains("100"))
+    }
+
+    @Test
+    fun `accepts only an absolute HTTPS URL for a store link`() {
+        assertEquals("https://posato.app/pl/privacy/", StoreUrl.input("https://posato.app/pl/privacy/", "--privacy-url"))
+
+        listOf("http://posato.app/", "posato.app/support/", "https://", "https://posato.app/ x", "").forEach { value ->
+            val failure = assertFailsWith<ProvisioningException>(value) { StoreUrl.input(value, "--support-url") }
+            assertEquals(ErrorCode.RELEASE_INPUT_INVALID, failure.code)
+            assertTrue(failure.message.orEmpty().contains("--support-url"))
+        }
+    }
+
+    @Test
     fun `accepts only a three-part marketing version`() {
         assertEquals("1.2.0", ReleaseInputs.version("1.2.0"))
         assertFailsWith<ProvisioningException> { ReleaseInputs.version("1.2") }

@@ -126,7 +126,7 @@ class StorePreparationTest {
         "GET appInfos/NEXT/appInfoLocalizations" to listOf(
             list(
                 """{"id":"FR","attributes":{"locale":"fr-FR","subtitle":"Autre"}}""",
-                """{"id":"INFO-LOC","attributes":{"locale":"en-US","subtitle":"$subtitle"}}""",
+                """{"id":"INFO-LOC","attributes":{"locale":"en-US","name":"Posato","subtitle":"$subtitle"}}""",
             ),
         ),
         "PATCH appInfoLocalizations/INFO-LOC" to listOf("""{"data":{"id":"INFO-LOC"}}"""),
@@ -221,6 +221,116 @@ class StorePreparationTest {
         val infoLink = subtitle["relationships"]!!.jsonObject["appInfo"]!!.jsonObject["data"]!!.jsonObject
         assertEquals("NEXT", infoLink.text("id"))
         assertTrue(harness.executor.writes.none { request -> request.path.contains("LOC") })
+    }
+
+    /** A matching version whose localizations are [versionLocalizations] and whose editable app information holds [infoLocalizations]. */
+    private fun listingRoutes(
+        versionLocalizations: String,
+        infoLocalizations: String,
+    ) = mapOf(
+        "GET apps" to listOf(APPS),
+        "GET builds" to listOf(StoreFixtures.builds()),
+        "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+        "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+        "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(versionLocalizations),
+        "POST appStoreVersionLocalizations" to listOf("""{"data":{"id":"PL","attributes":{"locale":"pl"}}}"""),
+        "PATCH appStoreVersionLocalizations/PL" to listOf("""{"data":{"id":"PL"}}"""),
+        "GET apps/APP/appInfos" to listOf(liveAndNextInfo),
+        "GET appInfos/NEXT/appInfoLocalizations" to listOf(infoLocalizations),
+        "POST appInfoLocalizations" to listOf("""{"data":{"id":"INFO-PL","attributes":{"locale":"pl"}}}"""),
+        "PATCH appInfoLocalizations/INFO-PL" to listOf("""{"data":{"id":"INFO-PL"}}"""),
+    )
+
+    private val englishInfo = """{"id":"INFO-LOC","attributes":{"locale":"en-US","name":"Posato","privacyPolicyUrl":"https://posato.app/privacy/"}}"""
+
+    private val polishListing = PrepareRequest(
+        "1.2.0",
+        5,
+        "Translated notes.",
+        ReleaseType.MANUAL,
+        screenshots = null,
+        description = "Translated description.",
+        locale = "pl",
+        keywords = "focus,pause",
+        supportUrl = "https://posato.app/pl/support/",
+        marketingUrl = "https://posato.app/pl/",
+        privacyPolicyUrl = "https://posato.app/pl/privacy/",
+    )
+
+    @Test
+    fun `prepares a first-time locale with keywords, links, name, and privacy policy without a subtitle`() {
+        val harness = StoreHarness(listingRoutes(StoreFixtures.localizations("New things."), list(englishInfo)))
+
+        val result = StorePreparation(harness.services).prepare(polishListing)
+
+        listOf("whatsNew", "description", "keywords", "supportUrl", "marketingUrl", "name", "privacyPolicyUrl").forEach { key ->
+            assertEquals("updated", result.text(key), key)
+        }
+        assertEquals(null, result.text("subtitle"))
+        assertEquals(
+            listOf("POST appStoreVersionLocalizations", "PATCH appStoreVersionLocalizations/PL", "POST appInfoLocalizations"),
+            harness.executor.writes.map { "${it.method} ${it.path}" },
+        )
+        val texts = harness.executor.write("PATCH appStoreVersionLocalizations/PL").data()["attributes"]!!.jsonObject
+        assertEquals("focus,pause", texts.text("keywords"))
+        assertEquals("https://posato.app/pl/support/", texts.text("supportUrl"))
+        assertEquals("https://posato.app/pl/", texts.text("marketingUrl"))
+        val info = harness.executor.write("POST appInfoLocalizations").data()
+        val infoAttributes = info["attributes"]!!.jsonObject
+        assertEquals(setOf("locale", "name", "privacyPolicyUrl"), infoAttributes.keys, "A missing subtitle is not sent as an empty one.")
+        assertEquals("Posato", infoAttributes.text("name"))
+        assertEquals("https://posato.app/pl/privacy/", infoAttributes.text("privacyPolicyUrl"))
+        assertEquals("NEXT", info["relationships"]!!.jsonObject["appInfo"]!!.jsonObject["data"]!!.jsonObject.text("id"))
+    }
+
+    @Test
+    fun `issues only reads when a prepared locale already matches`() {
+        val polishVersion = """{"id":"PL","attributes":{"locale":"pl","whatsNew":"Translated notes.","description":"Translated description.",""" +
+            """"keywords":"focus,pause","supportUrl":"https://posato.app/pl/support/","marketingUrl":"https://posato.app/pl/"}}"""
+        val polishInfo = """{"id":"INFO-PL","attributes":{"locale":"pl","name":"Posato","privacyPolicyUrl":"https://posato.app/pl/privacy/"}}"""
+        val harness = StoreHarness(listingRoutes(list(polishVersion), list(englishInfo, polishInfo)))
+
+        val result = StorePreparation(harness.services).prepare(polishListing)
+
+        assertTrue(harness.executor.writes.isEmpty())
+        listOf("whatsNew", "description", "keywords", "supportUrl", "marketingUrl", "privacyPolicyUrl").forEach { key ->
+            assertEquals("unchanged", result.text(key), key)
+        }
+        assertEquals(null, result.text("name"), "Only a created localization reports the name it was given.")
+    }
+
+    @Test
+    fun `changes only the privacy policy of an existing app information localization`() {
+        val polishVersion = """{"id":"PL","attributes":{"locale":"pl","whatsNew":"Translated notes.","description":"Translated description.",""" +
+            """"keywords":"focus,pause","supportUrl":"https://posato.app/pl/support/","marketingUrl":"https://posato.app/pl/"}}"""
+        val polishInfo = """{"id":"INFO-PL","attributes":{"locale":"pl","name":"Posato","subtitle":"Space",""" +
+            """"privacyPolicyUrl":"https://posato.app/privacy/"}}"""
+        val harness = StoreHarness(listingRoutes(list(polishVersion), list(englishInfo, polishInfo)))
+
+        val result = StorePreparation(harness.services).prepare(polishListing)
+
+        assertEquals(listOf("PATCH appInfoLocalizations/INFO-PL"), harness.executor.writes.map { "${it.method} ${it.path}" })
+        val attributes = harness.executor.write("PATCH appInfoLocalizations/INFO-PL").data()["attributes"]!!.jsonObject
+        assertEquals(setOf("privacyPolicyUrl"), attributes.keys)
+        assertEquals("https://posato.app/pl/privacy/", attributes.text("privacyPolicyUrl"))
+        assertEquals("updated", result.text("privacyPolicyUrl"))
+        assertEquals(null, result.text("name"))
+    }
+
+    @Test
+    fun `fills a blank name on an app information localization App Store Connect created without one`() {
+        val polishVersion = """{"id":"PL","attributes":{"locale":"pl","whatsNew":"Translated notes.","description":"Translated description.",""" +
+            """"keywords":"focus,pause","supportUrl":"https://posato.app/pl/support/","marketingUrl":"https://posato.app/pl/"}}"""
+        val blankName = """{"id":"INFO-PL","attributes":{"locale":"pl","privacyPolicyUrl":"https://posato.app/pl/privacy/"}}"""
+        val harness = StoreHarness(listingRoutes(list(polishVersion), list(englishInfo, blankName)))
+
+        val result = StorePreparation(harness.services).prepare(polishListing)
+
+        val attributes = harness.executor.write("PATCH appInfoLocalizations/INFO-PL").data()["attributes"]!!.jsonObject
+        assertEquals(setOf("name"), attributes.keys)
+        assertEquals("Posato", attributes.text("name"))
+        assertEquals("updated", result.text("name"))
+        assertEquals("unchanged", result.text("privacyPolicyUrl"))
     }
 
     @Test

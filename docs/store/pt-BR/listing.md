@@ -34,9 +34,9 @@ Windows.
 
 ## Keywords
 
-Draft, 86 characters, not uploaded. `store prepare` does not set keywords.
-
-foco,pausa,distrações,sites,apps,tempo de uso,concentração,intervalo,intenção,silêncio
+[keywords.txt](keywords.txt) holds the comma-separated keywords,
+86 of App Store Connect's 100 characters, for
+`store prepare --locale pt-BR --keywords`. Not uploaded yet.
 
 ## Screenshots
 

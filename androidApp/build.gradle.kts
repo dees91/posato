@@ -11,8 +11,8 @@ android {
         applicationId = "app.posato.android"
         minSdk = libs.versions.androidMinSdk.get().toInt()
         targetSdk = libs.versions.androidCompileSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.5.0"
+        versionCode = 2
+        versionName = "1.6.0"
     }
 
     compileOptions {

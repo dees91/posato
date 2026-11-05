@@ -3372,3 +3372,13 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: a set reopens on the tab it last showed, so `flow set
   --window` selects Websites first. It now also drives iOS through the row's
   swipe action, and `--website` combines with `--rename-from`.
+## [2026-11-04] tooling | First-time App Store localizations
+
+- `store prepare` now sets a locale's keywords (from `docs/store/<dir>/keywords.txt`),
+  support, marketing, and privacy policy URLs, and creates the App
+  Information localization with the name Posato even without a subtitle,
+  because a new localization starts empty instead of copying en-US.
+- `store status --version <v> --locale <code>...` reports what each locale
+  still lacks before `store submit`; the
+  [iOS App Store release](../development/apple-provisioning.md#ios-app-store-release)
+  lists the commands for all six store locales.

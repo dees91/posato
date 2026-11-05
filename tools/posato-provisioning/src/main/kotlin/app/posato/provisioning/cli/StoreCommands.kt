@@ -8,10 +8,12 @@ import app.posato.provisioning.store.StorePreparation
 import app.posato.provisioning.store.StoreStatus
 import app.posato.provisioning.store.StoreSubmission
 import app.posato.provisioning.store.StoreSubtitle
+import app.posato.provisioning.store.StoreUrl
 import app.posato.provisioning.store.StoreWithdrawal
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
@@ -31,13 +33,18 @@ class StoreStatusCommand :
     ProvisioningCommand(
         "status",
         "Reports the iOS app's App Store versions, its builds with the next free build number, and, for --version, the " +
-            "release type, attached build, en-US What's New, and screenshot delivery. Read-only.",
+            "release type, attached build, en-US What's New, screenshot delivery, and, for each localization and each " +
+            "--locale, the required listing fields it still lacks. Read-only.",
     ) {
     private val version by option("--version", help = "Also report this App Store version in detail, such as 1.2.0.")
+    private val locales by option(
+        "--locale",
+        help = "A locale the --version must hold, such as pl; repeat it for each. Reported even when the version lacks it.",
+    ).multiple()
 
     override fun execute(session: Session): JsonElement {
         val requested = version?.let(ReleaseInputs::version)
-        return StoreStatus(session.storeServices()).report(requested)
+        return StoreStatus(session.storeServices()).report(requested, locales.map(ReleaseInputs::locale))
     }
 }
 
@@ -49,8 +56,9 @@ class StorePrepareCommand :
     ProvisioningCommand(
         "prepare",
         "Creates the iOS App Store version when absent, sets its release type and What's New, attaches a VALID " +
-            "build, and optionally sets the description and subtitle and replaces the iPhone 6.9-inch and iPad 13-inch " +
-            "screenshot sets. --locale chooses the localization and defaults to en-US; a missing localization is created. " +
+            "build, and optionally sets the description, keywords, subtitle, and support, marketing, and privacy policy " +
+            "URLs and replaces the iPhone 6.9-inch and iPad 13-inch screenshot sets. --locale chooses the localization " +
+            "and defaults to en-US; a missing localization is created. " +
             "With --rename-from, renames the app's one unreleased version instead of creating one. Changes only what differs.",
     ) {
     private val version by option("--version", help = "The marketing version, such as 1.2.0.").required()
@@ -75,6 +83,16 @@ class StorePrepareCommand :
         "--subtitle",
         help = "The subtitle for --locale, at most 30 characters; it is set in the App Information this version can still change.",
     )
+    private val keywords by option(
+        "--keywords",
+        help = "A UTF-8 text file holding the comma-separated keywords for --locale, at most 100 characters.",
+    )
+    private val supportUrl by option("--support-url", help = "The support URL for --locale, such as https://posato.app/pl/support/.")
+    private val marketingUrl by option("--marketing-url", help = "The marketing URL for --locale, such as https://posato.app/pl/.")
+    private val privacyUrl by option(
+        "--privacy-url",
+        help = "The privacy policy URL for --locale, such as https://posato.app/pl/privacy/, set in the editable App Information.",
+    )
     private val renameFrom by option(
         "--rename-from",
         help = "When --version does not exist, rename this editable version to it, provided it is the only unreleased one.",
@@ -91,6 +109,10 @@ class StorePrepareCommand :
             renameFrom = renameFrom?.let(ReleaseInputs::version),
             subtitle = subtitle?.let(StoreSubtitle::input),
             locale = ReleaseInputs.locale(locale),
+            keywords = keywords?.let { file -> ReleaseInputs.keywords(Path.of(file)) },
+            supportUrl = supportUrl?.let { url -> StoreUrl.input(url, "--support-url") },
+            marketingUrl = marketingUrl?.let { url -> StoreUrl.input(url, "--marketing-url") },
+            privacyPolicyUrl = privacyUrl?.let { url -> StoreUrl.input(url, "--privacy-url") },
         )
         return StorePreparation(session.storeServices()).prepare(request)
     }

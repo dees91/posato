@@ -25,6 +25,18 @@ internal val EDITABLE_VERSION_STATES = setOf(
     "INVALID_BINARY",
 )
 
+/**
+ * The version states of a version that is out of release work: live, replaced by a later release, or removed from
+ * sale. Any other state, including one this tool does not know, counts as unreleased.
+ */
+internal val RELEASED_VERSION_STATES = setOf(
+    "READY_FOR_DISTRIBUTION",
+    "READY_FOR_SALE",
+    "REPLACED_WITH_NEW_VERSION",
+    "REMOVED_FROM_SALE",
+    "DEVELOPER_REMOVED_FROM_SALE",
+)
+
 /** The review submission states in which App Review holds a submission: queued or under review. */
 internal val SUBMITTED_STATES = setOf("WAITING_FOR_REVIEW", "IN_REVIEW")
 
