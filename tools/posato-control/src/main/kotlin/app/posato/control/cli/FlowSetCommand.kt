@@ -136,7 +136,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         back: Query,
     ) {
         if (websites.isEmpty()) return
-        val steps = openSet(back)
+        val steps = openSet(backend, back)
         steps += websiteSteps()
         steps += listOf(FlowSteps.tap(back), FlowSteps.screenshot("set-websites"))
         FlowSteps.run(backend, steps)
@@ -156,13 +156,21 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
 
     /**
      * Opens the set named --name on its Websites tab. A set opens on the tab it last showed, so a set left on Apps
-     * would show no website rows.
+     * would show no website rows. The row is tapped by its exact label, found with [setRowLabel], so "Deep Work" is
+     * never opened for --name Work.
      */
-    private fun openSet(back: Query): MutableList<Step> = mutableListOf(
-        FlowSteps.tap(Query(textContains = "$name, ", role = FlowSteps.ROLE_BUTTON)),
-        FlowSteps.waitFor(back),
-        FlowSteps.tap(Query(id = "websites_title")),
-    )
+    private fun openSet(
+        backend: Backend,
+        back: Query,
+    ): MutableList<Step> {
+        val row = setRowLabel(FlowSteps.labels(backend), name)
+            ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "Pause sets shows no set named $name.", "Check --name.")
+        return mutableListOf(
+            FlowSteps.tap(Query(text = row, role = FlowSteps.ROLE_BUTTON)),
+            FlowSteps.waitFor(back),
+            FlowSteps.tap(Query(id = "websites_title")),
+        )
+    }
 
     /** An existing set is only made default or given rules; nothing is created. */
     private fun editsOnly(rules: List<WindowRule>): Boolean = websites.isEmpty() && (makeDefault || rules.isNotEmpty())
@@ -174,7 +182,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         rules: List<WindowRule>,
         apple: Boolean,
     ) {
-        val steps = openSet(back)
+        val steps = openSet(backend, back)
         rules.forEach { rule ->
             // iOS has no row menu: a left swipe on the row shows Open briefly… as a swipe action. The row's own domain
             // text is matched exactly, since the row's label also holds captions such as "Also pauses www.<domain>".
@@ -254,9 +262,15 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         fun hasSetNamed(
             labels: List<String>,
             set: String,
-        ): Boolean {
+        ): Boolean = setRowLabel(labels, set) != null
+
+        /** The first row label that names [set], matched as in [hasSetNamed]. */
+        fun setRowLabel(
+            labels: List<String>,
+            set: String,
+        ): String? {
             val row = Regex("^${Regex.escape(set)}, (Default set, )?(Default, )?\\d+ websites?\\b")
-            return labels.any { label -> row.containsMatchIn(label) }
+            return labels.firstOrNull { label -> row.containsMatchIn(label) }
         }
 
         fun isDefault(
