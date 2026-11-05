@@ -74,7 +74,8 @@ If Posato helps you, star it on GitHub so others can find it.
   [GitHub Releases](https://github.com/dees91/posato/releases/latest) and
   open it. Approve the installer as an administrator once; it sets up the
   pausing service. Then open Posato from the Start menu and follow the first
-  run.
+  run. The packages are not signed yet, so Windows SmartScreen may
+  stop the installer: choose **More info**, then **Run anyway**.
 
 To update on Linux, Android, or Windows, install the newer package the same
 way.

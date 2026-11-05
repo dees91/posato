@@ -1,6 +1,6 @@
 # Datenschutzerklärung von Posato
 
-Gültig ab 4. November 2026.
+Gültig ab 5. November 2026.
 
 Posato sendet deine Pausensets, deine Website-Liste, deine App-Auswahl,
 Sitzungen, Zeitpläne oder Daten des Arbeitsbereichs nicht an seinen
