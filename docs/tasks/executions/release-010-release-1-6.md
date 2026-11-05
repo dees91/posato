@@ -101,6 +101,41 @@ brief's differences, which hold the details:
   delivery; `store status --version 1.6.0` with all six locales reports
   `localizationsComplete: true` and `PREPARE_FOR_SUBMISSION`.
 
+### Verification matrix (2026-11-04 and 05)
+
+Runs under `build/verification/runs/` of the clean clone of R. Every line ran
+on the release builds, except `ventura`'s candidate 9601 and the iPhone's
+build of R.
+
+| Target | Checks | Result |
+| --- | --- | --- |
+| `primary`, arm64 DMG | Gatekeeper, onboarding, update consent; manual pause (site and Safari); schedule start and end with the window closed; break; website window at both boundaries | pass |
+| `ventura`, Intel DMG and 9601 | Gatekeeper, Intel notice, nothing left after Quit; setup, pause, scheduled start | pass |
+| iPhone, R | core flow; break; a pause that ends while Posato is terminated shows as ended | pass; website window is a stated limit (`TARGETS-013` device evidence) |
+| Linux, arm64 `.deb` | onboarding; four lines per site, app ended, exact restore; `PauseClaims`; website window with Posato terminated; break; upgrade from 1.5.0 keeping a set, a site, and a schedule | pass |
+| Android, signed APK | upgrade from 1.5.0 keeping sets and a schedule; onboarding; pause; `PauseClaims`; break; website window (DNS samples); received pause ending while terminated | pass |
+| Windows, arm64 MSI | install, onboarding, pause with early end, uninstall; website window; break | pass |
+| Folder sync | Linux and Windows, Android and Windows, Android and `primary` | starts and ends cross; **defect 1** below |
+| `peer`, 1.5.2 | setup, schedule starts by itself | pass; the update runs after publication |
+
+The x64 MSI and the x86-64 `.deb` have only their workflow smoke tests.
+Windows' bundled runtime reads `JAVA_VERSION="21.0.13.0.2"`; the DMGs carry
+Temurin 21.0.12.1.
+
+**Defects found, holding the release:**
+
+1. A pause received through the folder sometimes shows "Restrictions need
+   attention" and is not enforced until Retry: Windows 3 of 13, Mac 1 of 2
+   (first pause after joining). Retry applies it at once.
+2. On Windows, End early on a schedule received from another device left the
+   local manual pause running, although the dialog says it ends any session
+   running now; with both pauses local, the same dialog ends both.
+
+Driver gaps met: host text recognition needs a HiDPI `ventura` display
+(`--display 960x600pt`); `vm prompt toggle` misses the switch on that
+display; Windows `flow schedule` picks the first set with a duplicate name;
+the Android `flow set` Save needs a tap.
+
 ## GitHub release notes for 1.6.0
 
 From the `DOCS-007` draft, with the unsigned-MSI lines (`user-confirmed` 2026-11-04).
