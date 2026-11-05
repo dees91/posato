@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 40 (2026-11-05: `RELEASE-010` adds the `SESSION-012` backlog row)
+- **Revision:** 41 (2026-11-05: adds the `ANDROID-003` backlog row for Google Play)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-11-05
@@ -297,6 +297,10 @@
   (`user-confirmed`, 2026-11-05): Posato 1.6.0 ships with two desktop
   defects that its verification found and that 1.5 already had, and a later
   row fixes them.
+  Revision 41 adds the `ANDROID-003` backlog row at the maintainer's request
+  (`user-confirmed`, 2026-11-05), once the Google Play organization developer
+  account was verified: one row adapts the Android app to Play's policies and
+  publishes it there.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -716,6 +720,7 @@ The idea numbers refer to the wiki idea queue.
 | `REDIRECT-001` | Decide whether Posato offers host redirect rules beside blocking. First settle the model: always-on rules in a separate setting, or redirects inside sessions and pause sets, with the UX of each compared so that blocking and redirecting stay clear. Then analyze the technical approach on macOS (proxy and browser presentation; for always-on rules also failure, sleep, VPN and proxy coexistence, and privacy outside sessions) and the feasibility on Linux, Windows, Android, and iOS. Settle host versus path rules, loop protection, and whether rules sync. End with a product decision, the proposed ADR 0004 and ADR 0005 revisions if needed, and a delivery plan. Preliminary. | Product discovery | Idea 59 | A product decision that redirects are in scope |
 | `HISTORY-002` | Deliver the calm history of scheduled pauses decided in `HISTORY-001`: a local, unsynchronized day record written when a day becomes final, a **History** disclosure below the Schedules list on every platform with ran-as-planned and ended-early days and no totals, **Clear history**, the `PRIVACY.md` text, and the `posato-control` read, as [the history decision](../product/history-decisions.md) plans. | Schedules | `HISTORY-001` (idea 47) | A release composition that takes it |
 | `PLATFORM-005` | Sign the Windows MSI packages and their launchers with an Authenticode identity, such as Azure Trusted Signing or a code-signing certificate, through the existing `POSATO_WINDOWS_SIGNING` step of `package-msi.ps1` for both architectures, then remove the SmartScreen steps and the Smart App Control limit from the install text, the limits, and the release notes in every language. | Release readiness | `RELEASE-010` | A signing identity the maintainer obtains |
+| `ANDROID-003` | Adapt Posato for Android to Google Play and publish it there, in one row. Replace all-files access (`MANAGE_EXTERNAL_STORAGE`) for the sync folder with a folder the user picks through the Storage Access Framework (a persistable tree URI behind the folder file system), with onboarding, `PRIVACY.md`, and `posato-control` updated; justify or drop `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, confirm that the exact-alarm use (`SCHEDULE_EXACT_ALARM`) meets Play's policy, confirm that `targetSdk` meets Play's minimum target API level, and show a prominent disclosure before the usage access and overlay grants. Build a release AAB with R8 and a `versionCode` scheme, enroll in Play App Signing with an upload key kept outside Git, and add a Play upload command through the Play Developer API, as the store commands do for App Store Connect. Complete the Play declarations (VpnService with a video, the `specialUse` foreground service), the Data safety form, the content rating, and the listing in the shipped languages, then release to production and update the limits page, the README, and `posato.app`, which say Android ships outside Google Play. | Platform coverage | Maintainer request; organization developer account verified 2026-11-05 | A release composition |
 | `SESSION-012` | Fix two desktop defects that `RELEASE-010` found and 1.5 already had, both from SQLite refusing a write at once while another connection commits (Android serializes its database work and is not affected): a pause received through the folder sometimes shows "Restrictions need attention" and is not enforced until **Retry** (the session intent and expiry reads also write, and `readDesiredLocked` turns a retryable halt into `APPLY_FAILED`); and **End early** on a scheduled pause can leave a running manual pause, because the manual and scheduled ends write in parallel and the end failure is silently replaced. Failing tests first, then the fix in shared code, verified by repeated received pauses on Windows, Linux, and the Mac, and repeated early ends. | Sessions and enforcement | `RELEASE-010` | The next release composition |
 
 ## Coverage matrix
