@@ -3,6 +3,7 @@ package app.posato.control.cli
 import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.model.Actions
 import app.posato.control.model.Query
 import app.posato.control.model.Step
 import com.github.ajalt.clikt.parameters.options.flag
@@ -18,11 +19,12 @@ import kotlinx.serialization.json.putJsonArray
 /**
  * Creates a pause set, or renames one with --rename-from, and with --make-default makes it the default, all from
  * Pause sets and its set menus. Renaming the unnamed first set uses its shown name, "My set". --window sets or
- * clears a website's window rule (TARGETS-013) through the website row's Open briefly… dialog.
+ * clears a website's window rule (TARGETS-013) through the website row's Open briefly… dialog. --website adds websites
+ * to the new set, or to the renamed one.
  */
 class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a pause set, and set its window rules.") {
     private val name by option("--name", help = "Set name; the new name with --rename-from.").required()
-    private val websites by option("--website", help = "A website to add to a new set; repeat for more.").multiple()
+    private val websites by option("--website", help = "A website to add to a new or renamed set; repeat for more.").multiple()
     private val renameFrom by option("--rename-from", help = "Rename the set shown with this name, such as \"My set\", to --name.")
     private val makeDefault by option("--make-default", help = "Make the set named --name the default.").flag()
     private val windows by option(
@@ -31,13 +33,10 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
     ).multiple()
 
     override fun execute(session: Session): JsonElement {
-        if (renameFrom != null && websites.isNotEmpty()) {
-            throw ControlException(ErrorCode.USAGE, "--website adds to a new set; it does not combine with --rename-from.")
-        }
         val backend = session.backend()
         // The iOS bar keeps the spoken "Back to Pause sets". Other hosts press the in-page Back by its catalog key.
         val apple = session.target().isApple
-        val rules = windowRules(apple)
+        val rules = windows.map(WindowRule::parse)
         val back = FlowControls.pauseSetsBack(apple)
         openList(backend, back)
         val labels = FlowSteps.labels(backend)
@@ -47,12 +46,13 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
             hasSetNamed(labels, name) && editsOnly(rules) -> Unit
             else -> create(backend, back, labels, apple)
         }
+        if (from != null) addToRenamed(backend, back)
         if (makeDefault && !isDefault(FlowSteps.labels(backend), name)) {
             FlowSteps.run(backend, listOf(FlowSteps.button(menuFor(name)), FlowSteps.button("Make default")))
             awaitList { labels -> isDefault(labels, name) }(backend, "Pause sets shows no default set named $name.")
         }
         if (rules.isNotEmpty()) {
-            setWindows(backend, back, rules)
+            setWindows(backend, back, rules, apple)
         }
         return buildJsonObject {
             put("name", name)
@@ -123,26 +123,53 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
             FlowControls.alertButton("action_save_short", "Save", apple),
             FlowSteps.waitFor(back),
         )
-        if (websites.isNotEmpty()) {
-            steps += FlowSteps.waitFor(Query(text = "Search", role = FlowSteps.ROLE_BUTTON))
-            steps += FlowSteps.typeInto(websites.joinToString(", "), submit = true)
-            steps += FlowControls.buttonId("sync_folder_code_done", optional = true, timeoutSeconds = SHORT_SECONDS)
-        }
+        steps += websiteSteps()
         steps += listOf(FlowSteps.tap(back), FlowSteps.screenshot("set-created"))
         FlowSteps.run(backend, steps)
         // The list redraws after Back; a screen read while it does shows the list before the save.
         awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name.")
     }
 
-    private fun windowRules(apple: Boolean): List<WindowRule> {
-        val rules = windows.map(WindowRule::parse)
-        if (rules.isNotEmpty() && apple) {
-            throw ControlException(
-                ErrorCode.USAGE,
-                "--window drives the website row's menu, which iOS shows as a swipe; it runs on desktop and Android.",
-            )
-        }
-        return rules
+    /** Opens the renamed set, adds --website, and returns to the list. */
+    private fun addToRenamed(
+        backend: Backend,
+        back: Query,
+    ) {
+        if (websites.isEmpty()) return
+        val steps = openSet(backend, back)
+        steps += websiteSteps()
+        steps += listOf(FlowSteps.tap(back), FlowSteps.screenshot("set-websites"))
+        FlowSteps.run(backend, steps)
+        awaitList { current -> hasSetNamed(current, name) }(backend, "Pause sets shows no set named $name after its websites.")
+    }
+
+    /** Types --website into the open set's entry field as one batch; nothing without --website. */
+    private fun websiteSteps(): List<Step> = if (websites.isEmpty()) {
+        emptyList()
+    } else {
+        listOf(
+            FlowSteps.waitFor(Query(text = "Search", role = FlowSteps.ROLE_BUTTON)),
+            FlowSteps.typeInto(websites.joinToString(", "), submit = true),
+            FlowControls.buttonId("sync_folder_code_done", optional = true, timeoutSeconds = SHORT_SECONDS),
+        )
+    }
+
+    /**
+     * Opens the set named --name on its Websites tab. A set opens on the tab it last showed, so a set left on Apps
+     * would show no website rows. The row is tapped by its exact label, found with [setRowLabel], so "Deep Work" is
+     * never opened for --name Work.
+     */
+    private fun openSet(
+        backend: Backend,
+        back: Query,
+    ): MutableList<Step> {
+        val row = setRowLabel(FlowSteps.labels(backend), name)
+            ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "Pause sets shows no set named $name.", "Check --name.")
+        return mutableListOf(
+            FlowSteps.tap(Query(text = row, role = FlowSteps.ROLE_BUTTON)),
+            FlowSteps.waitFor(back),
+            FlowSteps.tap(Query(id = "websites_title")),
+        )
     }
 
     /** An existing set is only made default or given rules; nothing is created. */
@@ -153,10 +180,17 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         backend: Backend,
         back: Query,
         rules: List<WindowRule>,
+        apple: Boolean,
     ) {
-        val steps = mutableListOf(FlowSteps.tap(Query(textContains = "$name, ", role = FlowSteps.ROLE_BUTTON)), FlowSteps.waitFor(back))
+        val steps = openSet(backend, back)
         rules.forEach { rule ->
-            steps += FlowSteps.tap(Query(text = "Actions for ${rule.website}", role = FlowSteps.ROLE_BUTTON))
+            // iOS has no row menu: a left swipe on the row shows Open briefly… as a swipe action. The row's own domain
+            // text is matched exactly, since the row's label also holds captions such as "Also pauses www.<domain>".
+            steps += if (apple) {
+                Step(action = Actions.SWIPE_LEFT, query = Query(text = rule.website, role = ROLE_TEXT))
+            } else {
+                FlowSteps.tap(Query(text = "Actions for ${rule.website}", role = FlowSteps.ROLE_BUTTON))
+            }
             steps += FlowControls.buttonId("targets_open_briefly")
             if (rule.period == null || rule.length == null) {
                 steps += FlowControls.buttonId("targets_window_clear")
@@ -214,6 +248,7 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
 
     private companion object {
         const val SHORT_SECONDS = 3.0
+        const val ROLE_TEXT = "text"
         const val LIST_SECONDS = 10L
         const val MILLIS_PER_SECOND = 1_000L
         const val POLL_MILLIS = 500L
@@ -227,9 +262,15 @@ class FlowSetCommand : ControlCommand("set", "Create, rename, or make default a 
         fun hasSetNamed(
             labels: List<String>,
             set: String,
-        ): Boolean {
+        ): Boolean = setRowLabel(labels, set) != null
+
+        /** The first row label that names [set], matched as in [hasSetNamed]. */
+        fun setRowLabel(
+            labels: List<String>,
+            set: String,
+        ): String? {
             val row = Regex("^${Regex.escape(set)}, (Default set, )?(Default, )?\\d+ websites?\\b")
-            return labels.any { label -> row.containsMatchIn(label) }
+            return labels.firstOrNull { label -> row.containsMatchIn(label) }
         }
 
         fun isDefault(

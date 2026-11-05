@@ -35,8 +35,8 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   start a pause on a set the file lacks with `flow session`, then replace.
   A file sealed with another round count does not open by design.
 
-- Website windows (`TARGETS-013`, desktop, Linux, Windows, and Android; iOS
-  later): `flow set --name Work --website window.example --website
+- Website windows (`TARGETS-013`, every target; the session recipe below is
+  for the desktop): `flow set --name Work --website window.example --website
   blocked.example --window window.example=30/5` creates the set and sets the rule through the row's
   **Open briefly…** dialog, waiting for the row caption "Opens every 30 min
   for 5 min"; `--window window.example=off` presses **Don't open**. Then
@@ -73,10 +73,10 @@ device; a set's row opens that set's Websites and Apps. The first set shows as
   and probe the unruled control on its own instants away from the boundary
   and the b+20 s fallback (for example b-75, -52, -22, +10, +37, +67,
   +97 s), never right after a window probe at b-3 s. A probe still `none`
-  after its retry makes the run insufficient; rerun it. On iOS `flow set --window` still refuses;
-  set the rule with a scenario: `swipeLeft` on the website row,
-  **Open briefly…**, `targets_window_period_30`, `targets_window_length_5`,
-  `action_save_short`.
+  after its retry makes the run insufficient; rerun it. Set the rule with
+  `flow set -t device --name Work --window window.example=30/5`, which
+  swipes the website row left and presses **Open briefly…** (verified on
+  the Simulator; the first run on the iPhone confirms it there).
 - Window enforcement on Linux, Windows, and Android (`TARGETS-013` phase 4):
   each enforcer follows the plans of the last apply on its own clock, so
   terminate Posato (`terminate -t linux|windows`) after the pause starts and
