@@ -3372,6 +3372,7 @@ first removal attempt that does not finish, not to a paused keychain.
 - `observed`: a set reopens on the tab it last showed, so `flow set
   --window` selects Websites first. It now also drives iOS through the row's
   swipe action, and `--website` combines with `--rename-from`.
+
 ## [2026-11-04] tooling | First-time App Store localizations
 
 - `store prepare` now sets a locale's keywords (from `docs/store/<dir>/keywords.txt`),
