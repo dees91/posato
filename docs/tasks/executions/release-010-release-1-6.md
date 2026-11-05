@@ -122,7 +122,7 @@ The x64 MSI and the x86-64 `.deb` have only their workflow smoke tests.
 Windows' bundled runtime reads `JAVA_VERSION="21.0.13.0.2"`; the DMGs carry
 Temurin 21.0.12.1.
 
-**Defects found, holding the release:**
+**Defects found:**
 
 1. A pause received through the folder sometimes shows "Restrictions need
    attention" and is not enforced until Retry: Windows 3 of 13, Mac 1 of 2
@@ -130,6 +130,18 @@ Temurin 21.0.12.1.
 2. On Windows, End early on a schedule received from another device left the
    local manual pause running, although the dialog says it ends any session
    running now; with both pauses local, the same dialog ends both.
+
+Both came with 1.5 (code at `v1.3.0` to R is the same) and affect only the
+desktop builds. The likely cause, from code reading (not shown in a log):
+SQLite refuses a write at once while another connection commits. The session
+intent and expiry reads also write, and `readDesiredLocked` turns that
+retryable halt into `APPLY_FAILED`; the manual and scheduled early ends write
+in parallel, and `END_FAILED` is replaced on the next status. Android
+serializes its database work.
+
+Decided 2026-11-05 (`user-confirmed`): publish 1.6.0 with both as known
+issues in the GitHub release notes; the `SESSION-012` backlog row (roadmap
+revision 40) fixes them.
 
 Driver gaps met: host text recognition needs a HiDPI `ventura` display
 (`--display 960x600pt`); `vm prompt toggle` misses the switch on that
@@ -154,6 +166,11 @@ From the `DOCS-007` draft, with the unsigned-MSI lines (`user-confirmed` 2026-11
 > ## Fixes
 >
 > - The last onboarding step on Linux and Android names that device's own setup instead of the Mac's.
+>
+> ## Known issues
+>
+> - On a Mac, Linux, or Windows computer, a pause that arrives from another device can now and then show "Restrictions need attention" without taking effect. Choose **Retry** on Session to apply it.
+> - On those computers, **End early** during a scheduled pause can now and then leave a manual pause running. End it again on Session.
 >
 > ## Installing
 >

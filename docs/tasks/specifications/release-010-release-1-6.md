@@ -138,3 +138,6 @@ Follow `releasing.md`. Differences for 1.6.0:
 
 - Decided 2026-11-04 (`user-confirmed`): unsigned MSI packages, the reduced
   matrix, and publication by the agent.
+- Decided 2026-11-05 (`user-confirmed`): the two desktop defects that the
+  matrix found, both already in 1.5, ship as known issues in the release
+  notes instead of holding the release; `SESSION-012` fixes them.
