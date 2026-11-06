@@ -177,3 +177,19 @@ set is absent. Checked 2026-09-14 against Apple's
 
 Screenshots are release artwork, explicitly tracked by this task. Verification
 captures, logs, and identifiers remain under ignored `build/verification/`.
+
+## Google Play phone screenshots
+
+`ANDROID-003` captured `<locale>/play/phone/01-websites.png`,
+`02-session-duration.png`, `03-schedules.png`, and `04-active-pause.png` for
+each shipped locale on 2026-11-06 on Posato's own Android emulator (1080 x
+2400) with a debug build, light appearance (`cmd uimode night no`), and the
+local-only state of the App Store set: the pause set (named from
+`capture.json`, unnamed in Polish) with `example.com`, `news.example`,
+`social.example`, and `video.example` and the apps Clock and Photos, and the
+schedule from `capture.json` for 09:00-12:00 on weekdays. The language comes
+from `cmd locale set-app-locales app.posato.android --locales <tag>`. The
+fourth screen is a 45-minute pause just after it started. Cropping to Play's
+2:1 limit would cut the navigation bar, so each capture is scaled to 2160
+pixels high and padded on both sides with the light surface `#F4F3EB` to
+1080 x 2160, saved as an RGB PNG without alpha.
