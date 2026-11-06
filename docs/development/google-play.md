@@ -156,8 +156,11 @@ the pull request).
 - **Privacy policy:** `https://posato.app/privacy`.
 - **Ads:** no ads. **App access:** every function works without an account
   or login, so no credentials are given to reviewers.
-- **Target audience:** 18 and over; not designed for children.
-- **Content rating (IARC):** a utility or productivity app with no violence,
+- **Target audience:** 13-15, 16-17, and 18 and over, matching the App
+  Store's 4+ rating outside the Kids category; no group under 13, which
+  would bring the Families policy (`user-confirmed`, 2026-11-06).
+- **Content rating (IARC):** the lowest rating, as the App Store's 4+: a
+  utility or productivity app with no violence,
   sexual content, profanity, drugs, gambling, user-generated content,
   sharing of location, or purchases.
 - **News, health, financial features, government:** none.
