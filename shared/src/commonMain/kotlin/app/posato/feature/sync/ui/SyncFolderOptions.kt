@@ -75,7 +75,9 @@ internal fun FolderOptions(
     removing: Boolean,
     onRemove: () -> Unit,
 ) {
-    folderMessage(snapshot, folder, state.checking, removing)?.let { message ->
+    val lost by state.folderLost.collectAsState()
+    // A folder to choose again explains itself; the generic action-required sentence would point at removal instead.
+    folderMessage(snapshot, folder, state.checking, removing).takeUnless { lost && snapshot.linked && !removing }?.let { message ->
         PosatoCaption(stringResource(message), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
     if (removing) {
