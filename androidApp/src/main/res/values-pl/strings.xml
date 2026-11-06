@@ -11,7 +11,7 @@
     <string name="disclosure_continue">Dalej</string>
     <string name="disclosure_not_now">Nie teraz</string>
     <string name="disclosure_usage_title">Dostęp do użycia</string>
-    <string name="disclosure_usage_body">Podczas pauzy Posato sprawdza, która aplikacja jest otwarta, aby zasłonić aplikację wybraną przez Ciebie. Odczytuje tylko aplikację na pierwszym planie, tylko na tym telefonie, i nigdzie tego nie wysyła. Za chwilę Android otworzy ustawienie dostępu do użycia: włącz tam Posato.</string>
+    <string name="disclosure_usage_body">Podczas pauzy Posato sprawdza, która aplikacja jest otwarta, aby zasłonić aplikację wybraną przez Ciebie. Zachowuje tylko aplikację na pierwszym planie, w pamięci, tylko na tym telefonie, i nigdzie tego nie wysyła. Za chwilę Android otworzy ustawienie dostępu do użycia: włącz tam Posato.</string>
     <string name="disclosure_overlay_title">Wyświetlanie nad innymi aplikacjami</string>
     <string name="disclosure_overlay_body">Podczas pauzy Posato pokazuje swój ekran pauzy nad aplikacją wybraną przez Ciebie, dopóki jej nie opuścisz. Nad innymi aplikacjami nie pokazuje niczego innego. Za chwilę Android otworzy ustawienie wyświetlania nad innymi aplikacjami: włącz tam Posato.</string>
 </resources>

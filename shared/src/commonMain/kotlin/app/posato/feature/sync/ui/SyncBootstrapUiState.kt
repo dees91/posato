@@ -101,14 +101,14 @@ internal class SyncBootstrapUiState(
     }
 
     /**
-     * A folder from the system picker. While the stored folder cannot be opened, the pick must be that same folder;
-     * once it opens, the workspace syncs at once.
+     * A folder from the system picker. While a linked workspace's folder cannot be opened, the pick must be that same
+     * folder, and once it opens the workspace syncs at once; without a workspace any folder may replace it.
      */
     fun browseFolder() {
         if (running) return
         scope.launch {
             val picked = folderControls.browse() ?: return@launch
-            if (!folderLost.value) {
+            if (!folderLost.value || !syncState.value.linked) {
                 chooseFolder(picked)
                 return@launch
             }

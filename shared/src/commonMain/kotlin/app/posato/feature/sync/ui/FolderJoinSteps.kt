@@ -16,6 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,11 +79,14 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun FolderJoinStepsView(
     state: SyncBootstrapUiState,
-    folder: String?,
+    storedFolder: String?,
     running: Boolean,
 ) {
     val joining = state.joining
     val code = joining.pendingCode
+    // A stored folder this device can no longer open, such as one Posato 1.6.0 for Android chose, is chosen again.
+    val lost by state.folderLost.collectAsState()
+    val folder = storedFolder.takeUnless { lost }
     val steps = folderJoinSteps(folder, joining.folderContents, code, joining.error)
     JoinEffects(state, folder, code, steps)
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {

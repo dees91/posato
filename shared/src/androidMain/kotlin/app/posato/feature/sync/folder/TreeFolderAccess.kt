@@ -63,12 +63,19 @@ internal class TreeFolderAccess(
         return displayName(DocumentsContract.buildDocumentUriUsingTree(tree, document)) ?: document.substringAfterLast(':').substringAfterLast('/')
     }
 
-    /** Takes the persistable grant of the picked tree and gives back the one held before, so only one folder is open. */
+    /**
+     * Takes the persistable grant of the picked tree and gives back the one held before, so only one folder is open; a
+     * folder Posato cannot create files in is refused, as a path it cannot write to is on other hosts.
+     */
     override fun accept(choice: String): String? {
         val tree = choice.treeUriOrNull() ?: return null
         try {
             resolver.takePersistableUriPermission(tree, READ_WRITE)
         } catch (_: SecurityException) {
+            return null
+        }
+        if (!createsFiles(tree)) {
+            releaseQuietly(tree)
             return null
         }
         resolver.persistedUriPermissions
@@ -79,6 +86,22 @@ internal class TreeFolderAccess(
 
     private fun granted(tree: Uri): Boolean {
         return resolver.persistedUriPermissions.any { it.uri == tree && it.isReadPermission && it.isWritePermission }
+    }
+
+    private fun createsFiles(tree: Uri): Boolean {
+        val root = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        val columns = arrayOf(DocumentsContract.Document.COLUMN_MIME_TYPE, DocumentsContract.Document.COLUMN_FLAGS)
+        return try {
+            resolver.query(root, columns, null, null, null)?.use { cursor ->
+                cursor.moveToFirst() &&
+                    cursor.getString(0) == DocumentsContract.Document.MIME_TYPE_DIR &&
+                    cursor.getInt(1) and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE != 0
+            } == true
+        } catch (_: SecurityException) {
+            false
+        } catch (_: IllegalArgumentException) {
+            false
+        }
     }
 
     private fun displayName(document: Uri): String? {

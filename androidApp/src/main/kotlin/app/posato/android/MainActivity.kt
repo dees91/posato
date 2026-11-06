@@ -116,14 +116,18 @@ class MainActivity : ComponentActivity() {
         val answer = CompletableDeferred<Boolean>()
         val night = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val theme = if (night) android.R.style.Theme_DeviceDefault_Dialog_Alert else android.R.style.Theme_DeviceDefault_Light_Dialog_Alert
-        AlertDialog.Builder(this, theme)
+        val dialog = AlertDialog.Builder(this, theme)
             .setTitle(title)
             .setMessage(body)
             .setPositiveButton(R.string.disclosure_continue) { _, _ -> answer.complete(true) }
             .setNegativeButton(R.string.disclosure_not_now) { _, _ -> answer.complete(false) }
             .setOnCancelListener { answer.complete(false) }
             .show()
-        return answer.await()
+        return try {
+            answer.await()
+        } finally {
+            if (dialog.isShowing) dialog.dismiss()
+        }
     }
 
     suspend fun requestNotifications() {
