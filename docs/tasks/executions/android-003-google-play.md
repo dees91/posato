@@ -65,6 +65,12 @@
 - Decisions (`agent-delegated`): drop the battery exemption on the Doze
   evidence; declare forwarded name lookups as ephemeral web browsing data
   in Data safety; the Play title "Posato: pause apps and sites".
+- Production: build 3 (`1060103`) of the merged main commit `5dae191f` went
+  to the internal track through `play upload`, passed the smoke test
+  installed from Play on the Galaxy (`a003-prod-candidate`), and was sent to
+  production review on 2026-11-06. The closeout pull request names Google
+  Play on `posato.app`, the README, and the limits page, and merges once
+  1.6.1 is live.
 
 ## Completed-change review
 

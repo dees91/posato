@@ -12,19 +12,21 @@ verbatim from the root README as accepted in `RELEASE-001`; `RELEASE-002` and
 summary and links here. `DOCS-006` added the Linux, Android, and folder sync
 limits accepted with [ADR 0010](../decisions/0010-linux-android-and-folder-workspace.md)
 for 1.5, and `DOCS-007` the Windows limits drafted in `PLATFORM-002` and
-confirmed by the maintainer on 2026-11-04, for 1.6. The Planned platforms
-section records the maintainer's 2026-09-16 direction for later releases.
+confirmed by the maintainer on 2026-11-04, for 1.6. `ANDROID-003` added
+Google Play to Availability and updated the Android limits for 1.6.1. The
+Planned platforms section records the maintainer's 2026-09-16 direction for
+later releases.
 
 ## Availability
 
-Posato 1.6 for Mac is available from GitHub Releases, as `Posato-1.6.0.dmg` for Apple silicon and `Posato-1.6.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato for Linux, Android, and Windows is available from GitHub Releases: `posato_1.6.0_arm64.deb` and `posato_1.6.0_amd64.deb` for Ubuntu, `Posato-1.6.0.apk` for Android, and, new in 1.6, `Posato-1.6.0-x64.msi` and `Posato-1.6.0-arm64.msi` for Windows 11.
+Posato 1.6 for Mac is available from GitHub Releases, as `Posato-1.6.0.dmg` for Apple silicon and `Posato-1.6.0-intel.dmg` for Intel Macs, and Posato for iPhone from the App Store. Posato 1.6.1 for Android is available from Google Play; a phone without Google Play can install `Posato-1.6.0.apk` from GitHub Releases. Posato for Linux and Windows is available from GitHub Releases: `posato_1.6.0_arm64.deb` and `posato_1.6.0_amd64.deb` for Ubuntu and, new in 1.6, `Posato-1.6.0-x64.msi` and `Posato-1.6.0-arm64.msi` for Windows 11.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
 | macOS | Signed and notarized download (Developer ID) | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 | iOS | App Store | [App Store](https://apps.apple.com/app/posato/id6812237585) |
 | Linux | `.deb` package for arm64 and x86-64 | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
-| Android | Signed APK, installed from outside Google Play | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
+| Android | Google Play, and a signed APK for phones without Google Play | [Google Play](https://play.google.com/store/apps/details?id=app.posato.android), [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 | Windows | MSI package for x64 and arm64 | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 
 Posato for Mac is a signed and notarized download from GitHub Releases.
@@ -35,9 +37,10 @@ Posato 1.0 to the first version with updates, download the new DMG, quit
 Posato, replace the application, and open it again. Manual downloads remain
 available if an in-app update cannot complete.
 
-Posato for Linux, Android, and Windows does not check for updates. To
-update, download the new package from GitHub Releases and install it over
-the old one, the same way as the first time.
+Posato for Android installed from Google Play updates there. Posato for
+Linux and Windows, and the Android APK from GitHub Releases, do not check for
+updates. To update, download the new package from GitHub Releases and install
+it over the old one, the same way as the first time.
 
 The release verdict is recorded in the
 [1.1 release record](../tasks/executions/release-003-release-1-1.md).
@@ -132,8 +135,10 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On Android, a paused app is covered by a block screen; it can be visible
   for up to about a second before the screen appears. The launcher, Settings,
   the phone app, and Posato cannot be paused. Posato needs usage access,
-  display over other apps, notifications, exact alarms, and to be excluded
-  from battery optimization; without them, blocking or schedules may not run.
+  display over other apps, notifications, and exact alarms; without them,
+  blocking or schedules may not run. From 1.6.1 it no longer needs to be
+  excluded from battery optimization; the 1.6.0 APK from GitHub Releases
+  still does.
 - A website that opens briefly during a pause (release 1.6) follows each
   device's own clock and time zone, so devices in different time zones open
   it at different moments. When its window ends, new page loads are
@@ -185,7 +190,10 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   Android Keystore.
 - On Android, the folder must be a local folder that another app keeps in
   sync, such as Syncthing; most cloud storage apps for Android do not keep a
-  local folder in sync. On iPhone, Posato syncs the folder when you open it.
+  local folder in sync. From 1.6.1 you choose it in Android's folder picker,
+  and Posato can access only that folder; after an update from 1.6.0, Posato
+  asks you to choose it again. On iPhone, Posato syncs the folder when you
+  open it.
 - An exported `.posato` file holds pause set names, websites and their
   rules for opening briefly, the default set, and schedules, never app
   choices. Without a code, anyone who gets the
