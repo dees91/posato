@@ -3397,3 +3397,13 @@ first removal attempt that does not finish, not to a paused keychain.
   App Signing holding the existing release key, a separate upload key, and
   `posato-provisioning play` commands
   ([Google Play publishing](../development/google-play.md)).
+
+## [2026-11-06] tooling | Play upload deadline scales with size
+
+- `observed`: the first `play upload` of the 1.6.1 production candidate
+  (6.4 MB bundle, 63.6 MB R8 mapping) stopped with `PLAY_UNREACHABLE`; the
+  rerun succeeded. `inferred`: the mapping outlasted the fixed ten-minute
+  upload deadline.
+- Uploads now get ten minutes plus the time a 512 kbit/s uplink needs for
+  their bytes; other requests keep 60 seconds
+  ([Google Play publishing](../development/google-play.md)).
