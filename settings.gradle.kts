@@ -12,6 +12,18 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    // The R8 bundled with the Android Gradle plugin cannot read Kotlin 2.4 metadata; the release build pins a
+    // newer one (https://developer.android.com/build/kotlin-support).
+    buildscript {
+        repositories {
+            google {
+                content { includeGroup("com.android.tools") }
+            }
+        }
+        dependencies {
+            classpath("com.android.tools:r8:9.5.29")
+        }
+    }
 }
 
 plugins {
