@@ -20,6 +20,11 @@ import app.posato.provisioning.core.Transcript
 import app.posato.provisioning.core.UserPaths
 import app.posato.provisioning.local.KeychainReader
 import app.posato.provisioning.local.LocalDeviceReader
+import app.posato.provisioning.play.AccessTokenSource
+import app.posato.provisioning.play.JdkPlayTransport
+import app.posato.provisioning.play.PlayClient
+import app.posato.provisioning.play.PlayHttp
+import app.posato.provisioning.play.ServiceAccountKey
 import app.posato.provisioning.store.ScreenshotReplacement
 import app.posato.provisioning.store.StoreServices
 import java.nio.file.Path
@@ -80,6 +85,19 @@ class Session(
             pause = sleeper,
             appInfo = AppInfoClient(http),
         )
+    }
+
+    /**
+     * The Google Play client. The service account's address and key id are registered as secrets the moment the key
+     * is read, so no later message or transcript line can carry them.
+     */
+    fun playClient(): PlayClient {
+        val keyPath = Path.of(configuration.require(ConfigurationKey.PLAY_SERVICE_ACCOUNT_KEY_PATH, "Signing in to the Google Play Developer API"))
+        val key = ServiceAccountKey.read(keyPath)
+        redaction.register(key.clientEmail)
+        redaction.register(key.privateKeyId)
+        val transport = JdkPlayTransport()
+        return PlayClient(PlayHttp(AccessTokenSource(key, transport, clock, transcript), transport, clock, sleeper, transcript))
     }
 
     private fun ascHttp(): AscHttp {
