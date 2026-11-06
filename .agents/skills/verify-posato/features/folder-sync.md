@@ -35,7 +35,8 @@ attention instead of creating it again.
   under "Or sync through a folder instead of iCloud."). Unlinked, it shows
   two numbered steps that can be done in either order: step 1, the
   **Folder path** field or **Choose folder…**, then **Use this folder** (a
-  chosen folder becomes a chip with **Change**); step 2, in an empty folder
+  chosen folder becomes a chip with **Change**; Android and iOS offer only
+  **Choose folder…**); step 2, in an empty folder
   **Create workspace**, in a folder with a workspace the scan hint (phones)
   and **Pairing code** with **Join**. A scanned link marks step 2 "Pairing
   code received"; the device joins by itself once both steps are done and
@@ -63,7 +64,22 @@ outlives the command that started it, and never start a second one.
 - **Linux or Android joins:** the same flows with `-t linux` or `-t
   android`: `flow folder link --path /mnt/shared/posato-sync` (Linux) or
   `--path /sdcard/PosatoSync` (Android) returns `waitingForCode`, then `flow
-  folder join --code <code>` returns `linked`.
+  folder join --code <code>` returns `linked`. Android has no typed path:
+  the flow presses **Choose folder…** and picks `--path` in the system
+  folder picker (DocumentsUI) from the top of the phone's storage, then
+  **Use this folder** and **Allow**. Posato reads the folder through that
+  grant, with all-files access denied (`adb shell appops set
+  app.posato.android MANAGE_EXTERNAL_STORAGE deny`).
+- **Android folder from 1.6.0:** a stored path (Posato 1.6.0 stored
+  `/storage/emulated/0/PosatoSync`) cannot be opened any more, so a linked
+  device shows **Choose the folder again** instead of **Add a device**;
+  `flow folder link -t android --path /sdcard/PosatoSync` presses it and
+  picks the folder. Proof: `outcome` is `linked` and `run-as
+  app.posato.android cat files/sync/sync-folder` prints the tree URI. A
+  different folder is refused with "That is a different folder." To set up
+  the stored path on a debug build, `adb push` a file holding the path and
+  `run-as app.posato.android cp` it over `files/sync/sync-folder` while
+  Posato is stopped.
 - **Exchange:** create a set with `flow set` on a Mac or start a pause on
   Android; proof is the other device's enforcement (`/etc/hosts` on Linux,
   the DNS answer on Android, `observe` on a Mac) within two minutes.
@@ -97,6 +113,13 @@ outlives the command that started it, and never start a second one.
   that create at the same moment before their folders synchronize diverge.
 - A device that once chose another folder shows the folder chip's
   **Change**; `flow folder link` presses it so no earlier choice carries over.
+- The Android picker opens where it was used last, and Android's own
+  folders (the storage root, `Download`, `Android`) cannot be picked; keep
+  the folder one level under the storage root, such as `/sdcard/PosatoSync`.
+- When a provider finds a name taken, it creates or renames to `name (1)`
+  (ExternalStorageProvider, `observed` 2026-11-06 with a folder created in
+  Files). Posato deletes such a copy and treats the name as taken, so a
+  `(1)` file or folder left in `Posato/` points at a bug.
 - Until the offer reaches the joining device's folder, the app waits and
   checks again by itself (for up to 10 minutes, then "No offer for this
   code"); `flow folder join` only waits.

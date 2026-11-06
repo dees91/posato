@@ -346,25 +346,15 @@ private class AndroidTransferFiles(
      */
     private fun openDocuments(backend: Backend) {
         if (FlowSteps.labels(backend).contains(IN_DOCUMENTS)) return
-        val phone = device.shell("settings get global device_name").stdout.trim()
-        val crumb = Query(id = BREADCRUMB, text = phone)
-        val steps = if (FlowSteps.nodes(backend).any { node -> node.id == BREADCRUMB && node.label == phone }) {
-            listOf(FlowSteps.tap(crumb))
-        } else {
-            listOf(FlowSteps.tap(Query(text = "Show roots")), FlowSteps.tap(Query(text = phone)))
-        }
-        FlowSteps.run(
-            backend,
-            steps + listOf(FlowSteps.tap(Query(id = FOLDER, text = "Documents")), FlowSteps.waitFor(Query(text = IN_DOCUMENTS))),
-        )
+        val picker = AndroidDocumentsUi(device)
+        picker.openPhoneStorage(backend)
+        picker.openFolder(backend, "Documents")
     }
 
     private companion object {
         const val DOCUMENTS = "/sdcard/Documents"
         const val IN_DOCUMENTS = "Files in Documents"
-        const val BREADCRUMB = "com.google.android.documentsui:id/breadcrumb_text"
-        const val HEADER = "com.google.android.documentsui:id/header_title"
-        const val FOLDER = "com.google.android.documentsui:id/item_root"
+        const val HEADER = AndroidDocumentsUi.HEADER
         const val SAVE_BUTTON = "android:id/button1"
         const val WRITE_WAIT_NANOS = 10_000_000_000L
         const val POLL_MILLIS = 250L

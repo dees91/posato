@@ -1,8 +1,10 @@
 package app.posato.control.cli
 
+import app.posato.control.android.AndroidDevice
 import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import app.posato.control.model.Query
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
@@ -22,7 +24,7 @@ import kotlinx.serialization.json.put
  */
 class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, show or enter a pairing code, or remove the workspace.") {
     private val action by argument(help = "link | offer | done | join | remove").choice(LINK, OFFER, DONE_ACTION, JOIN, REMOVE)
-    private val path by option("--path", help = "The folder to type and link (link); omit it to keep a picker's folder.")
+    private val path by option("--path", help = "The folder to type, or on Android to pick, and link (link); omit it to keep a chosen folder.")
     private val code by option("--code", help = "The pairing code from another device (join).")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(DEFAULT_TIMEOUT_SECONDS)
 
@@ -35,7 +37,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         }
         FolderSection(backend).expand()
         return when (action) {
-            LINK -> link(backend, path, deadline)
+            LINK -> if (session.target() == Target.ANDROID) linkWithPicker(session, backend, path, deadline) else link(backend, path, deadline)
             OFFER -> offer(backend)
             JOIN -> join(backend, requireOption(code, "--code"), deadline)
             else -> remove(backend, deadline)
@@ -64,6 +66,38 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
                 ),
             )
         }
+        return awaitLink(backend, deadline)
+    }
+
+    /**
+     * Android has no typed path: `--path` is picked in the system folder picker after **Choose folder…** (pressing
+     * the chip's **Change** first), or after **Choose the folder again** when a linked workspace's folder needs a
+     * new grant, such as one Posato 1.6.0 stored as a path.
+     */
+    private fun linkWithPicker(
+        session: Session,
+        backend: Backend,
+        folder: String?,
+        deadline: Long,
+    ): JsonElement {
+        if (folder != null) {
+            val picker = AndroidDocumentsUi(AndroidDevice(session.context, session.options.udid))
+            val section = FolderSection(backend)
+            val opener = if (section.shows(CHOOSE_AGAIN)) CHOOSE_AGAIN else BROWSE
+            if (opener == BROWSE && section.shows(CHANGE)) {
+                FlowSteps.run(backend, listOf(FlowSteps.reveal(button(CHANGE)), FlowSteps.tap(button(CHANGE))))
+            }
+            FlowSteps.run(backend, listOf(FlowSteps.reveal(button(opener)), FlowSteps.tap(button(opener))))
+            picker.pickFolder(backend, folder)
+        }
+        // The picker's own steps do not count against the wait for the app's outcome.
+        return awaitLink(backend, maxOf(deadline, System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND))
+    }
+
+    private fun awaitLink(
+        backend: Backend,
+        deadline: Long,
+    ): JsonElement {
         // The section reads what the folder holds: an empty one offers Create workspace, one with a workspace the code.
         var created = false
         val outcome = waitFor(backend, deadline, "link", listOf(ADD_DEVICE, CREATE, JOIN_LABEL)) { labels ->
@@ -206,6 +240,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val REMOVED_COPY = "This folder holds a copy of a workspace you removed"
         const val CHANGE = "Change"
         const val BROWSE = "Choose folder…"
+        const val CHOOSE_AGAIN = "Choose the folder again"
         const val ADD_DEVICE = "Add a device"
         const val JOIN_LABEL = "Join"
         const val DONE = "Done"
@@ -226,7 +261,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
         const val MILLIS_PER_SECOND = 1_000L
         const val DEFAULT_TIMEOUT_SECONDS = 180L
         val CODE_PATTERN = Regex("(?:[A-Z2-7]{3} ){8}[A-Z2-7]{3}")
-        val ACTIONS = setOf(USE_FOLDER, BROWSE, CREATE, CHANGE, ADD_DEVICE, JOIN_LABEL, REMOVE_WORKSPACE, "Sync with iCloud", "Sync now")
+        val ACTIONS = UNLINKED + setOf(CHOOSE_AGAIN, ADD_DEVICE, JOIN_LABEL, REMOVE_WORKSPACE, "Sync with iCloud", "Sync now")
 
         /** Visible English labels the section still reads, and the catalog keys of the buttons behind them. */
         private val CONTROL_IDS = mapOf(
@@ -234,6 +269,7 @@ class FlowFolderCommand : ControlCommand("folder", "Link a folder workspace, sho
             CREATE to "sync_folder_create",
             CHANGE to "sync_folder_change_short",
             BROWSE to "sync_folder_browse",
+            CHOOSE_AGAIN to "sync_folder_choose_again",
             ADD_DEVICE to "sync_folder_add_device",
             JOIN_LABEL to "sync_folder_join",
             DONE to "sync_folder_code_done",
