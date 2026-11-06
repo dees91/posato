@@ -19,6 +19,7 @@ import windowsActive from "../../../../video/public/windows-active-45.png";
 
 const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
+const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.android";
 ---
 
 <Base description="Posato bloquea los sitios web y las apps que elijas durante una pausa con tiempo en tu Mac, iPhone, ordenador con Windows o Linux o teléfono Android, ahora mismo o con un horario. Sin cuenta de Posato, sin analítica y sin servidores gestionados por Posato.">
@@ -36,9 +37,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Descargar Posato para Mac" /></a>
         <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Descargar Posato en el App Store" /></a>
         <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Descargar Posato para Linux" /></a>
-        <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Descargar Posato para Android" /></a>
+        <a href={googlePlay}><img src="/badges/get-it-on-google-play-es.svg" width="189" height="56" alt="Descargar Posato en Google Play" /></a>
         <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Descargar Posato para Windows" /></a>
       </p>
+      <p class="platforms">En un teléfono Android sin Google Play, instala el <a href={releases}>APK firmado desde GitHub Releases</a>.</p>
       <p class="platforms">macOS 13 o posterior en Apple silicon o Intel, iOS 18 o posterior, Ubuntu 24.04 o posterior, Android 13 o posterior y Windows 11. <a href="#install">Cómo instalarlo</a></p>
       </div>
     </div>
@@ -388,7 +390,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Descargar Posato para Mac" /></a>
       <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Descargar Posato en el App Store" /></a>
       <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Descargar Posato para Linux" /></a>
-      <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Descargar Posato para Android" /></a>
+      <a href={googlePlay}><img src="/badges/get-it-on-google-play-es.svg" width="189" height="56" alt="Descargar Posato en Google Play" /></a>
       <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Descargar Posato para Windows" /></a>
     </p>
     <ul class="install">
@@ -418,10 +420,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <li>
         <h3>Android</h3>
         <p>
-          Android 13 o posterior. En el teléfono, descarga <code>Posato-1.6.0.apk</code> desde
-          <a href={releases}>GitHub Releases</a> y ábrelo. Cuando Android te lo pida, permite instalar apps de
-          esta fuente; después instálalo, abre Posato y sigue la primera configuración, que te pedirá los permisos
-          que Posato necesita para pausar.
+          Android 13 o posterior. Instala Posato desde <a href={googlePlay}>Google Play</a>; se actualiza allí. Después
+          abre Posato y sigue la primera configuración, que te pedirá los permisos que Posato necesita para pausar.
+          En un teléfono sin Google Play, descarga <code>Posato-1.6.0.apk</code> desde <a href={releases}>GitHub Releases</a>
+          y ábrelo; cuando Android te lo pida, permite instalar apps de esta fuente.
         </p>
       </li>
       <li>
@@ -448,7 +450,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       </div>
     </div>
     <p class="muted">
-      Para actualizar en Linux, Android o Windows, instala el paquete más reciente de la misma forma. La
+      Para actualizar en Linux o Windows, o el APK en Android, instala el paquete más reciente de la misma forma. La
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">matriz de plataformas</a>
       recoge lo que se ha comprobado en cada plataforma, incluido que la versión para Intel se comprobó con Rosetta, no en un Mac con Intel.
     </p>
