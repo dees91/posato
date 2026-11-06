@@ -47,7 +47,7 @@ If Posato helps you, star it on GitHub so others can find it.
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac"></a>
   <a href="https://apps.apple.com/app/posato/id6812237585"><img src="website/public/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux"></a>
-  <a href="https://play.google.com/store/apps/details?id=app.posato.android"><img src="website/public/badges/get-it-on-google-play.svg" width="189" height="56" alt="Get Posato on Google Play"></a>
+  <a href="https://play.google.com/store/apps/details?id=app.posato.android"><img src="website/public/badges/get-it-on-google-play.svg" width="186" height="56" alt="Get Posato on Google Play"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-windows.svg" width="186" height="56" alt="Download Posato for Windows"></a>
 </p>
 
