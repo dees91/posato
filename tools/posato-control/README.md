@@ -636,13 +636,17 @@ use an emulator another person works on.
   whatever step it shows, answering each system request with its allow
   button. `reset -t android --yes` uninstalls (`--keep-install` clears data).
 - `doctor -t android` reports the device and its Android version, the APK,
-  the installation, another app's active VPN (a website pause turns it off),
+  the installation, a connected network other than a VPN (`android.network`;
+  without Wi-Fi or mobile data every website reads as unreachable), another
+  app's active VPN (a website pause turns it off),
   strict private DNS (which bypasses website pausing), and a screen lock
   (after a reboot Posato runs only once a person unlocks the phone).
 - `observe -t android --website URL --application PACKAGE --expect
   blocked|allowed` reads the address the name resolves to (a pause answers
-  `0.0.0.0` or `127.0.0.1`) and opens the package to see whether "Paused by
-  Posato" covers it.
+  `0.0.0.0` or `127.0.0.1`) and opens the package's launcher activity with
+  `am start` to see whether "Paused by Posato" covers it. A name that does
+  not resolve on a device without a network fails with
+  `PRECONDITION_NOT_MET` instead of reading as `unreachable`.
 - `db -t android` and `logs -t android` copy the databases through `run-as`
   and read logcat. A scenario's `openURL` step opens a link, such as
   `posato://join?code=...`, as a camera scan or a message would.

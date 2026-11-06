@@ -25,4 +25,13 @@ class NameObservationTest {
         assertEquals("loaded", nameOutcome("2606:4700::6812:1a88"))
         assertEquals("unreachable", nameOutcome(null))
     }
+
+    @Test
+    fun `an application opens by the launcher activity it resolves to, and an absent one resolves to none`() {
+        val resolved = "priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true\n" +
+            "com.google.android.deskclock/com.android.deskclock.DeskClock\n"
+        assertEquals("com.google.android.deskclock/com.android.deskclock.DeskClock", launcherComponent(resolved))
+        assertEquals(null, launcherComponent("No activity found\n"))
+        assertEquals(null, launcherComponent(""))
+    }
 }
