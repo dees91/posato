@@ -124,4 +124,4 @@ class PlayHttpTest {
     private fun http(transport: PlayTransport): PlayHttp = PlayHttp({ "t" }, transport, MutableClock(Instant.EPOCH), Sleeper { }, Transcript { })
 }
 
-private const val SLOW_UPLINK_BYTES_PER_SECOND = 64L * 1024
+private const val SLOW_UPLINK_BYTES_PER_SECOND = 64_000L

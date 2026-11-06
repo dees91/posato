@@ -29,7 +29,7 @@ private val TOTAL_DEADLINE: Duration = Duration.ofSeconds(60)
 private val UPLOAD_PROCESSING: Duration = Duration.ofMinutes(10)
 
 /** The slowest uplink an upload must fit: 512 kbit/s, so a 64 MB R8 mapping gets about 26 minutes. */
-private const val SLOWEST_UPLINK_BYTES_PER_SECOND = 64L * 1024
+private const val SLOWEST_UPLINK_BYTES_PER_SECOND = 64_000L
 private const val MAX_BODY_BYTES = 4 * 1024 * 1024
 private const val MAX_GET_ATTEMPTS = 3
 private const val SUCCESS_FLOOR = 200
