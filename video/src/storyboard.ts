@@ -286,6 +286,12 @@ export const SOCIAL_PREVIEW = {
   },
 } as const;
 
+export const PLAY_FEATURE_GRAPHIC = {
+  width: 1024,
+  height: 500,
+  phones: ["android-active-45.png", "android-websites.png"],
+} as const;
+
 export function totalFrames(scenes: readonly StoryScene[]): number {
   return scenes[scenes.length - 1]?.end ?? 0;
 }
