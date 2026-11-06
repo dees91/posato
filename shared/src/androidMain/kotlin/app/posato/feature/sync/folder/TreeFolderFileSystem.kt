@@ -145,6 +145,8 @@ internal class TreeDocuments(
             false
         } catch (_: IllegalStateException) {
             false
+        } catch (_: UnsupportedOperationException) {
+            false
         }
     }
 
