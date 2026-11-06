@@ -328,6 +328,9 @@ Dla tego, co ważne.</string>
     <string name="sync_folder_use">Użyj tego folderu</string>
     <string name="sync_folder_browse">Wybierz folder…</string>
     <string name="sync_folder_invalid">Wybierz folder, który istnieje i do którego Posato może zapisywać.</string>
+    <string name="sync_folder_lost">Posato potrzebuje ponownie Twojej zgody na otwarcie tego folderu. Wybierz ten sam folder, aby dalej synchronizować.</string>
+    <string name="sync_folder_choose_again">Wybierz folder ponownie</string>
+    <string name="sync_folder_another_folder">To inny folder. Wybierz folder, którego używa ta przestrzeń.</string>
     <string name="sync_folder_or">Albo synchronizuj przez folder zamiast iCloud.</string>
     <string name="sync_folder_waiting_for_key">Ten folder ma już przestrzeń. Wpisz kod parowania pokazany na urządzeniu w tej przestrzeni.</string>
     <string name="sync_folder_code_label">Kod parowania</string>
@@ -382,7 +385,7 @@ Dla tego, co ważne.</string>
     <string name="onboarding_summary_linux_on">Usługa wstrzymywania jest zainstalowana</string>
     <string name="onboarding_summary_linux_off">Nadal potrzebna jest usługa wstrzymywania</string>
     <string name="onboarding_summary_linux_unchecked">Nie sprawdzono usługi wstrzymywania</string>
-    <string name="onboarding_permission_android_body">Posato potrzebuje kilku uprawnień, aby wstrzymać strony i aplikacje wybrane na tym %1$s: dostęp do użycia, wyświetlanie nad innymi aplikacjami, lokalną sieć VPN, która odpowiada tylko na nazwy stron, powiadomienia, dokładne alarmy dla harmonogramów, dostęp do plików dla folderu synchronizacji oraz działanie w tle bez limitów baterii.</string>
+    <string name="onboarding_permission_android_body">Posato potrzebuje kilku uprawnień, aby wstrzymać strony i aplikacje wybrane na tym %1$s: dostęp do użycia, wyświetlanie nad innymi aplikacjami, lokalną sieć VPN, która odpowiada tylko na nazwy stron, powiadomienia oraz dokładne alarmy dla harmonogramów.</string>
     <string name="onboarding_permission_android_action">Zezwól na dostęp</string>
     <string name="onboarding_summary_android_on">Dostęp przyznany</string>
     <string name="onboarding_summary_android_off">Nadal potrzebny jest dostęp</string>
@@ -461,7 +464,7 @@ Dla tego, co ważne.</string>
     <string name="onboarding_permission_body_iphone">Dostęp do Czasu przed ekranem pozwala Posato wstrzymać strony i aplikacje, które wybierzesz na tym iPhonie.</string>
     <string name="onboarding_permission_body_ipad">Dostęp do Czasu przed ekranem pozwala Posato wstrzymać strony i aplikacje, które wybierzesz na tym iPadzie.</string>
     <string name="onboarding_permission_linux_body_full">Posato raz prosi o hasło administratora, aby zainstalować niewielką usługę, która wstrzymuje strony i aplikacje wybrane na tym komputerze.</string>
-    <string name="onboarding_permission_android_body_full">Posato potrzebuje kilku uprawnień, aby wstrzymać strony i aplikacje wybrane na tym telefonie: dostęp do użycia, wyświetlanie nad innymi aplikacjami, lokalną sieć VPN, która odpowiada tylko na nazwy stron, powiadomienia, dokładne alarmy dla harmonogramów, dostęp do plików dla folderu synchronizacji oraz działanie w tle bez limitów baterii.</string>
+    <string name="onboarding_permission_android_body_full">Posato potrzebuje kilku uprawnień, aby wstrzymać strony i aplikacje wybrane na tym telefonie: dostęp do użycia, wyświetlanie nad innymi aplikacjami, lokalną sieć VPN, która odpowiada tylko na nazwy stron, powiadomienia oraz dokładne alarmy dla harmonogramów.</string>
     <string name="onboarding_permission_windows_body_full">Instalator Posato ustawił niewielką usługę, która wstrzymuje strony i aplikacje wybrane na tym komputerze.</string>
     <string name="onboarding_saved_on_mac">Zapisano na tym Macu</string>
     <string name="onboarding_saved_on_iphone">Zapisano na tym iPhonie</string>

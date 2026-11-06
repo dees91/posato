@@ -1,9 +1,10 @@
 import { Composition, Still } from "remotion";
+import { PlayFeatureGraphic } from "./PlayFeatureGraphic";
 import { SocialPreview } from "./SocialPreview";
 import { StepStill } from "./StepStill";
 import { Hero } from "./Hero";
 import { Walkthrough } from "./Story";
-import { HERO, SOCIAL_PREVIEW, STILLS, totalFrames, VIDEO, WALKTHROUGH } from "./storyboard";
+import { HERO, PLAY_FEATURE_GRAPHIC, SOCIAL_PREVIEW, STILLS, totalFrames, VIDEO, WALKTHROUGH } from "./storyboard";
 
 export const RemotionRoot = () => (
   <>
@@ -24,5 +25,6 @@ export const RemotionRoot = () => (
     <Still id="StepExport" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepExport} />
     <Still id="StepBreak" component={StepStill} width={1920} height={1080} defaultProps={STILLS.StepBreak} />
     <Still id="SocialPreview" component={SocialPreview} width={SOCIAL_PREVIEW.width} height={SOCIAL_PREVIEW.height} />
+    <Still id="PlayFeatureGraphic" component={PlayFeatureGraphic} width={PLAY_FEATURE_GRAPHIC.width} height={PLAY_FEATURE_GRAPHIC.height} />
   </>
 );

@@ -8,4 +8,10 @@
     <string name="catalog_title">Apps auswählen</string>
     <string name="catalog_choose">Auswählen</string>
     <string name="catalog_cancel">Abbrechen</string>
+    <string name="disclosure_continue">Weiter</string>
+    <string name="disclosure_not_now">Nicht jetzt</string>
+    <string name="disclosure_usage_title">Zugriff auf Nutzungsdaten</string>
+    <string name="disclosure_usage_body">Während einer Pause prüft Posato, welche App geöffnet ist, damit es eine von dir gewählte App verdecken kann. Es behält nur die App im Vordergrund, im Arbeitsspeicher, nur auf diesem Smartphone, und sendet sie nirgendwohin. Danach öffnet Android den Zugriff auf Nutzungsdaten: Schalte Posato dort ein.</string>
+    <string name="disclosure_overlay_title">Über anderen Apps einblenden</string>
+    <string name="disclosure_overlay_body">Während einer Pause zeigt Posato seinen Pausenbildschirm über einer von dir gewählten App, bis du sie verlässt. Sonst blendet es nichts über anderen Apps ein. Danach öffnet Android „Über anderen Apps einblenden“: Schalte Posato dort ein.</string>
 </resources>

@@ -12,6 +12,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +37,9 @@ import app.posato.feature.sync.folder.pairingLink
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_sync_now
 import app.posato.generated.resources.sync_folder_add_device
+import app.posato.generated.resources.sync_folder_another_folder
 import app.posato.generated.resources.sync_folder_browse
+import app.posato.generated.resources.sync_folder_choose_again
 import app.posato.generated.resources.sync_folder_code_done
 import app.posato.generated.resources.sync_folder_code_failed
 import app.posato.generated.resources.sync_folder_code_message
@@ -50,6 +54,7 @@ import app.posato.generated.resources.sync_folder_join_refused
 import app.posato.generated.resources.sync_folder_join_unavailable
 import app.posato.generated.resources.sync_folder_join_wrong_workspace
 import app.posato.generated.resources.sync_folder_link_copied
+import app.posato.generated.resources.sync_folder_lost
 import app.posato.generated.resources.sync_folder_path_label
 import app.posato.generated.resources.sync_folder_qr_description
 import app.posato.generated.resources.sync_folder_share_link
@@ -70,7 +75,9 @@ internal fun FolderOptions(
     removing: Boolean,
     onRemove: () -> Unit,
 ) {
-    folderMessage(snapshot, folder, state.checking, removing)?.let { message ->
+    val lost by state.folderLost.collectAsState()
+    // A folder to choose again explains itself; the generic action-required sentence would point at removal instead.
+    folderMessage(snapshot, folder, state.checking, removing).takeUnless { lost && snapshot.linked && !removing }?.let { message ->
         PosatoCaption(stringResource(message), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
     if (removing) {
@@ -113,11 +120,16 @@ private fun LinkedFolder(
     running: Boolean,
     onRemove: () -> Unit,
 ) {
+    val lost by state.folderLost.collectAsState()
     folder?.let { FolderChip(it, onChange = null) }
-    state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
-    if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
-        PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Primary, enabled = !running, controlId = "sync_folder_add_device") {
-            Text(stringResource(Res.string.sync_folder_add_device))
+    if (lost) {
+        ChooseFolderAgain(state, running)
+    } else {
+        state.offerFailed.takeIf { it }?.let { PosatoCaption(stringResource(Res.string.sync_folder_code_failed)) }
+        if (snapshot.status != SyncStatus.ACTION_REQUIRED) {
+            PosatoButton(onClick = state::showCode, style = PosatoButtonStyle.Primary, enabled = !running, controlId = "sync_folder_add_device") {
+                Text(stringResource(Res.string.sync_folder_add_device))
+            }
         }
     }
     PosatoActionRow {
@@ -127,6 +139,25 @@ private fun LinkedFolder(
         PosatoButton(onClick = onRemove, style = PosatoButtonStyle.Quiet, enabled = !running, controlId = "sync_remove_workspace") {
             Text(stringResource(Res.string.sync_remove_workspace), color = MaterialTheme.colorScheme.error)
         }
+    }
+}
+
+/**
+ * A linked workspace whose folder this device can no longer open, such as one chosen by Posato 1.6.0 for Android
+ * before it used the system folder picker: the same folder is picked again, and another one is refused.
+ */
+@Composable
+private fun ChooseFolderAgain(
+    state: SyncBootstrapUiState,
+    running: Boolean,
+) {
+    PosatoCaption(stringResource(Res.string.sync_folder_lost))
+    when {
+        state.anotherFolderPicked -> PosatoCaption(stringResource(Res.string.sync_folder_another_folder))
+        state.folderRefused -> PosatoCaption(stringResource(Res.string.sync_folder_invalid))
+    }
+    PosatoButton(onClick = state::browseFolder, style = PosatoButtonStyle.Primary, enabled = !running, controlId = "sync_folder_choose_again") {
+        Text(stringResource(Res.string.sync_folder_choose_again))
     }
 }
 

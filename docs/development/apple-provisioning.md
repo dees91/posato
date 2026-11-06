@@ -13,6 +13,10 @@ create app records or distribution certificates, and it does not touch
 TestFlight groups, notarization, or App ID capabilities. It never runs in CI;
 routine CI stays credential-free.
 
+Its `play` commands publish the Android app on Google Play; they use a Google
+service-account key instead of the App Store Connect key and are described in
+[Google Play publishing](google-play.md).
+
 ## Prerequisites
 
 One App Store Connect API **team** key with the **Admin** role, created by the
@@ -56,6 +60,7 @@ every known value redacted.
 | `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--keywords <file>] [--support-url <url>] [--marketing-url <url>] [--privacy-url <url>] [--screenshots <dir>] [--subtitle <text>] [--locale <code>] [--rename-from X.Y.Z]` | Brings one App Store version to the release state, changing only what differs. `--locale` selects the localization by App Store Connect's locale shortcode, such as `pl` for Polish, and defaults to `en-US`; a localization the version does not have yet is created empty. `--keywords` (at most 100 characters, checked before any request), `--support-url`, and `--marketing-url` are written with What's New and the description in one request. With `--rename-from`, a missing version is made by renaming the app's one unreleased version. `--subtitle` (at most 30 characters) and `--privacy-url` are set in the App Information that the version still being prepared brings; the live one is never changed, and a locale it lacks is created with the name Posato. URLs must be absolute HTTPS URLs. See [iOS App Store release](#ios-app-store-release). |
 | `store submit --version X.Y.Z` | Submits the version to App Review once it has a build and every screenshot is `COMPLETE`. Does nothing when it is already waiting for or in review. |
 | `store withdraw --version X.Y.Z` | Withdraws a version waiting for or in review by canceling its review submission, then waits until the version is editable again. Does nothing when it is already editable. See [Replacing a version in review](#replacing-a-version-in-review). |
+| `play status`, `play upload`, `play promote`, `play listing` | Google Play release of `app.posato.android`: tracks, bundle and R8 mapping upload, promotion from internal to production, and the store listing. See [Google Play publishing](google-play.md). |
 
 Use this tool, not the portal or ad hoc App Store Connect scripts, for every
 development device, certificate, and profile and for the App Store release

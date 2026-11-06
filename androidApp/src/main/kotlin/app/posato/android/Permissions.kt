@@ -7,8 +7,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
-import android.os.Environment
-import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 
@@ -54,17 +52,8 @@ internal object Permissions {
         return context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
     }
 
-    fun allFiles(): Boolean {
-        return Environment.isExternalStorageManager()
-    }
-
-    /** Whether Doze leaves Posato's network and wake alarms alone, which background sync and schedules rely on. */
-    fun batteryExempt(context: Context): Boolean {
-        return context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
-    }
-
     /**
-     * What applying a pause needs; notifications, exact alarms, file access, and the battery exemption only make it
+     * What applying a pause needs; notifications and exact alarms only make it
      * more reliable.
      */
     fun blockingReady(context: Context): Boolean {
@@ -72,6 +61,6 @@ internal object Permissions {
     }
 
     fun all(context: Context): Boolean {
-        return blockingReady(context) && notifications(context) && exactAlarms(context) && allFiles() && batteryExempt(context)
+        return blockingReady(context) && notifications(context) && exactAlarms(context)
     }
 }

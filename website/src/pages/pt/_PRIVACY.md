@@ -255,12 +255,13 @@ próprias configurações do Android:
   app pausado com a tela de pausa. Ele guarda apenas o app em primeiro plano
   naquele momento, na memória, e não registra o uso de apps.
 - **Sobreposição a outros apps**, para mostrar a tela de pausa.
-- **Notificações, alarmes exatos e execução sem limites de bateria**, para que
-  as pausas e os agendamentos comecem e terminem na hora com o Posato fechado.
-  Uma notificação silenciosa aparece enquanto o Posato os mantém em execução.
-- **Acesso a todos os arquivos**, para que o Posato possa ler e gravar na
-  pasta que você escolher para a sincronização por pasta. O Posato lê e grava
-  apenas nessa pasta.
+- **Notificações e alarmes exatos**, para que as pausas e os agendamentos
+  comecem e terminem na hora com o Posato fechado. Uma notificação silenciosa
+  aparece enquanto o Posato os mantém em execução.
+- **A pasta que você escolher para a sincronização por pasta**, selecionada
+  no seletor de pastas do Android. O Posato lê e grava apenas nessa pasta. O
+  Posato 1.6.0 e versões anteriores pediam em vez disso acesso a todos os
+  arquivos, e também o usavam só para essa pasta.
 
 O Posato lê a lista de apps que você pode abrir pelo inicializador, para que
 você possa escolher os apps a pausar; a lista fica no celular. A pausa que ele

@@ -239,12 +239,13 @@ ustawieniach Androida:
   wstrzymaną aplikację ekranem pauzy. Trzyma w pamięci tylko aplikację na
   wierzchu w danej chwili i nie zapisuje użycia aplikacji.
 - **Wyświetlanie nad innymi aplikacjami**, aby pokazać ekran pauzy.
-- **Powiadomienia, dokładne alarmy i działanie bez limitów baterii**, aby
-  pauzy i harmonogramy zaczynały się i kończyły o czasie, gdy Posato jest
-  zamknięte. Ciche powiadomienie widać, gdy Posato utrzymuje je w działaniu.
-- **Dostęp do wszystkich plików**, aby Posato mogło czytać i zapisywać folder
-  wybrany do synchronizacji przez folder. Posato czyta i zapisuje tylko ten
-  folder.
+- **Powiadomienia i dokładne alarmy**, aby pauzy i harmonogramy zaczynały się
+  i kończyły o czasie, gdy Posato jest zamknięte. Ciche powiadomienie widać,
+  gdy Posato utrzymuje je w działaniu.
+- **Folder wybrany do synchronizacji przez folder**, wskazany w systemowym
+  wyborze folderu Androida. Posato czyta i zapisuje tylko ten folder. Posato
+  1.6.0 i wcześniejsze prosiło zamiast tego o dostęp do wszystkich plików i
+  również używało go tylko do tego folderu.
 
 Posato czyta listę aplikacji, które można otworzyć z launchera, aby dało się
 wybrać aplikacje do pauzy; lista zostaje na telefonie. Wymuszana pauza, wraz

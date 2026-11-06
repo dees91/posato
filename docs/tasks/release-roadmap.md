@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 41 (2026-11-05: adds the `ANDROID-003` backlog row for Google Play)
+- **Revision:** 42 (2026-11-06: starts `ANDROID-003` as a Google Play release outside the release cycle)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-11-05
+- **Last amended:** 2026-11-06
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -301,6 +301,14 @@
   (`user-confirmed`, 2026-11-05), once the Google Play organization developer
   account was verified: one row adapts the Android app to Play's policies and
   publishes it there.
+  Revision 42 starts `ANDROID-003` at the maintainer's request
+  (`user-confirmed`, 2026-11-06) as a release of its own outside the release
+  cycle: the row publishes Posato for Android 1.6.1 on Google Play itself,
+  with no `RELEASE` row, as an exception to intake rule 6. Mac, iOS, Linux,
+  and Windows stay on 1.6.0, and the GitHub Releases APK stays 1.6.0 until
+  the next composed release. Play App Signing keeps the existing release key
+  as the app signing key, so the Play and GitHub builds share one signature
+  (`user-confirmed`, 2026-11-06).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -684,6 +692,19 @@ following the system language, with no in-app language switch.
 | `DOCS-007` | Prepare the public packaging for 1.6 without publishing it: the limits page, README, and `posato.app` with Windows install steps and screenshots, the new pause features in the store text and What's New, and draft release notes. Polish pages and the Polish listing stay with `I18N-001`, and the German, French, Spanish, and Portuguese ones with `I18N-002`; this row adds only the 1.6 changes, in every shipped language. | Release readiness | delivery | R1.6/W3 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `I18N-001`, `I18N-002` | PR-RELEASE-1-6-MEDIA |
 | `RELEASE-010` | Verify and publish Posato 1.6.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64 (x64 built and smoke-tested on a GitHub Actions runner). Verifies on iOS, Linux, and Android the shared session changes those builds have not shipped since 1.5.0: `PauseClaims` and `EnforcementPort.replace` (`MACOS-030`) and the `SESSION-009` branch of `clearAfterEnd` (`MACOS-029`). | Release readiness | delivery | R1.6/W4 | `ONBOARDING-005`, `SCHEDULE-007`, `TARGETS-013`, `PLATFORM-002`, `DOCS-007`, `I18N-001`, `I18N-002` | PR-RELEASE-1-6 |
 
+## Google Play: Posato for Android 1.6.1
+
+Theme: Posato for Android reaches Google Play. The app keeps its behavior,
+but a person picks the sync folder through Android's folder picker instead
+of granting access to all files, sees why Posato asks for usage access and
+the overlay before granting them, and installs and updates from Play. This
+release is outside the release cycle (revision 42): the row publishes it
+itself, and the other platforms stay on 1.6.0.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ANDROID-003` | Adapt Posato for Android to Google Play and publish it there, in one row. Replace all-files access (`MANAGE_EXTERNAL_STORAGE`) for the sync folder with a folder the user picks through the Storage Access Framework (a persistable tree URI behind the folder file system), with onboarding, `PRIVACY.md`, and `posato-control` updated; justify or drop `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, confirm that the exact-alarm use (`SCHEDULE_EXACT_ALARM`) meets Play's policy, confirm that `targetSdk` meets Play's minimum target API level, and show a prominent disclosure before the usage access and overlay grants. Build a release AAB with R8 and a `versionCode` scheme, enroll in Play App Signing with an upload key kept outside Git, and add a Play upload command through the Play Developer API, as the store commands do for App Store Connect. Complete the Play declarations (VpnService with a video, the `specialUse` foreground service), the Data safety form, the content rating, and the listing in the shipped languages, then release to production and update the limits page, the README, and `posato.app`, which say Android ships outside Google Play. | Platform coverage | delivery | Play/W1 | None | PR-ANDROID-PLAY |
+
 ## Backlog
 
 Rows without a release. Each names what would let the maintainer assign it.
@@ -720,7 +741,6 @@ The idea numbers refer to the wiki idea queue.
 | `REDIRECT-001` | Decide whether Posato offers host redirect rules beside blocking. First settle the model: always-on rules in a separate setting, or redirects inside sessions and pause sets, with the UX of each compared so that blocking and redirecting stay clear. Then analyze the technical approach on macOS (proxy and browser presentation; for always-on rules also failure, sleep, VPN and proxy coexistence, and privacy outside sessions) and the feasibility on Linux, Windows, Android, and iOS. Settle host versus path rules, loop protection, and whether rules sync. End with a product decision, the proposed ADR 0004 and ADR 0005 revisions if needed, and a delivery plan. Preliminary. | Product discovery | Idea 59 | A product decision that redirects are in scope |
 | `HISTORY-002` | Deliver the calm history of scheduled pauses decided in `HISTORY-001`: a local, unsynchronized day record written when a day becomes final, a **History** disclosure below the Schedules list on every platform with ran-as-planned and ended-early days and no totals, **Clear history**, the `PRIVACY.md` text, and the `posato-control` read, as [the history decision](../product/history-decisions.md) plans. | Schedules | `HISTORY-001` (idea 47) | A release composition that takes it |
 | `PLATFORM-005` | Sign the Windows MSI packages and their launchers with an Authenticode identity, such as Azure Trusted Signing or a code-signing certificate, through the existing `POSATO_WINDOWS_SIGNING` step of `package-msi.ps1` for both architectures, then remove the SmartScreen steps and the Smart App Control limit from the install text, the limits, and the release notes in every language. | Release readiness | `RELEASE-010` | A signing identity the maintainer obtains |
-| `ANDROID-003` | Adapt Posato for Android to Google Play and publish it there, in one row. Replace all-files access (`MANAGE_EXTERNAL_STORAGE`) for the sync folder with a folder the user picks through the Storage Access Framework (a persistable tree URI behind the folder file system), with onboarding, `PRIVACY.md`, and `posato-control` updated; justify or drop `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, confirm that the exact-alarm use (`SCHEDULE_EXACT_ALARM`) meets Play's policy, confirm that `targetSdk` meets Play's minimum target API level, and show a prominent disclosure before the usage access and overlay grants. Build a release AAB with R8 and a `versionCode` scheme, enroll in Play App Signing with an upload key kept outside Git, and add a Play upload command through the Play Developer API, as the store commands do for App Store Connect. Complete the Play declarations (VpnService with a video, the `specialUse` foreground service), the Data safety form, the content rating, and the listing in the shipped languages, then release to production and update the limits page, the README, and `posato.app`, which say Android ships outside Google Play. | Platform coverage | Maintainer request; organization developer account verified 2026-11-05 | A release composition |
 | `SESSION-012` | Fix two desktop defects that `RELEASE-010` found and 1.5 already had, both from SQLite refusing a write at once while another connection commits (Android serializes its database work and is not affected): a pause received through the folder sometimes shows "Restrictions need attention" and is not enforced until **Retry** (the session intent and expiry reads also write, and `readDesiredLocked` turns a retryable halt into `APPLY_FAILED`); and **End early** on a scheduled pause can leave a running manual pause, because the manual and scheduled ends write in parallel and the end failure is silently replaced. Failing tests first, then the fix in shared code, verified by repeated received pauses on Windows, Linux, and the Mac, and repeated early ends. | Sessions and enforcement | `RELEASE-010` | The next release composition |
 
 ## Coverage matrix
@@ -758,6 +778,7 @@ The idea numbers refer to the wiki idea queue.
 | Posato in German, French, Spanish, and Portuguese | `I18N-002` | The apps, pause page, and permissions follow each language as the system or per-app language on the Mac in Tart, the test iPhone, and Android; `/de/`, `/fr/`, `/es/`, and `/pt/` on posato.app and four store listings with screenshots are ready without publishing; a back-translation report accepted by the maintainer |
 | More ways to pause | `SCHEDULE-007`, `TARGETS-013`, `HISTORY-001` | A break and a briefly opened website applied and restored on each platform in Tart and on the test iPhone; an accepted history decision with a delivery plan |
 | Public packaging for 1.6 | `DOCS-007` | Limits page and README updated, site built, Windows screenshots, store text ready for upload, release notes drafted |
+| Posato for Android on Google Play | `ANDROID-003` | Folder sync through a picked folder with a Tart peer on the test phone and the Posato emulator, no all-files access in the manifest, disclosures before usage access and the overlay, an R8 release bundle installed from Play's internal track, and the production release live with the limits page, README, and posato.app updated |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates

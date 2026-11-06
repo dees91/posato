@@ -328,6 +328,9 @@ Für das, was zählt.</string>
     <string name="sync_folder_use">Diesen Ordner verwenden</string>
     <string name="sync_folder_browse">Ordner auswählen …</string>
     <string name="sync_folder_invalid">Wähle einen vorhandenen Ordner, in den Posato schreiben kann.</string>
+    <string name="sync_folder_lost">Posato braucht deine Erlaubnis, um diesen Ordner wieder zu öffnen. Wähle denselben Ordner, damit die Synchronisierung weiterläuft.</string>
+    <string name="sync_folder_choose_again">Ordner erneut auswählen</string>
+    <string name="sync_folder_another_folder">Das ist ein anderer Ordner. Wähle den Ordner, den dieser Arbeitsbereich verwendet.</string>
     <string name="sync_folder_or">Oder synchronisiere über einen Ordner statt über iCloud.</string>
     <string name="sync_folder_waiting_for_key">Dieser Ordner enthält bereits einen Arbeitsbereich. Gib den Kopplungscode ein, der auf einem Gerät in diesem Arbeitsbereich angezeigt wird.</string>
     <string name="sync_folder_code_label">Kopplungscode</string>
@@ -382,7 +385,7 @@ Für das, was zählt.</string>
     <string name="onboarding_summary_linux_on">Pausendienst installiert</string>
     <string name="onboarding_summary_linux_off">Pausendienst noch nötig</string>
     <string name="onboarding_summary_linux_unchecked">Pausendienst nicht geprüft</string>
-    <string name="onboarding_permission_android_body">Posato braucht einige Berechtigungen, um die Websites und Apps zu pausieren, die du auf diesem %1$s auswählst: Zugriff auf Nutzungsdaten, Über anderen Apps einblenden, ein lokales VPN, das nur Website-Namen beantwortet, Benachrichtigungen, genaue Wecker für Zeitpläne, Zugriff auf Dateien für einen Synchronisierungsordner und Ausführung im Hintergrund ohne Akkubeschränkungen.</string>
+    <string name="onboarding_permission_android_body">Posato braucht einige Berechtigungen, um die Websites und Apps zu pausieren, die du auf diesem %1$s auswählst: Zugriff auf Nutzungsdaten, Über anderen Apps einblenden, ein lokales VPN, das nur Website-Namen beantwortet, Benachrichtigungen und genaue Wecker für Zeitpläne.</string>
     <string name="onboarding_permission_android_action">Zugriff erlauben</string>
     <string name="onboarding_summary_android_on">Zugriff erlaubt</string>
     <string name="onboarding_summary_android_off">Zugriff noch nötig</string>
@@ -462,7 +465,7 @@ Für das, was zählt.</string>
     <string name="onboarding_permission_body_iphone">Mit dem Zugriff auf Bildschirmzeit kann Posato die Websites und Apps pausieren, die du auf diesem iPhone auswählst.</string>
     <string name="onboarding_permission_body_ipad">Mit dem Zugriff auf Bildschirmzeit kann Posato die Websites und Apps pausieren, die du auf diesem iPad auswählst.</string>
     <string name="onboarding_permission_linux_body_full">Posato fragt einmal nach deinem Administratorpasswort, um den kleinen Dienst zu installieren, der die Websites und Apps pausiert, die du auf diesem Computer auswählst.</string>
-    <string name="onboarding_permission_android_body_full">Posato braucht einige Berechtigungen, um die Websites und Apps zu pausieren, die du auf diesem Smartphone auswählst: Zugriff auf Nutzungsdaten, Über anderen Apps einblenden, ein lokales VPN, das nur Website-Namen beantwortet, Benachrichtigungen, genaue Wecker für Zeitpläne, Zugriff auf Dateien für einen Synchronisierungsordner und Ausführung im Hintergrund ohne Akkubeschränkungen.</string>
+    <string name="onboarding_permission_android_body_full">Posato braucht einige Berechtigungen, um die Websites und Apps zu pausieren, die du auf diesem Smartphone auswählst: Zugriff auf Nutzungsdaten, Über anderen Apps einblenden, ein lokales VPN, das nur Website-Namen beantwortet, Benachrichtigungen und genaue Wecker für Zeitpläne.</string>
     <string name="onboarding_permission_windows_body_full">Das Installationsprogramm von Posato hat den kleinen Dienst eingerichtet, der die Websites und Apps pausiert, die du auf diesem Computer auswählst.</string>
     <string name="onboarding_saved_on_mac">Auf diesem Mac gesichert</string>
     <string name="onboarding_saved_on_iphone">Auf diesem iPhone gesichert</string>

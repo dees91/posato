@@ -3383,3 +3383,17 @@ first removal attempt that does not finish, not to a paused keychain.
   still lacks before `store submit`; the
   [iOS App Store release](../development/apple-provisioning.md#ios-app-store-release)
   lists the commands for all six store locales.
+
+## [2026-11-06] delivery | Posato for Android on Google Play (ANDROID-003)
+
+- Android 1.6.1 picks the sync folder through the Storage Access Framework,
+  explains usage access and the overlay before Settings, and asks for
+  neither all-files access nor the battery exemption; a deep-Doze run
+  showed schedules start and end on time without the exemption.
+- On the Galaxy test phone a paused app was never covered, also on 1.6.0:
+  Samsung publishes usage events about six seconds late, so the guard now
+  reads back ten seconds.
+- Play publishing: an R8 bundle with a build digit in `versionCode`, Play
+  App Signing holding the existing release key, a separate upload key, and
+  `posato-provisioning play` commands
+  ([Google Play publishing](../development/google-play.md)).

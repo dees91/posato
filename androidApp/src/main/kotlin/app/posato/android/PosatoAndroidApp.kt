@@ -29,6 +29,7 @@ class PosatoAndroidApp : Application() {
             notifications = UnavailableSessionNotifications,
             applicationAccess = AndroidAccess(this),
             localDirectory = filesDir.resolve("sync").absolutePath,
+            contentResolver = contentResolver,
             browseFolder = { activity?.browseFolder() },
             linkSharing = ShareSheetLinkSharing(this),
             pauseSetFiles = AndroidPauseSetFiles { activity },

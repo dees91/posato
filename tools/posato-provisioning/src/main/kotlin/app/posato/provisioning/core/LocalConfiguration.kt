@@ -13,6 +13,7 @@ enum class ConfigurationKey(
     ASC_PRIVATE_KEY_PATH("posato.asc.privateKeyPath", "POSATO_ASC_PRIVATE_KEY_PATH"),
     DEVELOPMENT_TEAM("posato.apple.developmentTeam", "POSATO_APPLE_DEVELOPMENT_TEAM"),
     MACOS_SYNC_PROVISIONING_PROFILE("posato.macos.syncProvisioningProfile", "POSATO_MACOS_SYNC_PROVISIONING_PROFILE"),
+    PLAY_SERVICE_ACCOUNT_KEY_PATH("posato.play.serviceAccountKeyPath", "POSATO_PLAY_SERVICE_ACCOUNT_KEY_PATH"),
 }
 
 enum class ConfigurationSource { ENVIRONMENT, LOCAL_PROPERTIES, ABSENT }

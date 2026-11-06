@@ -8,4 +8,10 @@
     <string name="catalog_title">Escolher apps</string>
     <string name="catalog_choose">Escolher</string>
     <string name="catalog_cancel">Cancelar</string>
+    <string name="disclosure_continue">Continuar</string>
+    <string name="disclosure_not_now">Agora não</string>
+    <string name="disclosure_usage_title">Acesso ao uso</string>
+    <string name="disclosure_usage_body">Durante uma pausa, o Posato verifica qual app está aberto para poder cobrir um app que você escolheu. Ele guarda só o app em primeiro plano, na memória, só neste celular, e nunca o envia para lugar nenhum. Em seguida, o Android abre o acesso ao uso: ative o Posato lá.</string>
+    <string name="disclosure_overlay_title">Sobreposição a outros apps</string>
+    <string name="disclosure_overlay_body">Durante uma pausa, o Posato mostra a tela de pausa sobre um app que você escolheu até você sair dele. Ele não mostra mais nada sobre outros apps. Em seguida, o Android abre a sobreposição a outros apps: ative o Posato lá.</string>
 </resources>

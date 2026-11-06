@@ -8,4 +8,10 @@
     <string name="catalog_title">Choose apps</string>
     <string name="catalog_choose">Choose</string>
     <string name="catalog_cancel">Cancel</string>
+    <string name="disclosure_continue">Continue</string>
+    <string name="disclosure_not_now">Not now</string>
+    <string name="disclosure_usage_title">Usage access</string>
+    <string name="disclosure_usage_body">During a pause, Posato checks which app is open so that it can cover an app you chose. It keeps only the app in front, in memory, only on this phone, and never sends it anywhere. Next, Android opens Usage access: switch Posato on there.</string>
+    <string name="disclosure_overlay_title">Display over other apps</string>
+    <string name="disclosure_overlay_body">During a pause, Posato shows its pause screen over an app you chose until you leave it. It shows nothing else over other apps. Next, Android opens Display over other apps: switch Posato on there.</string>
 </resources>

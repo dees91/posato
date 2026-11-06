@@ -1,14 +1,15 @@
 package app.posato.android
 
+import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
     private var grantResult: CompletableDeferred<Unit>? = null
 
     private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        folderResult?.complete(uri?.let(::treePath))
+        folderResult?.complete(uri?.toString())
     }
 
     private var createResult: CompletableDeferred<Uri?>? = null
@@ -72,7 +73,7 @@ class MainActivity : ComponentActivity() {
         intent.dataString?.let(::openPosatoLink)
     }
 
-    /** The folder the person picks, as a file system path; only a folder on this phone's shared storage can be used. */
+    /** The folder the person picks, as the tree URI the shared folder access takes a persistable grant for. */
     suspend fun browseFolder(): String? {
         val result = CompletableDeferred<String?>()
         folderResult = result
@@ -104,6 +105,31 @@ class MainActivity : ComponentActivity() {
         result.await()
     }
 
+    /**
+     * Says what a Settings grant is for before Android opens it, as Google Play's prominent disclosure asks; true when
+     * the person chooses to continue.
+     */
+    suspend fun disclose(
+        @StringRes title: Int,
+        @StringRes body: Int,
+    ): Boolean {
+        val answer = CompletableDeferred<Boolean>()
+        val night = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val theme = if (night) android.R.style.Theme_DeviceDefault_Dialog_Alert else android.R.style.Theme_DeviceDefault_Light_Dialog_Alert
+        val dialog = AlertDialog.Builder(this, theme)
+            .setTitle(title)
+            .setMessage(body)
+            .setPositiveButton(R.string.disclosure_continue) { _, _ -> answer.complete(true) }
+            .setNegativeButton(R.string.disclosure_not_now) { _, _ -> answer.complete(false) }
+            .setOnCancelListener { answer.complete(false) }
+            .show()
+        return try {
+            answer.await()
+        } finally {
+            if (dialog.isShowing) dialog.dismiss()
+        }
+    }
+
     suspend fun requestNotifications() {
         val result = CompletableDeferred<Unit>()
         grantResult = result
@@ -111,15 +137,7 @@ class MainActivity : ComponentActivity() {
         result.await()
     }
 
-    private fun treePath(uri: Uri): String? {
-        val document = DocumentsContract.getTreeDocumentId(uri)
-        val volume = document.substringBefore(':')
-        val relative = document.substringAfter(':', "")
-        return if (volume == PRIMARY) Environment.getExternalStorageDirectory().resolve(relative).absolutePath else null
-    }
-
     private companion object {
-        const val PRIMARY = "primary"
         const val PAUSE_SET_FILE_TYPE = "application/vnd.posato.pause-sets"
     }
 }

@@ -104,19 +104,20 @@ class GuardService : Service() {
 
     /**
      * Follows the app in front across polls, so an app that was already open when a pause started is covered too; the
-     * first poll looks back far enough to find it.
+     * first poll looks back far enough to find it. Some phones, such as Samsung's, publish an event several seconds after
+     * its time, so each poll also reads back over that delay and keeps the newest app that came to the front.
      */
     private fun blockIfInFront(
         usage: UsageStatsManager,
         packages: Set<String>,
     ) {
         val now = System.currentTimeMillis()
-        val events = usage.queryEvents(if (queriedUntil == 0L) now - INITIAL_LOOKBACK_MILLIS else queriedUntil, now)
+        val events = usage.queryEvents(if (queriedUntil == 0L) now - INITIAL_LOOKBACK_MILLIS else queriedUntil - LATE_EVENT_MILLIS, now)
         queriedUntil = now
         val event = UsageEvents.Event()
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED && event.timeStamp >= frontAt) {
                 front = event.packageName
                 frontAt = event.timeStamp
             }
@@ -145,6 +146,7 @@ class GuardService : Service() {
         private const val CHANNEL = "posato-guard"
         private const val WATCH_MILLIS = 500L
         private const val INITIAL_LOOKBACK_MILLIS = 3_600_000L
+        private const val LATE_EVENT_MILLIS = 10_000L
         private const val WAKE_INTERVAL_MILLIS = 60_000L
         private const val BREAK_WAKE_REQUEST = 1
         private const val WINDOW_WAKE_REQUEST = 2

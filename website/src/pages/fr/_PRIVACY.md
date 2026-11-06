@@ -273,13 +273,15 @@ les paramètres d’Android :
   ne garde que l’app au premier plan à ce moment-là, en mémoire, et
   n’enregistre pas l’utilisation des apps.
 - **Superposition à d’autres applis**, pour afficher l’écran de blocage.
-- **Notifications, alarmes exactes et exécution sans restriction de
-  batterie**, pour que les pauses et les programmations commencent et se
-  terminent à l’heure pendant que Posato est fermé. Une notification
-  silencieuse s’affiche pendant que Posato les maintient en fonctionnement.
-- **Accès à tous les fichiers**, pour que Posato puisse lire et écrire dans le
-  dossier que vous choisissez pour la synchronisation par dossier. Posato ne
-  lit et n’écrit que dans ce dossier.
+- **Notifications et alarmes exactes**, pour que les pauses et les
+  programmations commencent et se terminent à l’heure pendant que Posato est
+  fermé. Une notification silencieuse s’affiche pendant que Posato les
+  maintient en fonctionnement.
+- **Le dossier que vous choisissez pour la synchronisation par dossier**,
+  sélectionné dans le sélecteur de dossier d’Android. Posato ne lit et
+  n’écrit que dans ce dossier. Posato 1.6.0 et les versions antérieures
+  demandaient à la place l’accès à tous les fichiers, et ne l’utilisaient
+  aussi que pour ce dossier.
 
 Posato lit la liste des apps que vous pouvez ouvrir depuis le lanceur, afin
 que vous puissiez choisir des apps à mettre en pause ; cette liste reste sur

@@ -328,6 +328,9 @@ For what matters.</string>
     <string name="sync_folder_use">Use this folder</string>
     <string name="sync_folder_browse">Choose folder…</string>
     <string name="sync_folder_invalid">Choose a folder that exists and that Posato can write to.</string>
+    <string name="sync_folder_lost">Posato needs your permission to open this folder again. Choose the same folder to keep syncing.</string>
+    <string name="sync_folder_choose_again">Choose the folder again</string>
+    <string name="sync_folder_another_folder">That is a different folder. Choose the folder this workspace uses.</string>
     <string name="sync_folder_or">Or sync through a folder instead of iCloud.</string>
     <string name="sync_folder_waiting_for_key">This folder already holds a workspace. Enter the pairing code shown on a device in that workspace.</string>
     <string name="sync_folder_code_label">Pairing code</string>
@@ -382,7 +385,7 @@ For what matters.</string>
     <string name="onboarding_summary_linux_on">Pausing service installed</string>
     <string name="onboarding_summary_linux_off">Pausing service still needed</string>
     <string name="onboarding_summary_linux_unchecked">Pausing service not checked</string>
-    <string name="onboarding_permission_android_body">Posato needs a few permissions to pause the websites and apps you choose on this %1$s: usage access, display over other apps, a local VPN that only answers website names, notifications, exact alarms for schedules, access to files for a sync folder, and running in the background without battery limits.</string>
+    <string name="onboarding_permission_android_body">Posato needs a few permissions to pause the websites and apps you choose on this %1$s: usage access, display over other apps, a local VPN that only answers website names, notifications, and exact alarms for schedules.</string>
     <string name="onboarding_permission_android_action">Allow access</string>
     <string name="onboarding_summary_android_on">Access allowed</string>
     <string name="onboarding_summary_android_off">Access still needed</string>
@@ -462,7 +465,7 @@ For what matters.</string>
     <string name="onboarding_permission_body_iphone">Screen Time access lets Posato pause the websites and apps you choose on this iPhone.</string>
     <string name="onboarding_permission_body_ipad">Screen Time access lets Posato pause the websites and apps you choose on this iPad.</string>
     <string name="onboarding_permission_linux_body_full">Posato asks for your administrator password once to install the small service that pauses the websites and apps you choose on this computer.</string>
-    <string name="onboarding_permission_android_body_full">Posato needs a few permissions to pause the websites and apps you choose on this phone: usage access, display over other apps, a local VPN that only answers website names, notifications, exact alarms for schedules, access to files for a sync folder, and running in the background without battery limits.</string>
+    <string name="onboarding_permission_android_body_full">Posato needs a few permissions to pause the websites and apps you choose on this phone: usage access, display over other apps, a local VPN that only answers website names, notifications, and exact alarms for schedules.</string>
     <string name="onboarding_permission_windows_body_full">The Posato installer set up the small service that pauses the websites and apps you choose on this computer.</string>
     <string name="onboarding_saved_on_mac">Saved on this Mac</string>
     <string name="onboarding_saved_on_iphone">Saved on this iPhone</string>

@@ -45,6 +45,17 @@ Composition and the release guard come from the
   outside the build Mac: every later APK must carry the same key, or
   installations cannot update. Gradle never sees the key; `apksigner` from
   the Android SDK build tools signs after the build.
+- **Google Play upload key:** a separate PKCS12 keystore,
+  `~/Library/Developer/Posato/posato-play-upload.p12` with alias `upload`,
+  its password in the login Keychain (service `posato-play-upload`, account
+  `keystore`), and four more `local.properties` keys:
+  `posato.android.uploadKeystorePath`,
+  `posato.android.uploadKeystoreKeychainService`,
+  `posato.android.uploadKeystoreKeychainAccount`, and
+  `posato.android.uploadKeyAlias`. It signs only the AAB uploaded to Play;
+  Play App Signing re-signs what it delivers with the release key above,
+  enrolled through PEPK, so Play and GitHub APKs carry one certificate. Play
+  Console can reset a lost upload key; the release key cannot be replaced.
 - **Linux packages:** the `Linux packages` GitHub Actions workflow
   (`.github/workflows/linux-packages.yml`) builds both `.deb` files; it
   needs no secrets.
@@ -127,19 +138,58 @@ nothing they guard changed.
    The `store` commands ran live in `RELEASE-004` and `RELEASE-005`
    (`observed`). Submit nothing yet.
 
-8. **Android:** `./gradlew :androidApp:assembleRelease` in a clean clone of
-   R (no signing configuration, no minification), then sign the unsigned
-   APK into `Posato-<version>.apk` with `apksigner sign --v2-signing-enabled
-   true --v3-signing-enabled true --ks <keystore> --ks-key-alias <alias>
-   --ks-pass stdin`, piping the password from `security
-   find-generic-password -s <service> -a <account> -w`; never put it on a
-   command line. Check `apksigner verify -v --print-certs` (the certificate
-   SHA-256 equals the one in the first Android release record; pass
-   `--min-sdk-version 24` to see the v2 block, which the default check for
-   minSdk 33 does not report), `aapt2 dump badging` (`versionName`, a
-   `versionCode` above the last published one, no `testOnly` or
-   `debuggable`), and that no file under the clone, `.gradle`, or
-   `~/.gradle` contains the password.
+8. **Android:** in a clean clone of R, `./gradlew :androidApp:assembleRelease
+   :androidApp:bundleRelease -Pposato.android.build=<digit>`. The `release`
+   build type runs R8 (code and resource shrinking) and leaves both outputs
+   unsigned, with no signing configuration:
+   `androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk`,
+   `androidApp/build/outputs/bundle/release/androidApp-release.aab`, and the
+   R8 map `androidApp/build/outputs/mapping/release/mapping.txt`, which goes
+   to Play with the AAB and into the record's evidence, never into Git.
+   - **Version:** `versionName` is set in `androidApp/build.gradle.kts`;
+     `versionCode = major * 1000000 + minor * 10000 + patch * 100 +
+     <digit>`, so 1.6.1 with `-Pposato.android.build=1` is `1060101`. The
+     digit (0 to 99, 0 when omitted; anything else fails the build) is per
+     upload: Play never accepts a `versionCode` twice, so each upload of one
+     `versionName` takes the next digit, including a rejected or abandoned
+     one. Record each consumed digit.
+   - **APK** (GitHub Releases): sign it into `Posato-<version>.apk` with the
+     release key, the password piped on stdin and never put on a command
+     line:
+
+     ```bash
+     security find-generic-password -s <release service> -a <release account> -w |
+       "$ANDROID_HOME/build-tools/<version>/apksigner" sign \
+         --v2-signing-enabled true --v3-signing-enabled true \
+         --ks <release keystore> --ks-key-alias <release alias> --ks-pass stdin \
+         --out Posato-<version>.apk \
+         androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk
+     ```
+
+     Check `apksigner verify -v --print-certs` (the certificate SHA-256
+     equals the one in the first Android release record; pass
+     `--min-sdk-version 24` to see the v2 block, which the default check for
+     minSdk 33 does not report).
+   - **AAB** (Google Play): sign it into `Posato-<version>-<digit>.aab` with
+     the upload key through `jarsigner` from JDK 21 (`JAVA_HOME` pointing at
+     it), which reads the password from stdin when no terminal is attached:
+
+     ```bash
+     security find-generic-password -s <upload service> -a <upload account> -w |
+       "$JAVA_HOME/bin/jarsigner" -keystore <upload keystore> -storetype PKCS12 \
+         -sigalg SHA256withRSA -digestalg SHA-256 \
+         -signedjar Posato-<version>-<digit>.aab \
+         androidApp/build/outputs/bundle/release/androidApp-release.aab <upload alias>
+     ```
+
+     Check `jarsigner -verify` ("jar verified"; its warnings about a
+     self-signed certificate and a missing timestamp are expected for an
+     upload key, so do not pass `-strict`) and that `keytool -printcert
+     -jarfile` shows the upload certificate's SHA-256 registered in Play
+     Console.
+   - **Both:** `aapt2 dump badging` on the APK (`versionName`, the expected
+     `versionCode`, no `testOnly` or `debuggable`), and no file under the
+     clone, `.gradle`, or `~/.gradle` contains either password.
 9. **Linux:** `gh workflow run linux-packages.yml -f ref=<full R SHA>`.
    Download both artifacts (retry with `curl --retry` on the artifact's zip
    URL when `gh run download` stalls), check each `.commit` file equals R
@@ -147,8 +197,8 @@ nothing they guard changed.
    the package fields, a clean `ubuntu:24.04` install and removal, and a
    start under Xvfb on both architectures.
 
-**Done when:** the record lists both DMG and feed hashes, the APK and both
-`.deb` hashes, and the consumed build numbers, the iOS build is `VALID`, and a rerun of `store prepare`
+**Done when:** the record lists both DMG and feed hashes, the APK, AAB, and
+both `.deb` hashes, and the consumed build numbers and Android build digit, the iOS build is `VALID`, and a rerun of `store prepare`
 reports every item `unchanged` with `store status` at `PREPARE_FOR_SUBMISSION`.
 
 ## 4. Unattended verification

@@ -1,0 +1,37 @@
+Choose the websites and apps you want to step away from, keep them in pause sets, then start a pause on your phone or plan pauses ahead with a schedule. Give yourself time to read, work, or be somewhere else.
+
+PAUSE ON YOUR TERMS
+
+Pick a pause set and a duration: a quick choice from 25 minutes to 8 hours, Until end of day, or your own length on the timer. During the pause, a paused app is covered by Posato's pause screen, and paused websites do not open. You can deliberately end a pause early or remove Posato at any time.
+
+PAUSE SETS
+
+Keep a set for each kind of pause, such as one for work and one for evenings. Each set has its own websites and apps, and one is the default. When pauses overlap, Posato pauses everything in their sets until the last one that includes an item ends.
+
+SCHEDULES
+
+Plan recurring pauses by weekday and time, each with its own pause set, such as weekday mornings or every evening. A schedule starts and ends on its own, even when Posato is closed. Skip the next one or end one early when plans change.
+
+BREAKS AND BRIEF VISITS
+
+During a scheduled pause, take one break of 5, 10, or 15 minutes; restrictions return on their own. For a website you want to check now and then, such as the news, let it open briefly during a pause: every 30 minutes, hour, or 2 hours, for 5, 10, or 15 minutes.
+
+FOLDER SYNC WITH YOUR OTHER DEVICES
+
+Keep your workspace in a folder that an app such as Syncthing keeps in sync, and link Posato on your Mac, iPhone, Windows, or Linux computer to the same pause sets, pauses, and schedules. Posato writes only encrypted files there. Add a device by choosing the same folder and scanning a QR code. App choices stay on each device.
+
+EXPORT AND IMPORT
+
+Save your pause sets, their websites, and your schedules to a file, optionally protected by a code, and import it on another device.
+
+HOW POSATO WORKS ON ANDROID
+
+Posato blocks paused websites with a local VPN that only answers website names on this phone; no other traffic enters it, and Posato does not record lookups. It uses usage access and display over other apps to cover an app you paused. Nothing is paused until you start a pause or a schedule you set begins.
+
+NO POSATO ACCOUNT
+
+No ads, analytics, usage scores, streaks, or Posato-operated server. Posato follows your phone's language in English, Polish, German, French, Spanish, and Portuguese. Posato is open source under the Apache License 2.0.
+
+BEFORE YOU START
+
+Posato needs Android 13 or later. Another VPN cannot run during a pause with websites, and strict Private DNS or a browser with its own secure DNS bypasses website pausing. If you use Posato on more than one device, update all of them: devices on an earlier version stop syncing until they update.
