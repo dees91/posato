@@ -51,8 +51,9 @@ Preconditions: Linux uses the clone from `$PC linux create` and no macOS
 clone runs at the same time. Android uses a phone or Posato's own emulator,
 chosen with `--udid <serial>` or `posato.android.serial`, never an emulator
 someone else works on; `$PC devices list` shows what adb lists. Run `$PC
-doctor -t android|linux` first: it names another app's VPN, strict private
-DNS, or a screen lock on the phone, and a missing clone or package.
+doctor -t android|linux` first: it names a phone with no Wi-Fi or mobile
+data, another app's VPN, strict private DNS, or a screen lock on the phone,
+and a missing clone or package.
 
 - **Install and onboarding, as a person meets them:** `$PC build -t
   <target>`, `$PC install -t android --grants settings` (or `install -t
@@ -93,7 +94,9 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   <package>` (Samsung's Clock is `com.sec.android.app.clockpackage`, the
   stock one `com.google.android.deskclock`) or `$PC observe -t linux --expect
   blocked --application /usr/bin/gnome-calculator`; after the end the same
-  command with `--expect allowed`.
+  command with `--expect allowed`. A change to app covering in
+  `androidApp/.../GuardService.kt`, and every release, proves it on the
+  wired test phone as well as the emulator (see Gotchas).
 - **Linux self-clear:** start a pause, `$PC linux exec --script 'pkill -x
   posato; sudo -n date -s "+30 minutes"'`. Proof: `/etc/hosts` is restored
   within seconds, and after `$PC launch -t linux` the screen shows "The
@@ -136,6 +139,9 @@ DNS, or a screen lock on the phone, and a missing clone or package.
   the guest outside `observe` must use the bus in `/tmp/posato-dbus`, or it
   starts its own AT-SPI bus and Posato's tree disappears until `launch -t
   linux` runs again.
+- Samsung One UI publishes the UsageStats `ACTIVITY_RESUMED` event about six
+  seconds after its timestamp, so `GuardService` reads ten seconds back; the
+  emulator publishes at once and never shows a lookback that is too short.
 - Android private DNS set to strict mode, and a browser with its own DNS over
   HTTPS, bypass website blocking by design; the emulator's default settings
   do not.

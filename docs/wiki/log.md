@@ -3398,6 +3398,20 @@ first removal attempt that does not finish, not to a paused keychain.
   `posato-provisioning play` commands
   ([Google Play publishing](../development/google-play.md)).
 
+## [2026-11-06] tooling | Retro ANDROID-003: phone network check, launcher starts, Play gotchas
+
+- `posato-control doctor -t android` reports `android.network` from `dumpsys
+  connectivity`, and `observe -t android --website` fails with
+  `PRECONDITION_NOT_MET` when the device has no network other than a VPN,
+  instead of reading every site as unreachable.
+- `observe -t android --application` starts the resolved launcher activity
+  with `am start`; `monkey` refuses to run on emulator images without
+  physical keys.
+- The Linux and Android feature map asks for app covering on the wired test
+  phone after a `GuardService` change or for a release, because Samsung
+  publishes resume events late; [Google Play publishing](../development/google-play.md)
+  gains a Gotchas section.
+
 ## [2026-11-06] tooling | Play upload deadline scales with size
 
 - `observed`: the first `play upload` of the 1.6.1 production candidate

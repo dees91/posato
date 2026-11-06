@@ -75,6 +75,9 @@ class AndroidDevice(
 
     fun property(name: String): String = shell("getprop $name").stdout.trim()
 
+    /** The connected networks other than a VPN, such as WIFI or CELLULAR; empty when the device is offline. */
+    fun networks(): List<String> = connectedNetworks(shell("dumpsys connectivity").stdout)
+
     /** `light`, `dark`, or the raw `auto`/`custom` value `cmd uimode night` reports. */
     fun nightMode(): String {
         val output = shell("cmd uimode night")

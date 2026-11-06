@@ -203,6 +203,28 @@ the pull request).
 | `PLAY_REJECTED` | Play refused the content; rerun with `--verbose` for its message. |
 | `PLAY_UNREACHABLE` | No answer within the request deadline. The edit is discarded; check the network and rerun, with `--verbose` to see which step stopped. |
 
+## Gotchas
+
+Observed while publishing the first Android release (2026-11-06):
+
+- PEPK reads passwords only from a console, so a piped password fails with a
+  `NullPointerException`; type it, or run it in a pseudo-terminal with
+  `script -q /dev/null java -jar pepk.jar ...` and write the password to its
+  standard input.
+- Keep the PEPK output zip outside the repository and delete it after the
+  upload.
+- Open the internal-testing opt-in link in a browser signed in to the
+  tester's Google account: Chrome on the phone uses the device account,
+  another browser asks to sign in.
+- After the first internal release and opt-in, the Play Store showed "Item
+  not found" for about 20 minutes before Install appeared.
+- Start the first production release of a never-published app in Play
+  Console; later releases can use `play promote`.
+- Play warns that the bundle contains native code without debug symbols. The
+  native code comes from AndroidX libraries shipped without symbols, so there
+  is nothing to upload.
+- The first API call against a new app needs one build uploaded by hand.
+
 ## API reference
 
 - [Edits workflow](https://developers.google.com/android-publisher/edits)

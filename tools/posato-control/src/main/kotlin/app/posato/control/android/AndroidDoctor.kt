@@ -18,7 +18,7 @@ class AndroidDoctor(
     fun checks(): List<DoctorCheck> {
         val reachable = reachability()
         if (!reachable.ok) return listOf(adb(), reachable, apk())
-        return listOf(adb(), reachable, version(), apk(), installed(), foreignVpn(), privateDns(), screenLock(), appearance())
+        return listOf(adb(), reachable, version(), apk(), installed(), network(), foreignVpn(), privateDns(), screenLock(), appearance())
     }
 
     private fun adb(): DoctorCheck = if (Files.isExecutable(java.nio.file.Paths.get(AndroidDevice.ADB))) {
@@ -57,6 +57,20 @@ class AndroidDoctor(
         DoctorCheck.pass("android.installed", "Posato is installed.")
     } else {
         DoctorCheck.fail("android.installed", "Posato is not installed.", "Run `install -t android`.", Severity.WARN)
+    }
+
+    /** Without Wi-Fi or mobile data every website reads as unreachable, which looks like a defect in Posato. */
+    private fun network(): DoctorCheck {
+        val networks = device.networks()
+        return if (networks.isNotEmpty()) {
+            DoctorCheck.pass("android.network", "Connected to a network: ${networks.joinToString()}.")
+        } else {
+            DoctorCheck.fail(
+                "android.network",
+                "The device has no network other than a VPN; every website reads as unreachable.",
+                NO_NETWORK_HINT,
+            )
+        }
     }
 
     /** Android runs one VPN at a time, so starting a website pause takes over another app's VPN and turns it off. */
@@ -118,7 +132,8 @@ class AndroidDoctor(
         DoctorCheck.fail("android.appearance", exception.message ?: "The night mode is unreadable.", "Run `appearance -t android`.", Severity.INFO)
     }
 
-    private companion object {
-        const val MIN_SDK = 33
+    companion object {
+        const val NO_NETWORK_HINT = "Connect the phone to Wi-Fi or turn on mobile data."
+        private const val MIN_SDK = 33
     }
 }

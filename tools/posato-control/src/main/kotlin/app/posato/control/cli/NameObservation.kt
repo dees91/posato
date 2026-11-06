@@ -1,6 +1,7 @@
 package app.posato.control.cli
 
 import app.posato.control.android.AndroidDevice
+import app.posato.control.android.AndroidDoctor
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.desktop.ApplicationObservation
@@ -31,6 +32,10 @@ internal fun nameOutcome(address: String?): String = when (address) {
     else -> PageOutcome.LOADED
 }.name.lowercase()
 
+/** The `package/activity` component in `cmd package resolve-activity --brief` output; null when none resolved. */
+internal fun launcherComponent(output: String): String? = output.lineSequence().lastOrNull { it.isNotBlank() }?.trim()
+    ?.takeIf { '/' in it && ' ' !in it }
+
 private fun hostOf(url: String): String = url.substringAfter("://").substringBefore('/').substringBefore(':')
 
 /**
@@ -42,6 +47,14 @@ class AndroidObserver(
 ) : Observer {
     override fun website(url: String): WebsiteObservation {
         val address = lookupAddress(device.shell("ping -c 1 -W 2 ${shellQuote(hostOf(url))} 2>&1 | head -1").stdout)
+        // Offline, every name is unreachable whether or not a pause holds it, so the observation proves nothing.
+        if (address == null && device.networks().isEmpty()) {
+            throw ControlException(
+                ErrorCode.PRECONDITION_NOT_MET,
+                "Could not observe $url: the device has no network other than a VPN.",
+                AndroidDoctor.NO_NETWORK_HINT,
+            )
+        }
         return WebsiteObservation(url, proxied = false, status = 0, outcome = nameOutcome(address), address = address)
     }
 
@@ -49,9 +62,13 @@ class AndroidObserver(
         name: String,
         seconds: Int,
     ): ApplicationObservation {
-        // A launch that did not happen proves nothing: an absent package would otherwise read as allowed.
-        val launch = device.shell("monkey -p ${shellQuote(name)} -c android.intent.category.LAUNCHER 1 2>&1")
-        if (launch.exitCode != 0 || "monkey aborted" in launch.stdout || "No activities found" in launch.stdout) {
+        // A launch that did not happen proves nothing: an absent package would otherwise read as allowed. The launcher
+        // activity is started by name because `monkey` refuses to run on emulator images without physical keys.
+        val resolved = device.shell("cmd package resolve-activity --brief -c android.intent.category.LAUNCHER ${shellQuote(name)}")
+        val component = launcherComponent(resolved.stdout)
+            ?: throw ControlException(ErrorCode.COMMAND_FAILED, "Could not open $name on the device: ${resolved.stdout.trim()}")
+        val launch = device.shell("am start -W -n ${shellQuote(component)} 2>&1")
+        if (launch.exitCode != 0 || "Error" in launch.stdout) {
             throw ControlException(ErrorCode.COMMAND_FAILED, "Could not open $name on the device: ${launch.stdout.trim()}")
         }
         Thread.sleep(seconds * MILLIS_PER_SECOND)
