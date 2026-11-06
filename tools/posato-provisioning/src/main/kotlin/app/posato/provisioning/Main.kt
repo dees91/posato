@@ -5,6 +5,11 @@ import app.posato.provisioning.cli.CertificatesEnsureCommand
 import app.posato.provisioning.cli.DevicesCommand
 import app.posato.provisioning.cli.DevicesRegisterCommand
 import app.posato.provisioning.cli.DoctorCommand
+import app.posato.provisioning.cli.PlayCommand
+import app.posato.provisioning.cli.PlayListingCommand
+import app.posato.provisioning.cli.PlayPromoteCommand
+import app.posato.provisioning.cli.PlayStatusCommand
+import app.posato.provisioning.cli.PlayUploadCommand
 import app.posato.provisioning.cli.ProfilesCommand
 import app.posato.provisioning.cli.ProfilesEnsureCommand
 import app.posato.provisioning.cli.StoreCommand
@@ -32,7 +37,8 @@ class PosatoProvisioning : CliktCommand(name = "posato-provisioning") {
     override fun help(context: Context): String =
         "Provisions Apple development resources for the Posato App IDs through the App Store Connect API: report " +
             "readiness, register this Mac and the connected iPhone, ensure a development certificate, install " +
-            "development profiles, and prepare and submit the iOS App Store release. Every command prints a JSON envelope " +
+            "development profiles, prepare and submit the iOS App Store release, and upload, promote, and list the " +
+            "Android app on Google Play through the Play Developer API. Every command prints a JSON envelope " +
             "and never prints a credential or identifier."
 
     override fun run() = Unit
@@ -44,6 +50,7 @@ fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
     CertificatesCommand().subcommands(CertificatesEnsureCommand()),
     ProfilesCommand().subcommands(ProfilesEnsureCommand()),
     StoreCommand().subcommands(StoreStatusCommand(), StorePrepareCommand(), StoreSubmitCommand(), StoreWithdrawCommand()),
+    PlayCommand().subcommands(PlayStatusCommand(), PlayUploadCommand(), PlayPromoteCommand(), PlayListingCommand()),
 )
 
 fun run(args: Array<String>): Int {

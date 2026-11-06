@@ -295,4 +295,6 @@ developer-portal step blocks an agent. It needs an App Store Connect API team
 key the maintainer creates once and keeps outside Git, and like the
 verification driver it never runs in CI. Setup, the command reference, the
 profile destinations, and the privacy boundary are in
-[`apple-provisioning.md`](apple-provisioning.md).
+[`apple-provisioning.md`](apple-provisioning.md). Its `play` commands publish the Android app on Google
+Play with a service-account key, described in
+[`google-play.md`](google-play.md).
