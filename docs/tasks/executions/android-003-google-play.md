@@ -1,130 +1,103 @@
 # Execution: `ANDROID-003`
 
 - **Brief:** [Posato for Android on Google Play](../specifications/android-003-google-play.md)
-- **Status:** `active`
+- **Status:** `active` (the production release follows the merge)
 - **Review tier:** `high-risk`
-- **Implementer:** Claude
-- **Reviewer:** independent agent (plan and completed change)
+- **Implementer:** Claude, with parallel agents in isolated worktrees
+- **Reviewer:** independent agents (plan, completed change)
 - **Branch:** `android-003-google-play`
 - **Updated:** 2026-11-06
 
 ## Plan
 
-1. Roadmap revision 42, brief, record, draft pull request, mirror item In
-   Progress.
-2. Failing first: on the phone with all-files access revoked, show that the
-   folder flow refuses or loses the folder (the defect Play forces).
-3. Folder access on Android (`shared/src/androidMain`):
-   - `TreeFolderAccess`: the token is the tree URI; `accept` takes the
-     persistable read and write grant and releases the previous one.
-     `resolve` maps a primary-volume tree (`primary:<rel>`) to the same
-     `/storage/emulated/0/<rel>` path that 1.6.0 stored, so the workspace
-     binding (`FolderLocation.bindingFor`) is unchanged; another provider's
-     tree gets a namespaced virtual path. `canonical` returns that path
-     while the grant is held, otherwise null.
-   - `TreeFolderFileSystem` serves paths under a held tree through
-     `DocumentsContract`, caching document ids per parent from `names()`
-     and dropping them on a miss; a routing file system sends every other
-     path (the app's own directory) to `NioFolderFileSystem`.
-   - `writeExclusive` writes a complete `.tmp-` sibling
-     (`application/octet-stream`) and renames it to the final name; a name
-     the provider returns other than the requested one is `EXISTS`, and the
-     copy is deleted. `replace` is never used on the shared folder (only on
-     app-private files), so the tree file system refuses it.
-   - Migration: `acceptsTypedPath` becomes false on Android. A stored path
-     token from 1.6.0 resolves to nothing; only then, and only on a host
-     without iCloud, the folder section offers "Choose the folder again",
-     which accepts only a tree mapping to exactly the stored path. The
-     coordinator's anchor check still rejects a different workspace.
-   - Failure modes E2E reaches poorly, written before coding: a provider
-     renaming a clash to `name (1)`, a lost grant, a partial read. The clash
-     is exercised by pre-creating a file with `adb` before a join; what stays
-     out of reach is recorded as an accepted risk, without instrumentation.
-4. Grants (`androidApp`): remove `MANAGE_EXTERNAL_STORAGE` from the manifest,
-   `Permissions.all()`, onboarding, and the driver's grant list; a localized
-   disclosure dialog before usage access and before the overlay; measure the
-   battery exemption under `dumpsys deviceidle force-idle` (a schedule start
-   and a folder exchange) and drop the permission unless they fail; record
-   Play's exact-alarm and target API rules with links. `PRIVACY.md` (every
-   shipped language) describes the picked folder in this pull request,
-   before Play review.
-5. Build: `release` build type with R8 (keep rules reasoned from
-   kotlinx-serialization, the `posato://join` link, and resources; a run
-   only confirms them); `versionCode = major * 1000000 + minor * 10000 +
-   patch * 100 + build` (1.6.1 build 1 is 1060101), leaving room for
-   re-uploads; the AAB signed with `jarsigner` by a new upload key
-   (`~/Library/Developer/Posato/posato-play-upload.p12`, password from the
-   login Keychain on stdin, never on a command line; Gradle never sees a
-   key). The APK keeps the release key. PEPK exports the release key for
-   Play App Signing; the PEPK zip lives outside the worktree and is deleted
-   after the upload. `releasing.md` and `build-variants.md` describe the
-   AAB, R8, and the build digit; the keys are recorded in `~/machine-wiki`.
-6. `posato-provisioning play`: service-account JWT from a JSON key outside
-   Git (mode 600, path in `local.properties`); `upload` (AAB and R8
-   `mapping.txt` to a track, release notes per language), `listing` (text,
-   icon, feature graphic, phone screenshots per language), and `status`;
-   documented beside the App Store commands. Data safety stays a one-off
-   Play Console form.
-7. `posato-control`: grants without all-files access, the folder chosen
-   through the DocumentsUI picker; `verify-posato` skill, feature map, and
-   scenarios updated.
-8. Store content: listing text in the shipped languages from the App Store
-   text, Android screenshots, the 512 px icon and the 1024 x 500 feature
-   graphic, the privacy policy URL; Data safety answers with their reasoning
-   (no data collected or shared; lookups forwarded to the network's DNS or
-   Google Public DNS); the permitted VpnService use and the `specialUse`
-   description, each with its video.
-9. Verify on the Galaxy and the Posato AVD with a Tart peer: `AC-01`
-   including the upgrade from the GitHub `Posato-1.6.0.apk` to a 1.6.1 APK
-   signed locally with the release key; `AC-02` with one run that taps
-   through the onboarding grant buttons; `AC-03` on the R8 build adding an
-   export and import and a join over the folder; one poll's cost measured.
-   Then the completed-change review and the quality gate.
-10. Maintainer checklist in Play Console, in this order: create the app;
-    enroll the existing key through PEPK and register the upload
-    certificate; **stop gate**: App integrity shows an app signing SHA-256
-    equal to the release key's fingerprint; add the test phone's account as
-    an internal tester; upload the first AAB to the internal track by hand
-    (the API acts only on an app with a build); link the API service
-    account; Data safety, content rating, declarations with videos.
-11. Install from the internal track on the Galaxy, `AC-03` and `AC-04`; the
-    pull request ready and handed to `babysit-pr`.
-12. After the merge, build the production AAB from the merged main commit in
-    a clean clone (next build digit), record its commit, upload it to the
-    internal track through `play upload`, rerun the `AC-03` smoke from Play,
-    and promote it to production after the maintainer's go. A closeout pull
-    request updates the limits page, README, and `posato.app` in every
-    shipped language once 1.6.1 is live (`AC-05`).
+1. Revision 42, brief, record, draft pull request #228, mirror In Progress.
+2. Failing first: with all-files access denied, the folder is refused.
+3. Folder through the Storage Access Framework (`TreeFolderAccess`,
+   `TreeFolderFileSystem`, `RoutingFolderFileSystem`): the tree URI is the
+   token, a primary tree resolves to the 1.6.0 path so the binding stays,
+   an exclusive write renames a complete `.tmp-` file and reads a renamed
+   clash as existing, `replace` is refused on the shared folder; a linked
+   1.6.0 install chooses the same folder again.
+4. Grants: no all-files access, a disclosure before usage access and the
+   overlay, the battery exemption measured and dropped, `PRIVACY.md` in
+   every shipped language.
+5. R8 release APK and AAB, `versionCode = major * 1000000 + minor * 10000 +
+   patch * 100 + build`, an upload key outside Git, the release key enrolled
+   as the Play app signing key through PEPK before the first upload.
+6. `posato-provisioning play status|upload|promote|listing`.
+7. `posato-control` grants and the DocumentsUI folder picker.
+8. Listing text, icon, feature graphic, and phone screenshots per language;
+   the Play Console declarations with their reasons.
+9. Verification on the Galaxy and the Posato AVD with a Tart Linux peer.
+10. Maintainer steps in Play Console, the first upload by hand, the internal
+    track installed from Play on the Galaxy.
+11. After the merge: a bundle of the merged commit through `play upload`,
+    the smoke test from Play, and the first production rollout in Play
+    Console (the API cannot publish an unpublished app); a closeout pull
+    request names Google Play on the limits page, README, and `posato.app`.
 
 ## High-risk plan review
 
-- **Verdict:** changes-required (first pass), second pass pending
-- **Critical or Required findings:** R1 the binding of a re-picked folder
-  must equal the 1.6.0 path; R2 exclusive writes must not expose partial
-  files; R3 app signing enrollment gates the first upload; R4 the first
-  upload is manual; R5 the versionCode needs a build digit; R6 production
-  must ship a build of the merged commit.
-- **Resolution:** folded into plan steps 3, 5, 10, and 12.
+- **Verdict:** approved on the second pass.
+- **Required findings:** R1 the re-picked folder's binding must equal the
+  1.6.0 path; R2 no partial files; R3 enrollment gates the first upload;
+  R4 the first upload is manual; R5 a build digit; R6 production ships the
+  merged commit. All folded into the plan before implementation.
 
 ## Result
 
-- Pending.
+- Android 1.6.1 opens the sync folder through the system picker and asks
+  for neither all-files access nor the battery exemption; usage access and
+  the overlay are explained first. Play App Signing holds the existing
+  release key (`9D:9C:67:F8...D5:B1`), the upload key is separate, and
+  build 1 (`1060101`, commit `75ebac1d`) is on the internal track.
+- Found and fixed: a paused app was never covered on the Galaxy, also on
+  1.6.0, because Samsung publishes usage events about six seconds late
+  (maintainer decision to fix it in this row); after the 1.6.0 upgrade the
+  folder section also claimed the workspace was missing; the disclosure
+  dialog was dark in a light app.
+- Deviations: the routing file system sends only Posato's private
+  directory to `java.nio` and fails closed for every other path; R8 is
+  pinned to 9.5.29 because AGP 9.0.1's R8 could not read Kotlin 2.4
+  metadata; the Play listing lives in `docs/store/<locale>/play/` because
+  translated copy is allowed only there; the maintainer uploaded build 1
+  before the API was linked.
+- Decisions (`agent-delegated`): drop the battery exemption on the Doze
+  evidence; declare forwarded name lookups as ephemeral web browsing data
+  in Data safety; the Play title "Posato: pause apps and sites".
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved for code; one Required process item (P1: cite the
+  verification evidence) resolved by this record and `pr-evidence`.
+- **Folded:** a folder Posato cannot create files in is refused; an
+  unlinked 1.6.0 choice is offered again; the usage disclosure says what is
+  kept; the dialog closes when its wait is cancelled.
+- **Accepted risk:** the provider's rename is not atomic against another
+  writer in the same instant.
+- **Declined:** registering the access token with the redaction (Google
+  never echoes it); the SD-card tree path (no 1.6.0 SD-card installs).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | pending | pending |
+| Red: all-files denied, `flow folder link` on main | fail as expected | `a003-red-emu` |
+| Disclosures before usage access and overlay, R8 build, Galaxy | pass | `a003-r8-onboard` |
+| Schedule start and end in forced deep Doze, no exemption | pass | `a003-doze` |
+| Fresh link and two-way sync with a Tart Linux peer | pass | `ac01-r1-*` |
+| 1.6.0 to 1.6.1 update with the release key, choose again, sync | pass | `ac01-r2-*` |
+| Unlinked 1.6.0 choice after the update, picker link on the Galaxy | pass | `a003-unlinked-lost`, `a003-phone-link` |
+| Paused app covered on the Galaxy and the emulator | pass | `a003-samsung-fix`, `a003-emu-fix` |
+| Installed from Play's internal track: signature, website pause, schedule with Posato closed | pass | `a003-play-ac03` |
+| `qualityLint`, `:shared:jvmTest`, `:posato-control:test`, `:posato-provisioning:test` | pass | local |
 
 ## Blockers and accepted risks
 
-- Maintainer-only Play Console steps (brief).
+- Maintainer: Data safety, content rating, the VpnService and foreground
+  service declarations with their videos, and the production go.
 
 ## Final
 
 - **Status:** `active`
-- **Outcome:** pending
+- **Outcome:** pending the production release and its closeout.

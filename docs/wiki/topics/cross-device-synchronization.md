@@ -595,6 +595,17 @@ accepted (`user-confirmed` 2026-10-20); the direction was confirmed on
 - Delivery takes about a minute plus the sync service's own delay, because
   each device polls the folder once a minute while it runs (`observed`: 58 s
   from a pause on Android to the Linux hosts block through the relay).
+- `observed` (`ANDROID-003`, 2026-11-06): Google Play does not allow
+  all-files access for a sync folder, so Android 1.6.1 opens the folder
+  through the Storage Access Framework: the token is the picked tree's
+  persistable URI, a primary-storage tree resolves to the same
+  `/storage/emulated/0/<rel>` path 1.6.0 stored, so the workspace binding
+  is unchanged, and an exclusive write is a complete `.tmp-` file renamed
+  into place, with a provider's renamed clash (`name (1)`) read as an
+  existing file. A linked 1.6.0 install offers **Choose the folder again**
+  and accepts only the same folder; an unlinked one simply chooses again.
+  Accepted risk: the provider's rename is not atomic against another app
+  writing the same name in the same instant.
 
 ## Open production questions
 
