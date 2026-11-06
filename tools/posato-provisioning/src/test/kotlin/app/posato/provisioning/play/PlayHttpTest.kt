@@ -5,6 +5,7 @@ import app.posato.provisioning.asc.Sleeper
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.core.Transcript
+import java.time.Duration
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,6 +56,33 @@ class PlayHttpTest {
     }
 
     @Test
+    fun `gives a large upload the time a slow uplink needs while JSON calls keep their short deadline`() {
+        // The 1.6.1 R8 mapping (63.6 MB) timed out over a home connection; an upload must fit a 512 kbit/s uplink.
+        val mapping = ByteArray(63_601_138)
+        val slowUplink = Duration.ofSeconds(mapping.size / SLOW_UPLINK_BYTES_PER_SECOND)
+        val transport = FakePlayTransport { request ->
+            if (request.method == WireMethod.POST && request.uri.query == "uploadType=resumable") {
+                WireResponse(200, ByteArray(0), "https://androidpublisher.googleapis.com/upload/session?upload_id=U")
+            } else {
+                ok()
+            }
+        }
+
+        http(transport).media("edits/E1/apks/3/deobfuscationFiles/proguard", "application/octet-stream", mapping)
+        http(transport).resumable("edits/E1/bundles", "application/octet-stream", mapping)
+        http(transport).json(WireMethod.PUT, "edits/E1/tracks/internal")
+
+        val media = transport.requests[0]
+        val session = transport.requests[1]
+        val bundle = transport.requests[2]
+        val track = transport.requests[3]
+        assertTrue(media.timeout >= slowUplink, "mapping upload deadline ${media.timeout} is below $slowUplink")
+        assertTrue(bundle.timeout >= slowUplink, "bundle upload deadline ${bundle.timeout} is below $slowUplink")
+        assertTrue(session.timeout <= Duration.ofMinutes(1), "opening a session is a short call")
+        assertTrue(track.timeout <= Duration.ofMinutes(1), "a JSON call keeps its short deadline")
+    }
+
+    @Test
     fun `reports Google's status and reasons but keeps the free-text message to the redacted transcript`() {
         val transcript = mutableListOf<String>()
         val transport = FakePlayTransport {
@@ -95,3 +123,5 @@ class PlayHttpTest {
 
     private fun http(transport: PlayTransport): PlayHttp = PlayHttp({ "t" }, transport, MutableClock(Instant.EPOCH), Sleeper { }, Transcript { })
 }
+
+private const val SLOW_UPLINK_BYTES_PER_SECOND = 64_000L
