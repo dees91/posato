@@ -145,6 +145,47 @@ free-text `message` often says exactly what to fix (a reused version code, a
 draft-only app) but can quote submitted values, so it goes only to the
 `--verbose` transcript on stderr, redacted.
 
+## Play Console declarations
+
+Play asks these in **Policy and programs > App content** and in the Data
+safety form, which no API sets. The answers follow
+[`PRIVACY.md`](../../PRIVACY.md); review them whenever it changes
+(`agent-delegated`, `ANDROID-003`, pending the maintainer's acceptance in
+the pull request).
+
+- **Privacy policy:** `https://posato.app/privacy`.
+- **Ads:** no ads. **App access:** every function works without an account
+  or login, so no credentials are given to reviewers.
+- **Target audience:** 18 and over; not designed for children.
+- **Content rating (IARC):** a utility or productivity app with no violence,
+  sexual content, profanity, drugs, gambling, user-generated content,
+  sharing of location, or purchases.
+- **News, health, financial features, government:** none.
+- **Data safety:**
+  - Nothing is collected or shared except the name lookups the local VPN
+    forwards during a website pause: declare **Web browsing > Web browsing
+    history** as collected, processed ephemerally, required, for app
+    functionality, not shared (the network's DNS server or Google Public DNS
+    answers it as a service provider), not encrypted in transit (plain DNS),
+    and with nothing to delete because nothing is kept.
+  - Folder sync writes end-to-end encrypted files only into a folder the
+    person picks; another app moves them, so Posato collects nothing there.
+  - App choices, pause sets, and schedules stay on the device unless sync is
+    on, and then only as those encrypted files.
+- **Foreground service (`specialUse`):** "Keeps pauses and schedules the
+  person set running while the app is closed: it starts and ends them at
+  their minute and covers a paused app." Video: a schedule starting with
+  Posato closed, then the pause screen over a paused app.
+- **VpnService:** core function, a local VPN that carries only name lookups
+  during a pause with websites, answers paused names itself, and forwards
+  every other lookup unchanged; no other traffic enters it and nothing is
+  logged. Video: start a pause, a paused website fails to load, another one
+  loads, the pause ends.
+- **Exact alarms:** `SCHEDULE_EXACT_ALARM`, granted by the person in
+  Settings, needs no declaration; `USE_EXACT_ALARM` is not used.
+- **Not requested:** all-files access and the battery optimization
+  exemption, both removed in `ANDROID-003`.
+
 ## Troubleshooting
 
 | Code | Meaning |
