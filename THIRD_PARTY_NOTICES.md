@@ -51,9 +51,9 @@ whenever a runtime dependency changes.
 The download badges on posato.app and in the README are not shipped inside
 the applications. Their text is outlined from the Inter typeface (Rasmus
 Andersson, SIL Open Font License 1.1). The Linux mark comes from Simple Icons
-(CC0-1.0 path data): Tux was drawn by Larry Ewing with The GIMP. The "Get it
-on Google Play" badges are Google's unmodified badge artwork in each
-language, from the Google Play Partner Marketing Hub. Linux is a registered
+(CC0-1.0 path data): Tux was drawn by Larry Ewing with The GIMP. The Google
+Play mark on the Google Play button is the Simple Icons Google Play glyph
+(CC0-1.0 path data), drawn in a single color. Linux is a registered
 trademark of Linus Torvalds; Google Play and the Google Play logo are
 trademarks of Google LLC; Apple, Mac, and App Store are trademarks of Apple
 Inc.
