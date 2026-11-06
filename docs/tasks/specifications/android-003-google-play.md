@@ -31,17 +31,19 @@ sees why Posato needs usage access and the overlay before granting them.
   sync fail without it; exact alarms and `targetSdk` are checked against
   Play's current policy.
 - Build: a `release` build type with R8 producing an AAB and the existing
-  APK, `versionCode` derived from `versionName`, signed by a new upload key
-  kept outside Git; the existing release key becomes the Play app signing
-  key through PEPK.
-- Tooling: `posato-provisioning` gains Play commands through the Play
-  Developer API (upload to a track, listing text and images, Data safety);
-  `posato-control` grants and the folder flow follow the picker.
+  APK, a `versionCode` with a build digit, the AAB signed by a new upload
+  key kept outside Git; the existing release key becomes the Play app
+  signing key through PEPK before any build reaches Play.
+- Tooling: `posato-provisioning` uploads builds and the listing through the
+  Play Developer API; `posato-control` grants and the folder flow follow
+  the picker.
+- Production ships a build of the merged main commit.
 - Store: listing in every shipped language, Data safety, content rating,
   and the VpnService and `specialUse` declarations; internal track first,
   production only after the maintainer's go.
-- Docs: the limits page, README, `PRIVACY.md`, and `posato.app` in every
-  shipped language name Google Play.
+- Docs: `PRIVACY.md` describes the picked folder in this pull request,
+  before Play review; the limits page, README, and `posato.app` in every
+  shipped language name Google Play once 1.6.1 is live.
 - Non-goals: Mac, iOS, Linux, Windows, and the GitHub Releases APK (they
   stay on 1.6.0); Play billing, ads, or any analytics; Android below the
   current `minSdk`.
@@ -59,9 +61,10 @@ sees why Posato needs usage access and the overlay before granting them.
 - `AC-03` - The R8 release build, installed from Play's internal track on
   the test phone, completes onboarding, a pause blocking a website and an
   application, and a schedule with the app closed.
-- `AC-04` - Play App Signing holds the existing key (the Play-delivered
-  APK's certificate digest equals the GitHub 1.6.0 APK's), and the listing,
-  Data safety, content rating, and declarations are complete.
+- `AC-04` - Before the first upload, Play App Signing shows the existing
+  release key's SHA-256; the Play-delivered APK's certificate digest equals
+  the GitHub 1.6.0 APK's; the listing, Data safety, content rating, and
+  declarations are complete.
 - `AC-05` - After the maintainer's go, 1.6.1 is live in production and the
   public docs name Google Play in every shipped language.
 
@@ -74,6 +77,8 @@ sees why Posato needs usage access and the overlay before granting them.
 
 ## Decisions or blockers
 
-- Maintainer-only Play Console steps: create the app entry, link the API
-  service account, enroll app signing, answer the content rating and the
-  declarations (with the VpnService video), and the production go.
+- Maintainer-only Play Console steps: create the app entry, enroll app
+  signing through PEPK, upload the first build by hand, add the test
+  phone's account as an internal tester, link the API service account,
+  answer Data safety, the content rating, and the declarations (videos for
+  VpnService and the `specialUse` service), and give the production go.
