@@ -133,7 +133,10 @@ Requests go only to `androidpublisher.googleapis.com` under
 identifiers, with redirects refused and a response capped at 4 MiB. Only `GET`
 is retried. Uploads go to the `/upload/` endpoints: the bundle through a
 resumable session and the mapping and images as simple media uploads, each
-attempted once with a ten-minute deadline. The resumable session URL is the
+attempted once. An upload's deadline grows with its size: ten minutes for
+Google's processing plus the time a 512 kbit/s uplink needs for the bytes,
+about 26 minutes for a 64 MB R8 mapping. Other requests keep a 60-second
+deadline. The resumable session URL is the
 one service-supplied URL the tool follows, and only when it is `https` on a
 `googleapis.com` host on the default port without user information; anything
 else stops with `PLAY_UPLOAD_REFUSED` before the bundle or the token is sent.
@@ -198,6 +201,7 @@ the pull request).
 | `PLAY_FORBIDDEN` | The service account is not invited for the app, lacks a permission, or the invitation has not applied yet. |
 | `PLAY_NOT_FOUND` | The app does not exist in Play Console yet or has no hand-uploaded build. |
 | `PLAY_REJECTED` | Play refused the content; rerun with `--verbose` for its message. |
+| `PLAY_UNREACHABLE` | No answer within the request deadline. The edit is discarded; check the network and rerun, with `--verbose` to see which step stopped. |
 
 ## API reference
 

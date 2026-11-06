@@ -25,8 +25,11 @@ private const val HTTPS_PORT = 443
 private const val DEFAULT_PORT = -1
 private val TOTAL_DEADLINE: Duration = Duration.ofSeconds(60)
 
-/** Uploading and processing a bundle or a large mapping takes minutes; Google suggests raising client timeouts. */
-private val UPLOAD_TIMEOUT: Duration = Duration.ofMinutes(10)
+/** What Google needs to process an upload once its bytes arrived; Google suggests raising client timeouts. */
+private val UPLOAD_PROCESSING: Duration = Duration.ofMinutes(10)
+
+/** The slowest uplink an upload must fit: 512 kbit/s, so a 64 MB R8 mapping gets about 26 minutes. */
+private const val SLOWEST_UPLINK_BYTES_PER_SECOND = 64L * 1024
 private const val MAX_BODY_BYTES = 4 * 1024 * 1024
 private const val MAX_GET_ATTEMPTS = 3
 private const val SUCCESS_FLOOR = 200
@@ -86,7 +89,7 @@ class PlayHttp(
     ): JsonObject {
         val uri = URI.create("${UPLOAD_BASE}${checked(path)}?uploadType=media")
         transcript.record("POST upload $path (${bytes.size} bytes)")
-        return document(once(WireRequest(WireMethod.POST, uri, listOf("Content-Type" to contentType), bytes, UPLOAD_TIMEOUT)))
+        return document(once(WireRequest(WireMethod.POST, uri, listOf("Content-Type" to contentType), bytes, uploadDeadline(bytes))))
     }
 
     /**
@@ -106,8 +109,11 @@ class PlayHttp(
         val opened = once(WireRequest(WireMethod.POST, start, headers, ByteArray(0), TOTAL_DEADLINE))
         val session = SessionUriPolicy.validate(opened.location)
         transcript.record("PUT resumable upload $path (${bytes.size} bytes)")
-        return document(once(WireRequest(WireMethod.PUT, session, listOf("Content-Type" to contentType), bytes, UPLOAD_TIMEOUT)))
+        return document(once(WireRequest(WireMethod.PUT, session, listOf("Content-Type" to contentType), bytes, uploadDeadline(bytes))))
     }
+
+    /** An upload's deadline grows with its size, so a large mapping over a slow uplink is not cut off mid-transfer. */
+    private fun uploadDeadline(bytes: ByteArray): Duration = UPLOAD_PROCESSING.plusSeconds(bytes.size / SLOWEST_UPLINK_BYTES_PER_SECOND)
 
     private fun once(request: WireRequest): WireResponse {
         val outcome = attempt(request)
