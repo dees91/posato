@@ -11,7 +11,7 @@ import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 
 /**
  * Onboarding's access step on Android: each press opens the next missing grant (VPN, usage access, display over other
- * apps, notifications, exact alarms, and the battery exemption). Usage access and the overlay are explained first, and
+ * apps, notifications, and exact alarms). Usage access and the overlay are explained first, and
  * a person who declines that explanation is not taken to Settings.
  */
 internal class AndroidAccess(
@@ -26,7 +26,6 @@ internal class AndroidAccess(
             !Permissions.overlay(app) -> activity.openExplainedGrant(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, packageUri), overlay)
             !Permissions.notifications(app) -> activity.requestNotifications()
             !Permissions.exactAlarms(app) -> activity.openGrant(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, packageUri))
-            !Permissions.batteryExempt(app) -> activity.openGrant(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri))
         }
         val access = if (Permissions.all(app)) LocalApplicationMappingsAccess.READY else LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
         return ApplicationAccessResult.Determined(access)

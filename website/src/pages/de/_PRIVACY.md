@@ -267,10 +267,9 @@ Einstellungen von Android erteilt werden:
   App, die in diesem Moment im Vordergrund ist, im Arbeitsspeicher und
   zeichnet die App-Nutzung nicht auf.
 - **Über anderen Apps einblenden**, um den Pausenbildschirm anzuzeigen.
-- **Benachrichtigungen, genaue Wecker und Ausführung ohne
-  Akkubeschränkungen**, damit Pausen und Zeitpläne pünktlich beginnen und
-  enden, während Posato geschlossen ist. Eine lautlose Benachrichtigung wird
-  angezeigt, solange Posato sie am Laufen hält.
+- **Benachrichtigungen und genaue Wecker**, damit Pausen und Zeitpläne
+  pünktlich beginnen und enden, während Posato geschlossen ist. Eine lautlose
+  Benachrichtigung wird angezeigt, solange Posato sie am Laufen hält.
 - **Den Ordner, den du für die Ordner-Synchronisierung wählst**, ausgewählt
   in der Ordnerauswahl von Android. Posato liest und beschreibt nur diesen
   Ordner. Posato 1.6.0 und älter bat stattdessen um Zugriff auf alle Dateien

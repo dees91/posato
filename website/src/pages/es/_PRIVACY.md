@@ -266,10 +266,9 @@ ajustes de Android:
   app que está en primer plano en ese momento, en memoria, y no registra el
   uso de las apps.
 - **Mostrar sobre otras aplicaciones**, para mostrar esa pantalla.
-- **Notificaciones, alarmas exactas y ejecución sin restricciones de
-  batería**, para que las pausas y los horarios empiecen y terminen a su hora
-  con Posato cerrado. Mientras Posato los mantiene en marcha, se muestra una
-  notificación silenciosa.
+- **Notificaciones y alarmas exactas**, para que las pausas y los horarios
+  empiecen y terminen a su hora con Posato cerrado. Mientras Posato los
+  mantiene en marcha, se muestra una notificación silenciosa.
 - **La carpeta que elijas para la sincronización por carpeta**, seleccionada
   en el selector de carpetas de Android. Posato solo lee y escribe en esa
   carpeta. Posato 1.6.0 y versiones anteriores pedían en su lugar acceso a

@@ -382,7 +382,7 @@ Para lo que importa.</string>
     <string name="onboarding_summary_linux_on">Servicio de pausa instalado</string>
     <string name="onboarding_summary_linux_off">Aún falta el servicio de pausa</string>
     <string name="onboarding_summary_linux_unchecked">Servicio de pausa sin comprobar</string>
-    <string name="onboarding_permission_android_body">Posato necesita algunos permisos para pausar los sitios web y las apps que elijas en este %1$s: acceso a datos de uso, mostrar sobre otras aplicaciones, una VPN local que solo responde a nombres de sitios web, notificaciones, alarmas exactas para los horarios, acceso a archivos para una carpeta de sincronización y ejecución en segundo plano sin restricciones de batería.</string>
+    <string name="onboarding_permission_android_body">Posato necesita algunos permisos para pausar los sitios web y las apps que elijas en este %1$s: acceso a datos de uso, mostrar sobre otras aplicaciones, una VPN local que solo responde a nombres de sitios web, notificaciones y alarmas exactas para los horarios.</string>
     <string name="onboarding_permission_android_action">Permitir acceso</string>
     <string name="onboarding_summary_android_on">Acceso permitido</string>
     <string name="onboarding_summary_android_off">Aún falta el acceso</string>
@@ -462,7 +462,7 @@ Para lo que importa.</string>
     <string name="onboarding_permission_body_iphone">El acceso a Tiempo de uso permite a Posato pausar los sitios web y las apps que elijas en este iPhone.</string>
     <string name="onboarding_permission_body_ipad">El acceso a Tiempo de uso permite a Posato pausar los sitios web y las apps que elijas en este iPad.</string>
     <string name="onboarding_permission_linux_body_full">Posato te pide una vez la contraseña de administrador para instalar el pequeño servicio que pausa los sitios web y las apps que elijas en este ordenador.</string>
-    <string name="onboarding_permission_android_body_full">Posato necesita algunos permisos para pausar los sitios web y las apps que elijas en este teléfono: acceso a datos de uso, mostrar sobre otras aplicaciones, una VPN local que solo responde a nombres de sitios web, notificaciones, alarmas exactas para los horarios, acceso a archivos para una carpeta de sincronización y ejecución en segundo plano sin restricciones de batería.</string>
+    <string name="onboarding_permission_android_body_full">Posato necesita algunos permisos para pausar los sitios web y las apps que elijas en este teléfono: acceso a datos de uso, mostrar sobre otras aplicaciones, una VPN local que solo responde a nombres de sitios web, notificaciones y alarmas exactas para los horarios.</string>
     <string name="onboarding_permission_windows_body_full">El instalador de Posato ha configurado el pequeño servicio que pausa los sitios web y las apps que elijas en este ordenador.</string>
     <string name="onboarding_saved_on_mac">Guardado en este Mac</string>
     <string name="onboarding_saved_on_iphone">Guardado en este iPhone</string>

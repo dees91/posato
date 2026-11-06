@@ -227,9 +227,9 @@ settings:
   screen. It keeps only the app in front at that moment, in memory, and does
   not record app usage.
 - **Display over other apps**, to show the block screen.
-- **Notifications, exact alarms, and running without battery limits**, so
-  that pauses and schedules start and end on time while Posato is closed. A
-  silent notification shows while Posato keeps them running.
+- **Notifications and exact alarms**, so that pauses and schedules start and
+  end on time while Posato is closed. A silent notification shows while Posato
+  keeps them running.
 - **The folder you choose for folder sync**, picked in Android's folder
   picker. Posato reads and writes only that folder. Posato 1.6.0 and earlier
   asked for access to all files instead and also used it only for that
