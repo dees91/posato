@@ -53,7 +53,7 @@ blank value counting as absent.
 | `play status` | Read-only: every Google Play track with its releases, and the listing locales. |
 | `play upload --aab <file> --mapping <mapping.txt> --track internal\|production [--notes-dir <dir>] [--status completed\|draft]` | Uploads the bundle and its R8 mapping, sets the track's release with per-language notes, and commits one edit. |
 | `play promote --version-code <n> --from <track> --to <track> [--status completed\|draft]` | Moves a tested release to another track without uploading again. |
-| `play listing --dir <dir>` | Replaces each locale's title, descriptions, icon, feature graphic, and phone screenshots in one edit, after checking every limit locally. |
+| `play listing --dir <dir>` | Replaces each locale's `<locale>/play/` title, descriptions, icon, feature graphic, and phone screenshots in one edit, after checking every limit locally. |
 
 Global options: `--human` for a short summary, `--verbose` for a redacted
 transcript on stderr. Exit codes are `2` usage, `3` a condition to clear, `4` a

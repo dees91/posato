@@ -64,7 +64,7 @@ Build and run the tool as in [Install and run](apple-provisioning.md#install-and
 | `play status` | Read-only. Every track with its releases (version codes, status, rollout fraction, release-note languages) and the store listing locales. The edit it opens is deleted, never committed. |
 | `play upload --aab <file> --mapping <mapping.txt> --track internal\|production [--notes-dir <dir>] [--status completed\|draft]` | Uploads the bundle, attaches the R8 mapping to the version code Play read from that bundle, makes it the track's only release with the release notes of `--notes-dir` (`<locale>.txt` files such as `en-US.txt` and `pl-PL.txt`, at most 500 characters each), and commits. Prints the version code, the bundle's SHA-256, and the track. `--status` defaults to `completed`. |
 | `play promote --version-code <n> --from internal\|production --to internal\|production [--status completed\|draft]` | Makes the release holding `<n>` on `--from` the release of `--to`, keeping its name and release notes. Nothing is uploaded again, so production receives the tested bundle. Fails with `PLAY_RELEASE_MISSING` when `--from` has no such release. |
-| `play listing --dir <dir>` | Replaces the listing of each locale subdirectory of `<dir>` in one edit. |
+| `play listing --dir <dir>` | Replaces the listing in `<dir>/<locale>/play/` of each locale in one edit; the repository keeps it in `docs/store`. |
 
 Examples:
 
@@ -73,7 +73,7 @@ posato-provisioning play status
 posato-provisioning play upload --aab <out>/Posato-1.6.1.aab --mapping <out>/mapping.txt \
   --track internal --notes-dir <out>/release-notes
 posato-provisioning play promote --version-code 1060101 --from internal --to production
-posato-provisioning play listing --dir <out>/play-listing
+posato-provisioning play listing --dir docs/store
 ```
 
 Use `--status draft` while the app itself is still a draft in Play Console:

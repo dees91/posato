@@ -38,12 +38,12 @@ class PlayInputsTest {
     @Test
     fun `counts characters rather than bytes and refuses each text one character over Play's limit`() {
         val root = listingRoot()
-        root.resolve("pl-PL/title.txt").writeText("\u0105".repeat(30))
+        root.resolve("pl-PL/play/title.txt").writeText("\u0105".repeat(30))
         assertEquals("\u0105".repeat(30), PlayInputs.listings(root).single().title)
 
         mapOf("title.txt" to 31, "short-description.txt" to 81, "full-description.txt" to 4001).forEach { (file, length) ->
             val fresh = listingRoot()
-            fresh.resolve("pl-PL/$file").writeText("a".repeat(length))
+            fresh.resolve("pl-PL/play/$file").writeText("a".repeat(length))
             val failure = assertFailsWith<ProvisioningException>(file) { PlayInputs.listings(fresh) }
             assertEquals(ErrorCode.RELEASE_INPUT_INVALID, failure.code)
             assertTrue(failure.message.orEmpty().contains("pl-PL/$file"), failure.message)
@@ -53,27 +53,27 @@ class PlayInputsTest {
 
     @Test
     fun `refuses an icon or feature graphic of the wrong size and a feature graphic with alpha`() {
-        refuses("icon.png") { root -> png(root.resolve("pl-PL/icon.png"), 1024, 1024) }
-        refuses("feature-graphic.png") { root -> png(root.resolve("pl-PL/feature-graphic.png"), 1024, 512) }
-        refuses("feature-graphic.png") { root -> png(root.resolve("pl-PL/feature-graphic.png"), 1024, 500, RGBA) }
-        refuses("icon.png") { root -> png(root.resolve("pl-PL/icon.png"), 512, 512, RGBA, padding = 1024 * 1024) }
-        refuses("icon.png") { root -> root.resolve("pl-PL/icon.png").writeBytes("GIF89a not a png at all".toByteArray()) }
+        refuses("icon.png") { root -> png(root.resolve("pl-PL/play/icon.png"), 1024, 1024) }
+        refuses("feature-graphic.png") { root -> png(root.resolve("pl-PL/play/feature-graphic.png"), 1024, 512) }
+        refuses("feature-graphic.png") { root -> png(root.resolve("pl-PL/play/feature-graphic.png"), 1024, 500, RGBA) }
+        refuses("icon.png") { root -> png(root.resolve("pl-PL/play/icon.png"), 512, 512, RGBA, padding = 1024 * 1024) }
+        refuses("icon.png") { root -> root.resolve("pl-PL/play/icon.png").writeBytes("GIF89a not a png at all".toByteArray()) }
     }
 
     @Test
     fun `refuses phone screenshots outside Play's count, size, and aspect bounds`() {
-        refuses("phone") { root -> root.resolve("pl-PL/phone/02-schedule.png").deleteExisting() }
-        refuses("phone") { root -> (3..9).forEach { index -> png(root.resolve("pl-PL/phone/0$index.png"), 1080, 1920) } }
-        refuses("03.png") { root -> png(root.resolve("pl-PL/phone/03.png"), 1080, 2400) }
-        refuses("03.png") { root -> png(root.resolve("pl-PL/phone/03.png"), 300, 600) }
-        refuses("03.png") { root -> png(root.resolve("pl-PL/phone/03.png"), 2160, 3841) }
-        refuses("03.png") { root -> png(root.resolve("pl-PL/phone/03.png"), 1080, 1920, RGBA) }
+        refuses("phone") { root -> root.resolve("pl-PL/play/phone/02-schedule.png").deleteExisting() }
+        refuses("phone") { root -> (3..9).forEach { index -> png(root.resolve("pl-PL/play/phone/0$index.png"), 1080, 1920) } }
+        refuses("03.png") { root -> png(root.resolve("pl-PL/play/phone/03.png"), 1080, 2400) }
+        refuses("03.png") { root -> png(root.resolve("pl-PL/play/phone/03.png"), 300, 600) }
+        refuses("03.png") { root -> png(root.resolve("pl-PL/play/phone/03.png"), 2160, 3841) }
+        refuses("03.png") { root -> png(root.resolve("pl-PL/play/phone/03.png"), 1080, 1920, RGBA) }
     }
 
     @Test
     fun `refuses a missing text file and a directory that is not a Play locale`() {
-        refuses("short-description.txt") { root -> root.resolve("pl-PL/short-description.txt").deleteExisting() }
-        refuses("pl_PL") { root -> root.resolve("pl_PL").createDirectories() }
+        refuses("short-description.txt") { root -> root.resolve("pl-PL/play/short-description.txt").deleteExisting() }
+        refuses("pl_PL") { root -> root.resolve("pl_PL/play").createDirectories() }
     }
 
     @Test
@@ -113,7 +113,7 @@ class PlayInputsTest {
 
     private fun listingRoot(): Path {
         val root = Files.createTempDirectory("listing")
-        val locale = root.resolve("pl-PL").createDirectories()
+        val locale = root.resolve("pl-PL/play").createDirectories()
         locale.resolve("title.txt").writeText("Posato\n")
         locale.resolve("short-description.txt").writeText("A little space.")
         locale.resolve("full-description.txt").writeText("Pause websites and apps.")

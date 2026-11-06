@@ -13,6 +13,7 @@ import kotlin.io.path.name
 
 /** A Play language code such as en-US, pl-PL, pt-BR, es-419, or sr-Latn. */
 private val LOCALE_PATTERN = Regex("[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3}|-[A-Z][a-z]{3})?")
+private const val PLAY_DIRECTORY = "play"
 private const val MAX_TITLE = 30
 private const val MAX_SHORT_DESCRIPTION = 80
 private const val MAX_FULL_DESCRIPTION = 4000
@@ -69,13 +70,16 @@ object PlayInputs {
 
     fun listings(root: Path): List<LocaleListing> {
         ensureInput(root.isDirectory()) { "--dir is not a directory" }
-        val directories = readInput { root.listDirectoryEntries() }.filter { it.isDirectory() && !it.name.startsWith(".") }.sortedBy { it.name }
-        ensureInput(directories.isNotEmpty()) { "--dir holds no locale directory such as en-US" }
+        val directories = readInput { root.listDirectoryEntries() }
+            .filter { it.resolve(PLAY_DIRECTORY).isDirectory() && !it.name.startsWith(".") }
+            .sortedBy { it.name }
+        ensureInput(directories.isNotEmpty()) { "--dir holds no locale directory with a play listing, such as en-US/play" }
         return directories.map(::listing)
     }
 
-    private fun listing(directory: Path): LocaleListing {
-        val language = directory.name
+    private fun listing(localeDirectory: Path): LocaleListing {
+        val language = localeDirectory.name
+        val directory = localeDirectory.resolve(PLAY_DIRECTORY)
         ensureInput(language.matches(LOCALE_PATTERN)) { "$language is not a Play language code such as en-US or pl-PL" }
         return LocaleListing(
             language = language,

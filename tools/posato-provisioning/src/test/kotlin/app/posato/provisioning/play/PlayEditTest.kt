@@ -110,7 +110,7 @@ class PlayEditTest {
     @Test
     fun `listing replaces text and every image type of each locale inside one committed edit`() {
         val root = Files.createTempDirectory("listing")
-        val locale = root.resolve("de-DE").createDirectories()
+        val locale = root.resolve("de-DE/play").createDirectories()
         locale.resolve("title.txt").writeText("Posato")
         locale.resolve("short-description.txt").writeText("Kurz.")
         locale.resolve("full-description.txt").writeText("Lang.")
