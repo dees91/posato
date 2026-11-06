@@ -1,5 +1,6 @@
 package app.posato.android
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -102,6 +104,25 @@ class MainActivity : ComponentActivity() {
         grantResult = result
         grantScreen.launch(intent)
         result.await()
+    }
+
+    /**
+     * Says what a Settings grant is for before Android opens it, as Google Play's prominent disclosure asks; true when
+     * the person chooses to continue.
+     */
+    suspend fun disclose(
+        @StringRes title: Int,
+        @StringRes body: Int,
+    ): Boolean {
+        val answer = CompletableDeferred<Boolean>()
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(title)
+            .setMessage(body)
+            .setPositiveButton(R.string.disclosure_continue) { _, _ -> answer.complete(true) }
+            .setNegativeButton(R.string.disclosure_not_now) { _, _ -> answer.complete(false) }
+            .setOnCancelListener { answer.complete(false) }
+            .show()
+        return answer.await()
     }
 
     suspend fun requestNotifications() {
