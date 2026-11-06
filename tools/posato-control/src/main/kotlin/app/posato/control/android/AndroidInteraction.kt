@@ -20,7 +20,7 @@ import java.nio.file.Path
 
 /**
  * Element commands and scenarios on Android. The tree covers the whole screen, so a system dialog (the VPN request,
- * a permission, the battery exemption) is addressed like Posato's own controls.
+ * a permission) is addressed like Posato's own controls.
  */
 class AndroidInteraction(
     private val context: RunContext,

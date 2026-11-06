@@ -106,8 +106,8 @@ never from the Apple Developer portal. With the one-time setup in
 - **Android on a phone or Posato's own emulator.** `-t android` with
   `--udid <adb serial>` or `posato.android.serial`; another person's emulator
   is never used. `install -t android` gives every grant, so no step is
-  attended; `--grants settings` with `flow onboard -t android` meets the VPN,
-  notification, and battery requests as a person does. A phone's screen lock
+  attended; `--grants settings` with `flow onboard -t android` meets the VPN
+  and notification requests as a person does. A phone's screen lock
   after a reboot is the one step that needs a person.
 - **Folder sync between any of them.** Each device keeps its own folder and
   `$PC relay` copies between them; see

@@ -621,14 +621,14 @@ serial in `posato.android.serial`. `devices list` shows what adb lists. Never
 use an emulator another person works on.
 
 - The tree is read with UIAutomator (`uiautomator dump`), the framework under
-  Appium and Maestro; it covers the whole screen, so the VPN, permission, and
-  battery requests are addressed like Posato's own controls. A Compose control
+  Appium and Maestro; it covers the whole screen, so the VPN and permission
+  requests are addressed like Posato's own controls. A Compose control
   (a clickable view with its texts and role marker as children) reads as one
   button labelled by its texts. Taps, text, keys, and swipes use `input`; text
   is printable ASCII without `%`.
 - `build -t android` builds the debug APK. `install -t android --grants
   all|settings|none` installs it: `all` (the default) also gives the VPN
-  consent, notifications, and the battery exemption, so no request appears;
+  consent and notifications, so no request appears;
   `settings` gives only what a person switches on in Settings (usage access,
   display over other apps, exact alarms) and leaves the
   requests to onboarding, as a person meets them; `none` gives nothing.

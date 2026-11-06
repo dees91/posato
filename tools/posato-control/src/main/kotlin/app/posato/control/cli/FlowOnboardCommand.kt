@@ -16,7 +16,7 @@ import kotlinx.serialization.json.put
 /**
  * Walks first-run onboarding on Android, Linux, or Windows the way a person does: past the welcome and privacy steps, through
  * device access, an optional first website, and the summary to Session. On Android every system request that access
- * raises (the VPN, notifications, the battery exemption) is answered with its allow button, so the grants `install
+ * raises (the VPN, notifications) is answered with its allow button, so the grants `install
  * --grants settings` leaves out are given as a person gives them. On Windows the MSI has already installed the pausing
  * service, so the access step only checks it.
  * The Mac uses `vm onboard`, iOS its scenario.
@@ -189,7 +189,7 @@ class FlowOnboardCommand : ControlCommand("onboard", "Android, Linux, or Windows
         const val WINDOWS_ACTION = "onboarding_permission_windows_action"
         const val SERVICE_INSTALLED = "Pausing service installed"
 
-        /** The allow buttons of Android's VPN, notification, and battery requests, on stock Android and One UI. */
+        /** The allow buttons of Android's VPN and notification requests, on stock Android and One UI. */
         val SYSTEM_ANSWERS = listOf("Allow", "OK")
         const val MAX_ANDROID_REQUESTS = 12
         const val REQUEST_SETTLE_SECONDS = 1.5

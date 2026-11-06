@@ -13,8 +13,8 @@ import java.nio.file.Paths
 
 /**
  * Which grants `install` gives the way the shell user can. A person gives the Settings-page grants (usage access,
- * display over other apps, exact alarms, all-files access) by switching them on, and answers the VPN, notification,
- * and battery requests in dialogs that onboarding raises; `SETTINGS` leaves those dialogs to onboarding.
+ * display over other apps, exact alarms) by switching them on, and answers the VPN and notification requests in
+ * dialogs that onboarding raises; `SETTINGS` leaves those dialogs to onboarding.
  */
 enum class AndroidGrants(
     val id: String,
@@ -151,7 +151,6 @@ class AndroidApp(
         if (grants == AndroidGrants.ALL) {
             grantOps(DIALOG_OPS)
             device.shell("pm grant ${AndroidDevice.PACKAGE} android.permission.POST_NOTIFICATIONS")
-            device.shell("dumpsys deviceidle whitelist +${AndroidDevice.PACKAGE}")
         }
     }
 

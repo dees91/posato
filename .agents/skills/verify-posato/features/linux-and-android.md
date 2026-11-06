@@ -57,12 +57,20 @@ DNS, or a screen lock on the phone, and a missing clone or package.
 - **Install and onboarding, as a person meets them:** `$PC build -t
   <target>`, `$PC install -t android --grants settings` (or `install -t
   linux`), `$PC launch -t <target>`, then `$PC flow onboard -t <target>
-  [--website example.org]`. On Android it answers the VPN, notification, and
-  battery requests; on Linux it installs the pausing service. Proof: the flow
-  ends on Session; on Android `$PC android shell --script 'dumpsys deviceidle
-  whitelist'` lists `app.posato.android`, on Linux `$PC linux exec --script
+  [--website example.org]`. On Android it answers the VPN and notification
+  requests; on Linux it installs the pausing service. Proof: the flow ends on
+  Session after the access step read "Access allowed"; on Linux `$PC linux exec --script
   'systemctl is-active posato-helper'` prints `active`. `install -t android`
   without `--grants` gives every grant, for runs that do not test onboarding.
+- **Grant disclosures (Android, `ANDROID-003`):** after `install -t android
+  --grants none`, each **Allow access** press opens the next missing grant;
+  usage access and display over other apps first show a dialog that says what
+  the grant is for, with **Continue** (`android:id/button1`, opens the
+  Settings page) and **Not now** (`android:id/button2`, stays on Posato).
+  Proof: `snapshot` lists the dialog's title before `dumpsys activity
+  activities` shows the Settings activity on top. Grant the page with
+  `$PC android shell --script 'appops set app.posato.android
+  GET_USAGE_STATS allow'` (or `SYSTEM_ALERT_WINDOW`) and press back.
 - **Deferred access:** after `install -t linux` on a clone with no pausing
   service, or `install -t android --grants none`, run
   `onboarding-deferred-access-<linux|android>.json`. It presses Not now at
