@@ -1,0 +1,37 @@
+Wähle die Websites und Apps, von denen du Abstand nehmen möchtest, fasse sie in Pausensets zusammen und starte dann eine Pause auf deinem Smartphone oder plane Pausen mit einem Zeitplan voraus. Nimm dir Zeit zum Lesen, zum Arbeiten oder um einfach woanders zu sein.
+
+PAUSE NACH DEINEN REGELN
+
+Wähle ein Pausenset und eine Dauer: eine schnelle Auswahl von 25 Minuten bis 8 Stunden, Bis Tagesende oder deine eigene Länge mit dem Timer. Während der Pause verdeckt der Pausenbildschirm von Posato eine pausierte App, und pausierte Websites öffnen sich nicht. Du kannst eine Pause jederzeit bewusst vorzeitig beenden oder Posato entfernen.
+
+PAUSENSETS
+
+Lege für jede Art von Pause ein eigenes Set an, etwa eines für die Arbeit und eines für den Abend. Jedes Set hat eigene Websites und Apps, und eines ist der Standard. Überschneiden sich Pausen, pausiert Posato alles aus ihren Sets, bis die letzte Pause endet, die ein Element enthält.
+
+ZEITPLÄNE
+
+Plane wiederkehrende Pausen nach Wochentag und Uhrzeit, jede mit eigenem Pausenset, etwa werktags morgens oder jeden Abend. Ein Zeitplan beginnt und endet von selbst, auch wenn Posato geschlossen ist. Überspringe die nächste Pause oder beende eine vorzeitig, wenn sich deine Pläne ändern.
+
+PAUSEN UND KURZE BESUCHE
+
+Mach in einer geplanten Pause einmal 5, 10 oder 15 Minuten Pause; die Einschränkungen kehren von selbst zurück. Eine Website, die du ab und zu besuchst, etwa Nachrichten, darf sich in einer Pause kurz öffnen: alle 30 Minuten, stündlich oder alle 2 Stunden für 5, 10 oder 15 Minuten.
+
+ORDNER-SYNCHRONISIERUNG MIT DEINEN ANDEREN GERÄTEN
+
+Lege deinen Arbeitsbereich in einem Ordner ab, den eine App wie Syncthing synchron hält, und verbinde Posato auf deinem Mac, iPhone, Windows- oder Linux-Computer mit denselben Pausensets, Pausen und Zeitplänen. Posato legt dort nur verschlüsselte Dateien ab. Füge ein Gerät hinzu, indem du denselben Ordner wählst und einen QR-Code scannst. Die App-Auswahl bleibt auf jedem Gerät.
+
+EXPORT UND IMPORT
+
+Sichere deine Pausensets, ihre Websites und deine Zeitpläne in einer Datei, auf Wunsch mit einem Code geschützt, und importiere sie auf einem anderen Gerät.
+
+SO FUNKTIONIERT POSATO AUF ANDROID
+
+Posato blockiert pausierte Websites mit einem lokalen VPN, das nur Website-Namen auf diesem Smartphone beantwortet; kein anderer Datenverkehr läuft hindurch, und Posato zeichnet keine Abfragen auf. Um eine pausierte App zu verdecken, nutzt es den Zugriff auf Nutzungsdaten und „Über anderen Apps einblenden“. Nichts wird pausiert, bis du eine Pause startest oder ein von dir eingerichteter Zeitplan beginnt.
+
+KEIN POSATO-ACCOUNT
+
+Keine Werbung, keine Analyse, keine Nutzungswerte, keine Serien und kein Server, der von Posato betrieben wird. Posato folgt der Sprache deines Smartphones: Englisch, Polnisch, Deutsch, Französisch, Spanisch oder Portugiesisch. Posato ist Open Source unter der Apache License 2.0.
+
+BEVOR DU BEGINNST
+
+Posato benötigt Android 13 oder neuer. Während einer Pause mit Websites kann kein anderes VPN laufen, und Privates DNS im strikten Modus oder ein Browser mit eigenem sicheren DNS umgeht das Pausieren von Websites. Wenn du Posato auf mehreren Geräten verwendest, aktualisiere alle: Geräte mit einer älteren Version synchronisieren nicht mehr, bis sie aktualisiert sind.

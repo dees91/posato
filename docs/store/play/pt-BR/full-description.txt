@@ -1,0 +1,37 @@
+Escolha os sites e apps dos quais você quer se afastar, organize-os em conjuntos de pausa e depois inicie uma pausa no celular ou planeje pausas com antecedência por agendamento. Reserve um tempo para ler, trabalhar ou estar em outro lugar.
+
+PAUSE DO SEU JEITO
+
+Escolha um conjunto de pausa e uma duração: uma opção rápida de 25 minutos a 8 horas, Até o fim do dia ou a duração que você quiser no temporizador. Durante a pausa, a tela de pausa do Posato cobre um app pausado, e os sites pausados não abrem. Você pode decidir encerrar uma pausa antes ou remover o Posato quando quiser.
+
+CONJUNTOS DE PAUSA
+
+Tenha um conjunto para cada tipo de pausa, como um para o trabalho e outro para a noite. Cada conjunto tem os próprios sites e apps, e um deles é o padrão. Quando pausas se sobrepõem, o Posato pausa tudo o que está nos conjuntos delas até terminar a última que inclui cada item.
+
+AGENDAMENTOS
+
+Planeje pausas recorrentes por dia da semana e horário, cada uma com o próprio conjunto de pausa, como as manhãs de segunda a sexta ou todas as noites. Um agendamento começa e termina sozinho, mesmo com o Posato fechado. Pule o próximo ou encerre um antes quando os planos mudarem.
+
+INTERVALOS E VISITAS RÁPIDAS
+
+Durante uma pausa agendada, faça um único intervalo de 5, 10 ou 15 minutos; as restrições voltam sozinhas. Para um site que você quer olhar de vez em quando, como o de notícias, deixe-o abrir por pouco tempo durante uma pausa: a cada 30 minutos, a cada hora ou a cada 2 horas, por 5, 10 ou 15 minutos.
+
+SINCRONIZAÇÃO POR PASTA COM SEUS OUTROS DISPOSITIVOS
+
+Mantenha seu espaço de trabalho em uma pasta que um app como o Syncthing mantém sincronizada e conecte o Posato no seu Mac, iPhone ou computador com Windows ou Linux aos mesmos conjuntos de pausa, pausas e agendamentos. O Posato grava ali apenas arquivos criptografados. Adicione um dispositivo escolhendo a mesma pasta e lendo um código QR. A escolha de apps fica em cada dispositivo.
+
+EXPORTAÇÃO E IMPORTAÇÃO
+
+Salve seus conjuntos de pausa, os sites deles e seus agendamentos em um arquivo, opcionalmente protegido por um código, e importe-o em outro dispositivo.
+
+COMO O POSATO FUNCIONA NO ANDROID
+
+O Posato bloqueia sites pausados com uma VPN local que só responde a nomes de sites neste celular; nenhum outro tráfego passa por ela, e o Posato não registra as consultas. Para cobrir um app que você pausou, ele usa o acesso ao uso e a sobreposição a outros apps. Nada é pausado até você iniciar uma pausa ou começar um agendamento que você definiu.
+
+SEM CONTA POSATO
+
+Sem anúncios, análises, pontuações de uso, sequências nem servidor operado pelo Posato. O Posato segue o idioma do seu celular em inglês, polonês, alemão, francês, espanhol e português. O Posato é de código aberto, sob a Apache License 2.0.
+
+ANTES DE COMEÇAR
+
+O Posato precisa do Android 13 ou mais recente. Outra VPN não pode funcionar durante uma pausa com sites, e o DNS particular no modo estrito ou um navegador com DNS seguro próprio contorna a pausa de sites. Se você usa o Posato em mais de um dispositivo, atualize todos eles: os dispositivos com uma versão anterior param de sincronizar até serem atualizados.

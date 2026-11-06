@@ -1,0 +1,37 @@
+Wybierz strony i aplikacje, od których chcesz się odsunąć, zbierz je w zestawy pauz, a potem rozpocznij pauzę na telefonie albo zaplanuj pauzy harmonogramem. Zostaw sobie czas na czytanie, pracę albo bycie gdzie indziej.
+
+PAUZA NA TWOICH WARUNKACH
+
+Wybierz zestaw pauz i czas: szybki wybór od 25 minut do 8 godzin, Do końca dnia albo własną długość na liczniku. W trakcie pauzy wstrzymaną aplikację zasłania ekran pauzy Posato, a wstrzymane strony się nie otwierają. Możesz świadomie zakończyć pauzę wcześniej albo usunąć Posato w dowolnej chwili.
+
+ZESTAWY PAUZ
+
+Zostaw osobny zestaw na każdy rodzaj pauzy, na przykład jeden do pracy i jeden na wieczory. Każdy zestaw ma własne strony i aplikacje, a jeden jest domyślny. Gdy pauzy nachodzą na siebie, Posato wstrzymuje wszystko z ich zestawów, aż skończy się ostatnia pauza, która obejmuje dany element.
+
+HARMONOGRAMY
+
+Planuj powtarzające się pauzy według dnia tygodnia i godziny, każdą z własnym zestawem pauz, na przykład poranki w tygodniu albo każdy wieczór. Harmonogram zaczyna się i kończy sam, także gdy Posato jest zamknięte. Pomiń najbliższy albo zakończ wcześniej, gdy plany się zmienią.
+
+PRZERWY I KRÓTKIE WIZYTY
+
+W trakcie zaplanowanej pauzy zrób jedną przerwę na 5, 10 albo 15 minut; ograniczenia wracają same. Stronę, do której chcesz od czasu do czasu zajrzeć, na przykład z wiadomościami, możesz otwierać na chwilę w trakcie pauzy: co 30 minut, co godzinę albo co 2 godziny, na 5, 10 albo 15 minut.
+
+SYNCHRONIZACJA PRZEZ FOLDER Z INNYMI URZĄDZENIAMI
+
+Trzymaj obszar roboczy w folderze, który synchronizuje aplikacja taka jak Syncthing, i połącz Posato na Macu, iPhonie albo komputerze z Windows lub Linuxem z tymi samymi zestawami pauz, pauzami i harmonogramami. Posato zapisuje tam tylko zaszyfrowane pliki. Dodajesz urządzenie, wybierając ten sam folder i skanując kod QR. Wybór aplikacji zostaje na każdym urządzeniu.
+
+EKSPORT I IMPORT
+
+Zapisz zestawy pauz, ich strony i harmonogramy do pliku, opcjonalnie chronionego kodem, i zaimportuj go na innym urządzeniu.
+
+JAK POSATO DZIAŁA NA ANDROIDZIE
+
+Posato blokuje wstrzymane strony lokalną siecią VPN, która odpowiada tylko na nazwy stron na tym telefonie; żaden inny ruch do niej nie trafia, a Posato nie zapisuje zapytań. Żeby zasłonić wstrzymaną aplikację, korzysta z dostępu do użycia i wyświetlania nad innymi aplikacjami. Nic nie jest wstrzymane, dopóki nie rozpoczniesz pauzy albo nie zacznie się ustawiony przez Ciebie harmonogram.
+
+BEZ KONTA POSATO
+
+Bez reklam, analityki, wyników, serii i serwera prowadzonego przez Posato. Posato używa języka Twojego telefonu: angielskiego, polskiego, niemieckiego, francuskiego, hiszpańskiego albo portugalskiego. Posato jest open source na licencji Apache License 2.0.
+
+ZANIM ZACZNIESZ
+
+Posato wymaga Androida 13 lub nowszego. Podczas pauzy obejmującej strony nie może działać inna sieć VPN, a Prywatny DNS w trybie ścisłym albo przeglądarka z własnym bezpiecznym DNS omijają wstrzymywanie stron. Jeśli używasz Posato na więcej niż jednym urządzeniu, zaktualizuj wszystkie: urządzenia ze starszą wersją przestają się synchronizować, aż je zaktualizujesz.
