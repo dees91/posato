@@ -158,7 +158,7 @@ the pull request).
   or login, so no credentials are given to reviewers.
 - **Target audience:** 13-15, 16-17, and 18 and over, matching the App
   Store's 4+ rating outside the Kids category; no group under 13, which
-  would bring the Families policy (`user-confirmed`, 2026-11-06).
+  would bring the Families policy.
 - **Content rating (IARC):** the lowest rating, as the App Store's 4+: a
   utility or productivity app with no violence,
   sexual content, profanity, drugs, gambling, user-generated content,
