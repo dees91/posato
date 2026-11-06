@@ -3,8 +3,6 @@ package app.posato.android
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,7 +24,7 @@ class MainActivity : ComponentActivity() {
     private var grantResult: CompletableDeferred<Unit>? = null
 
     private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        folderResult?.complete(uri?.let(::treePath))
+        folderResult?.complete(uri?.toString())
     }
 
     private var createResult: CompletableDeferred<Uri?>? = null
@@ -72,7 +70,7 @@ class MainActivity : ComponentActivity() {
         intent.dataString?.let(::openPosatoLink)
     }
 
-    /** The folder the person picks, as a file system path; only a folder on this phone's shared storage can be used. */
+    /** The folder the person picks, as the tree URI the shared folder access takes a persistable grant for. */
     suspend fun browseFolder(): String? {
         val result = CompletableDeferred<String?>()
         folderResult = result
@@ -111,15 +109,7 @@ class MainActivity : ComponentActivity() {
         result.await()
     }
 
-    private fun treePath(uri: Uri): String? {
-        val document = DocumentsContract.getTreeDocumentId(uri)
-        val volume = document.substringBefore(':')
-        val relative = document.substringAfter(':', "")
-        return if (volume == PRIMARY) Environment.getExternalStorageDirectory().resolve(relative).absolutePath else null
-    }
-
     private companion object {
-        const val PRIMARY = "primary"
         const val PAUSE_SET_FILE_TYPE = "application/vnd.posato.pause-sets"
     }
 }

@@ -328,6 +328,9 @@ Für das, was zählt.</string>
     <string name="sync_folder_use">Diesen Ordner verwenden</string>
     <string name="sync_folder_browse">Ordner auswählen …</string>
     <string name="sync_folder_invalid">Wähle einen vorhandenen Ordner, in den Posato schreiben kann.</string>
+    <string name="sync_folder_lost">Posato braucht deine Erlaubnis, um diesen Ordner wieder zu öffnen. Wähle denselben Ordner, damit die Synchronisierung weiterläuft.</string>
+    <string name="sync_folder_choose_again">Ordner erneut auswählen</string>
+    <string name="sync_folder_another_folder">Das ist ein anderer Ordner. Wähle den Ordner, den dieser Arbeitsbereich verwendet.</string>
     <string name="sync_folder_or">Oder synchronisiere über einen Ordner statt über iCloud.</string>
     <string name="sync_folder_waiting_for_key">Dieser Ordner enthält bereits einen Arbeitsbereich. Gib den Kopplungscode ein, der auf einem Gerät in diesem Arbeitsbereich angezeigt wird.</string>
     <string name="sync_folder_code_label">Kopplungscode</string>

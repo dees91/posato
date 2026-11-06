@@ -45,6 +45,11 @@ internal class SyncBootstrapUiState(
 
     var folderRefused by mutableStateOf(false)
         private set
+
+    /** The folder picked to open a stored one again was a different folder. */
+    var anotherFolderPicked by mutableStateOf(false)
+        private set
+    val folderLost = folderControls.folderLost
     var running by mutableStateOf(false)
         private set
 
@@ -95,9 +100,23 @@ internal class SyncBootstrapUiState(
         }
     }
 
+    /**
+     * A folder from the system picker. While the stored folder cannot be opened, the pick must be that same folder;
+     * once it opens, the workspace syncs at once.
+     */
     fun browseFolder() {
         if (running) return
-        scope.launch { folderControls.browse()?.let(::chooseFolder) }
+        scope.launch {
+            val picked = folderControls.browse() ?: return@launch
+            if (!folderLost.value) {
+                chooseFolder(picked)
+                return@launch
+            }
+            val result = folderControls.chooseAgain(picked)
+            anotherFolderPicked = result == FolderChoiceResult.ANOTHER_FOLDER
+            folderRefused = result == FolderChoiceResult.NOT_A_FOLDER
+            if (result == FolderChoiceResult.CHOSEN) sync()
+        }
     }
 
     fun clearFolder() {

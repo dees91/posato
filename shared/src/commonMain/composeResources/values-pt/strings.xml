@@ -328,6 +328,9 @@ Para o que importa.</string>
     <string name="sync_folder_use">Usar esta pasta</string>
     <string name="sync_folder_browse">Escolher pasta…</string>
     <string name="sync_folder_invalid">Escolha uma pasta que exista e em que o Posato possa gravar.</string>
+    <string name="sync_folder_lost">O Posato precisa da sua permissão para abrir esta pasta de novo. Escolha a mesma pasta para continuar sincronizando.</string>
+    <string name="sync_folder_choose_again">Escolher a pasta de novo</string>
+    <string name="sync_folder_another_folder">Essa é outra pasta. Escolha a pasta que este espaço de trabalho usa.</string>
     <string name="sync_folder_or">Ou sincronize por uma pasta em vez do iCloud.</string>
     <string name="sync_folder_waiting_for_key">Esta pasta já tem um espaço de trabalho. Digite o código de pareamento mostrado em um dispositivo desse espaço de trabalho.</string>
     <string name="sync_folder_code_label">Código de pareamento</string>
