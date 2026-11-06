@@ -66,6 +66,16 @@ internal class FolderChoice(
         return stored?.let(access::display)
     }
 
+    /** The path the stored choice names, whether or not it can be opened now. */
+    fun location(): String? {
+        return stored?.let(access::location)
+    }
+
+    /** A choice is stored but cannot be opened, such as a 1.6.0 path on Android, which now needs the folder picker. */
+    fun lost(): Boolean {
+        return stored != null && root() == null
+    }
+
     fun choose(token: String): Boolean {
         if (!files.createPrivateDirectories(localDirectory)) return false
         if (!files.replace(file, token.encodeToByteArray())) return false
@@ -92,6 +102,11 @@ internal interface FolderAccess {
 
     /** Turns what the person typed or picked into the token to store, or null when it is not usable. */
     fun accept(choice: String): String?
+
+    /** The path [token] names even when it cannot be opened now, so a folder chosen again can be matched to it. */
+    fun location(token: String): String? {
+        return resolve(token)
+    }
 
     /** Paths are the tokens on hosts that read any folder the person can. */
     class Paths(
@@ -250,12 +265,17 @@ internal class FolderSync(
     private val pairing = FolderPairing(folderPorts, crypto, files, ioDispatcher, now)
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
     private val displayed = MutableStateFlow(choice.displayed())
+
+    // Only a host without iCloud: on an Apple host an unopenable choice falls back to CloudKit (SelectableSyncPorts).
+    private val reopens = apple == null
+    private val lost = MutableStateFlow(reopens && choice.lost())
     val ports = SelectableSyncPorts(choice, folderPorts, apple)
 
     override val supported: Boolean = true
     override val icloudSupported: Boolean = apple != null
     override val folder: StateFlow<String?> = displayed.asStateFlow()
     override val canBrowse: Boolean = browser != null
+    override val folderLost: StateFlow<Boolean> = lost.asStateFlow()
 
     override suspend fun browse(): String? {
         return browser?.invoke()
@@ -265,12 +285,25 @@ internal class FolderSync(
         val token = access.accept(path) ?: return FolderChoiceResult.NOT_A_FOLDER
         if (!choice.choose(token)) return FolderChoiceResult.NOT_A_FOLDER
         displayed.value = choice.displayed()
+        lost.value = reopens && choice.lost()
         return FolderChoiceResult.CHOSEN
+    }
+
+    /**
+     * Opens a stored choice again with a new pick, only while it cannot be opened and only for the same folder, so the
+     * workspace binding derived from its path stays the same; the coordinator's anchor check still guards the rest.
+     */
+    override fun chooseAgain(choice: String): FolderChoiceResult {
+        if (!lost.value) return FolderChoiceResult.NOT_A_FOLDER
+        val previous = this.choice.location() ?: return FolderChoiceResult.NOT_A_FOLDER
+        if (access.location(choice) != previous) return FolderChoiceResult.ANOTHER_FOLDER
+        return choose(choice)
     }
 
     override fun clear() {
         choice.clear()
         displayed.value = null
+        lost.value = false
     }
 
     override suspend fun offer(): PairingOfferResult {
@@ -286,6 +319,7 @@ internal class FolderSync(
     }
 
     override suspend fun read(): FolderReading {
+        lost.value = reopens && choice.lost()
         if (choice.root() == null) return FolderReading(FolderContents.UNKNOWN)
         return pairing.read()
     }

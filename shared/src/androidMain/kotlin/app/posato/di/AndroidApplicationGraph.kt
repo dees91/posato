@@ -1,5 +1,6 @@
 package app.posato.di
 
+import android.content.ContentResolver
 import app.posato.PosatoApplication
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.enforcement.EnforcementOutcome
@@ -48,6 +49,10 @@ import app.posato.feature.sync.folder.FolderSync
 import app.posato.feature.sync.folder.FolderSyncControls
 import app.posato.feature.sync.folder.KeystoreKeyItemProtection
 import app.posato.feature.sync.folder.LinkSharing
+import app.posato.feature.sync.folder.NioFolderFileSystem
+import app.posato.feature.sync.folder.RoutingFolderFileSystem
+import app.posato.feature.sync.folder.TreeFolderAccess
+import app.posato.feature.sync.folder.TreeFolderFileSystem
 import app.posato.feature.targets.data.CatalogApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
@@ -271,19 +276,24 @@ public fun createAndroidApplicationRuntime(
     notifications: SessionNotificationPlatform,
     applicationAccess: ApplicationAccessPort,
     localDirectory: String,
+    contentResolver: ContentResolver,
     browseFolder: suspend () -> String?,
     linkSharing: LinkSharing,
     pauseSetFiles: PauseSetFilePorts,
 ): AndroidApplicationRuntime {
+    // The folder is a tree from the system picker, read through its provider; Posato's own files stay on java.nio.
+    val access = TreeFolderAccess(contentResolver)
     val folderSync = FolderSync(
         localDirectory = localDirectory,
         crypto = JdkSyncCryptoProvider(),
         apple = null,
-        files = app.posato.feature.sync.folder.NioFolderFileSystem,
+        files = RoutingFolderFileSystem(localDirectory, TreeFolderFileSystem(contentResolver, access::held), NioFolderFileSystem),
         ioDispatcher = Dispatchers.IO,
         now = System::currentTimeMillis,
         protection = KeystoreKeyItemProtection(),
+        access = access,
         browser = browseFolder,
+        acceptsTypedPath = false,
         linkSharing = linkSharing,
     )
     val graph = createGraphFactory<AndroidApplicationGraph.Factory>().create(

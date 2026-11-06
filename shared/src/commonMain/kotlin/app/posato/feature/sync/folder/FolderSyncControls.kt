@@ -34,7 +34,12 @@ internal enum class PairingAcceptResult {
 internal enum class FolderChoiceResult {
     CHOSEN,
     NOT_A_FOLDER,
+
+    /** A folder chosen again that is not the one the stored choice names. */
+    ANOTHER_FOLDER,
 }
+
+private val neverLost: StateFlow<Boolean> = MutableStateFlow(false)
 
 /** What the chosen folder holds, read without changing it: before a choice or a read, [UNKNOWN]. */
 internal enum class FolderContents {
@@ -101,6 +106,20 @@ internal interface FolderSyncControls {
     }
 
     fun choose(path: String): FolderChoiceResult
+
+    /**
+     * Whether a folder is stored that this device can no longer open, such as a path from Posato 1.6.0 for Android,
+     * which now opens the folder through the system picker; only a host without iCloud reports it.
+     */
+    val folderLost: StateFlow<Boolean>
+        get() {
+            return neverLost
+        }
+
+    /** Opens the stored folder again with [choice] from the picker; another folder is refused. */
+    fun chooseAgain(choice: String): FolderChoiceResult {
+        return FolderChoiceResult.NOT_A_FOLDER
+    }
 
     fun clear()
 

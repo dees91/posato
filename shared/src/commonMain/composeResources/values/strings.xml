@@ -328,6 +328,9 @@ For what matters.</string>
     <string name="sync_folder_use">Use this folder</string>
     <string name="sync_folder_browse">Choose folder…</string>
     <string name="sync_folder_invalid">Choose a folder that exists and that Posato can write to.</string>
+    <string name="sync_folder_lost">Posato needs your permission to open this folder again. Choose the same folder to keep syncing.</string>
+    <string name="sync_folder_choose_again">Choose the folder again</string>
+    <string name="sync_folder_another_folder">That is a different folder. Choose the folder this workspace uses.</string>
     <string name="sync_folder_or">Or sync through a folder instead of iCloud.</string>
     <string name="sync_folder_waiting_for_key">This folder already holds a workspace. Enter the pairing code shown on a device in that workspace.</string>
     <string name="sync_folder_code_label">Pairing code</string>

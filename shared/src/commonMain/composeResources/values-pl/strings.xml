@@ -328,6 +328,9 @@ Dla tego, co ważne.</string>
     <string name="sync_folder_use">Użyj tego folderu</string>
     <string name="sync_folder_browse">Wybierz folder…</string>
     <string name="sync_folder_invalid">Wybierz folder, który istnieje i do którego Posato może zapisywać.</string>
+    <string name="sync_folder_lost">Posato potrzebuje ponownie Twojej zgody na otwarcie tego folderu. Wybierz ten sam folder, aby dalej synchronizować.</string>
+    <string name="sync_folder_choose_again">Wybierz folder ponownie</string>
+    <string name="sync_folder_another_folder">To inny folder. Wybierz folder, którego używa ta przestrzeń.</string>
     <string name="sync_folder_or">Albo synchronizuj przez folder zamiast iCloud.</string>
     <string name="sync_folder_waiting_for_key">Ten folder ma już przestrzeń. Wpisz kod parowania pokazany na urządzeniu w tej przestrzeni.</string>
     <string name="sync_folder_code_label">Kod parowania</string>
