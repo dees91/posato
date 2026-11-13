@@ -33,8 +33,10 @@ Composition and the release guard come from the
 - **Build variants:** which Gradle tasks build the development, candidate,
   release, and Intel packages, and which checks guard each, are mapped in
   [build variants](build-variants.md).
-- **Verification:** the `primary`, `peer`, and `ventura` golden VMs, the
-  test iPhone, and their `local.properties` keys
+- **Verification:** the `primary` and `ventura` golden VMs, the test
+  iPhone, and their `local.properties` keys; a `peer` golden VM is optional
+  (since `RELEASE-010`, iCloud runs pair a Mac clone with the iPhone, and
+  desktops reach each other through a folder workspace)
   ([unattended verification](unattended-verification.md)).
 - **Android signing:** the release keystore outside the checkout, its
   password in the login Keychain, and four keys in the ignored
@@ -229,8 +231,10 @@ usual matrix, adjusted by the brief:
   and `flow icloud remove` before `vm destroy`. Routine task verification
   leaves iCloud out, so this is the regular check of synchronization and of
   editing right after a link.
-- Keep a `peer` clone running with the previous release set up (helper,
-  websites, an application, a schedule, update consent answered) for step 7.
+- Keep a clone of the `primary` line (a second clone, or the one used here
+  once its checks are done) running with the previous release set up
+  (helper, websites, an application, a schedule, update consent answered)
+  for step 7.
 - Linux clone, the workflow's arm64 `.deb` through `install -t linux
   --package`: onboarding with the pausing service, a pause that writes four
   lines per website to `/etc/hosts` and ends a chosen application, and the
@@ -254,7 +258,7 @@ Gotchas:
   another one after the last `vm sync`.
 - `ventura` needs `posato.vm.venturaGolden` in `local.properties`.
 - At most two guests run, never a golden VM beside its clone; the kept
-  `peer` clone takes one slot.
+  previous-release clone takes one slot.
 - A release build's "Check for updates automatically?" modal blocks every tap
   until `update-consent` answers it.
 - The previous release's setup can need `vm prompt toggle --row
@@ -305,7 +309,7 @@ is ready for review.
    `--latest=false`.
 2. `releases/latest/download/appcast.xml` and `appcast-intel.xml` resolve,
    equal the verified feeds, and verify.
-3. On the kept `peer` clone: About, Check for Updates, Install Update,
+3. On the kept previous-release clone: About, Check for Updates, Install Update,
    Install and Relaunch, `launch --adopt`; data, schedule, and helper are
    kept and `observe` blocks. Any loss is a failure. Before updating, check
    that clone's `scheduleConsent` from `vm onboard` (use
@@ -343,6 +347,11 @@ release, Projects says Done, and the milestone is closed.
 
 After App Review, a follow-up pull request records the publication and the
 outcome, sets the record `done`, and appends at most one wiki-log entry.
-Delete the never-published verification candidates.
+Delete the never-published verification candidates. Then delete the
+release's clean clones and the folder of candidates and logs outside the
+checkout (every published asset is on GitHub Releases), and release their
+disk claims. Copy out first any run directory the record cites that lives
+only in a clean clone (`RELEASE-010` kept its update and triage runs this
+way).
 
 **Done when:** that pull request is merged.

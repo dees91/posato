@@ -3421,3 +3421,13 @@ first removal attempt that does not finish, not to a paused keychain.
 - Uploads now get ten minutes plus the time a 512 kbit/s uplink needs for
   their bytes; other requests keep 60 seconds
   ([Google Play publishing](../development/google-play.md)).
+
+## [2026-11-13] release | Posato 1.6.0 closeout
+
+- `observed`: iOS 1.6.0 (9) passed App Review and is released; the
+  [`RELEASE-010` record](../tasks/executions/release-010-release-1-6.md) is
+  done with the publication and the 1.5.2 to 1.6.0 in-app update.
+- [Releasing](../development/releasing.md) step 9 deletes the release's
+  clean clones and candidate folder after copying out cited runs, and the
+  in-app update runs on a `primary`-line clone now that a `peer` golden VM
+  is optional.

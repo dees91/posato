@@ -1,12 +1,13 @@
 # Execution: `RELEASE-010`
 
 - **Brief:** [Verify and publish Posato 1.6.0](../specifications/release-010-release-1-6.md)
-- **Status:** `active`
+- **Status:** `done`: Posato 1.6.0 published 2026-11-05; iOS 1.6.0 (9)
+  approved and released by App Review
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agents (plan and completed change)
 - **Branch:** `release-010-release-1-6`
-- **Updated:** 2026-11-05
+- **Updated:** 2026-11-13
 
 ## Plan
 
@@ -185,6 +186,49 @@ Driver gaps met: host text recognition needs a HiDPI `ventura` display
 (`--display 960x600pt`); `vm prompt toggle` misses the switch on that
 display; Windows `flow schedule` picks the first set with a duplicate name;
 the Android `flow set` Save needs a tap.
+
+### Publication (2026-11-05)
+
+- Squash merge `8f1a2842be4d858d68df3056ab6c8ce507a2d795` (#224), annotated
+  `v1.6.0`; the GitHub Release published as latest at 08:17 UTC with ten
+  assets, each compared byte for byte with the verified candidates, and the
+  notes below with both defects as known issues.
+- `releases/latest/download/appcast.xml` and `appcast-intel.xml` equal the
+  verified feeds.
+- In-app update on the kept `peer` clone, 1.5.2 to 1.6.0: Posato 1.6.0 and
+  its helper running after Install and Relaunch, the set, `example.com`,
+  and the schedule kept, and a pause started after the update recorded and
+  enforced (`r010-update-pre`, `-run`, `-pause`, `-after`). 1.6 keeps the
+  update-consent answer, so no consent alert follows the update.
+- `store submit` sent iOS 1.6.0 (9) to App Review; `posato.app`, the
+  README, the limits page, and the privacy policy were checked live.
+- The `RELEASE-010` mirror item is Done and the `1.6.0` milestone closed.
+
+### App Review and closeout (2026-11-13)
+
+- iOS 1.6.0 (9) passed App Review; with `AFTER_APPROVAL` it was released
+  at once: `store status` reports `READY_FOR_DISTRIBUTION`.
+- The never-published Intel verification candidate 9601, its second clean
+  clone, and its throwaway Sparkle key (Keychain account
+  `posato-test-release-010`) were deleted on publication day.
+- The cited update, self-clear, and triage runs were copied out of the
+  clean clone before its deletion; the clone and the folder of candidates
+  are deleted. [Releasing](../../development/releasing.md) step 9 now names
+  that cleanup.
+- The maintainer deleted the `peer` golden VM after publication: iCloud
+  runs pair a Mac clone with the test iPhone, desktops meet through a
+  folder workspace, and the in-app update runs on a clone of the `primary`
+  line. Releasing and the sync feature map say so.
+
+### Follow-ups
+
+- `SESSION-012` fixes the two defects above (roadmap revision 40).
+- The updates recipe no longer expects a consent alert after an update
+  (fixed in this closeout).
+- `vm destroy` takes `--line <line>`, not `--vm`.
+- Linux showed "Sync needs attention" once on the first relaunch after a
+  pause ended while Posato was closed; **Sync now** cleared it (a
+  `SESSION-011` neighbour, cause `open`).
 
 ## GitHub release notes for 1.6.0
 

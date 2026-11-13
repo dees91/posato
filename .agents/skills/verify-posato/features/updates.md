@@ -55,7 +55,8 @@ Preconditions:
   `$PC launch -t desktop --vm primary --adopt` tracks the relaunched process.
 - **Proof:** `$PC vm exec --line primary --script 'defaults read
   /Applications/Posato.app/Contents/Info CFBundleShortVersionString'` names
-  the new version; answer the consent alert again with `update-consent`;
+  the new version; run `update-consent`, which reports `answered: false`
+  from 1.6 on, since the update keeps the earlier answer (`RELEASE-010`);
   `db query` still lists `example.com`; This Mac shows the helper enabled, or
   **Set up Posato** when the new release needs setup again. A pause started
   after the update blocks `example.com` (`observe --expect blocked`).
