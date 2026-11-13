@@ -734,7 +734,10 @@ note carry the maintainer-provided "Download for Mac" badge artwork, recolored
 to the ink surface (`#18231F`) with a `#6D816E` outline and a 12-pixel radius,
 self-hosted and linked to the latest GitHub Release. The matching App Store
 badge sits beside it and links to the App Store listing since 2026-09-24; before
-that it was unlinked at reduced opacity with a "Coming soon" caption. Apple badge guidelines are not reviewed for now. The
+that it was unlinked at reduced opacity with a "Coming soon" caption. Apple badge guidelines are not reviewed for now. `user-confirmed`
+(2026-11-06): the Google Play button follows the same house style, a
+single-color Play glyph with the localized "Get it on" line, and Google's badge
+guidelines are likewise not reviewed for now. The
 header ends with a GitHub mark linking to the public repository. `user-confirmed`
 (2026-10-22): below the hero's privacy line, one muted sentence asks visitors
 whom Posato helps to star the repository on GitHub, linked to it. The support
