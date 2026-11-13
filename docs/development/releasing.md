@@ -231,10 +231,11 @@ usual matrix, adjusted by the brief:
   and `flow icloud remove` before `vm destroy`. Routine task verification
   leaves iCloud out, so this is the regular check of synchronization and of
   editing right after a link.
-- Keep a clone of the `primary` line (a second clone, or the one used here
-  once its checks are done) running with the previous release set up
-  (helper, websites, an application, a schedule, update consent answered)
-  for step 7.
+- Once the `primary` checks are done, `vm destroy --line primary`, then
+  prepare a fresh `primary` clone with the previous release as in the
+  updates recipe (helper, websites, an application, a schedule, update
+  consent answered) and keep it running for step 7. A line has one clone
+  (`posato-run-<line>`), so this clone cannot run beside the checks above.
 - Linux clone, the workflow's arm64 `.deb` through `install -t linux
   --package`: onboarding with the pausing service, a pause that writes four
   lines per website to `/etc/hosts` and ends a chosen application, and the
