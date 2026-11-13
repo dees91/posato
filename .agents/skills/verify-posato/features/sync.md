@@ -66,7 +66,8 @@ record and distinguish timer, action-required, and actual enforcement proof.
 ### In Tart VMs (unattended)
 
 Use a primary and a peer clone (`vm create --line primary|peer`), each from its
-own golden VM line, and address them with `--vm primary|peer`.
+own golden VM line, and address them with `--vm primary|peer`. Without a peer
+golden VM, pair the primary clone with the test iPhone as the second device.
 
 - Start from an empty workspace, and leave one: press **Remove workspace**
   before `vm destroy`, which refuses a running guest whose database shows a
