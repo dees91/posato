@@ -19,6 +19,7 @@ import windowsActive from "../../../../video/public/windows-active-45.png";
 
 const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
+const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.android";
 ---
 
 <Base description="Posato wstrzymuje wybrane strony i aplikacje na pauzę o wybranym czasie na Macu, iPhonie, komputerze z Windows albo Linuxem lub telefonie z Androidem, od razu albo według harmonogramu. Bez konta Posato, bez analityki i bez serwera prowadzonego przez Posato.">
@@ -36,9 +37,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Pobierz Posato na Maca" /></a>
         <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Pobierz Posato w App Store" /></a>
         <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Pobierz Posato na Linux" /></a>
-        <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Pobierz Posato na Android" /></a>
+        <a href={googlePlay}><img src="/badges/get-it-on-google-play-pl.svg" width="186" height="56" alt="Pobierz Posato z Google Play" /></a>
         <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Pobierz Posato na Windows" /></a>
       </p>
+      <p class="platforms">Na telefonie z Androidem bez Google Play zainstaluj <a href={releases}>podpisany plik APK z GitHub Releases</a>.</p>
       <p class="platforms">macOS 13 lub nowszy na Apple silicon albo Intel, iOS 18 lub nowszy, Ubuntu 24.04 lub nowszy, Android 13 lub nowszy oraz Windows 11. <a href="#install">Jak zainstalować</a></p>
       </div>
     </div>
@@ -388,7 +390,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Pobierz Posato na Maca" /></a>
       <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Pobierz Posato w App Store" /></a>
       <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Pobierz Posato na Linux" /></a>
-      <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Pobierz Posato na Android" /></a>
+      <a href={googlePlay}><img src="/badges/get-it-on-google-play-pl.svg" width="186" height="56" alt="Pobierz Posato z Google Play" /></a>
       <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Pobierz Posato na Windows" /></a>
     </p>
     <ul class="install">
@@ -418,10 +420,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <li>
         <h3>Android</h3>
         <p>
-          Android 13 lub nowszy. Na telefonie pobierz <code>Posato-1.6.0.apk</code> z
-          <a href={releases}>GitHub Releases</a> i otwórz go. Gdy Android zapyta, zezwól na instalowanie aplikacji z
-          tego źródła, potem zainstaluj, otwórz Posato i przejdź pierwsze uruchomienie, które prosi o uprawnienia
-          potrzebne do pauzy.
+          Android 13 lub nowszy. Zainstaluj Posato z <a href={googlePlay}>Google Play</a>; tam też się aktualizuje. Potem
+          otwórz Posato i przejdź pierwsze uruchomienie, które prosi o uprawnienia potrzebne do pauzy. Na telefonie
+          bez Google Play pobierz <code>Posato-1.6.0.apk</code> z <a href={releases}>GitHub Releases</a> i otwórz go; gdy
+          Android zapyta, zezwól na instalowanie aplikacji z tego źródła.
         </p>
       </li>
       <li>
@@ -448,7 +450,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       </div>
     </div>
     <p class="muted">
-      Aby zaktualizować na Linuxie, Androidzie albo Windows, zainstaluj nowszy pakiet w ten sam sposób.
+      Aby zaktualizować na Linuxie albo Windows albo APK na Androidzie, zainstaluj nowszy pakiet w ten sam sposób.
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">Macierz platform</a>
       zapisuje, co sprawdzono na każdej platformie, w tym to, że wydanie na Intela sprawdzono pod Rosettą, a nie na Macu z procesorem Intel.
     </p>

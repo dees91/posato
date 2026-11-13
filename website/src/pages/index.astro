@@ -19,6 +19,7 @@ import windowsActive from "../../../video/public/windows-active-45.png";
 
 const releases = "https://github.com/dees91/posato/releases/latest";
 const appStore = "https://apps.apple.com/app/posato/id6812237585";
+const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.android";
 ---
 
 <Base description="Posato blocks the websites and apps you choose for a timed pause on your Mac, iPhone, Windows or Linux computer, or Android phone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
@@ -36,9 +37,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
         <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
         <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
         <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux" /></a>
-        <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android" /></a>
+        <a href={googlePlay}><img src="/badges/get-it-on-google-play.svg" width="186" height="56" alt="Get Posato on Google Play" /></a>
         <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Download Posato for Windows" /></a>
       </p>
+      <p class="platforms">On an Android phone without Google Play, install the <a href={releases}>signed APK from GitHub Releases</a>.</p>
       <p class="platforms">macOS 13 or later on Apple silicon or Intel, iOS 18 or later, Ubuntu 24.04 or later, Android 13 or later, and Windows 11. <a href="#install">How to install</a></p>
       </div>
     </div>
@@ -387,7 +389,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <a href={releases}><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
       <a href={appStore}><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
       <a href={releases}><img src="/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux" /></a>
-      <a href={releases}><img src="/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android" /></a>
+      <a href={googlePlay}><img src="/badges/get-it-on-google-play.svg" width="186" height="56" alt="Get Posato on Google Play" /></a>
       <a href={releases}><img src="/badges/download-for-windows.svg" width="186" height="56" alt="Download Posato for Windows" /></a>
     </p>
     <ul class="install">
@@ -417,10 +419,10 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       <li>
         <h3>Android</h3>
         <p>
-          Android 13 or later. On the phone, download <code>Posato-1.6.0.apk</code> from
-          <a href={releases}>GitHub Releases</a> and open it. When Android asks, allow installing apps from
-          this source, then install, open Posato, and follow the first run, which asks for the permissions
-          Posato needs to pause.
+          Android 13 or later. Install Posato from <a href={googlePlay}>Google Play</a>; it updates there. Then open
+          Posato and follow the first run, which asks for the permissions Posato needs to pause. On a phone
+          without Google Play, download <code>Posato-1.6.0.apk</code> from <a href={releases}>GitHub Releases</a> and open
+          it; when Android asks, allow installing apps from this source.
         </p>
       </li>
       <li>
@@ -447,7 +449,7 @@ const appStore = "https://apps.apple.com/app/posato/id6812237585";
       </div>
     </div>
     <p class="muted">
-      To update on Linux, Android, or Windows, install the newer package the same way. The
+      To update on Linux or Windows, or the APK on Android, install the newer package the same way. The
       <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a>
       records what was checked on each platform, including that the Intel build was checked under Rosetta, not on an Intel Mac.
     </p>

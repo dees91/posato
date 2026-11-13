@@ -47,7 +47,7 @@ If Posato helps you, star it on GitHub so others can find it.
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac"></a>
   <a href="https://apps.apple.com/app/posato/id6812237585"><img src="website/public/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-linux.svg" width="186" height="56" alt="Download Posato for Linux"></a>
-  <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-android.svg" width="186" height="56" alt="Download Posato for Android"></a>
+  <a href="https://play.google.com/store/apps/details?id=app.posato.android"><img src="website/public/badges/get-it-on-google-play.svg" width="186" height="56" alt="Get Posato on Google Play"></a>
   <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-windows.svg" width="186" height="56" alt="Download Posato for Windows"></a>
 </p>
 
@@ -64,11 +64,12 @@ If Posato helps you, star it on GitHub so others can find it.
   x86-64. Install it with `sudo apt install ./posato_<version>_<arch>.deb`,
   then open Posato and follow the first run. It asks for your password once
   to install the pausing service.
-- **Android:** on the phone, download `Posato-<version>.apk` from
+- **Android:** install Posato from
+  [Google Play](https://play.google.com/store/apps/details?id=app.posato.android), open it,
+  and follow the first run, which asks for the permissions Posato needs to
+  pause. On a phone without Google Play, download `Posato-<version>.apk` from
   [GitHub Releases](https://github.com/dees91/posato/releases/latest) and
-  open it. When Android asks, allow installing apps from this source, then
-  install, open Posato, and follow the first run, which asks for the
-  permissions Posato needs to pause.
+  open it; when Android asks, allow installing apps from this source.
 - **Windows:** download `Posato-<version>-x64.msi`, or
   `Posato-<version>-arm64.msi` for an Arm computer, from
   [GitHub Releases](https://github.com/dees91/posato/releases/latest) and
@@ -77,8 +78,8 @@ If Posato helps you, star it on GitHub so others can find it.
   run. The packages are not signed yet, so Windows SmartScreen may
   stop the installer: choose **More info**, then **Run anyway**.
 
-To update on Linux, Android, or Windows, install the newer package the same
-way.
+Posato from Google Play updates there. To update on Linux or Windows, or the
+APK on Android, install the newer package the same way.
 
 Posato targets **macOS 13 or later on Apple silicon and Intel Macs**,
 **iOS 18 or later**, **Ubuntu 24.04 or later**, **Android 13 or later**, and

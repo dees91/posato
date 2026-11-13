@@ -1,12 +1,12 @@
 # Execution: `ANDROID-003`
 
 - **Brief:** [Posato for Android on Google Play](../specifications/android-003-google-play.md)
-- **Status:** `active` (the production release follows the merge)
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude, with parallel agents in isolated worktrees
 - **Reviewer:** independent agents (plan, completed change)
 - **Branch:** `android-003-google-play`
-- **Updated:** 2026-11-06
+- **Updated:** 2026-11-13
 
 ## Plan
 
@@ -65,6 +65,14 @@
 - Decisions (`agent-delegated`): drop the battery exemption on the Doze
   evidence; declare forwarded name lookups as ephemeral web browsing data
   in Data safety; the Play title "Posato: pause apps and sites".
+- Production: build 3 (`1060103`) of the merged main commit `5dae191f` went
+  to the internal track through `play upload`, passed the smoke test
+  installed from Play on the Galaxy (`a003-prod-candidate`), and was sent to
+  production review on 2026-11-06. Google approved it, and `play status`
+  reported the production release 1.6.1 (`1060103`) as `completed` in all
+  six languages on 2026-11-13, with the public listing reachable. The
+  closeout pull request names Google Play on `posato.app`, the README, and
+  the limits page.
 
 ## Completed-change review
 
@@ -99,5 +107,7 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending the production release and its closeout.
+- **Status:** `done`
+- **Outcome:** met; Posato for Android 1.6.1 is live on Google Play, and
+  `posato.app`, the README, and the limits page name Google Play as its
+  home, with the signed APK on GitHub Releases for phones without it.
