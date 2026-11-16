@@ -3431,3 +3431,10 @@ first removal attempt that does not finish, not to a paused keychain.
   clean clones and candidate folder after copying out cited runs, and the
   in-app update runs on a `primary`-line clone now that a `peer` golden VM
   is optional.
+
+## [2026-11-16] decision | Release 1.7 composed with a calm history
+
+- `user-confirmed`: release 1.7 delivers the calm history of scheduled
+  pauses (`HISTORY-002`) and fixes the desktop write and expiry defects
+  (`SESSION-012`, `SESSION-011`); `RELEASE-011` publishes Android on
+  Google Play and GitHub Releases together again.

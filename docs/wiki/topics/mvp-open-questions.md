@@ -1301,7 +1301,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     calm form without streaks, scores, or shame (the `DESIGN.md` brand
     rule). Owner: `HISTORY-001`, release 1.6. Decided in
     [the history decision](../../product/history-decisions.md); delivery is
-    the `HISTORY-002` backlog row.
+    `HISTORY-002`, release 1.7.
 48. **A simpler way to join a folder workspace.** `user-confirmed`
     (2026-10-21): the expanded Folder sync row becomes two steps that can be
     done in either order, choose the shared folder and scan the QR code or
@@ -1376,7 +1376,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     until the next pause, because the shared session code acknowledges an
     expiry only while its record is still active. Enforcement is
     unaffected. `user-confirmed` (2026-10-28): one shared fix, not in
-    `PLATFORM-002`. Owner: backlog row `SESSION-011`.
+    `PLATFORM-002`. Owner: `SESSION-011`, release 1.7.
 59. **Redirect rules beside blocking.** `user-confirmed` (2026-10-28): a
     person sends a chosen host to any address they enter, such as a local
     reader on the same machine, instead of blocking it. Existing blocking
