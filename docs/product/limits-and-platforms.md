@@ -55,8 +55,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   session early is always possible.
 - On macOS, blocking works only while Posato is running. Closing its window
   keeps it running in the menu bar, and after the one-time setup Posato opens
-  quietly at login. If Posato quits, or after sleep, wake, or a network change,
-  a pause you started yourself stops blocking until you resume it in Posato.
+  quietly at login. If Posato quits, or the Mac sleeps, wakes, or changes
+  network, a pause you started yourself stops blocking until you resume it in Posato.
   Without the setup, starting or
   resuming needs administrator approval each time. A session received from
   your iPhone blocks on the Mac only after you resume it there; without the
@@ -64,8 +64,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On macOS, schedules start only on a Mac that finished the setup and only
   while Posato is running. If Posato opens, including at login, or the Mac
   wakes during a scheduled pause, the pause starts again on its own, usually
-  within a minute, and still ends at its planned time; no password is asked. Quitting
-  Posato stops new scheduled starts until it opens again; closing the window
+  within a minute, and still ends at its planned time. Posato does not ask
+  for a password. Quitting Posato stops new scheduled starts until it opens again; closing the window
   does not.
 - On macOS, paused apps are quit while a session is active, including apps that
   were already open when it started, so unsaved work in them can be lost.
@@ -86,13 +86,14 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   15 minutes clear only when Posato is open at the end or when you open it
   again.
 - On iPhone, if Safari was already open, the first page it opens after a
-  pause that blocks websites ends may stay blank. This appears to be how iOS
+  pause that blocks websites has ended may stay blank. This appears to be how iOS
   behaves when the restriction is lifted, and Posato cannot avoid it. The
   next page you open loads.
 - On Linux, website blocking maps each paused website and its `www` name to
-  `0.0.0.0` and `::` in `/etc/hosts`, so connections to it fail. There is no pause
-  page. A browser that uses its own DNS over HTTPS, visiting a site by its IP
-  address, or another name of the same site bypasses it.
+  `0.0.0.0` and `::` in `/etc/hosts`, so connections to it fail. A browser
+  that uses its own DNS over HTTPS, a visit to the site by its IP address, or
+  another name of the same site bypasses this blocking. There is no pause
+  page.
 - On Linux, Posato installs a system service once, with your password. While
   a pause runs, the service ends the paused apps you chose, so unsaved work in
   them can be lost. It clears the pause at its end time even when Posato is
@@ -102,25 +103,25 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   keeps it running with an icon in the status area, and **Open Posato at
   login** in About Posato starts it in the background when you log in.
   On a desktop whose status area does not show app icons, such as GNOME
-  without the AppIndicator extension, there is no icon; Posato then stays
+  without the AppIndicator extension, there is no icon. Posato then stays
   in the background only while a pause runs or a schedule is on, and you
   open it again from the applications menu. Quitting Posato stops new
   scheduled starts.
 - On Windows, website blocking stops connections to the addresses that a
   paused website's name resolves to. A site that shares addresses with
   other sites, such as one behind a large content network, can block
-  those sites too, and a site that moves to new addresses can open until
-  Posato sees them, within about a minute. A browser with its own DNS over
+  those sites too. A site that moves to new addresses can open until
+  Posato detects them, within about a minute. A browser with its own DNS over
   HTTPS can reach addresses Posato has not seen, and a connection already
-  open when the pause starts stays open. There is no pause page, and a VPN
-  or a proxy bypasses it.
+  open when the pause starts stays open. A VPN or a proxy bypasses this
+  blocking, and there is no pause page.
 - On Windows, the installer sets up a system service with administrator
   approval. While a pause runs, the service ends the paused apps you
   chose, so unsaved work in them can be lost. It clears the pause at its
   end time even when Posato is closed, and uninstalling Posato clears an
   active pause. Microsoft Store apps and shortcuts that start a script or
-  a command line cannot be paused. Posato pauses only the Windows account
-  that installed it. The installer is not signed yet, so Windows SmartScreen
+  a command line cannot be paused. Posato pauses apps and websites only for
+  the Windows account that installed it. The installer is not signed yet, so Windows SmartScreen
   warns before it runs; choose **More info**, then **Run anyway**. With Smart
   App Control on, Windows blocks the unsigned installer, and Posato cannot be
   installed until the packages are signed.
@@ -132,7 +133,7 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   lookups. Another VPN cannot run at the same time, strict Private DNS and a
   browser with its own DNS over HTTPS bypass it, and lookups over TCP are not
   filtered. There is no pause page.
-- On Android, a paused app is covered by a block screen; it can be visible
+- On Android, a paused app is covered by a pause screen; it can be visible
   for up to about a second before the screen appears. The launcher, Settings,
   the phone app, and Posato cannot be paused. Posato needs usage access,
   display over other apps, notifications, and exact alarms; without them,
@@ -142,18 +143,19 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - A website that opens briefly during a pause (release 1.6) follows each
   device's own clock and time zone, so devices in different time zones open
   it at different moments. When its window ends, new page loads are
-  blocked, but a connection that is already open, or an address the browser
-  or system remembered, can keep it working for a while on Linux, Android,
-  and Windows; on macOS, Posato also closes the connections it carries for
-  it. On iPhone and iPad the system decides when Posato's background
-  extension runs: a window can open up to about a minute late, and if the
-  system never runs the extension at the window's end, the website stays
-  open until the extension next runs or you open Posato. Safari on iPhone
-  and iPad shows the system's restricted page, which does not say when the
-  website opens; Session in Posato does. A rule cleared on another device
-  takes effect on an iPhone or iPad only when Posato opens there, and on
-  Linux or Windows only while Posato runs; until then, or until the pause
-  ends, the website keeps opening on its old rule.
+  blocked. On Linux, Android, and Windows, a connection that is already
+  open, or an address the browser or system remembered, can keep the site
+  working for a while; on macOS, Posato also closes the connections it
+  relays for that site. On iPhone and iPad, the system decides when
+  Posato's background extension runs. A window can open up to about a
+  minute late, and if the system never runs the extension at the window's
+  end, the website stays open until the extension next runs or you open
+  Posato. Safari on iPhone and iPad shows the system's restricted page,
+  which does not say when the website opens; Session in Posato does.
+  Clearing a rule on another device takes effect on an iPhone or iPad only
+  when Posato opens there, and on Linux or Windows only while Posato runs;
+  until then, or until the pause ends, the website keeps opening on its old
+  rule.
 - A device on an earlier version of Posato stops syncing once another device
   takes a break in a scheduled pause or sets or clears a rule for a website
   to open briefly. Update Posato on every device to keep them in sync.
@@ -162,8 +164,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   not synced keeps restricting until the break reaches it or ends. On iPhone
   and iPad with Posato closed, restrictions can return a few minutes after
   the break ends, because the system decides when Posato's background
-  extension runs; when the system cannot schedule that return, Posato takes
-  no break. On Android, Linux, and Windows, restrictions return within about
+  extension runs. When the system cannot schedule that return, Posato does
+  not start the break. On Android, Linux, and Windows, restrictions return within about
   a minute of the device next waking if it slept through the break's end.
 - Schedule times follow each device's own clock. A schedule is at least 15
   minutes long, and on iPhone it needs Screen Time access.
@@ -179,24 +181,24 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   service delivers them, and anyone who can delete files in the folder can
   stop your devices from syncing.
 - A device joins a folder workspace with a one-time pairing code that is
-  valid for 10 minutes, scanned as a QR code, opened as a link, or typed.
-  Someone with the code or the link and access to the folder, or to its file
-  history, can open the workspace, so share the link only with your own
-  devices. There is no way to remove a single
+  valid for 10 minutes. You can scan it as a QR code, open it as a link, or
+  type it. Anyone who has the code or the link, and also access to the
+  folder or its file history, can open the workspace, so share the code and
+  the link only with your own devices. There is no way to remove a single
   device: to stop sharing with one, remove the workspace and create a new one
   in another folder.
 - In folder mode, each device keeps the workspace key in a file that only
-  your user can read, not in the Keychain. On Android it is protected by the
+  your user account can read, not in the Keychain. On Android it is protected by the
   Android Keystore.
 - On Android, the folder must be a local folder that another app keeps in
   sync, such as Syncthing; most cloud storage apps for Android do not keep a
   local folder in sync. From 1.6.1 you choose it in Android's folder picker,
   and Posato can access only that folder; after an update from 1.6.0, Posato
   asks you to choose it again. On iPhone, Posato syncs the folder when you
-  open it.
+  open Posato.
 - An exported `.posato` file holds pause set names, websites and their
   rules for opening briefly, the default set, and schedules, never app
-  choices. Without a code, anyone who gets the
+  choices. If you export without a code, anyone who gets the
   file can read it. The nine-character code stops a casual reader, not
   someone who spends a lot of computing power on guessing. An import is a
   one-time copy, not sync, and imported schedules arrive switched off.
@@ -221,31 +223,6 @@ Apple's last security update for macOS 13 Ventura was 13.7.8, released on
 20 August 2025. Posato keeps supporting Intel Macs on macOS 13 while its
 build tools still produce and run that version, which is checked for every
 release; ending that support is announced one release ahead.
-
-Posato targets the current and previous major versions of macOS and iOS.
-The [1.2 release record](../tasks/executions/release-004-release-1-2.md) and the
-earlier [platform matrix check](../tasks/executions/quality-007-platform-matrix.md)
-cover both lines:
-
-| System | What was checked |
-| --- | --- |
-| macOS 15 | The notarized Posato 1.2.0 on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: installation from the disk image, the one-time setup, a pause without a password, a schedule that started after the Mac restarted and Posato opened at login, the start notice, and early end from the menu bar |
-| macOS 26 | The notarized Posato 1.2.0 in virtual machines on macOS 26.6: the same flow on two Macs linked through iCloud, with a schedule synced to the other Mac and started on both, early end reaching the other Mac, and the notice that a pause started on another Mac; Posato 1.1.0 replaced by 1.2.0 with its websites and iCloud workspace kept, the one-time setup offer, and a device still on 1.1 pausing its sync until it updated |
-| macOS 13 (Intel build) | Candidates of Posato 1.3 for Intel Macs, run under Rosetta in a macOS 13.6 virtual machine on Apple silicon, not on an Intel Mac: installation from the disk image, the one-time setup without a restart, a pause without a password, the pause page and the application picker, a schedule that started after the Mac restarted and Posato opened at login, the start notice, early end from the menu bar, removal of the background helper, and an in-app update between two Intel candidates. Sync with another Mac was checked for the same Intel build under Rosetta on macOS 15.6.1, because a macOS 13 virtual machine cannot sign in to an Apple Account |
-| macOS 13 and 14 (Apple silicon) | Not checked separately; supported by the maintainer's decision on the strength of the macOS 13 build target and the checks on macOS 15 and 26 |
-| iOS 18 | Posato 1.1.0 from TestFlight, checked by hand on an iPhone with iOS 18: websites and apps, blocking, and early end. Posato 1.2 was not checked on iOS 18 |
-| iOS 26 | Posato 1.2 on a test iPhone with iOS 26.5: the core flow, blocking, and unblocking, and a schedule that started and ended while Posato was closed; with a Mac, a schedule made on the Mac starting on the iPhone, early end reaching the Mac, and the pause notices ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
-
-Later macOS 15 updates were not checked separately.
-
-Not verified for the Intel build: behavior that differs between Rosetta and
-a real Intel processor, including the check that recognizes a native Intel
-Mac; sync on macOS 13; and whether **Download** in the Apple silicon notice
-opens the download page.
-
-The core flow was [verified end to end on one Mac and one iPhone](../tasks/executions/mvp-001-end-to-end-acceptance.md),
-including blocking, early end from either device, expiry, relaunch, and a
-device that was offline during a session.
 
 ## Planned platforms
 
