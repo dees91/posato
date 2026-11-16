@@ -112,7 +112,7 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
       Choose a pause set and a duration: a quick choice from 25 minutes to 8 hours,
       <strong>Until end of day</strong>, or any length from <strong>5 minutes to 24 hours</strong>
       (up to 23 hours 59 minutes on iPhone). Review your
-      choices and start the session. Posato blocks your chosen websites and apps on that device, within the <a href="#limits">limits</a> below. The session ends at the selected time or when you deliberately end
+      choices and start the session. Posato blocks your chosen websites and apps on the device where you start it, within the <a href="#limits">limits</a> below. The session ends at the selected time or when you deliberately end
       it early. On iPhone, restrictions can linger after the session ends. On a Mac, a one-time setup
       lets pauses and schedules start without asking for your password each time.
     </p>
@@ -182,11 +182,11 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
     <h2 id="break">Take a break, or let a website in briefly</h2>
     <p class="prose">
       During a scheduled pause, choose <strong>Take a break</strong> for 5, 10, or 15 minutes: restrictions
-      pause on that device and, once they sync, on your others, and return on their own. Each scheduled
+      lift on that device, and on your other devices once they sync, then return on their own. Each scheduled
       pause allows one break, and <strong>End break</strong> brings restrictions back at once. For a website
-      you want to check now and then, such as the news, choose <strong>Open briefly…</strong> in its menu in
-      the pause set: during a pause it opens every 30 minutes, hour, or 2 hours, for 5, 10, or 15 minutes,
-      on each device's own clock. Session shows when it opens next. Once you take a break or set such a
+      you want to check now and then, such as a news site, choose <strong>Open briefly…</strong> in its menu in
+      the pause set: during a pause it opens every 30 minutes, every hour, or every 2 hours, for 5, 10, or 15 minutes,
+      on each device's own clock. The Session screen shows when it opens next. Once you take a break or set such a
       rule, a device on an earlier version stops syncing until it updates.
     </p>
     </div>
@@ -257,8 +257,8 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
       OneDrive, Syncthing, iCloud Drive, or another service keeps in sync. Posato writes only encrypted
       files there. A workspace uses iCloud or one folder, never both. Create the workspace on one
       device, then choose <strong>Add a device</strong> there. On the other device, take two steps in
-      either order: choose its copy of the same folder, and scan the QR code with the phone's camera,
-      open the shared link, or type the pairing code. It joins as soon as it has both. The code works
+      either order: choose its copy of the same folder, and scan the QR code with a camera,
+      open the shared link, or type the pairing code. The device joins as soon as it has both. The code works
       for 10 minutes. A device that joins during a pause starts pausing right away.
       You cannot remove a single device; to stop sharing with one, remove the workspace and create a
       new one in another folder.
@@ -331,18 +331,18 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
     <ul class="prose">
       <li>
         <strong>Mac:</strong> blocking works while Posato runs, including in the menu bar with its
-        window closed. Quitting Posato stops it and new scheduled starts. Blocking needs administrator
+        window closed. Quitting Posato stops blocking and new scheduled starts. Blocking needs administrator
         approval; after the one-time setup, starts no longer ask for it. Paused apps are quit, so save
         your work before a session starts. Website blocking
         covers Safari and Google Chrome Stable while they use the system proxy settings.
       </li>
       <li>
-        <strong>iPhone:</strong> Restrictions can linger after a session ends. For sessions under 15
+        <strong>iPhone:</strong> restrictions can linger after a session ends. For sessions under 15
         minutes, they clear only when Posato is open at the end or the next time you open it.
       </li>
       <li>
         <strong>Linux:</strong> websites are blocked by name through <code>/etc/hosts</code>, with no
-        pause page; a browser with its own DNS over HTTPS bypasses it. Paused apps are ended, so save
+        pause page; a browser with its own DNS over HTTPS bypasses the blocking. Paused apps are ended, so save
         your work before a session starts. A system service, installed once with your password, ends
         the pause on time even when Posato is closed. Closing the window keeps Posato running with an
         icon in the status area. On a desktop whose status area does not show app icons, such as GNOME
@@ -352,19 +352,19 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
       <li>
         <strong>Android:</strong> websites are blocked by name through a local VPN, with no pause page;
         another VPN cannot run during a pause, and strict Private DNS or a browser with its own DNS over
-        HTTPS bypasses it. A paused app is covered by a block screen.
+        HTTPS bypasses the blocking. A paused app is covered by a block screen.
       </li>
       <li>
         <strong>Windows:</strong> websites are blocked by the addresses their names lead to, with no pause
-        page, so a site that shares addresses with others can block them too, and a browser with its own
-        DNS over HTTPS, a VPN, or a proxy can bypass it. Paused apps are ended, so save your work before a
+        page, so blocking a site that shares addresses with other sites can block those sites too, and a
+        browser with its own DNS over HTTPS, a VPN, or a proxy can bypass the blocking. Paused apps are ended, so save your work before a
         session starts. A system service, set up by the installer, ends the pause on time even when Posato
         is closed. Closing the window keeps Posato running with an icon in the notification area; quitting
         it stops new scheduled starts. Posato pauses only the Windows account that installed it, and
         Microsoft Store apps cannot be paused.
       </li>
       <li>
-        <strong>Sync:</strong> Sync is best effort; a change may arrive late or not at all. If every copy of your workspace key is lost,
+        <strong>Sync:</strong> sync is best effort, so a change may arrive late or not at all. If every copy of your workspace key is lost,
         synchronized data cannot be recovered.
       </li>
     </ul>
@@ -396,9 +396,9 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
       <li>
         <h3>Mac</h3>
         <p>
-          macOS 13 or later. Download <code>Posato-1.6.0.dmg</code> for Apple silicon or
+          macOS 13 or later. Download the signed and notarized <code>Posato-1.6.0.dmg</code> for Apple silicon or
           <code>Posato-1.6.0-intel.dmg</code> for an Intel Mac from <a href={releases}>GitHub Releases</a>,
-          signed and notarized, and move Posato to Applications. It can check for new releases after you
+          and move Posato to Applications. It can check for new releases after you
           agree, and installing an update waits until your session has ended. To move from Posato 1.0,
           quit Posato and replace the application.
         </p>
@@ -449,9 +449,7 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
       </div>
     </div>
     <p class="muted">
-      To update on Linux or Windows, or the APK on Android, install the newer package the same way. The
-      <a href="https://github.com/dees91/posato/blob/main/docs/product/limits-and-platforms.md#supported-platforms">platform matrix</a>
-      records what was checked on each platform, including that the Intel build was checked under Rosetta, not on an Intel Mac.
+      To update on Linux or Windows, or the APK on Android, install the newer package the same way.
     </p>
   </section>
 </Base>
