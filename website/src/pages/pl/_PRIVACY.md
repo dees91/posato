@@ -299,7 +299,7 @@ Posato pyta, zanim będzie sprawdzać aktualizacje automatycznie. Jeśli się
 zgodzisz, sprawdza raz dziennie, gdy aplikacja działa. Możesz wyłączyć
 automatyczne sprawdzanie albo wybrać Sprawdź aktualizacje. Każda
 aktualizacja wymaga Twojego działania, aby ją pobrać i zainstalować, a
-instalacja czeka do zakończenia aktywnej sesji.
+instalacja czeka, aż żadna sesja nie będzie aktywna.
 
 Informacje o aktualizacjach i pliki do pobrania pochodzą z GitHub Releases
 przez Sparkle, bibliotekę aktualizacji dołączoną do Posato. Żądania nie

@@ -223,7 +223,7 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - **Android:** websites are blocked by name through a local VPN, with no
   pause page; another VPN cannot run during a pause, and strict Private DNS
   or a browser with its own DNS over HTTPS bypasses the blocking. A paused app is
-  covered by a block screen.
+  covered by a pause screen.
 - **Windows:** websites are blocked by the addresses their names lead to,
   with no pause page, so blocking a site that shares addresses with other
   sites can block those sites too, and a browser with its own DNS over HTTPS,

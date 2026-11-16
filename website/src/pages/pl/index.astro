@@ -146,7 +146,7 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
     <p class="prose">
       Dodaj harmonogram z nazwą, zestawem, dniami tygodnia i godzinami, na przykład poranki w dni robocze od 9 do
       11. Zaczyna się i kończy sam na każdym urządzeniu, które skonfigurujesz, nawet gdy okno Posato jest zamknięte na
-      komputerze albo aplikacja jest zamknięta na telefonie. Gdy plany się zmienią, pomiń najbliższą pauzę albo zakończ trwającą wcześniej. Gdy pauzy nachodzą na siebie,
+      komputerze albo aplikacja jest zamknięta na telefonie. Gdy plany się zmienią, pomiń najbliższą pauzę albo zakończ wcześniej trwającą pauzę. Gdy pauzy nachodzą na siebie,
       Posato wstrzymuje wszystko z ich zestawów, w granicach każdego urządzenia, a każda pozycja pozostaje wstrzymana,
       aż skończy się ostatnia pauza, która ją obejmuje. Na Macu i iPhonie Posato może Cię powiadomić, gdy pauza się kończy albo gdy zaczyna się na innym urządzeniu.
     </p>
@@ -181,7 +181,7 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
     <h2 id="break">Zrób przerwę albo wpuść stronę na chwilę</h2>
     <p class="prose">
       W trakcie zaplanowanej pauzy wybierz <strong>Zrób przerwę</strong> na 5, 10 albo 15 minut: ograniczenia
-      wstrzymują się na tym urządzeniu, a po synchronizacji także na pozostałych, i wracają same. Każda zaplanowana
+      znikają na tym urządzeniu, a po synchronizacji także na pozostałych, i wracają same. Każda zaplanowana
       pauza pozwala na jedną przerwę, a <strong>Zakończ przerwę</strong> od razu przywraca ograniczenia. Dla strony,
       do której chcesz od czasu do czasu zajrzeć, na przykład z wiadomościami, wybierz <strong>Otwieraj na chwilę…</strong>
       w jej menu w zestawie: w trakcie pauzy otwiera się co 30 minut, co godzinę albo co 2 godziny, na 5, 10 albo
@@ -254,12 +254,12 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
     <div class="step-copy">
     <h2 id="folder">Synchronizuj przez folder</h2>
     <p class="prose">
-      Aby połączyć dowolne urządzenia: Maca, iPhone'a, komputer z Windows lub Linuxem i telefon z Androidem, trzymaj przestrzeń w folderze synchronizowanym przez Dropbox,
+      Aby połączyć dowolne urządzenia: Maca, iPhone'a, komputer z Windows lub Linuxem albo telefon z Androidem, trzymaj przestrzeń w folderze synchronizowanym przez Dropbox,
       OneDrive, Syncthing, iCloud Drive albo inną usługę. Posato zapisuje tam tylko zaszyfrowane
       pliki. Przestrzeń korzysta z iCloud albo z jednego folderu, nigdy z obu naraz. Utwórz przestrzeń na jednym
       urządzeniu, a potem wybierz tam <strong>Dodaj urządzenie</strong>. Na drugim urządzeniu wykonaj dwa kroki, w
-      dowolnej kolejności: wskaż jego kopię tego samego folderu i podaj kod, skanując kod QR aparatem telefonu,
-      otwierając udostępnione łącze albo wpisując kod parowania. Dołącza, gdy ma jedno i drugie. Kod działa
+      dowolnej kolejności: wskaż jego kopię tego samego folderu i podaj kod, skanując kod QR aparatem,
+      otwierając udostępnione łącze albo wpisując kod parowania. Urządzenie dołącza, gdy ma jedno i drugie. Kod działa
       przez 10 minut. Urządzenie, które dołącza w trakcie pauzy, zaczyna wstrzymywać od razu.
       Nie da się usunąć pojedynczego urządzenia; aby odłączyć jedno z nich, usuń przestrzeń i utwórz
       nową w innym folderze.
@@ -361,7 +361,7 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
         HTTPS, VPN albo proxy może tę blokadę ominąć. Wstrzymane aplikacje są kończone, więc zapisz pracę przed rozpoczęciem
         sesji. Usługa systemowa, instalowana przez instalator, kończy pauzę o czasie nawet przy zamkniętym Posato.
         Zamknięcie okna zostawia Posato uruchomione z ikoną w obszarze powiadomień; zakończenie go nie pozwala
-        harmonogramom zacząć nowych pauz. Posato działa tylko na koncie Windows, z którego je zainstalowano, a aplikacji z
+        harmonogramom zacząć nowych pauz. Posato wstrzymuje strony i aplikacje tylko na koncie Windows, z którego je zainstalowano, a aplikacji z
         Microsoft Store nie da się wstrzymać.
       </li>
       <li>
@@ -398,8 +398,8 @@ const googlePlay = "https://play.google.com/store/apps/details?id=app.posato.and
         <h3>Mac</h3>
         <p>
           macOS 13 lub nowszy. Z <a href={releases}>GitHub Releases</a> pobierz <code>Posato-1.6.0.dmg</code> na Apple silicon albo
-          <code>Posato-1.6.0-intel.dmg</code> na Maca z procesorem Intel. Oba pliki są podpisane i poświadczone notarialnie
-          przez Apple. Przenieś Posato do folderu Aplikacje. Po Twojej zgodzie może sprawdzać nowe wydania,
+          <code>Posato-1.6.0-intel.dmg</code> na Maca z procesorem Intel. Oba pliki są podpisane i poświadczone notarialnie.
+          Przenieś Posato do folderu Aplikacje. Po Twojej zgodzie może sprawdzać nowe wydania,
           a instalacja aktualizacji czeka, aż sesja się skończy. Aby przejść z Posato 1.0,
           zakończ Posato i zastąp aplikację.
         </p>

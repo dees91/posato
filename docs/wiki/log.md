@@ -3438,3 +3438,14 @@ first removal attempt that does not finish, not to a paused keychain.
   pauses (`HISTORY-002`) and fixes the desktop write and expiry defects
   (`SESSION-012`, `SESSION-011`); `RELEASE-011` publishes Android on
   Google Play and GitHub Releases together again.
+
+## [2026-11-16] maintenance | Public copy proofread, platform matrix dropped
+
+- The English and Polish site pages, the README, the privacy policy, and
+  the limits were proofread; Polish copy now names a workspace with the
+  same word as the apps.
+- `user-confirmed`: the platform matrix is removed from
+  [limits and platforms](../product/limits-and-platforms.md) and from every
+  page that linked it; the supported versions list stays. The apps take the
+  Polish line from the site, and the privacy policy takes effect on
+  November 6, 2026.
