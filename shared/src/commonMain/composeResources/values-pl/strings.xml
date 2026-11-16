@@ -131,7 +131,7 @@
     <string name="onboarding_step_website">Pierwsza strona</string>
     <string name="onboarding_step_summary">Twoja pierwsza pauza</string>
     <string name="onboarding_purpose_title">Trochę przestrzeni.
-Dla tego, co ważne.</string>
+Na to, co ważne.</string>
     <string name="onboarding_purpose_body">Wstrzymaj strony i aplikacje, które cię odciągają. Wybierz, kiedy pauza się kończy, i wróć do swojego dnia.</string>
     <string name="onboarding_privacy_title">Twój wybór zostaje twój.</string>
     <string name="onboarding_privacy_collection">Bez historii przeglądania</string>
@@ -403,7 +403,7 @@ Dla tego, co ważne.</string>
     <string name="about_short">O aplikacji</string>
     <string name="about_version">Wersja %1$s</string>
     <string name="about_version_unavailable">Wersja niedostępna</string>
-    <string name="about_tagline">Trochę przestrzeni. Dla tego, co ważne.</string>
+    <string name="about_tagline">Trochę przestrzeni. Na to, co ważne.</string>
     <string name="about_body">Posato pomaga na chwilę odejść od wybranych stron i aplikacji. Cicha pauza między impulsem a działaniem.</string>
     <string name="about_open_source">Otwarte źródło. Bez konta Posato, analityki i serwera prowadzonego przez Posato.</string>
     <string name="about_licenses_detail">Licencja i informacje o składnikach innych firm</string>
@@ -596,7 +596,7 @@ potrzebujesz?</string>
     <string name="session_hero_active">Sesja aktywna</string>
     <string name="session_hero_room_you">Trochę przestrzeni.
 Tylko dla ciebie.</string>
-    <string name="session_hero_room_matters">Przestrzeń dla tego, co ważne.</string>
+    <string name="session_hero_room_matters">Przestrzeń na to, co ważne.</string>
     <string name="session_hero_scheduled_running">Na tym urządzeniu trwa zaplanowana pauza.</string>
     <string name="session_hero_timer_running">Na tym urządzeniu działa czas sesji.</string>
     <string name="session_hero_finish_setup">Dokończ ustawianie wstrzymywania, a potem wybierz, kiedy zrobić pauzę.</string>

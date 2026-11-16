@@ -1,6 +1,6 @@
 # Posato Privacy Policy
 
-Effective November 5, 2026.
+Effective November 6, 2026.
 
 Posato does not send your pause sets, website list, app choices, sessions,
 schedules, or workspace data to its developer. There is no Posato account, no
@@ -45,16 +45,23 @@ in your home folder's application data until you remove it. On Windows,
 uninstalling Posato does not delete it; it remains in the `Posato` folder of
 your user account's local application data until you remove it.
 
-When sync is on, through iCloud or a folder, Posato also keeps the history of synchronized changes
-in its private storage on each linked device: every pause set created,
-renamed, or deleted, every website added to or removed from a set, every
-rule set or cleared for a website to open briefly during a pause, which set
-is the default and which set each session and schedule used, and when each
-change was made, including when past sessions started, when they were scheduled to end, and whether they
-were ended early, and when each break in a scheduled pause started, how long
-it was, and whether it was ended early. Entries from before Posato 1.3 also record changes to the
-shared app group name it used then. Changing or removing a website or a set
-does not erase its earlier entries from this history. The history stays until **Remove workspace**
+When sync is on, through iCloud or a folder, Posato also keeps the history
+of synchronized changes in its private storage on each linked device. The
+history records:
+
+- every pause set created, renamed, or deleted;
+- every website added to or removed from a set;
+- every rule set or cleared for a website to open briefly during a pause;
+- which set is the default and which set each session and schedule used;
+- when past sessions started, when they were scheduled to end, and whether
+  they were ended early;
+- when each break in a scheduled pause started, how long it was, and whether
+  it was ended early;
+- when each change was made.
+
+Entries from before Posato 1.3 also record changes to the shared app group
+name it used then. Changing or removing a website or a set does not erase its
+earlier entries from this history. The history stays until **Remove workspace**
 completes on that device or Posato's data is removed from it, and it can be
 included in device backups like the data above.
 
@@ -170,8 +177,8 @@ is deleted when you turn the option off or remove Posato from this Mac.
 
 ## Blocking on Linux
 
-On Linux, Posato installs a pausing service that runs with system
-permissions, once, with your password. Only your user account and the system
+On Linux, Posato installs, once and with your password, a pausing service
+that runs with system permissions. Only your user account and the system
 can send it requests. While a pause runs, the service:
 
 - adds each paused website and its `www` name to the system file
@@ -184,8 +191,8 @@ can send it requests. While a pause runs, the service:
 The service keeps your user name and user number in a system configuration
 file, and the pause it enforces, with its websites and program locations, in
 a system file that only the system can read, so a restart keeps the pause.
-After the pause ends, that file keeps only the session's identifier until
-Posato reads it. Removing the package removes the service, restores
+After the pause ends, the file with the pause keeps only the session's
+identifier until Posato reads it. Removing the package removes the service, restores
 `/etc/hosts`, and deletes both files. Nothing the service handles leaves your
 computer.
 
@@ -205,7 +212,7 @@ the system can send it requests. While a pause runs, the service:
 In files that only the system and administrators can open, the service
 keeps your account name and its security identifier, and the pause it
 enforces, with its websites and program locations, so a restart keeps the
-pause. After the pause ends, that file keeps only the
+pause. After the pause ends, the file with the pause keeps only the
 session's identifier until Posato reads it. Uninstalling Posato removes the
 service, its rules, and both files. Posato reads the Start menu's shortcuts
 so that you can choose programs to pause; the list stays on the computer.
@@ -223,10 +230,10 @@ settings:
   network offers none Posato can use. No other traffic enters the VPN, and
   Posato does not record or keep lookups.
 - **Usage access.** While a pause with apps runs, Posato checks about twice a
-  second which app is in front, so it can cover a paused app with its block
+  second which app is in front, so it can cover a paused app with its pause
   screen. It keeps only the app in front at that moment, in memory, and does
   not record app usage.
-- **Display over other apps**, to show the block screen.
+- **Display over other apps**, to show the pause screen.
 - **Notifications and exact alarms**, so that pauses and schedules start and
   end on time while Posato is closed. A silent notification shows while Posato
   keeps them running.
@@ -265,7 +272,7 @@ sync is on, the changes reach your other devices.
 
 ## Notifications
 
-On Mac and iPhone, Posato can show local notices when a pause ends or starts
+On Mac and iPhone, Posato can show local notifications when a pause ends or starts
 on another device. They are created on your device by your device's
 notification system; Posato sends nothing to a server for them. You can turn
 them off in About Posato or in your device's settings.
@@ -283,7 +290,7 @@ an update library included in Posato. Requests do not contain your website
 list, app choices, sessions, iCloud data, an installation identifier, or a
 system profile. Posato compares versions and system requirements on your Mac.
 
-GitHub and its delivery providers can receive your IP address, request time,
+GitHub and the content delivery networks it uses can receive your IP address, request time,
 the resource requested, and technical connection information. A download
 address identifies the version you request. They handle this information
 under [GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
@@ -298,7 +305,7 @@ iCloud. Sparkle stores update-check state and temporary update files locally.
 
 Posato does not collect or upload diagnostics, crash reports, or telemetry.
 Apart from the sync you choose, the lookups the Android VPN passes on, and the
-update requests described in Updates on Mac, Posato makes no network requests
+update requests described in the Updates on Mac section, Posato makes no network requests
 of its own.
 Your operating system or app store may collect diagnostics under your device
 settings and their own policies; Posato does not access or add to them.
@@ -309,7 +316,7 @@ names, app names, device details, screenshots, or logs in public reports.
 ## Children
 
 Posato is not designed for managing another person's device and does not
-knowingly collect data from anyone.
+collect data from anyone.
 
 ## Changes
 

@@ -83,9 +83,7 @@ APK on Android, install the newer package the same way.
 
 Posato targets **macOS 13 or later on Apple silicon and Intel Macs**,
 **iOS 18 or later**, **Ubuntu 24.04 or later**, **Android 13 or later**, and
-**Windows 11 on x64 and Arm**; the
-[platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
-records what was checked on each of them.
+**Windows 11 on x64 and Arm**.
 
 To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).
 Unsigned builds let you explore the apps; blocking and sync require Apple
@@ -109,10 +107,10 @@ or plan a schedule. App choices stay on the device where you made them.
 Choose a pause set and a duration: a quick choice from 25 minutes to 8 hours,
 **Until end of day**, or any length from **5 minutes to 24 hours** (up to 23
 hours 59 minutes on iPhone). Review your
-choices and start the session. Posato blocks your chosen websites and apps on that device,
+choices and start the session. Posato blocks your chosen websites and apps on the device where you start it,
 within the [limits](#limits) below. The session ends at the selected time or
-when you deliberately end it early. On iPhone, restrictions can linger after it
-ends. On a Mac, a one-time setup lets pauses and schedules start without asking
+when you deliberately end it early. On iPhone, restrictions can linger after the
+session ends. On a Mac, a one-time setup lets pauses and schedules start without asking
 for your password each time.
 
 <p align="center">
@@ -141,13 +139,13 @@ starts on another device.
 ### Take a break, or let a website in briefly
 
 During a scheduled pause, choose **Take a break** for 5, 10, or 15 minutes:
-restrictions pause on that device and, once they sync, on your others, and
-return on their own. Each scheduled pause allows one break, and **End
+restrictions lift on that device, and on your other devices once they sync,
+then return on their own. Each scheduled pause allows one break, and **End
 break** brings restrictions back at once. For a website you want to check
-now and then, such as the news, choose **Open briefly…** in its menu in the
-pause set: during a pause it opens every 30 minutes, hour, or 2 hours, for
-5, 10, or 15 minutes, on each device's own clock. Session shows when it
-opens next. Once you take a break or set such a rule, a device on an
+now and then, such as a news site, choose **Open briefly…** in its menu in the
+pause set: during a pause it opens every 30 minutes, every hour, or every 2 hours, for
+5, 10, or 15 minutes, on each device's own clock. The Session screen shows when
+it opens next. Once you take a break or set such a rule, a device on an
 earlier version stops syncing until it updates.
 
 <p align="center">
@@ -158,7 +156,8 @@ earlier version stops syncing until it updates.
 
 Choose **Sync with iCloud** on one Mac and one iPhone signed in to the same
 Apple Account to share your pause sets with their websites, sessions, and
-schedules. No QR code or invitation is needed. Delivery is best effort. A
+schedules. No QR code or invitation is needed. Sync is best effort, so a change may
+arrive late or not at all. A
 session started on your iPhone blocks on the Mac only after you resume it there.
 Update Posato on every device: once one device runs Posato 1.3, devices on an
 earlier version stop syncing until they update.
@@ -174,8 +173,8 @@ folder that Dropbox, OneDrive, Syncthing, iCloud Drive, or another service
 keeps in sync. Posato writes only encrypted files there. A workspace uses
 iCloud or one folder, never both. Create the workspace on one device, then
 choose **Add a device** there. On the other device, take two steps in either
-order: choose its copy of the same folder, and scan the QR code with the
-phone's camera, open the shared link, or type the pairing code. It joins as
+order: choose its copy of the same folder, and scan the QR code with a
+camera, open the shared link, or type the pairing code. The device joins as
 soon as it has both. The code works for 10 minutes. A device that joins
 during a pause starts pausing right away. You cannot remove a single device;
 to stop sharing with one, remove the workspace and create a new one in
@@ -204,17 +203,17 @@ schedules arrive switched off. It is a one-time copy, not sync.
 Posato adds deliberate friction; it is not a lock you cannot open.
 
 - **Mac:** blocking works while Posato runs, including in the menu bar with
-  its window closed. Quitting Posato stops it and new scheduled starts.
+  its window closed. Quitting Posato stops blocking and new scheduled starts.
   Blocking needs administrator approval; after the one-time setup, starts no
-  longer ask for it. Paused apps are quit, so save your work first.
-  Website blocking covers Safari and Google Chrome Stable using the system
-  proxy.
+  longer ask for it. Paused apps are quit, so save your work before a session
+  starts. Website blocking covers Safari and Google Chrome Stable while they
+  use the system proxy settings.
 - **iPhone:** restrictions can linger after a session ends. For sessions under
   15 minutes, they clear only when Posato is open at the end or the next time
   you open it.
 - **Linux:** websites are blocked by name through `/etc/hosts`, with no pause
-  page; a browser with its own DNS over HTTPS bypasses it. Paused apps are
-  ended, so save your work first. A system service, installed once with your
+  page; a browser with its own DNS over HTTPS bypasses the blocking. Paused
+  apps are ended, so save your work before a session starts. A system service, installed once with your
   password, ends the pause on time even when Posato is closed. Closing the
   window keeps Posato running with an icon in the status area. On a desktop
   whose status area does not show app icons, such as GNOME without the
@@ -223,27 +222,29 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   stops new scheduled starts.
 - **Android:** websites are blocked by name through a local VPN, with no
   pause page; another VPN cannot run during a pause, and strict Private DNS
-  or a browser with its own DNS over HTTPS bypasses it. A paused app is
-  covered by a block screen.
+  or a browser with its own DNS over HTTPS bypasses the blocking. A paused app is
+  covered by a pause screen.
 - **Windows:** websites are blocked by the addresses their names lead to,
-  with no pause page, so a site that shares addresses with others can block
-  them too, and a browser with its own DNS over HTTPS, a VPN, or a proxy
-  can bypass it. Paused apps are ended, so save your work first. A system
+  with no pause page, so blocking a site that shares addresses with other
+  sites can block those sites too, and a browser with its own DNS over HTTPS,
+  a VPN, or a proxy can bypass the blocking. Paused apps are ended, so save
+  your work before a session starts. A system
   service, set up by the installer, ends the pause on time even when Posato
   is closed. Closing the window keeps Posato running with an icon in the
   notification area; quitting it stops new scheduled starts. Posato pauses
   only the Windows account that installed it, and Microsoft Store apps
   cannot be paused.
-- **Sync:** delivery is best effort. If every copy of your workspace key is
-  lost, synchronized data cannot be recovered.
+- **Sync:** sync is best effort, so a change may arrive late or not at all.
+  If every copy of your workspace key is lost, synchronized data cannot be
+  recovered.
 
 Read the [full blocking and sync limits](docs/product/limits-and-platforms.md#limits)
 for browser coverage, VPN and Private Relay behavior, resuming after sleep,
-folder sync and pairing codes, and data recovery boundaries.
+folder sync and pairing codes, and data recovery.
 
 ## Privacy
 
-Posato does not collect your data. Your pause sets, websites, app choices,
+Posato's developer does not receive your data. Your pause sets, websites, app choices,
 sessions, and schedules stay on your devices; with iCloud sync on, changes are encrypted on your device
 before they are stored in your private iCloud database, and with folder sync,
 Posato writes only encrypted files to the folder you choose. On Mac, update checks go
