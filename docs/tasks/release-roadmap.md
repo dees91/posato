@@ -427,7 +427,11 @@ does not have.
   [--release backlog|1.5|...] [--class backlog|delivery|discovery]
   [--status ...] [--pr N]` adds a row's item, with Status Todo unless
   `--status` says otherwise. The project and field ids live only in its
-  `RoadmapProject.kt`; refresh them there after a field changes. It works
+  `RoadmapProject.kt`; refresh them there after a field changes. Add a
+  release option in the GitHub interface, which keeps the existing values:
+  an API update of the field replaces every option and clears the field on
+  all items, which must then be restored from the tables and read back
+  (`observed` 2026-11-16). It works
   through `gh api graphql`, because `gh project item-list` returned no items
   for this project (`observed` 2026-10-22). GitHub's item list can also come
   back empty or without items added minutes before, so `add` takes
@@ -729,7 +733,7 @@ Linux and Windows helpers.
 | `SESSION-011` | Clear the expired session that the Linux and Windows helpers keep reporting after a pause ends while Posato is closed: the shared session code acknowledges an expiry only while its local record is still active, so the next launch never acknowledges it. One shared fix, verified on Linux and Windows (idea 58). | Sessions and enforcement | delivery | R1.7/W1 | None | PR-HELPER-EXPIRY |
 | `HISTORY-002` | Deliver the calm history of scheduled pauses decided in `HISTORY-001`: a local, unsynchronized day record written when a day becomes final, a **History** disclosure below the Schedules list on every platform with ran-as-planned and ended-early days and no totals, **Clear history**, the `PRIVACY.md` text, and the `posato-control` read, as [the history decision](../product/history-decisions.md) plans (idea 47). High-risk plan review (a behavioral record on the device and a `PRIVACY.md` change). | Schedules | delivery | R1.7/W1 | None | PR-HISTORY |
 | `DOCS-008` | Prepare the public packaging for 1.7 without publishing it: the history on the limits page, README, and `posato.app` with screenshots, the store text and What's New, and draft release notes, in every shipped language. | Release readiness | delivery | R1.7/W2 | `SESSION-012`, `SESSION-011`, `HISTORY-002` | PR-RELEASE-1-7-MEDIA |
-| `RELEASE-011` | Verify and publish Posato 1.7.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, the Android release on Google Play through the `ANDROID-003` upload path, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64. | Release readiness | delivery | R1.7/W3 | `SESSION-012`, `SESSION-011`, `HISTORY-002`, `DOCS-008` | PR-RELEASE-1-7 |
+| `RELEASE-011` | Verify and publish Posato 1.7.0: the macOS release through the `MACOS-011` update path, the iOS build to App Review, the Android release on Google Play through the `ANDROID-003` upload path, and on GitHub Releases the Linux `.deb` packages, the Android APK, and the Windows MSI packages for arm64 and x64. Verifies on iOS and Android the shared session fixes of `SESSION-012` and `SESSION-011`, which their rows verify only on the desktops: a received pause enforced without **Retry** and an early end of a scheduled pause that leaves no manual pause. | Release readiness | delivery | R1.7/W3 | `SESSION-012`, `SESSION-011`, `HISTORY-002`, `DOCS-008` | PR-RELEASE-1-7 |
 
 ## Backlog
 
@@ -803,7 +807,7 @@ The idea numbers refer to the wiki idea queue.
 | Public packaging for 1.6 | `DOCS-007` | Limits page and README updated, site built, Windows screenshots, store text ready for upload, release notes drafted |
 | Posato for Android on Google Play | `ANDROID-003` | Folder sync through a picked folder with a Tart peer on the test phone and the Posato emulator, no all-files access in the manifest, disclosures before usage access and the overlay, an R8 release bundle installed from Play's internal track, and the production release live with the limits page, README, and posato.app updated |
 | A calm history of scheduled pauses | `HISTORY-002` | Failing derivation tests first; one real-time run per target in which a schedule ends naturally and its day shows **Ran as planned**, plus **Clear history** on the Mac in Tart; `PRIVACY.md` updated |
-| Desktop pause defects found in 1.6 | `SESSION-012`, `SESSION-011` | Failing tests first; repeated received pauses enforced without **Retry** on Windows, Linux, and the Mac in Tart; repeated early ends that leave no manual pause; no expired session reported by the Linux and Windows helpers after a pause ends while Posato is closed |
+| Desktop pause defects found in 1.6 | `SESSION-012`, `SESSION-011`, `RELEASE-011` | Failing tests first; repeated received pauses enforced without **Retry** on Windows, Linux, and the Mac in Tart; repeated early ends that leave no manual pause; no expired session reported by the Linux and Windows helpers after a pause ends while Posato is closed; a received pause and an early end on the test iPhone and Android in `RELEASE-011` |
 | Public packaging for 1.7 | `DOCS-008` | Limits page and README updated, site built, history screenshots, store text ready for upload, release notes drafted |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005`, `RELEASE-006` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 

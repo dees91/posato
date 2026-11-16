@@ -3,7 +3,9 @@ package app.posato.roadmap
 /**
  * The public "Posato roadmap" project that mirrors `docs/tasks/release-roadmap.md`, and the ids of the fields this
  * tool writes, kept here and nowhere else. After a field or option changes in the GitHub interface, read the new ids
- * with `gh project field-list 1 --owner @me --format json`.
+ * with `gh project field-list 1 --owner @me --format json`. Add a release option in the GitHub interface, which keeps
+ * the existing values: an API update of the field replaces every option, gives each a new id, and clears the field on
+ * all items, which must then be restored from the roadmap tables and read back.
  */
 object RoadmapProject {
     /** An option of a single-select field: the name GitHub shows and reads back, and the id a write takes. */
