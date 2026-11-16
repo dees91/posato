@@ -29,13 +29,14 @@ object RoadmapProject {
 
     const val RELEASE_FIELD = "PVTSSF_lAHOAB0Ak84Bj5GQzhirxrg"
     val RELEASE = mapOf(
-        "1.1" to Option("1.1", "a373a2a0"),
-        "1.2" to Option("1.2", "5e92a87f"),
-        "1.3" to Option("1.3", "93a915ea"),
-        "1.4" to Option("1.4", "2714e1a7"),
-        "1.5" to Option("1.5", "4d38075a"),
-        "1.6" to Option("1.6", "edafbf71"),
-        "backlog" to Option("Backlog", "0b94f86b"),
+        "1.1" to Option("1.1", "8773e0e3"),
+        "1.2" to Option("1.2", "9a8f149a"),
+        "1.3" to Option("1.3", "05a6c5d3"),
+        "1.4" to Option("1.4", "87213b4f"),
+        "1.5" to Option("1.5", "19df27e7"),
+        "1.6" to Option("1.6", "059b060b"),
+        "1.7" to Option("1.7", "290e8c30"),
+        "backlog" to Option("Backlog", "46423092"),
     )
 
     const val CLASS_FIELD = "PVTSSF_lAHOAB0Ak84Bj5GQzhirxrs"
