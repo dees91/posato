@@ -1,6 +1,6 @@
 # Política de privacidade do Posato
 
-Em vigor desde 5 de novembro de 2026.
+Em vigor desde 6 de novembro de 2026.
 
 O Posato não envia ao desenvolvedor seus conjuntos de pausa, sua lista de
 sites, suas escolhas de apps, sessões, agendamentos nem dados do espaço de
@@ -347,7 +347,7 @@ em relatos públicos.
 ## Crianças
 
 O Posato não foi feito para gerenciar o dispositivo de outra pessoa e não
-coleta dados de ninguém intencionalmente.
+coleta dados de ninguém.
 
 ## Alterações
 

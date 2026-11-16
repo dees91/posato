@@ -1,6 +1,6 @@
 # Datenschutzerklärung von Posato
 
-Gültig ab 5. November 2026.
+Gültig ab 6. November 2026.
 
 Posato sendet deine Pausensets, deine Website-Liste, deine App-Auswahl,
 Sitzungen, Zeitpläne oder Daten des Arbeitsbereichs nicht an seinen
@@ -361,7 +361,7 @@ Bildschirmfotos oder Protokolle an.
 ## Kinder
 
 Posato ist nicht dafür gedacht, das Gerät einer anderen Person zu verwalten,
-und erfasst wissentlich keine Daten von irgendjemandem.
+und erfasst keine Daten von irgendjemandem.
 
 ## Änderungen
 
